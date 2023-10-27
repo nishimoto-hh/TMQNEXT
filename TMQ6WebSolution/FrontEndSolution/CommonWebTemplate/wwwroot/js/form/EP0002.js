@@ -84,3 +84,31 @@ function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, va
     }
 }
 
+/*==8:取込処理==*/
+
+/**
+ *【オーバーライド用関数】
+ * キャンセル押下後
+ */
+function clickPopupCancelBtn() {
+    // 個別実装用データクリア
+    var form = $(P_Article).find("form[id^='form']");
+    $(form).find("input:hidden[name='ListIndividual']").val("");
+    P_dicIndividual["TargetConductId"] = null;
+    P_dicIndividual["TargetSheetNo"] = null;
+
+    // 画面変更ﾌﾗｸﾞ初期化
+    dataEditedFlg = false;
+
+    //処理中メッセージ：off
+    processMessage(false);
+    // 実行中フラグOFF
+    P_ProcExecuting = false;
+
+    // アップロードボタンを活性化
+    var btn = $(form).find("input:button[data-actionkbn='" + actionkbn.ExcelPortUpload + "']");
+    $(btn).prop("disabled", false);
+
+    // 取込ファイル情報をクリア
+    $(form).find("input:file").val("");
+}

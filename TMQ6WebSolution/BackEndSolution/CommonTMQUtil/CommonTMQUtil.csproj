@@ -194,6 +194,8 @@
     <None Remove="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0360_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0410_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0420_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0430_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet10.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet12.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\Detail\DeleteHmContent.sql" />
@@ -582,6 +584,7 @@
     <None Remove="Resources\sql\Maintenance\GetCountHistoryInspectionSiteInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetCountMaintainanceScheduleDetail.sql" />
     <None Remove="Resources\sql\Maintenance\GetCountTargetSchedule.sql" />
+    <None Remove="Resources\sql\Maintenance\GetExcelPortMaintenance.sql" />
     <None Remove="Resources\sql\Maintenance\GetFailureAnalyzeIndividualInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetFailureAnalyzeInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetFailureInfo.sql" />
@@ -640,6 +643,7 @@
     <None Remove="Resources\sql\Maintenance\UpdateScheduleDetailSummaryId.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateScheduleSummaryId.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateSummaryInfo.sql" />
+    <None Remove="Resources\sql\Maintenance\WITH_GetExcelPortMaintenance.sql" />
     <None Remove="Resources\sql\Maintenance\WITH_GetMaintenanceList.sql" />
     <None Remove="Resources\sql\Maintenance\WITH_GetSearchMachineList.sql" />
     <None Remove="Resources\sql\Maintenance\WITH_GetSelectMachineList.sql" />
@@ -656,7 +660,23 @@
     <None Remove="Resources\sql\Master\DeleteMsStructureOrder.sql" />
     <None Remove="Resources\sql\Master\DeleteMsStructureUnused.sql" />
     <None Remove="Resources\sql\Master\DeleteMsTranslationInfo.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortItemOrderList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortItemUnUseList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterDepartmentList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterDistrictList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterFacilityList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterFactoryList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterJobList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterLargeClassList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterMiddleClassList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterPlantList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterRackList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterSeriesList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterSmallClassList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterStrokeList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterWarehouseList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortStructureItemOrderList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\WITH_GetExcelPortMasterList.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\DeleteFailureCausePersonalityStructureOrder.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\GetFailureCausePersonalityStructureFactoryItemList.sql" />
@@ -853,8 +873,30 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0420_Sheet1.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0430_Sheet1.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetExcelPortMaintenance.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\WITH_GetExcelPortMaintenance.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortItemOrderList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortItemUnUseList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterDepartmentList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterJobList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterLargeClassList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterMiddleClassList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterPlantList.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterDistrictList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterFacilityList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterFactoryList.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterList.sql" />
-    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\WITH_GetExcelPortMasterList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterRackList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterSeriesList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterSmallClassList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterStrokeList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterWarehouseList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortStructureItemOrderList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetExcelPortPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\WITH_GetExcelPortPartsList.sql" />
   </ItemGroup>

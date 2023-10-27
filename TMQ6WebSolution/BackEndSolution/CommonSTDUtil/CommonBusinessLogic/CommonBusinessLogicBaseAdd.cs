@@ -191,12 +191,48 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// 画面の検索条件をグループNoにより取得(単一)
         /// </summary>
         /// <typeparam name="T">データクラスの型</typeparam>
-        /// <returns>登録内容のデータクラス</returns>
+        /// <returns>検索条件のデータクラス</returns>
         protected T GetConditionInfoByGroupNo<T>(short groupNo)
              where T : Dao.SearchCommonClass, new()
         {
             // 登録対象グループの画面項目定義の情報
             var grpMapInfo = getResultMappingInfoByGrpNo(groupNo);
+
+            // 対象グループのコントロールIDの結果情報のみ抽出
+            var ctrlIdList = grpMapInfo.CtrlIdList;
+            List<Dictionary<string, object>> conditionList = ComUtil.GetDictionaryListByCtrlIdList(this.searchConditionDictionary, ctrlIdList, true);
+
+            T resultInfo = new();
+            // コントロールIDごとに繰り返し
+            foreach (var ctrlId in ctrlIdList)
+            {
+                // コントロールIDより画面の項目を取得
+                Dictionary<string, object> condition = ComUtil.GetDictionaryByCtrlId(conditionList, ctrlId);
+                var mapInfo = grpMapInfo.selectByCtrlId(ctrlId);
+
+                // ページ情報取得
+                var pageInfo = GetPageInfo(ctrlId, this.pageInfoList);
+                // 検索条件データの設定
+                if (!SetSearchConditionByDataClass(new List<Dictionary<string, object>> { condition }, ctrlId, resultInfo, pageInfo))
+                {
+                    // エラーの場合終了
+                    return resultInfo;
+                }
+            }
+            return resultInfo;
+        }
+
+        /// <summary>
+        /// 画面の検索条件をグループNoにより取得(単一)
+        /// </summary>
+        /// <typeparam name="T">データクラスの型</typeparam>
+        /// <param name="groupNoList">グループNoのリスト</param>
+        /// <returns>検索条件のデータクラス</returns>
+        protected T GetConditionInfoByGroupNoList<T>(List<int> groupNoList)
+             where T : Dao.SearchCommonClass, new()
+        {
+            // 登録対象グループの画面項目定義の情報
+            var grpMapInfo = getResultMappingInfoByGrpNoList(groupNoList);
 
             // 対象グループのコントロールIDの結果情報のみ抽出
             var ctrlIdList = grpMapInfo.CtrlIdList;

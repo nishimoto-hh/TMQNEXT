@@ -1,21 +1,11 @@
-﻿using CommonExcelUtil;
-using Microsoft.AspNetCore.Http;
-using ComConsts = CommonSTDUtil.CommonConstants;
-using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
-using ExcelUtil = CommonExcelUtil.CommonExcelUtil;
-using TMQDataClass = CommonTMQUtil.TMQCommonDataClass;
-using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
-using STDDao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
-using Const = CommonTMQUtil.CommonTMQConstants;
-using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
-using System.Dynamic;
-using System.Text;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+﻿using System;
 using System.Collections.Generic;
-using System;
 using System.Linq;
+using System.Text;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
+using Const = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace CommonTMQUtil
 {
@@ -35,6 +25,104 @@ namespace CommonTMQUtil
         public class ComMaster
         {
             #region 定数
+            /// <summary>
+            /// ＜構成グループID：構成グループ名称＞のディクショナリ
+            /// </summary>
+            public static Dictionary<int, int> MasterNameTranslation = new()
+            {
+                { 1150, 111340003 }, // メーカー
+                { 1540, 111020044 }, // 依頼番号採番パターン
+                { 1420, 111020002 }, // 依頼部課係
+                { 1770, 111060022 }, // 勘定科目
+                { 1100, 111060061 }, // 環境安全管理
+                { 2050, 111310005 }, // 丸め処理区分
+                { 1170, 111070003 }, // 機器レベル
+                { 1070, 111070017 }, // 緊急度
+                { 1740, 111070042 }, // 金額管理単位
+                { 1130, 111090006 }, // 系停止
+                { 1470, 111100010 }, // 故障性格分類
+                { 1520, 111100009 }, // 故障性格要因
+                { 1560, 111100021 }, // 故障分析
+                { 1430, 111100006 }, // 工事区分
+                { 2020, 111100067 }, // 工場毎年度期首月
+                { 1550, 111110022 }, // 作業/故障区分
+                { 1410, 111110005 }, // 作業区分
+                { 1280, 111110004 }, // 作業項目
+                { 1290, 111110012 }, // 作業目的
+                { 1720, 111120066 }, // 仕入先
+                { 1340, 111120003 }, // 仕様項目選択肢
+                { 1210, 111140013 }, // 使用区分
+                { 1450, 111120010 }, // 施工会社
+                { 1330, 111120026 }, // 時期
+                { 1440, 111120027 }, // 自・他責
+                { 1140, 111120023 }, // 実績結果
+                { 1380, 111120001 }, // 修繕費分類
+                { 1200, 111120011 }, // 重要度
+                { 1310, 111120021 }, // 処置区分
+                { 1050, 111120127 }, // 処置対策
+                { 1000, 111260021 }, // 場所階層
+                { 1010, 111120081 }, // 職種・機種
+                { 1940, 111120068 }, // 新旧区分
+                { 1730, 111130009 }, // 数量管理単位
+                { 1320, 111140008 }, // 設備区分
+                { 1820, 111160005 }, // 対策分類１
+                { 1830, 111160006 }, // 対策分類２
+                { 1160, 111190001 }, // 適用法規
+                { 1080, 111260018 }, // 発見方法
+                { 1180, 111280057 }, // 部位マスタ
+                { 1760, 111280058 }, // 部門(工場・部門)
+                { 1230, 111300004 }, // 保全区分
+                { 1220, 111300062 }, // 保全項目(点検内容)
+                { 1930, 111300017 }, // 保全部課係
+                { 1300, 111380003 }, // 予算管理区分
+                { 1060, 111380004 }, // 予算性格区分
+                { 1040, 111380060 }, // 予備品ロケーション(予備品倉庫・棚)
+                { 1090, 111290002 }  // 変更管理
+            };
+
+            /// <summary>
+            /// ExcelPortマスタメンテナンス 「標準アイテム未使用」のシート番号
+            /// </summary>
+            public const int UnuseSheetNo = 13;
+            /// <summary>
+            /// ExcelPortマスタメンテナンス 「並び順」のシート番号
+            /// </summary>
+            public const int OrdeerSheetNo = 14;
+
+            /// <summary>
+            /// ExcelPortマスタメンテナンス対象機能用 データ取得クラス
+            /// </summary>
+            public class MaintainanceTargetExInfo
+            {
+                /// <summary>
+                /// 構成グループID
+                /// </summary>
+                public const int StructureGroupId = 2160;
+                /// <summary>
+                /// 連番
+                /// </summary>
+                public const int Seq = 3;
+
+                /// <summary>
+                /// 拡張アイテム
+                /// </summary>
+                public class ExData
+                {
+                    /// <summary>
+                    /// マスタアイテム
+                    /// </summary>
+                    public const string MasterItem = "1";
+                    /// <summary>
+                    /// 標準アイテム未使用設定
+                    /// </summary>
+                    public const string UnUse = "2";
+                    /// <summary>
+                    /// マスタ並び順設定
+                    /// </summary>
+                    public const string Oerder = "3";
+                }
+            }
+
             /// <summary>
             /// SQLファイル名称
             /// </summary>
@@ -111,9 +199,40 @@ namespace CommonTMQUtil
                 public const string UpdateChildLayersAddDeleteFlg = "UpdateChildLayersAddDeleteFlg";
                 /// <summary>SQL名：ExcelPortマスタアイテム取得</summary>
                 public const string GetMsTranslationInfoByFactory = "GetMsTranslationInfoByFactory";
-
-                /// <summary>SQL名：</summary>
+                /// <summary>SQL名：ExcelPortマスタ情報取得</summary>
                 public const string GetExcelPortMasterList = "GetExcelPortMasterList";
+                /// <summary>SQL名：ExcelPort地区情報取得</summary>
+                public const string GetExcelPortMasterDistrictList = "GetExcelPortMasterDistrictList";
+                /// <summary>SQL名：ExcelPort工場情報取得</summary>
+                public const string GetExcelPortMasterFactoryList = "GetExcelPortMasterFactoryList";
+                /// <summary>SQL名：ExcelPortプラント情報取得</summary>
+                public const string GetExcelPortMasterPlantList = "GetExcelPortMasterPlantList";
+                /// <summary>SQL名：ExcelPort系列情報取得</summary>
+                public const string GetExcelPortMasterSeriesList = "GetExcelPortMasterSeriesList";
+                /// <summary>SQL名：ExcelPort工程情報取得</summary>
+                public const string GetExcelPortMasterStrokeList = "GetExcelPortMasterStrokeList";
+                /// <summary>SQL名：ExcelPort設備情報取得</summary>
+                public const string GetExcelPortMasterFacilityList = "GetExcelPortMasterFacilityList";
+                /// <summary>SQL名：ExcelPort職種情報取得</summary>
+                public const string GetExcelPortMasterJobList = "GetExcelPortMasterJobList";
+                /// <summary>SQL名：ExcelPort機種大分類情報取得</summary>
+                public const string GetExcelPortMasterLargeClassList = "GetExcelPortMasterLargeClassList";
+                /// <summary>SQL名：ExcelPort機種小分類情報取得</summary>
+                public const string GetExcelPortMasterMiddleClassList = "GetExcelPortMasterMiddleClassList";
+                /// <summary>SQL名：ExcelPort機種小分類情報取得</summary>
+                public const string GetExcelPortMasterSmallClassList = "GetExcelPortMasterSmallClassList";
+                /// <summary>SQL名：ExcelPort倉庫情報取得</summary>
+                public const string GetExcelPortMasterWarehouseList = "GetExcelPortMasterWarehouseList";
+                /// <summary>SQL名：ExcelPort棚情報取得</summary>
+                public const string GetExcelPortMasterRackList = "GetExcelPortMasterRackList";
+                /// <summary>SQL名：ExcelPort部門報取得</summary>
+                public const string GetExcelPortMasterDepartmentList = "GetExcelPortMasterDepartmentList";
+                /// <summary>SQL名：ExcelPort並び順取得</summary>
+                public const string GetExcelPortItemOrderList = "GetExcelPortItemOrderList";
+                /// <summary>SQL名：ExcelPort階層系並び順取得</summary>
+                public const string GetExcelPortStructureItemOrderList = "GetExcelPortStructureItemOrderList";
+                /// <summary>SQL名：ExcelPort標準アイテム未使用取得</summary>
+                public const string GetExcelPortItemUnUseList = "GetExcelPortItemUnUseList";
 
                 /// <summary>SQL格納先サブディレクトリ名</summary>
                 public const string SubDir = @"Master";
@@ -544,6 +663,12 @@ namespace CommonTMQUtil
         /// </summary>
         public class CommonExcelPortMasterList : ComDao.MsStructureEntity
         {
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public int ProcessId { get; set; }
+            /// <summary>Gets or sets 初期表示時の工場ID(入力チェック時に使用)</summary>
+            /// <value>初期表示時の工場ID(入力チェック時に使用)</value>
+            public int? FactoryIdBefore { get; set; }
             /// <summary>Gets or sets 工場名</summary>
             /// <value>工場名</value>
             public string FactoryName { get; set; }
@@ -553,9 +678,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets アイテム翻訳</summary>
             /// <value>アイテム翻訳</value>
             public string TranslationText { get; set; }
-            /// <summary>Gets or sets 親構成アイテム</summary>
-            /// <value>親構成アイテム</value>
-            public string ParentTranslationText { get; set; }
+            /// <summary>Gets or sets 初期表示時のアイテム翻訳(入力チェックに使用)</summary>
+            /// <value>アイテム翻訳(入力チェックに使用)</value>
+            public string TranslationTextBefore { get; set; }
             /// <summary>Gets or sets 拡張項目1</summary>
             /// <value>拡張項目1</value>
             public string ExData1 { get; set; }
@@ -568,13 +693,434 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
+        /// ExcelPortマスタ用場場所階層系共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterStructureList
+        {
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? DistrictNumber { get; set; }
+            /// <summary>Gets or sets 地区ID(構成ID)</summary>
+            /// <value>地区ID(構成ID)</value>
+            public long? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名</summary>
+            /// <value>地区名</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? FactoryNumber { get; set; }
+            /// <summary>Gets or sets 工場ID(構成ID)</summary>
+            /// <value>工場ID(構成ID)</value>
+            public long? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名</summary>
+            /// <value>工場名</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 工場の親構成ID</summary>
+            /// <value>工場の親構成ID</value>
+            public int? FactoryParentId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? FactoryParentNumber { get; set; }
+            /// <summary>Gets or sets プラントID(構成ID)</summary>
+            /// <value>プラントID(構成ID)</value>
+            public long? PlantId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(プラント)</summary>
+            /// <value>翻訳ID(プラント)</value>
+            public int? PlantItemTranslationId { get; set; }
+            /// <summary>Gets or sets プラント番号</summary>
+            /// <value>プラント番号</value>
+            public int? PlantNumber { get; set; }
+            /// <summary>Gets or sets プラント名</summary>
+            /// <value>プラント名</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets プラントの親構成ID</summary>
+            /// <value>プラントの親構成ID</value>
+            public int? PlantParentId { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? PlantParentNumber { get; set; }
+            /// <summary>Gets or sets 系列ID(構成ID)</summary>
+            /// <value>系列ID(構成ID)</value>
+            public long? SeriesId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(系列)</summary>
+            /// <value>翻訳ID(系列)</value>
+            public int? SeriesItemTranslationId { get; set; }
+            /// <summary>Gets or sets 系列番号</summary>
+            /// <value>系列番号</value>
+            public int? SeriesNumber { get; set; }
+            /// <summary>Gets or sets 系列名</summary>
+            /// <value>系列名</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 系列の親構成ID</summary>
+            /// <value>系列の親構成ID</value>
+            public int? SeriesParentId { get; set; }
+            /// <summary>Gets or sets プラント番号</summary>
+            /// <value>プラント番号</value>
+            public int? SeriesParentNumber { get; set; }
+            /// <summary>Gets or sets 工程ID(構成ID)</summary>
+            /// <value>工程ID(構成ID)</value>
+            public long? StrokeId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(工程)</summary>
+            /// <value>翻訳ID(工程)</value>
+            public int? StrokeItemTranslationId { get; set; }
+            /// <summary>Gets or sets 工程番号</summary>
+            /// <value>工程番号</value>
+            public int? StrokeNumber { get; set; }
+            /// <summary>Gets or sets 工程名</summary>
+            /// <value>工程名</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 工程の親構成ID</summary>
+            /// <value>工程の親構成ID</value>
+            public int? StrokeParentId { get; set; }
+            /// <summary>Gets or sets 系列番号</summary>
+            /// <value>系列番号</value>
+            public int? StrokeParentNumber { get; set; }
+            /// <summary>Gets or sets 設備ID(構成ID)</summary>
+            /// <value>設備ID(構成ID)</value>
+            public long? FacilityId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(設備)</summary>
+            /// <value>翻訳ID(設備)</value>
+            public int? FacilityItemTranslationId { get; set; }
+            /// <summary>Gets or sets 設備番号</summary>
+            /// <value>設備番号</value>
+            public int? FacilityNumber { get; set; }
+            /// <summary>Gets or sets 設備名</summary>
+            /// <value>設備名</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 設備の親構成ID</summary>
+            /// <value>設備の親構成ID</value>
+            public int? FacilityParentId { get; set; }
+            /// <summary>Gets or sets 工程番号</summary>
+            /// <value>設備番号</value>
+            public int? FacilityParentNumber { get; set; }
+
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用場職種機種階層系共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterJobList
+        {
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? DistrictNumber { get; set; }
+            /// <summary>Gets or sets 地区ID(構成ID)</summary>
+            /// <value>地区ID(構成ID)</value>
+            public long? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名</summary>
+            /// <value>地区名</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? FactoryNumber { get; set; }
+            /// <summary>Gets or sets 工場ID(構成ID)</summary>
+            /// <value>工場ID(構成ID)</value>
+            public long? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名</summary>
+            /// <value>工場名</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 工場の親構成ID</summary>
+            /// <value>工場の親構成ID</value>
+            public int? FactoryParentId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? FactoryParentNumber { get; set; }
+            /// <summary>Gets or sets 職種ID(構成ID)</summary>
+            /// <value>職種ID(構成ID)</value>
+            public long? JobId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(職種)</summary>
+            /// <value>翻訳ID(職種)</value>
+            public int? JobItemTranslationId { get; set; }
+            /// <summary>Gets or sets 職種番号</summary>
+            /// <value>職種番号</value>
+            public int? JobNumber { get; set; }
+            /// <summary>Gets or sets 職種名</summary>
+            /// <value>職種名</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 職種の親構成ID</summary>
+            /// <value>職種の親構成ID</value>
+            public int? JobParentId { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? JobParentNumber { get; set; }
+            /// <summary>Gets or sets 保全実績集計職種コード</summary>
+            /// <value>保全実績集計職種コード</value>
+            public string JobCode { get; set; }
+            /// <summary>Gets or sets 機種大分類ID(構成ID)</summary>
+            /// <value>機種大分類ID(構成ID)</value>
+            public long? LargeClassId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(機種大分類)</summary>
+            /// <value>翻訳ID(機種大分類)</value>
+            public int? LargeClassItemTranslationId { get; set; }
+            /// <summary>Gets or sets 機種大分類番号</summary>
+            /// <value>機種大分類番号</value>
+            public int? LargeClassNumber { get; set; }
+            /// <summary>Gets or sets 機種大分類名</summary>
+            /// <value>機種大分類名</value>
+            public string LargeClassName { get; set; }
+            /// <summary>Gets or sets 機種大分類の親構成ID</summary>
+            /// <value>機種大分類の親構成ID</value>
+            public int? LargeClassParentId { get; set; }
+            /// <summary>Gets or sets 職種番号</summary>
+            /// <value>職種番号</value>
+            public int? LargeClassParentNumber { get; set; }
+            /// <summary>Gets or sets 機種中分類ID(構成ID)</summary>
+            /// <value>機種中分類ID(構成ID)</value>
+            public long? MiddleClassId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(機種中分類)</summary>
+            /// <value>翻訳ID(機種中分類)</value>
+            public int? MiddleClassItemTranslationId { get; set; }
+            /// <summary>Gets or sets 機種中分類番号</summary>
+            /// <value>機種中分類番号</value>
+            public int? MiddleClassNumber { get; set; }
+            /// <summary>Gets or sets 機種中分類名</summary>
+            /// <value>機種中分類名</value>
+            public string MiddleClassName { get; set; }
+            /// <summary>Gets or sets 機種中分類の親構成ID</summary>
+            /// <value>機種中分類の親構成ID</value>
+            public int? MiddleClassParentId { get; set; }
+            /// <summary>Gets or sets 機種大分類番号</summary>
+            /// <value>機種大分類番号</value>
+            public int? MiddleClassParentNumber { get; set; }
+            /// <summary>Gets or sets 機種小分類ID(構成ID)</summary>
+            /// <value>機種小分類ID(構成ID)</value>
+            public long? SmallClassId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(機種小分類)</summary>
+            /// <value>翻訳ID(機種小分類)</value>
+            public int? SmallClassItemTranslationId { get; set; }
+            /// <summary>Gets or sets 機種小分類番号</summary>
+            /// <value>機種小分類番号</value>
+            public int? SmallClassNumber { get; set; }
+            /// <summary>Gets or sets 機種小分類名</summary>
+            /// <value>機種小分類名</value>
+            public string SmallClassName { get; set; }
+            /// <summary>Gets or sets 機種小分類の親構成ID</summary>
+            /// <value>機種小分類の親構成ID</value>
+            public int? SmallClassParentId { get; set; }
+            /// <summary>Gets or sets 機種中分類番号</summary>
+            /// <value>機種中分類番号</value>
+            public int? SmallClassParentNumber { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用予備品ロケーション共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterPartsList
+        {
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? DistrictNumber { get; set; }
+            /// <summary>Gets or sets 地区ID(構成ID)</summary>
+            /// <value>地区ID(構成ID)</value>
+            public long? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名</summary>
+            /// <value>地区名</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? FactoryNumber { get; set; }
+            /// <summary>Gets or sets 工場ID(構成ID)</summary>
+            /// <value>工場ID(構成ID)</value>
+            public long? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名</summary>
+            /// <value>工場名</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 工場の親構成ID</summary>
+            /// <value>工場の親構成ID</value>
+            public int? FactoryParentId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? FactoryParentNumber { get; set; }
+            /// <summary>Gets or sets 予備品倉庫ID(構成ID)</summary>
+            /// <value>予備品倉庫ID(構成ID)</value>
+            public long? WarehouseId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(予備品倉庫)</summary>
+            /// <value>翻訳ID(予備品倉庫)</value>
+            public int? WarehouseItemTranslationId { get; set; }
+            /// <summary>Gets or sets 予備品倉庫番号</summary>
+            /// <value>予備品倉庫番号</value>
+            public int? WarehouseNumber { get; set; }
+            /// <summary>Gets or sets 予備品倉庫名</summary>
+            /// <value>予備品倉庫名</value>
+            public string WarehouseName { get; set; }
+            /// <summary>Gets or sets 予備品倉庫の親構成ID</summary>
+            /// <value>予備品倉庫の親構成ID</value>
+            public int? WarehouseParentId { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? WarehouseParentNumber { get; set; }
+            /// <summary>Gets or sets 棚ID(構成ID)</summary>
+            /// <value>棚ID(構成ID)</value>
+            public long? RackId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(棚)</summary>
+            /// <value>翻訳ID(棚)</value>
+            public int? RackItemTranslationId { get; set; }
+            /// <summary>Gets or sets 棚番号</summary>
+            /// <value>棚番号</value>
+            public int? RackNumber { get; set; }
+            /// <summary>Gets or sets 棚名</summary>
+            /// <value>棚名</value>
+            public string RackName { get; set; }
+            /// <summary>Gets or sets 棚の親構成ID</summary>
+            /// <value>棚の親構成ID</value>
+            public int? RackParentId { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>予備品倉庫番号</value>
+            public int? RackParentNumber { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用部門共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterDepartmentList
+        {
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? DistrictNumber { get; set; }
+            /// <summary>Gets or sets 地区ID(構成ID)</summary>
+            /// <value>地区ID(構成ID)</value>
+            public long? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名</summary>
+            /// <value>地区名</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? FactoryNumber { get; set; }
+            /// <summary>Gets or sets 工場ID(構成ID)</summary>
+            /// <value>工場ID(構成ID)</value>
+            public long? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名</summary>
+            /// <value>工場名</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 工場の親構成ID</summary>
+            /// <value>工場の親構成ID</value>
+            public int? FactoryParentId { get; set; }
+            /// <summary>Gets or sets 地区番号</summary>
+            /// <value>地区番号</value>
+            public int? FactoryParentNumber { get; set; }
+            /// <summary>Gets or sets 部門ID(構成ID)</summary>
+            /// <value>部門ID(構成ID)</value>
+            public long? DepartmentId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(部門)</summary>
+            /// <value>翻訳ID(部門)</value>
+            public int? DepartmentItemTranslationId { get; set; }
+            /// <summary>Gets or sets 部門番号</summary>
+            /// <value>部門番号</value>
+            public int? DepartmentNumber { get; set; }
+            /// <summary>Gets or sets 部門名</summary>
+            /// <value>部門名</value>
+            public string DepartmentName { get; set; }
+            /// <summary>Gets or sets 部門の親構成ID</summary>
+            /// <value>部門の親構成ID</value>
+            public int? DepartmentParentId { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? DepartmentParentNumber { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 修理部門区分</summary>
+            /// <value>修理部門区分</value>
+            public string FixDivision { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用並び順共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterOrderList
+        {
+            /// <summary>Gets or sets 構成ID</summary>
+            /// <value>構成ID</value>
+            public int? StructureId { get; set; }
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets マスタ種類</summary>
+            /// <value>マスタ種類</value>
+            public string MasterName { get; set; }
+            /// <summary>Gets or sets 工場アイテムフラグ</summary>
+            /// <value>工場アイテムフラグ</value>
+            public string FactoryItemFlg { get; set; }
+            /// <summary>Gets or sets アイテム翻訳名称 </summary>
+            /// <value>アイテム翻訳名称 </value>
+            public string ItemName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 表示順</summary>
+            /// <value>表示順</value>
+            public int? DisplayOrder { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用標準アイテム未使用共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterItemUnUseList
+        {
+            /// <summary>Gets or sets 構成ID</summary>
+            /// <value>構成ID</value>
+            public int? StructureId { get; set; }
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int? StructureGroupId { get; set; }
+            /// <summary>Gets or sets マスタ種類</summary>
+            /// <value>マスタ種類</value>
+            public string MasterName { get; set; }
+            /// <summary>Gets or sets 未使用アイテム名</summary>
+            /// <value>未使用アイテム名</value>
+            public string UnuseItemName { get; set; }
+            /// <summary>Gets or sets 未使用工場ID</summary>
+            /// <value>未使用工場ID</value>
+            public string UnuseFactoryId { get; set; }
+            /// <summary>Gets or sets 未使用工場名</summary>
+            /// <value>未使用工場名</value>
+            public string UnuseFactoryName { get; set; }
+        }
+
+        /// <summary>
         /// ExcelPortマスタ用出力対象条件データクラス
         /// </summary>
-        public class CommonExcelPortMasterComdition
+        public class CommonExcelPortMasterCondition
         {
-            /// <summary>Gets or sets メンテナンス対象</summary>
-            /// <value>メンテナンス対象</value>
+            /// <summary>Gets or sets メンテナンス対象(構成ID)</summary>
+            /// <value>メンテナンス(構成ID)</value>
             public int MaintenanceTarget { get; set; }
+            /// <summary>Gets or sets メンテナンス対象(1：マスタアイテム、2：標準アイテム未使用設定、3：マスタ並び順設定)</summary>
+            /// <value>メンテナンス(1：マスタアイテム、2：標準アイテム未使用設定、3：マスタ並び順設定)</value>
+            public string MaintenanceTargetNo { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int FactoryId { get; set; }
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
+            /// <summary>Gets or sets 構成グループID</summary>
+            /// <value>構成グループID</value>
+            public int StructureGroupId { get; set; }
+            /// <summary>Gets or sets マスタ名称の翻訳ID</summary>
+            /// <value>マスタ名称の翻訳ID</value>
+            public int MasterTransLationId { get; set; }
+            /// <summary>Gets or sets 工場IDリスト</summary>
+            /// <value>工場IDリスト</value>
+            public List<long> FactoryIdList { get; set; }
+            /// <summary>Gets or sets 階層番号リスト</summary>
+            /// <value>階層番号リスト</value>
+            public List<long> LayerIdList { get; set; }
         }
         #endregion
 

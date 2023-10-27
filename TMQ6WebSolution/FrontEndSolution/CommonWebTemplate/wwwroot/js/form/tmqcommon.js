@@ -69,6 +69,9 @@ const ConductId_HM0002 = "HM0002";
 // 申請状況変更 機能ID
 const ConductId_HM0003 = "HM0003";
 
+// 変更管理帳票出力 機能ID
+const ConductId_HM0004 = "HM0004";
+
 // 一覧フィルタ(付加情報の遷移先に設定)
 const ListFilter_TransTarget = 'FILTER';
 
@@ -89,6 +92,8 @@ const HM0001_List_CtrlId = "BODY_040_00_LST_0";
 const HM0002_List_CtrlId = "BODY_040_00_LST_0";
 // 申請状況変更
 const HM0003_List_CtrlId = "CBODY_000_00_LST_0";
+// 変更管理帳票出力
+const HM0004_List_CtrlId = "CCOND_080_00_LST_0";
 /**
  * スケジュール表示の表示単位
  */
@@ -198,6 +203,12 @@ const BackGroundStyleInfo =
     10: "hmApplicationDivisionNew",    // 新規登録申請
     20: "hmApplicationDivisionUpdate", // 変更申請
     30: "hmApplicationDivisionDelete"  // 削除申請
+}
+
+// 変更管理帳票出力機能
+const HistoryOutputDivision = {
+    HM0001: 1, //機器台帳
+    HM0002: 2  //長期計画
 }
 
 /**
@@ -1540,6 +1551,23 @@ function getParamToHM0003(flg, HistoryManagementId) {
     conditionData['FORMNO'] = 0;
     conditionData['VAL3'] = flg; // 承認依頼の場合true、否認の場合false
     conditionData['VAL4'] = HistoryManagementId; // 変更管理ID
+    conditionDataList.push(conditionData);
+    return conditionDataList;
+}
+
+/**
+ * 変更管理帳票出力画面への遷移パラメータを作成する
+ * @param {any} conductId 機能ID
+ */
+function getParamToHM0004(conductId) {
+    //帳票区分（出力機能）
+    var conductCode = conductId == ConductId_HM0001 ? HistoryOutputDivision.HM0001 : HistoryOutputDivision.HM0002;
+
+    var conditionDataList = [];
+    var conditionData = {};
+    conditionData['CTRLID'] = HM0004_List_CtrlId;
+    conditionData['FORMNO'] = 0;
+    conditionData['VAL1'] = conductCode; // 帳票区分
     conditionDataList.push(conditionData);
     return conditionDataList;
 }

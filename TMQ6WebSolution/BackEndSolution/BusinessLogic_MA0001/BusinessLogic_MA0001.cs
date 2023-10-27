@@ -204,6 +204,15 @@ namespace BusinessLogic_MA0001
                 /// <summary>SQL名：機器一覧情報取得</summary>
                 public const string GetSelectMachineList = "GetSelectMachineList";
             }
+
+            /// <summary>
+            /// ExcelPortで使用するSQL
+            /// </summary>
+            public static class ExcelPort
+            {
+                /// <summary>SQL名：ExcelPort 保全活動取得</summary>
+                public const string GetExcelPortMaintenance = "GetExcelPortMaintenance";
+            }
         }
 
         /// <summary>
@@ -1298,13 +1307,47 @@ namespace BusinessLogic_MA0001
                 this.Status = CommonProcReturn.ProcStatus.Warning;
             }
 
-            //TODO: 個別データ検索処理
             IList<Dictionary<string, object>> dataList = null;
+            if (excelPort.DownloadCondition.SheetNo == 5)
+            {
+                //保全活動シート
+
+                //TODO：検索条件の指定
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.ExcelPort.GetExcelPortMaintenance, out string baseSql);
+                // WITH句は別に取得
+                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.ExcelPort.GetExcelPortMaintenance, out string withSql);
+
+                // 一覧検索SQL文の取得
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, null, withSql);
+                var selectSql = new StringBuilder(executeSql);
+                selectSql.AppendLine("ORDER BY");
+                selectSql.AppendLine("occurrence_date desc");
+                selectSql.AppendLine(",summary_id desc");
+
+                // 一覧検索実行
+                IList<Dao.excelPortMaintenance> results = db.GetListByDataClass<Dao.excelPortMaintenance>(selectSql.ToString(), new { LanguageId = this.LanguageId });
+
+                // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortMaintenance>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId);
+
+                // Dicitionalyに変換
+                dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortMaintenance>(results);
+            }
             if (dataList == null || dataList.Count == 0)
             {
                 this.Status = CommonProcReturn.ProcStatus.Warning;
                 // 「該当データがありません。」
                 resultMsg = GetResMessage(ComRes.ID.ID941060001);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            // 出力最大データ数チェック
+            if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                resultMsg = GetResMessage(ComRes.ID.ID141120013);
                 return ComConsts.RETURN_RESULT.NG;
             }
 

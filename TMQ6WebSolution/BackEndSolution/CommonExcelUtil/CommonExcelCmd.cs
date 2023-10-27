@@ -141,8 +141,10 @@ namespace CommonExcelUtil
                 workSheet = workBook.Worksheet(1);
                 if (!string.IsNullOrEmpty(readSheet))
                 {
-                    if (!workBook.TryGetWorksheet(readSheet, out workSheet))
+                    workSheet = GetWorkSheet(readSheet, 1);
+                    if (workSheet == null)
                     {
+                        // 対象シート無し
                         msg = string.Format("Worksheet [{0}] is not exists.", readSheet);
                         return false;
                     }
@@ -339,8 +341,8 @@ namespace CommonExcelUtil
         /// <param name="param">
         ///  [0]：コピー元行（範囲）
         ///  [1]：コピー先行（範囲）
-        ///  [2]：コピー元シート名（未設定時は先頭シート）
-        ///  [3]：コピー先シート名（未設定時は先頭シート）
+        ///  [2]：コピー元シート名またはシート番号（未設定時は先頭シート）
+        ///  [3]：コピー先シート名またはシート番号（未設定時は先頭シート）
         /// </param>
         public void Copy(string[] param)
         {
@@ -374,18 +376,20 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.Worksheets.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
             workSheet2 = workBook.Worksheet(1);
             if (param.Length >= 4 && !string.IsNullOrEmpty(param[3]))
             {
-                if (!workBook.Worksheets.TryGetWorksheet(param[3], out workSheet2))
+                workSheet2 = GetWorkSheet(param[3], 1);
+                if (workSheet2 == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -394,7 +398,7 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// delete：行削除、行削除（範囲）
+        /// Delete：行削除、行削除（範囲）
         /// </summary>
         /// <param name="param">
         /// [0]：削除対象行、削除対象行範囲
@@ -402,7 +406,7 @@ namespace CommonExcelUtil
         ///  行の場合は 指定位置～1048576行まで削除する
         ///  列の場合は 指定位置～XFD列まで削除する
         /// [1]：Up・Left(削除方向)（未設定時はUp）
-        /// [2]：シート名（未設定時は先頭シート）
+        /// [2]：シート名またはシート番号（未設定時は先頭シート）
         /// </param>
         public void Delete(string[] param)
         {
@@ -412,27 +416,55 @@ namespace CommonExcelUtil
                 return;
             }
 
+            // シート名　デフォルトは先頭シート
+            workSheet = workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
+            }
+
             // 指定位置を取得
             string range = param[0];
-            var rangeType = CheckRangeAddressMatch(range);
+            RangeType rangeType;
+            if (range.Contains(":MAX"))
+            {
+                rangeType = CheckRangeAddressMatch(range.Replace(":MAX", ""));
+                if (rangeType == RangeType.Col)
+                {
+                    rangeType = RangeType.ColRange;
+                }
+                else if (rangeType == RangeType.Row)
+                {
+                    rangeType = RangeType.RowRange;
+                }
+            }
+            else
+            {
+                rangeType = CheckRangeAddressMatch(range);
+            }
             if (rangeType == RangeType.Invalid)
             {
                 // 指定位置不正
                 return;
             }
 
-            // Max指定の場合
             if (range.Contains("MAX"))
             {
+                // MAX指定の場合
                 // "99:99"行範囲指定形式の場合
-                if (rangeType == RangeType.ColRange)
+                if (rangeType == RangeType.RowRange)
                 {
-                    range.Replace("MAX", MaxRowNumber.ToString());
+                    range = range.Replace("MAX", MaxRowNumber.ToString());
                 }
                 // "ZZ:ZZ"列範囲指定形式の場合
-                else if (rangeType == RangeType.RowRange)
+                else if (rangeType == RangeType.ColRange)
                 {
-                    range.Replace("MAX", MaxColLetter);
+                    range = range.Replace("MAX", MaxColLetter);
                 }
                 else
                 {
@@ -443,44 +475,31 @@ namespace CommonExcelUtil
             // 範囲指定でない場合、範囲指定に変換
             range = ConvertToRangeAddress(rangeType, range);
 
-            // シート名　デフォルトは先頭シート
-            workSheet = workSheet = workBook.Worksheet(1);
-            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
-            {
-                if (!workBook.Worksheets.TryGetWorksheet(param[2], out workSheet))
-                {
-                    // 対象シート無し
-                    return;
-                }
-            }
-
-            // 削除方向を決定する（デフォルトはUp）
-            XLShiftDeletedCells deleteShiftDirection = XLShiftDeletedCells.ShiftCellsUp;
-
             // セル指定の削除の場合
             if (rangeType == RangeType.Cell || rangeType == RangeType.CellRange)
             {
+                // 削除方向を決定する（デフォルトはUp）
+                XLShiftDeletedCells deleteShiftDirection = XLShiftDeletedCells.ShiftCellsUp;
                 if (param.Length >= 2 && "LEFT".Equals(param[1].ToUpper()))
                 {
                     // Left指定の場合
                     deleteShiftDirection = XLShiftDeletedCells.ShiftCellsLeft;
                 }
+                // 範囲削除
+                workSheet.Range(range).Delete(deleteShiftDirection);
             }
             // 列指定の削除の場合
             else if (rangeType == RangeType.Col || rangeType == RangeType.ColRange)
             {
-                // Left
-                deleteShiftDirection = XLShiftDeletedCells.ShiftCellsLeft;
+                // 列範囲削除
+                workSheet.Columns(range).Delete();
             }
             // 行指定の削除の場合
             else if (rangeType == RangeType.Row || rangeType == RangeType.RowRange)
             {
-                // Up
-                deleteShiftDirection = XLShiftDeletedCells.ShiftCellsUp;
+                // 行範囲削除
+                workSheet.Rows(range).Delete();
             }
-
-            // 範囲削除
-            workSheet.Range(range).Delete(deleteShiftDirection);
         }
 
         /// <summary>
@@ -488,7 +507,7 @@ namespace CommonExcelUtil
         /// </summary>
         /// <param name="param">
         /// [0]：非表示行・列（範囲）
-        /// [1]：シート名（未設定時は先頭シート）
+        /// [1]：シート名またはシート番号（未設定時は先頭シート）
         /// </param>
         public void Hidden(string[] param)
         {
@@ -510,9 +529,10 @@ namespace CommonExcelUtil
             workSheet = workSheet = workBook.Worksheet(1);
             if (param.Length >= 2 && !string.IsNullOrEmpty(param[1]))
             {
-                if (!workBook.Worksheets.TryGetWorksheet(param[1], out workSheet))
+                workSheet = GetWorkSheet(param[1], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -534,10 +554,10 @@ namespace CommonExcelUtil
         /// copySheet：出力対象Book内のシートコピー
         /// </summary>
         /// <param name="param">
-        /// [0]：コピー元シート名　デフォルトは先頭シート
+        /// [0]：コピー元シート名またはシート番号　デフォルトは先頭シート
         /// [1]：コピー位置（シート名、シート番号：デフォルトは一番後ろ）
         /// [2]：Before・After　デフォルトはAfter
-        /// [3]：シート名（未設定時は標準仕様）
+        /// [3]：シート名またはシート番号（未設定時は標準仕様）
         /// </param>
         public void CopySheet(string[] param)
         {
@@ -609,7 +629,7 @@ namespace CommonExcelUtil
         /// deleteSheet：対象シート削除
         /// </summary>
         /// <param name="param">
-        /// [0]：削除対象シート
+        /// [0]：削除対象シート名またはシート番号
         /// </param>
         public void DeleteSheet(string[] param)
         {
@@ -619,12 +639,12 @@ namespace CommonExcelUtil
                 return;
             }
 
-            if (!workBook.Worksheets.TryGetWorksheet(param[0], out workSheet))
+            workSheet = GetWorkSheet(param[0], 1);
+            if (workSheet == null)
             {
-                // 対象シート無し
+                // 指定シート無し
                 return;
             }
-
             // 対象シートを削除
             workBook.Worksheet(param[0]).Delete();
         }
@@ -633,7 +653,7 @@ namespace CommonExcelUtil
         /// hiddenSheet：対象シート非表示
         /// </summary>
         /// <param name="param">
-        ///  [0]：非表示対象シート
+        ///  [0]：非表示対象シート名またはシート番号
         ///  [1]：再表示不可フラグ
         /// </param>
         public void HiddenSheet(string[] param)
@@ -644,10 +664,10 @@ namespace CommonExcelUtil
                 return;
             }
 
-            // 非表示対象シート
-            if (!workBook.Worksheets.TryGetWorksheet(param[0], out workSheet))
+            workSheet = GetWorkSheet(param[0], 1);
+            if (workSheet == null)
             {
-                // 対象シート無し
+                // 指定シート無し
                 return;
             }
 
@@ -668,10 +688,10 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// hiddenSheet：対象シート非表示
+        /// ShowSheet：対象シート表示
         /// </summary>
         /// <param name="param">
-        ///  [0]：表示対象シート
+        /// [0]：対象シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void ShowSheet(string[] param)
         {
@@ -681,10 +701,10 @@ namespace CommonExcelUtil
                 return;
             }
 
-            // 表示対象シート
-            if (!workBook.Worksheets.TryGetWorksheet(param[0], out workSheet))
+            workSheet = GetWorkSheet(param[0], 1);
+            if (workSheet == null)
             {
-                // 対象シート無し
+                // 指定シート無し
                 return;
             }
 
@@ -692,12 +712,114 @@ namespace CommonExcelUtil
             workSheet.Visibility = XLWorksheetVisibility.Visible;
         }
 
+
         /// <summary>
-        /// autoFit：自動調整
+        /// ActivateSheet：シートをアクティブ化
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象シート名またはシート番号
+        /// </param>
+        public void ActivateSheet(string[] param)
+        {
+            if (param.Length < 1 || string.IsNullOrEmpty(param[0]))
+            {
+                // パラメータ不足
+                return;
+            }
+
+            workSheet = GetWorkSheet(param[0], 1);
+            if (workSheet == null)
+            {
+                // 指定シート無し
+                return;
+            }
+            workSheet.SetTabActive();
+
+        }
+
+        /// <summary>
+        /// MoveSheet：出力対象Book内のシート移動
+        /// </summary>
+        /// <param name="param">
+        /// [0]：移動元シート（シート名、シート番号：デフォルトは先頭シート）
+        /// [1]：移動先シート（シート名、シート番号：デフォルトは先頭シート）
+        /// [2]：Before・After・Last　デフォルトはBefore
+        /// </param>
+        /// <remarks>第1引数のみ指定時は移動元シートを先頭へ移動</remarks>
+        public void MoveSheet(string[] param)
+        {
+            // 移動元シート　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 1)
+            {
+                workSheet = GetWorkSheet(param[0], 1);
+                if (workSheet == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
+            }
+            // 移動先シート　デフォルトは先頭シート
+            workSheet2 = workBook.Worksheet(1);
+            if (param.Length >= 2)
+            {
+                workSheet2 = GetWorkSheet(param[1], workBook.Worksheets.Count);
+                if (workSheet2 == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
+            }
+            // 移動先のシートのPositionを取得
+            int position = workSheet2.Position;
+
+            // Before・After・Last デフォルトはBefore
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                switch (param[2].ToUpper())
+                {
+                    case "AFTER":   // 移動先シートの1つ後ろへ移動
+                        position++;
+                        break;
+                    case "LAST":    // 末尾へ移動
+                        position = workBook.Worksheets.Count;
+                        break;
+                    default:        // 移動先シートの1つ前へ移動
+                        position--;
+                        break;
+                }
+            }
+            else
+            {
+                // 未指定の場合はBefore
+                position--;
+            }
+            if(position < 1)
+            {
+                position = 1;   // 先頭
+            }
+            else if(position > workBook.Worksheets.Count)
+            {
+                position = workBook.Worksheets.Count;   // 末尾
+            }
+
+            if(workSheet.Position == position)
+            {
+                // 移動先のシート番号が同じ場合は移動しない
+                return;
+            }
+
+            // シートを移動
+            workSheet.Position = position;
+
+        }
+
+        /// <summary>
+        /// AutoFit：自動調整
         /// </summary>
         /// <param name="param">
         ///  [0]：自動調整対象行、列、セル範囲（未指定の場合、全セル範囲）
-        ///  [1]：シート名　デフォルトは先頭シート
+        ///  [1]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void AutoFit(string[] param)
         {
@@ -705,9 +827,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 2 && !string.IsNullOrEmpty(param[1]))
             {
-                if (!workBook.TryGetWorksheet(param[1], out workSheet))
+                workSheet = GetWorkSheet(param[1], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -749,12 +872,12 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// clear：指定シートの数式・文字・書式など全削除
+        /// Clear：指定シートの数式・文字・書式など全削除
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：全てクリア（"1"） or 値のみクリア（"2"）　デフォルトは全てクリア
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void Clear(string[] param)
         {
@@ -770,9 +893,10 @@ namespace CommonExcelUtil
             {
                 if (!string.IsNullOrEmpty(param[2]))
                 {
-                    if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                    workSheet = GetWorkSheet(param[2], 1);
+                    if (workSheet == null)
                     {
-                        // 対象シート無し
+                        // 指定シート無し
                         return;
                     }
                 }
@@ -809,12 +933,12 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// merge：指定シートの数式・文字・書式などを結合、結合解除
+        /// Merge：指定シートの数式・文字・書式などを結合、結合解除
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：結合（"true"） or 解除（"false"）　デフォルトは結合
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void Merge(string[] param)
         {
@@ -828,9 +952,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -904,11 +1029,11 @@ namespace CommonExcelUtil
         //}
 
         /// <summary>
-        /// printArea：名称を指定したシートの印刷範囲を指定する。
+        /// PrintArea：名称を指定したシートの印刷範囲を指定する。
         /// </summary>
         /// <param name="param">
         ///  [0]：印刷範囲
-        ///  [1]：シート名　デフォルトは先頭シート
+        ///  [1]：シート名またはシート番号　デフォルトは先頭シート
         ///  [2]：印刷タイトル行
         ///  [3]：印刷タイトル列
         /// </param>
@@ -923,9 +1048,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 2 && !string.IsNullOrEmpty(param[1]))
             {
-                if (!workBook.TryGetWorksheet(param[1], out workSheet))
+                workSheet = GetWorkSheet(param[1], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -994,7 +1120,7 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// pageSetup：名称を指定したシートの印刷範囲を指定する。
+        /// PageSetup：名称を指定したシートの印刷範囲を指定する。
         /// </summary>
         /// <param name="param">
         /// [0]：設定値
@@ -1014,9 +1140,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 4 && !string.IsNullOrEmpty(param[3]))
             {
-                if (!workBook.TryGetWorksheet(param[3], out workSheet))
+                workSheet = GetWorkSheet(param[3], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -1055,12 +1182,12 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// formatLocal：指定範囲に表示形式の設定を行う
+        /// FormatLocal：指定範囲に表示形式の設定を行う
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：設定フォーマット
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void FormatLocal(string[] param)
         {
@@ -1079,9 +1206,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -1102,12 +1230,12 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// fontChange：指定したセル範囲のフォントサイズを変更
+        /// FontChange：指定したセル範囲のフォントサイズを変更
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：変更サイズ
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void FontChange(string[] param)
         {
@@ -1126,9 +1254,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -1156,13 +1285,13 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// alignment：指定箇所の文字位置を指定
+        /// Alignment：指定箇所の文字位置を指定
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：横の位置　デフォルトは未指定
         /// [2]：縦の位置　デフォルトは未指定
-        /// [3]：シート名　デフォルトは先頭シート
+        /// [3]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void Alignment(string[] param)
         {
@@ -1187,9 +1316,10 @@ namespace CommonExcelUtil
             {
                 if (!string.IsNullOrEmpty(param[3]))
                 {
-                    if (!workBook.TryGetWorksheet(param[3], out workSheet))
+                    workSheet = GetWorkSheet(param[3], 1);
+                    if (workSheet == null)
                     {
-                        // 対象シート無し
+                        // 指定シート無し
                         return;
                     }
                 }
@@ -1262,11 +1392,11 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// pageBreaks：指定位置に改ページを挿入する
+        /// PageBreaks：指定位置に改ページを挿入する
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列（範囲指定の場合は先頭行、列に対して挿入する）
-        /// [1]：シート名　デフォルトは先頭シート
+        /// [1]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void PageBreaks(string[] param)
         {
@@ -1288,9 +1418,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 2 && !string.IsNullOrEmpty(param[1]))
             {
-                if (!workBook.TryGetWorksheet(param[1], out workSheet))
+                workSheet = GetWorkSheet(param[1], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -1319,7 +1450,7 @@ namespace CommonExcelUtil
         /// [0]：対象行、列、セル範囲
         /// [1]：罫線の作成位置
         /// [2]：罫線の太さ　デフォルトは細線
-        /// [3]：シート名　デフォルトは先頭シート
+        /// [3]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void LineBox(string[] param)
         {
@@ -1343,9 +1474,10 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 4 && !string.IsNullOrEmpty(param[3]))
             {
-                if (!workBook.TryGetWorksheet(param[3], out workSheet))
+                workSheet = GetWorkSheet(param[3], 1);
+                if (workSheet == null)
                 {
-                    // 対象シート無し
+                    // 指定シート無し
                     return;
                 }
             }
@@ -1670,7 +1802,7 @@ namespace CommonExcelUtil
         /// シート名の変更
         /// </summary>
         /// <param name="param">
-        /// [0]：変更対象シート名
+        /// [0]：変更対象シート名またはシート番号
         /// [1]：変更後シート名
         /// </param>
         public void ChangeSheetName(string[] param)
@@ -1686,7 +1818,8 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (!string.IsNullOrEmpty(param[0]))
             {
-                if (!workBook.TryGetWorksheet(param[0], out workSheet))
+                workSheet = GetWorkSheet(param[0], 1);
+                if (workSheet == null)
                 {
                     // 対象シート無し
                     return;
@@ -1707,14 +1840,14 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// conditionalFormat：条件付き書式
+        /// ConditionalFormat：条件付き書式
         /// </summary>
         /// <param name="param">
         ///  [0]：対象行、列、セル範囲
         ///  [1]：条件付き書式区分
         ///  [2]：条件
         ///  [3]：書式
-        ///  [4]：シート名　デフォルトは先頭シート
+        ///  [4]：シート名またはシート番号 デフォルトは先頭シート
         /// </param>
         public void ConditionalFormat(string[] param)
         {
@@ -1743,7 +1876,8 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 5 && !string.IsNullOrEmpty(param[4]))
             {
-                if (!workBook.TryGetWorksheet(param[4], out workSheet))
+                workSheet = GetWorkSheet(param[4], 1);
+                if (workSheet == null)
                 {
                     // 対象シート無し
                     return;
@@ -1766,12 +1900,12 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
-        /// backgroundColor：指定範囲の背景色の塗りつぶしを行う
+        /// BackgroundColor：指定範囲の背景色の塗りつぶしを行う
         /// </summary>
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：背景色
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void BackgroundColor(string[] param)
         {
@@ -1790,7 +1924,8 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
                     // 対象シート無し
                     return;
@@ -1814,7 +1949,16 @@ namespace CommonExcelUtil
                 return;
             }
             // 背景色を設定
-            workSheet.Range(range).Style.Fill.BackgroundColor = XLColor.FromHtml(param[1]);
+            if (!"NOCOLOR".Equals(param[1].ToUpper()))
+            {
+                // 色指定
+                workSheet.Range(range).Style.Fill.BackgroundColor = XLColor.FromHtml(param[1]);
+            }
+            else
+            {
+                // 塗りつぶしなし
+                workSheet.Range(range).Style.Fill.BackgroundColor = XLColor.NoColor;
+            }
         }
 
         /// <summary>
@@ -1823,7 +1967,7 @@ namespace CommonExcelUtil
         /// <param name="param">
         /// [0]：対象行、列、セル範囲
         /// [1]：計算式
-        /// [2]：シート名　デフォルトは先頭シート
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// </param>
         public void FormulaA1(string[] param)
         {
@@ -1842,7 +1986,8 @@ namespace CommonExcelUtil
             workSheet = workBook.Worksheet(1);
             if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
             {
-                if (!workBook.TryGetWorksheet(param[2], out workSheet))
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
                 {
                     // 対象シート無し
                     return;
@@ -1867,6 +2012,266 @@ namespace CommonExcelUtil
             }
             // 計算式を設定
             workSheet.Range(range).FormulaA1 = param[1];
+        }
+
+        /// <summary>
+        /// SetCellComment：セルコメントの設定
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象セル
+        /// [1]：コメント
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
+        /// [3]：追加フラグ　"1"：追加、省略時または左記以外の値は更新
+        /// [4]：表示フラグ　"1"：表示、省略時または左記以外の値は非表示
+        /// </param>
+        public void SetCellComment(string [] param)
+        {
+            if (param.Length < 2)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // シート名　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            // 対象セルが指定されている場合
+            var rangeType = CheckRangeAddressMatch(param[0]);
+            if (rangeType != RangeType.Cell)
+            {
+                // セル指定でない場合、指定位置不正
+                return;
+            }
+
+            string commentText = param[1];
+            if (string.IsNullOrEmpty(commentText))
+            {
+                // コメントが指定されている場合のみ実行
+                return;
+            }
+
+            var cell = workSheet.Cell(param[0]);
+            IXLComment comment;
+            if (cell.HasComment)
+            {
+                // コメントが存在する場合
+                comment = cell.GetComment();
+                if (param.Length >= 4 && "1".Equals(param[3]))
+                {
+                    // 追加フラグがONの場合は改行を追加
+                    comment.AddNewLine();
+                }
+                else
+                {
+                    // 追加フラグが上記以外の場合、一旦削除
+                    comment.Delete();
+                }
+            }
+            else
+            {
+                comment = cell.CreateComment();
+            }
+            // コメントを追加
+            comment.AddText(commentText);
+            
+
+            if (param.Length >= 5 && "1".Equals(param[4]))
+            {
+                // 表示フラグがONの場合、コメントを表示
+                comment.SetVisible();
+            }
+        }
+
+        /// <summary>
+        /// ClearCellComment：セルコメントのクリア
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象行、列、セル範囲、シート全体の場合は「ALL」指定
+        /// [1]：シート名またはシート番号　デフォルトは先頭シート
+        /// </param>
+        public void ClearCellComment(string[] param)
+        {
+            if (param.Length < 1)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // シート名　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 2 && !string.IsNullOrEmpty(param[1]))
+            {
+                workSheet = GetWorkSheet(param[1], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            if (!"ALL".Equals(param[0].ToUpper()))
+            {
+                string range = string.Empty;
+                // 対象行、列、セル範囲が指定されている場合
+                var rangeType = CheckRangeAddressMatch(param[0]);
+                if (rangeType == RangeType.Invalid)
+                {
+                    // 指定位置不正
+                    return;
+                }
+                // 範囲指定でない場合、範囲指定に変換
+                range = ConvertToRangeAddress(rangeType, param[0]);
+
+                // コメントを削除
+                workSheet.Range(range).DeleteComments();
+            }
+            else
+            {
+                // シート全体が対象の場合
+                workSheet.DeleteComments();
+            }
+        }
+
+        /// <summary>
+        /// SetHyperLink：ハイパーリンクの設定
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象セル
+        /// [1]：リンク先セル
+        /// [2]：対象シート名またはシート番号　デフォルトは先頭シート
+        /// [3]：リンク先シート名またはシート番号　デフォルトは先頭シート
+        /// </param>
+        public void SetHyperLink(string[] param)
+        {
+            if (param.Length < 2)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // 対象シート名　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            // 対象シート名　デフォルトは先頭シート
+            workSheet2 = workBook.Worksheet(1);
+            if (param.Length >= 4 && !string.IsNullOrEmpty(param[3]))
+            {
+                workSheet2 = GetWorkSheet(param[3], 1);
+                if (workSheet2 == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            // 対象セルが指定されている場合
+            var rangeType = CheckRangeAddressMatch(param[0]);
+            if (rangeType != RangeType.Cell)
+            {
+                // セル指定でない場合、指定位置不正
+                return;
+            }
+
+            if (string.IsNullOrEmpty(param[1]))
+            {
+                // リンク先が指定されている場合のみ実行
+                return;
+            }
+            rangeType = CheckRangeAddressMatch(param[1]);
+            if (rangeType != RangeType.Cell)
+            {
+                // セル指定でない場合、指定位置不正
+                return;
+            }
+
+            // ハイパーリンクを設定
+            workSheet.Cell(param[0]).SetHyperlink(new XLHyperlink("'" + workSheet2.Name + "'!" + param[1]));
+        }
+
+        /// <summary>
+        /// SetValue：セル値の設定
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象行、列、セル範囲
+        /// [1]：設定値
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
+        /// </param>
+        public void SetCellValue(string[] param)
+        {
+            if (param.Length < 2)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // シート名またはシート番号　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            string range = string.Empty;
+            // 対象行、列、セル範囲が指定されている場合
+            var rangeType = CheckRangeAddressMatch(param[0]);
+            if (rangeType == RangeType.Invalid)
+            {
+                // 指定位置不正
+                return;
+            }
+            // 範囲指定でない場合、範囲指定に変換
+            range = ConvertToRangeAddress(rangeType, param[0]);
+
+            if (string.IsNullOrEmpty(param[1]))
+            {
+                // 計算式が指定されている場合のみ実行
+                return;
+            }
+            // 値を設定
+            workSheet.Range(range).Value = param[1];
         }
 
         /// <summary>
@@ -1979,6 +2384,27 @@ namespace CommonExcelUtil
                 workSheet = workBook.Worksheet(defNo);
             }
             return workSheet;
+        }
+
+        /// <summary>
+        /// GetSheetName：シート名取得
+        /// </summary>
+        /// <param name="param">シート名またはシート番号</param>
+        public string GetSheetName(string param)
+        {
+            if (string.IsNullOrEmpty(param))
+            {
+                // パラメータ不足
+                return string.Empty;
+            }
+
+            workSheet = GetWorkSheet(param, 1);
+            if (workSheet == null)
+            {
+                // 指定シート無し
+                return string.Empty;
+            }
+            return workSheet.Name;
         }
 
         /// <summary>
@@ -2152,6 +2578,48 @@ namespace CommonExcelUtil
             {
                 workSheet.Protect(password);
             }
+        }
+
+        /// <summary>
+        /// GetLastRowNo：データ最終行の取得
+        /// </summary>
+        /// <param name="param">シート名またはシート番号　デフォルトは先頭シート</param>
+        /// <returns></returns>
+        public long GetLastRowNo(string param = "")
+        {
+            // シート名またはシート番号　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (!string.IsNullOrEmpty(param))
+            {
+                workSheet = GetWorkSheet(param, 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return -1;
+                }
+            }
+            return workSheet.LastRowUsed().RowNumber();
+        }
+
+        /// <summary>
+        /// GetLastColumnLetter：データ最終列の取得
+        /// </summary>
+        /// <param name="param">シート名またはシート番号　デフォルトは先頭シート</param>
+        /// <returns></returns>
+        public string GetLastColumnLetter(string param)
+        {
+            // シート名またはシート番号　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (!string.IsNullOrEmpty(param))
+            {
+                workSheet = GetWorkSheet(param, 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return string.Empty;
+                }
+            }
+            return workSheet.LastColumnUsed().ColumnLetter();
         }
         #endregion
 

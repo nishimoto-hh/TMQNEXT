@@ -454,6 +454,7 @@ namespace CommonWebTemplate.Controllers.Common
                     return actionResult;
                 }
 
+                // 呼び元で設定済み
                 //【共通 - 取り込み機能】取り込みボタン押下時処理
                 procData.ActionKbn = LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComUpload;
 
@@ -466,8 +467,7 @@ namespace CommonWebTemplate.Controllers.Common
                     IList<object> retObj_err = new List<object>();
                     retObj_err.Add(returnInfo);                     //[0]:処理ステータス
                     retObj_err.Add(results);                        //[1]:結果データ
-                    //return Json(retObj_err, "application/json");
-                    return Json(retObj_err);
+                    return BadRequest(retObj_err);
                 }
 
                 /* ボタン権限制御 切替 start ================================================ */
@@ -529,18 +529,30 @@ namespace CommonWebTemplate.Controllers.Common
                 }
 
                 //【ExcelPortアップロード】アップロードボタン押下時処理
-                procData.ActionKbn = LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload;
+                //procData.ActionKbn = LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload;
 
                 //ファイル取り込み
                 object results = null;
-                CommonProcReturn returnInfo = blogic.ComUploadProcess(procData, out results);
+                CommonProcReturn returnInfo = blogic.ExcelPortUploadProcess(procData, out results);
                 if (returnInfo.IsProcEnd())
                 {
                     //=== 処理結果を返す ===
                     IList<object> retObj_err = new List<object>();
-                    retObj_err.Add(returnInfo);                     //[0]:処理ステータス
-                    retObj_err.Add(results);                        //[1]:結果データ
-                    return Json(retObj_err);
+                    if (string.IsNullOrEmpty(returnInfo.FILENAME))
+                    {
+                        retObj_err.Add(returnInfo);                     //[0]:処理ステータス
+                        retObj_err.Add(results);                        //[1]:結果データ
+                        return BadRequest(retObj_err);
+                    }
+                    else
+                    {
+                        // ファイル情報をセッションに設定、再リクエストの際のパラメータをそのキーに変更
+                        var session = HttpContext.Session;
+                        blogic.SetSessionFileInfo(ref session, ref returnInfo, procData.LoginUserId);
+                        retObj_err.Add(returnInfo);                     //[0]:処理ステータス
+                        retObj_err.Add(results);                        //[1]:結果データ
+                        return Json(retObj_err);
+                    }
                 }
 
                 //=== 処理結果を返す ===

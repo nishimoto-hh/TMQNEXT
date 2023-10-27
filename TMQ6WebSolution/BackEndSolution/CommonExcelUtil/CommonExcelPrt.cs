@@ -288,6 +288,15 @@ namespace CommonExcelUtil
                         case CommonExcelCmdInfo.CExecCmdHiddenSheet:
                             exlCmdMain.HiddenSheet(cmdInfo.GetExecPram());
                             break;
+                        case CommonExcelCmdInfo.CExecCmdShowSheet:
+                            exlCmdMain.ShowSheet(cmdInfo.GetExecPram());
+                            break;
+                        case CommonExcelCmdInfo.CExecCmdMoveSheet:
+                            exlCmdMain.MoveSheet(cmdInfo.GetExecPram());
+                            break;
+                        case CommonExcelCmdInfo.CExecCmdActivateSheet:
+                            exlCmdMain.ActivateSheet(cmdInfo.GetExecPram());
+                            break;
                         case CommonExcelCmdInfo.CExecCmdAutoFit:
                             exlCmdMain.AutoFit(cmdInfo.GetExecPram());
                             break;

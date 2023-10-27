@@ -4927,7 +4927,26 @@ namespace CommonSTDUtil.CommonSTDUtil
                 var value = target.GetValue(targetClass);
                 if (value != null)
                 {
-                    nullPropertyNames.Add(target.Name);
+                    if (target.PropertyType == typeof(List<int>))
+                    {
+                        //複数選択チェックボックスの選択値が無い場合、空のリストのため要素があるかチェック
+                        if(((List<int>)value).Any())
+                        {
+                            nullPropertyNames.Add(target.Name);
+                        }
+                    }
+                    else if (target.PropertyType == typeof(List<long>))
+                    {
+                        //複数選択チェックボックスの選択値が無い場合、空のリストのため要素があるかチェック
+                        if (((List<long>)value).Any())
+                        {
+                            nullPropertyNames.Add(target.Name);
+                        }
+                    }
+                    else
+                    {
+                        nullPropertyNames.Add(target.Name);
+                    }
                 }
             }
 

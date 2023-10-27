@@ -184,7 +184,7 @@ namespace BusinessLogic_EP0002
 
             // ExcelPortテンプレートファイル情報初期化
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
@@ -201,8 +201,24 @@ namespace BusinessLogic_EP0002
             }
 
             // ExcelPortアップロード条件を個別実装条件へ設定
-            this.IndividualDictionary.Add(TMQUtil.ComExcelPort.ConditionValName.TargetConductId, conductId);
-            this.IndividualDictionary.Add(TMQUtil.ComExcelPort.ConditionValName.TargetSheetNo, sheetNo);
+            string keyName = TMQUtil.ComExcelPort.ConditionValName.TargetConductId;
+            if (this.IndividualDictionary.ContainsKey(keyName))
+            {
+                this.IndividualDictionary[keyName] = conductId;
+            }
+            else
+            {
+                this.IndividualDictionary.Add(keyName, conductId);
+            }
+            keyName = TMQUtil.ComExcelPort.ConditionValName.TargetSheetNo;
+            if (this.IndividualDictionary.ContainsKey(keyName))
+            {
+                this.IndividualDictionary[keyName] = sheetNo;
+            }
+            else
+            {
+                this.IndividualDictionary.Add(keyName, sheetNo);
+            }
 
             // 確認メッセージ表示
             this.Status = CommonProcReturn.ProcStatus.Confirm;

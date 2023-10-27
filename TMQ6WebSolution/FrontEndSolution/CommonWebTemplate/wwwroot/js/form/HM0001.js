@@ -20,6 +20,7 @@ function getPath() {
 }
 document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
 document.write("<script src=\"" + getPath() + "/HM0003.js\"></script>");
+document.write("<script src=\"" + getPath() + "/HM0004.js\"></script>");
 
 // 一覧画面 コントロール番号
 const FormList = {
@@ -258,6 +259,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
     //申請状況変更画面の初期化処理
     HM0003_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
+    //帳票出力画面の初期化処理
+    HM0004_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
 
     // 画面番号を判定
     if (formNo == FormList.No) { // 一覧画面
@@ -335,8 +338,8 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     // 画面番号を判定
     if (formNo == FormList.No) { // 一覧画面
 
-        // 一括承認(画面遷移)、一括否認(画面遷移)、出力ボタンがクリックされた場合
-        if (btn_ctrlId == FormList.Button.ApprovalAllTrans || btn_ctrlId == FormList.Button.DenialAllTrans || btn_ctrlId == FormList.Button.Output) {
+        // 一括承認(画面遷移)、一括否認(画面遷移)がクリックされた場合
+        if (btn_ctrlId == FormList.Button.ApprovalAllTrans || btn_ctrlId == FormList.Button.DenialAllTrans) {
 
             // 一覧にチェックされた行が存在しない場合、遷移をキャンセル
             if (!isCheckedList(FormList.List.Id)) {
@@ -356,6 +359,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             // 画面遷移をキャンセルして一括否認処理実行
             $(getButtonCtrl(FormList.Button.DenialAll)).click();
             return [false, conditionDataList];
+        }
+        else if (btn_ctrlId == FormList.Button.Output) {
+            //出力押下時、変更管理帳票出力画面(HM0004)を開くための条件を設定する
+            conditionDataList = getParamToHM0004(ConductId_HM0001);
         }
     }
     else if (formNo == FormDetail.No) { // 詳細画面

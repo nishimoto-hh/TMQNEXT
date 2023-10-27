@@ -68,7 +68,6 @@ exdata AS (
 )
 SELECT DISTINCT
     vs.structure_id,
-    vs.translation_text,
     vs.structure_group_id,
     ex.extension_data
 FROM

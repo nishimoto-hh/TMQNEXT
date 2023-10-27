@@ -168,6 +168,9 @@ namespace CommonSTDUtil
             /// <summary>Gets or sets 入力方式</summary>
             /// <value>入力方式</value>
             public int DataDirection { get; set; }
+            /// <summary>Gets or sets コントロールグループID</summary>
+            /// <value>コントロールグループID</value>
+            public string ControlGroupId { get; set; }
             /// <summary>Gets or sets レコード行数</summary>
             /// <value>レコード行数</value>
             public int RecordCount { get; set; }
@@ -226,6 +229,10 @@ namespace CommonSTDUtil
             /// <summary>Gets or sets 入力方式</summary>
             /// <value>入力方式</value>
             public int DataDirection { get; set; }
+            /// <value>処理区分</value>
+            public string ProcDiv { get; set; }
+            /// <value>処理区分名</value>
+            public string ProcDivName { get; set; }
         }
 
         /// <summary>

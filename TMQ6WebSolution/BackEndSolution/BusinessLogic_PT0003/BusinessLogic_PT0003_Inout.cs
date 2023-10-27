@@ -40,15 +40,24 @@ namespace BusinessLogic_PT0003
             // targetDicより表示項目を取得
             SetDataClassFromDictionary(targetDic, ConductInfo.FormList.List.InventoryList, info, new List<string> { });
 
-            // 年度取得
+            // 検索条件の対象年月を取得
             var dateDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormList.Condition.SearchCondition);
-            info.Year = getDictionaryKeyValue(dateDic, "target_year_month").Substring(0, 4); // 年のみ取得
-            string month = getDictionaryKeyValue(dateDic, "target_year_month").Substring(5, 2);  //月のみ取得
+            string targetYearMonth = getDictionaryKeyValue(dateDic, "target_year_month");
+            info.TargetYearMonth = Convert.ToDateTime(targetYearMonth);
+            string year = targetYearMonth.Substring(0, 4); // 年のみ取得
+            string month = targetYearMonth.Substring(5, 2);  //月のみ取得
 
             // 年、月より最終日取得
-            int endDate = DateTime.DaysInMonth(year: int.Parse(info.Year), month: int.Parse(month));
+            int endDate = DateTime.DaysInMonth(year: int.Parse(year), month: int.Parse(month));
             // 対象年月の月末の最終日を取得
-            info.MonthYear = new DateTime(int.Parse(info.Year), month: int.Parse(month), endDate, 23, 59, 59);
+            info.MonthYear = new DateTime(int.Parse(year), month: int.Parse(month), endDate, 23, 59, 59);
+
+            // 年度取得
+            long partsFactoryId = getPartsFactoryId(targetDic);
+            info.Year = getNendoYear(info.MonthYear, partsFactoryId).ToString();
+
+            // 棚枝番はnullではなく空文字にする
+            info.PartsLocationDetailNo = ConvertNullToStringEmpty(info.PartsLocationDetailNo);
 
             // 棚卸データより準備日時、確定日時を取得
             int status = 0;
@@ -73,9 +82,6 @@ namespace BusinessLogic_PT0003
             // 言語ID設定
             info.LanguageId = this.LanguageId;
 
-            // 棚枝番はnullではなく空文字にする
-            info.PartsLocationDetailNo = ConvertNullToStringEmpty(info.PartsLocationDetailNo);
-
             // 予備品情報一覧検索
             if (!InventryInfoList(status, info))
             {
@@ -88,6 +94,25 @@ namespace BusinessLogic_PT0003
                 return false; // 検索失敗
             }
             return true;
+
+            // 選択された予備品の工場IDを取得
+            long getPartsFactoryId(Dictionary<string, object> partsDic)
+            {
+                Dao.searchInventoryResult targetRow = new();
+                SetDataClassFromDictionary(targetDic, ConductInfo.FormList.List.InventoryList, targetRow);
+                ComDao.PtPartsEntity partsInfo = new();
+                partsInfo = partsInfo.GetEntity(targetRow.PartsId, this.db);
+                return partsInfo.FactoryId;
+            }
+
+            // 指定された年月と工場IDより年度を取得
+            int getNendoYear(DateTime targetDate, long longFactoryId)
+            {
+                int factoryId = Convert.ToInt32(longFactoryId);
+                int nendoStartMonth = TMQUtil.GetYearStartMonth(this.db, factoryId);
+                int nendoYear = ComUtil.GetNendoStartDay(targetDate, nendoStartMonth).Year;
+                return nendoYear;
+            }
         }
 
         /// <summary>
@@ -177,7 +202,7 @@ namespace BusinessLogic_PT0003
             execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
             // 検索SQLにORDER BYを追加
             var selectSql = new StringBuilder(execSql);
-            selectSql.AppendLine(" ORDER BY tbl.date ");
+            selectSql.AppendLine(" ORDER BY tbl.date, tbl.work_no");
 
             // 一覧検索実行
             var inoutList = db.GetListByDataClass<Dao.inoutHistryList>(selectSql.ToString(), info);

@@ -94,8 +94,13 @@ rec(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
 )
 
 -- 指定構成IDの上下階層の全構成マスタデータを一時テーブルへ保存
-INSERT 
-INTO #temp_structure_all 
+INSERT
+/*@All
+INTO #temp_structure_all
+@All*/
+/*@Selected
+INTO #temp_structure_selected
+@Selected*/
 SELECT
      vs.structure_id
     ,vs.factory_id

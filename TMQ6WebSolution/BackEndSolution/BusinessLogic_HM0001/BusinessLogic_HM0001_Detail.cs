@@ -487,7 +487,7 @@ namespace BusinessLogic_HM0001
         private bool checkComposition(long machineId, bool isSetFormMsgId)
         {
             // 親子構成、ループ構成、付属品構成 を検索するSQL
-            string[] sqlIdList = new string[] { SqlName.Detail.GetChkParentInfo, SqlName.Detail.GetChkLoopInfo, SqlName.Detail.GetChkAccessoryInfo };
+            string[] sqlIdList = new string[] { SqlName.Detail.GetChkParentInfo, SqlName.Detail.GetChkLoopInfo };
 
             foreach (string sqlId in sqlIdList)
             {

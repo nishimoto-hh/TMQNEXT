@@ -278,7 +278,7 @@ max_dt AS(
         , history.factory_id
         , COALESCE(hmlp.subject, lp.subject) AS subject
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.subject_note 
             ELSE COALESCE(hmlp.subject_note, lp.subject_note) 
             END AS subject_note
@@ -290,7 +290,7 @@ max_dt AS(
         , lp.location_structure_id AS old_location_structure_id --場所階層(トランザクションテーブル)
         , lp.job_structure_id AS old_job_structure_id --職種機種(トランザクションテーブル)
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.maintenance_season_structure_id 
             ELSE COALESCE( 
                 hmlp.maintenance_season_structure_id
@@ -298,12 +298,12 @@ max_dt AS(
             ) 
             END AS maintenance_season_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.person_id 
             ELSE COALESCE(hmlp.person_id, lp.person_id) 
             END AS person_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN COALESCE(hmperson.display_name, hmlp.person_name) 
             ELSE COALESCE( 
                 COALESCE(hmperson.display_name, hmlp.person_name)
@@ -311,7 +311,7 @@ max_dt AS(
             ) 
             END AS person_name
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.work_item_structure_id 
             ELSE COALESCE( 
                 hmlp.work_item_structure_id
@@ -319,7 +319,7 @@ max_dt AS(
             ) 
             END AS work_item_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.budget_management_structure_id 
             ELSE COALESCE( 
                 hmlp.budget_management_structure_id
@@ -327,7 +327,7 @@ max_dt AS(
             ) 
             END AS budget_management_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.budget_personality_structure_id 
             ELSE COALESCE( 
                 hmlp.budget_personality_structure_id
@@ -355,7 +355,7 @@ max_dt AS(
             , COALESCE(hmlp.long_plan_id, lp.long_plan_id)
         ) AS file_link_subject
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.purpose_structure_id 
             ELSE COALESCE( 
                 hmlp.purpose_structure_id
@@ -363,7 +363,7 @@ max_dt AS(
             ) 
             END AS purpose_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.work_class_structure_id 
             ELSE COALESCE( 
                 hmlp.work_class_structure_id
@@ -371,7 +371,7 @@ max_dt AS(
             ) 
             END AS work_class_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.treatment_structure_id 
             ELSE COALESCE( 
                 hmlp.treatment_structure_id
@@ -379,7 +379,7 @@ max_dt AS(
             ) 
             END AS treatment_structure_id
         , CASE 
-            WHEN division_ex.extension_data = '20' 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.facility_structure_id 
             ELSE COALESCE( 
                 hmlp.facility_structure_id

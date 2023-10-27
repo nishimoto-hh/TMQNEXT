@@ -3,6 +3,7 @@ using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -40,6 +41,15 @@ namespace BusinessLogic_MS1730
         /// アイテム一覧タイプ
         /// </summary>
         private static int itemListType = (int)TMQUtil.ComMaster.ItemListType.StandardFactory;
+
+        /// <summary>
+        /// 処理対象コントロールID
+        /// </summary>
+        private static class TargetCtrlId
+        {
+            /// <summary>ExcelPortアップロード</summary>
+            public const string ExcelPortUpload = "LIST_000_1";
+        }
         #endregion
 
         #region コンストラクタ
@@ -242,6 +252,7 @@ namespace BusinessLogic_MS1730
             return ComConsts.RETURN_RESULT.OK;
         }
 
+        #region ExcelPort
         /// <summary>
         /// ExcelPortダウンロード処理
         /// </summary>
@@ -270,52 +281,42 @@ namespace BusinessLogic_MS1730
                 this.Status = CommonProcReturn.ProcStatus.Warning;
             }
 
-            //TODO: 個別データ検索処理
-            IList<Dictionary<string, object>> dataList = null;
+            // 検索条件を作成
+            TMQUtil.CommonExcelPortMasterCondition searchCondition = getSearchCondition();
 
             // ページ情報取得
             var pageInfo = GetPageInfo(Master.ConductInfo.FormList.ControlId.HiddenId, this.pageInfoList);
 
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterList, out string baseSql);
-            // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterList, out string withSql);
-
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            if (!GetWhereClauseAndParam2(pageInfo, CommonColumnName.LocationId, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
             {
                 // 「ダウンロード処理に失敗しました。」
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                 return ComConsts.RETURN_RESULT.NG;
             }
 
-            // SQLパラメータを設定
-            whereParam.LanguageId = this.LanguageId;        // 言語ID
-            whereParam.StructureGroupId = structureGroupId; // 構成グループID(1730)
-
-            // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
-            var selectSql = new StringBuilder(executeSql);
-            selectSql.AppendLine("ORDER BY");     // 並び順を指定
-            selectSql.AppendLine("structure_id"); // 構成ID 昇順
-
-            // 一覧検索実行
-            IList<TMQUtil.CommonExcelPortMasterList> results = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterList>(selectSql.ToString(), whereParam);
-            if (results == null || results.Count == 0)
+            // 検索処理
+            if (!getDataList(ref excelPort, searchCondition, out IList<Dictionary<string, object>> dataList))
             {
                 // 「ダウンロード処理に失敗しました。」
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                 return ComConsts.RETURN_RESULT.NG;
             }
-
-            // Dicitionalyに変換
-            dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterList>(results);
 
             if (dataList == null || dataList.Count == 0)
             {
                 this.Status = CommonProcReturn.ProcStatus.Warning;
                 // 「該当データがありません。」
                 resultMsg = GetResMessage(ComRes.ID.ID941060001);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 出力最大データ数チェック
+            if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                resultMsg = GetResMessage(ComRes.ID.ID141120013);
                 return ComConsts.RETURN_RESULT.NG;
             }
 
@@ -328,6 +329,299 @@ namespace BusinessLogic_MS1730
 
             return ComConsts.RETURN_RESULT.OK;
         }
+
+        /// <summary>
+        /// 検索条件を作成
+        /// </summary>
+        /// <returns>検索条件</returns>
+        private TMQUtil.CommonExcelPortMasterCondition getSearchCondition()
+        {
+            // 検索条件初期化
+            TMQUtil.CommonExcelPortMasterCondition condition = new();
+
+            // 親画面(EP0001)の定義情報を追加
+            AddMappingListOtherPgmId(TMQUtil.ConductIdEP0001);
+            string fromCtrlId = Master.ConductInfo.FormExcelPortDownCondition.ControlId.Condition;
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
+            // 条件画面で選択された値を取得
+            SetDataClassFromDictionary(targetDic, fromCtrlId, condition, new List<string> { "MaintenanceTarget", "FactoryId" });
+
+            // 条件を設定
+            condition.LanguageId = this.LanguageId;                                         // 言語ID
+            condition.StructureGroupId = structureGroupId;                                  // 構成グループID
+            condition.MasterTransLationId = Master.MasterNameTranslation[structureGroupId]; // マスタ名称の翻訳ID
+
+            // メンテナンス対象コンボボックスで選択されたアイテムを取得
+            TMQUtil.StructureItemEx.StructureItemExInfo param = new()
+            {
+                StructureGroupId = Master.MaintainanceTargetExInfo.StructureGroupId, //構成グループID
+                Seq = Master.MaintainanceTargetExInfo.Seq,                           // 連番
+            };
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> exdataList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
+
+            // 拡張項目を設定(1：マスタアイテム、2：標準アイテム未使用設定、3：マスタ並び順設定)
+            condition.MaintenanceTargetNo = exdataList.Where(x => x.StructureId == condition.MaintenanceTarget).Select(x => x.ExData).FirstOrDefault();
+
+            return condition;
+        }
+
+        /// <summary>
+        /// 検索処理
+        /// </summary>
+        /// <param name="excelPort">ExcelPortクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="dataList">検索結果</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getDataList(ref TMQUtil.ComExcelPort excelPort, TMQUtil.CommonExcelPortMasterCondition searchCondition, out IList<Dictionary<string, object>> dataList)
+        {
+            dataList = null;
+
+            // メンテナンス対象コンボボックスで選択されたアイテムに応じて検索
+            switch (searchCondition.MaintenanceTargetNo)
+            {
+                case Master.MaintainanceTargetExInfo.ExData.MasterItem: // マスタアイテム
+
+                    // SQLを取得
+                    TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterList, out string masterSql);
+
+                    // 一覧検索実行
+                    IList<TMQUtil.CommonExcelPortMasterList> masterResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterList>(masterSql, searchCondition);
+                    if (masterResults == null || masterResults.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    // Dicitionalyに変換
+                    dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterList>(masterResults);
+                    break;
+
+                case Master.MaintainanceTargetExInfo.ExData.UnUse: // 標準アイテム未使用設定
+
+                    // SQLを取得
+                    TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortItemUnUseList, out string unuseSql);
+
+                    // 一覧検索実行
+                    IList<TMQUtil.CommonExcelPortMasterItemUnUseList> unuseResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterItemUnUseList>(unuseSql, searchCondition);
+                    if (unuseResults == null || unuseResults.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    // Dicitionalyに変換
+                    dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterItemUnUseList>(unuseResults);
+
+                    // 出力対象のシート番号を「標準アイテム未使用」用に変更
+                    excelPort.DownloadCondition.HideSheetNo = Master.UnuseSheetNo;
+                    break;
+
+                case Master.MaintainanceTargetExInfo.ExData.Oerder: // マスタ並び順設定
+
+                    // SQLを取得
+                    TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortItemOrderList, out string ordersSql);
+
+                    // 一覧検索実行
+                    IList<TMQUtil.CommonExcelPortMasterOrderList> orderResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterOrderList>(ordersSql, searchCondition);
+                    if (orderResults == null || orderResults.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    // Dicitionalyに変換
+                    dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterOrderList>(orderResults);
+
+                    // 出力対象のシート番号を「並び順」用に変更
+                    excelPort.DownloadCondition.HideSheetNo = Master.OrdeerSheetNo;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected override int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ExcelPortアップロードデータの取得
+            if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
+                out List<TMQUtil.CommonExcelPortMasterList> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 実行結果
+            bool registResult = false;
+
+            // 入力されたデータの処理
+            foreach (TMQUtil.CommonExcelPortMasterList result in resultList)
+            {
+                // 送信時処理区分が選択されていない場合は何もしない
+                if (result.ProcessId == (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.None)
+                {
+                    continue;
+                }
+
+                // 新規登録・更新の場合は入力チェック
+                if (result.ProcessId == (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.Insert ||
+                    result.ProcessId == (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.Update)
+                {
+                    // エラーが存在する場合はTrue
+                    if (isErrorExcelPort(result))
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                }
+
+                // 送信時処理区分に応じて登録・更新・削除
+                switch (result.ProcessId)
+                {
+                    case (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.None: // 送信時処理区分なし
+                        // 処理は行わない
+                        registResult = true;
+                        break;
+                    case (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.Insert: // 新規登録
+                        registResult = insertExcelPortData(result);
+                        break;
+                    case (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.Update: // 更新
+                        registResult = updateExcelPortData(result);
+                        break;
+                    case (int)Const.MsStructure.StructureId.ExcelPortProcessDivision.Delete: // 削除
+                        registResult = deleteExcelPortData(result);
+                        break;
+                    default:
+                        registResult = false;
+                        break;
+                }
+
+                // エラーの場合終了
+                if (!registResult)
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+        #endregion
+
+
+        /// <summary>
+        /// ExcelPort 登録前入力チェック
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isErrorExcelPort(TMQUtil.CommonExcelPortMasterList registInfo)
+        {
+            // アイテム翻訳が変更されていない場合はチェックしない
+            if (registInfo.TranslationText == registInfo.TranslationTextBefore)
+            {
+                return false;
+            }
+
+            // 入力チェックに使用する条件を作成
+            TMQUtil.ItemTranslationForMaster condition = new();
+            condition.LocationStructureId = (int)registInfo.FactoryId;      // 工場ID
+            condition.LanguageId = this.LanguageId;                         // 言語ID
+            condition.TranslationText = registInfo.TranslationText;         // アイテム翻訳
+            condition.StructureGroupId = structureGroupId;                  // 構成グループID
+
+            // 対象構成グループの工場ID「0」または選択された工場IDで同じアイテム翻訳件数を取得する
+            int cnt = 0;
+            if (!TMQUtil.GetCountDb(condition, Master.SqlName.GetCountTranslation, ref cnt, db))
+            {
+                return true;
+            }
+
+            // 既に登録されている場合はエラー
+            if (cnt > 0)
+            {
+                return true;
+            }
+
+            // 数量管理単位(拡張項目1)が既に登録されている場合はエラー
+            if (!TMQUtil.GetCountDb(registInfo, Master.SqlName.GetExtensionItemCountAll, ref cnt, db))
+            {
+                return true;
+            }
+
+            // 既に登録されている場合はエラー
+            if (cnt > 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+
+        private bool registExcelPortTranslation()
+        {
+            // アイテム翻訳一覧取得
+            var itemTranList = getItemTranList();
+            // アイテム情報取得
+            var itemInfo = getItemInfo();
+
+
+
+
+            return true;
+        }
+
+
+
+
+        private bool insertExcelPortData(TMQUtil.CommonExcelPortMasterList registInfo)
+        {
+
+
+
+
+            return true;
+        }
+
+        private bool updateExcelPortData(TMQUtil.CommonExcelPortMasterList registInfo)
+        {
+
+
+            return true;
+        }
+
+
+
+        private bool deleteExcelPortData(TMQUtil.CommonExcelPortMasterList registInfo)
+        {
+
+
+
+
+            return true;
+        }
+
         #endregion
 
         #region privateメソッド

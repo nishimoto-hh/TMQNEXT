@@ -48,6 +48,7 @@ const ConductIdMS2040 = "MS2040";
 const ConductIdMS2050 = "MS2050";
 const ConductIdMS2070 = "MS2070";
 const ConductIdMS2080 = "MS2080";
+const ConductIdMS2140 = "MS2140";
 const ConductIdMS9020 = "MS9020";
 const ConductIdMS0010 = "MS0010";
 const ConductIdMS0020 = "MS0020";

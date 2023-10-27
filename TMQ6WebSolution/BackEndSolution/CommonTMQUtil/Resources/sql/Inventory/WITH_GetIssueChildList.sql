@@ -117,6 +117,7 @@ WITH number_unit AS (
         LEFT JOIN pt_inventory pit                  --棚卸データ
             ON plt.department_structure_id = pit.department_structure_id 
             AND pls.parts_location_id = pit.parts_location_id 
+            AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(pit.parts_location_detail_no, '')
         LEFT JOIN number_unit                       --数量管理単位
             ON plt.unit_structure_id = number_unit.unit_id 
         LEFT JOIN unit_round                        --丸め処理区分
@@ -185,6 +186,7 @@ WITH number_unit AS (
         LEFT JOIN pt_location_stock pls             --在庫データマスタ
             ON pps.parts_id = pls.parts_id 
             AND pit.parts_location_id = pls.parts_location_id
+            AND COALESCE(pit.parts_location_detail_no, '') = COALESCE(pls.parts_location_detail_no, '')
             AND pid.inventory_control_id = pls.inventory_control_id 
             AND plt.lot_control_id = pls.lot_control_id
         LEFT JOIN number_unit                       --数量管理単位

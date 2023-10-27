@@ -5,6 +5,11 @@
 -- EPC0001
 SELECT DISTINCT
      item.structure_id AS id
+    --,coalesce(item.factory_id, 0) AS factory_id
+    ,CASE
+        WHEN item.factory_id = 0 THEN item.location_structure_id    -- 構成マスタの工場IDが0の場合は翻訳マスタの場所階層ID(工場ID)を返す
+        ELSE coalesce(item.factory_id, 0)                           -- 上記以外は構成マスタの工場ID
+     END AS factory_id
     ,item.parent_structure_id AS parent_id
     ,item.translation_text AS name
     ,item_ex1.extension_data AS exparam1
@@ -133,6 +138,7 @@ WHERE
 AND item.language_id = /*languageId*/'ja'
 
 /*IF param1 != 1000 && param1 != 1010 && factoryIdList != null && factoryIdList.Count > 0*/
+    AND item.factory_id in /*factoryIdList*/(0,5,6)
     AND item.location_structure_id in /*factoryIdList*/(0,5,6)
 /*END*/
 

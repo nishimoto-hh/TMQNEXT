@@ -146,11 +146,15 @@ eq.maintainance_kind_manage,
   END
 ) AS maintainance_kind_manage_name,
 eq.equipment_note,
-REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
+SUBSTRING(REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
  FROM mc_applicable_laws ma
  WHERE ma.machine_id = mc.machine_id
  ORDER BY ma.applicable_laws_structure_id
- FOR XML PATH('')),' ','') AS applicable_laws_structure_id, 
+ FOR XML PATH('')),' ',''),1,LEN(REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
+ FROM mc_applicable_laws ma
+ WHERE ma.machine_id = mc.machine_id
+ ORDER BY ma.applicable_laws_structure_id
+ FOR XML PATH('')),' ',''))-1) AS applicable_laws_structure_id, 
 SUBSTRING(REPLACE((SELECT tra.translation_text + ','
 FROM
 	v_structure_item_all AS tra ,
@@ -195,3 +199,5 @@ FOR XML PATH('')),' ',''))-1) AS applicable_laws_name
 FROM (SELECT mc.*,dbo.get_target_layer_id(mc.location_structure_id, 1)as factoryId FROM mc_machine mc) mc
 LEFT JOIN mc_equipment eq
 ON mc.machine_id = eq.machine_id
+WHERE EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND mc.location_structure_id = temp.structure_id)
+AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1010 AND  mc.job_structure_id = temp.structure_id)

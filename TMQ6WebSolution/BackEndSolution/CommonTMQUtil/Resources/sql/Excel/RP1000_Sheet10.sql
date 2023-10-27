@@ -14,6 +14,7 @@ SELECT
         WHEN it.control_type IN('0501') THEN 6                          -- 複数選択チェックボックス⇒複数選択リストボックス
         WHEN it.control_type IN('0401') THEN 7                          -- チェックボックス        
         WHEN it.control_type IN('0703') THEN 8                          -- ExcelPort用検索コントロール
+        WHEN it.control_type IN('0201') THEN 9                          -- テキストエリア
         ELSE 1                                                          -- 上記以外は文字列
       END AS column_type
     , it.ep_column_division                                         -- 列区分

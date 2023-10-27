@@ -2849,5 +2849,533 @@ namespace BusinessLogic_MC0001
 
             return maxDateResult.max_update_datetime;
         }
+
+        /// <summary>
+        /// ExcelPort機器別管理基準チェック処理
+        /// </summary>
+        /// <returns>true:正常終了</returns>
+        private bool checkExcelPortManagementStandardRegist(ref List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            // 入力チェック
+            bool errFlg = false;
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                // 送信時処理IDが設定されているもののみ
+                if (resultList[i].ProcessId != null)
+                {
+                    // 場所階層セット
+                    resultList[i].LocationStructureId = (int)resultList[i].FactoryId;
+                    if (resultList[i].PlantId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].PlantId;
+                    }
+                    if (resultList[i].SeriesId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].SeriesId;
+                    }
+                    if (resultList[i].StrokeId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].StrokeId;
+                    }
+                    if (resultList[i].FacilityId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].FacilityId;
+                    }
+
+                    // 職種階層セット
+                    resultList[i].JobStructureId = (int)resultList[i].JobId;
+                    if (resultList[i].LargeClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].LargeClassficationId;
+                    }
+                    if (resultList[i].MiddleClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].MiddleClassficationId;
+                    }
+                    if (resultList[i].SmallClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].SmallClassficationId;
+                    }
+
+                    // 新規
+                    if (resultList[i].ProcessId == 1)
+                    {
+                        // 同一機器、部位、保全項目重複チェック
+                        if (!checkEpContentDuplicate(resultList[i]))
+                        {
+                            // 入力された部位、保全項目の組み合わせは既に登録されています。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                    }
+                    // 更新
+                    else if (resultList[i].ProcessId == 2)
+                    {
+                        // 同一機器、部位、保全項目重複チェック
+                        if (!checkEpContentDuplicate(resultList[i]))
+                        {
+                            // 入力された部位、保全項目の組み合わせは既に登録されています。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                        // 最新DBデータ取得
+                        IList<Dao.managementStandardResult> beforeResult = null;
+                        dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
+                        beforeResult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
+
+                        if (beforeResult != null && beforeResult.Count > 0)
+                        {
+                            // 周期または開始日が変更されている
+                            if (resultList[i].CycleYear != beforeResult[0].CycleYear || resultList[i].CycleMonth != beforeResult[0].CycleMonth || resultList[i].CycleDay != beforeResult[0].CycleDay || resultList[i].StartDate != beforeResult[0].StartDate)
+                            {
+                                // 開始日が過去日だった際はエラー
+                                if (resultList[i].StartDate < DateTime.Now.Date)
+                                {
+                                    // 過去日付は設定できません。
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060003"), TMQUtil.ComReport.LongitudinalDirection));
+                                    errFlg = true;
+                                }
+
+                                // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+                                if (!checkEpScheduleAfterMsSummry(resultList[i]))
+                                {
+                                    //  開始日には保全活動が登録されたスケジュール以降の日付を設定してください。
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060005"), TMQUtil.ComReport.LongitudinalDirection));
+                                    errFlg = true;
+                                }
+                            }
+                        }
+
+                    }
+                    // 削除
+                    else if (resultList[i].ProcessId == 9)
+                    {
+                        // 長期計画存在チェック
+                        dynamic whereParam = null; // WHERE句パラメータ
+                        string sql = string.Empty;
+                        // 検索SQL文の取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetLongPlanSingle, out sql))
+                        {
+                            // エラー終了
+                            this.Status = CommonProcReturn.ProcStatus.Error;
+                            return false;
+                        }
+                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+                        // 総件数を取得
+                        int cnt = db.GetCount(sql, whereParam);
+                        if (cnt > 0)
+                        {
+                            // 「 長期計画で使用されている為、削除できません。」
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141170002"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                        // 保全活動存在チェック
+                        whereParam = null; // WHERE句パラメータ
+                        sql = string.Empty;
+                        // 検索SQL文の取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetMsSummarySingle, out sql))
+                        {
+                            // エラー終了
+                            this.Status = CommonProcReturn.ProcStatus.Error;
+                            return false;
+                        }
+                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+                        // 総件数を取得
+                        cnt = db.GetCount(sql, whereParam);
+                        if (cnt > 0)
+                        {
+                            // 「 保全活動が作成されている為、削除できません。」
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141300004"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+                    }
+                }
+            }
+
+            // 全件問題無ければ登録処理
+            if (errFlg)
+            {
+                return false;
+            }
+
+            return true;
+
+            // 同一機器、部位、保全項目重複チェック
+            bool checkEpContentDuplicate(Dao.excelPortManagementStandardResult result)
+            {
+                // 検索SQL文の取得
+                dynamic whereParam = null; // WHERE句パラメータ
+                string sql = string.Empty;
+                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetManagementStandardCountCheck, out sql))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+                whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId = result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId = result.ManagementStandardsContentId };
+                // 総件数を取得
+                int cnt = db.GetCount(sql, whereParam);
+                if (cnt > 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+            bool checkEpScheduleAfterMsSummry(Dao.excelPortManagementStandardResult result)
+            {
+                // 検索SQL文の取得
+                dynamic whereParam = null; // WHERE句パラメータ
+                string sql = string.Empty;
+                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetScheduleMsSummryCountAfterCheck, out sql))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+                whereParam = new { MaintainanceScheduleId = result.MaintainanceScheduleId, StartDate = result.StartDate };
+                // 総件数を取得
+                int cnt = db.GetCount(sql, whereParam);
+                if (cnt > 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPort機器別管理基準登録処理
+        /// </summary>
+        /// <returns>true:正常終了</returns>
+        private bool executeExcelPortManagementStandardRegist(List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList)
+        {
+            // 登録処理
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                // 送信時処理IDが設定されているもののみ
+                if (resultList[i].ProcessId != null)
+                {
+                    // 機器別管理基準フラグセット
+                    resultList[i].IsManagementStandardConponent = true;
+                    DateTime now = DateTime.Now;
+                    // 周期ありフラグセット
+                    if ((resultList[i].CycleYear == null || resultList[i].CycleYear == 0) && (resultList[i].CycleMonth == null || resultList[i].CycleMonth == 0) && (resultList[i].CycleDay == null || resultList[i].CycleDay == 0))
+                    {
+                        // 周期無し
+                        resultList[i].IsCyclic = false;
+                    }
+                    else
+                    {
+                        // 周期あり
+                        resultList[i].IsCyclic = true;
+                    }
+
+                    // 新規登録
+                    if (resultList[i].ProcessId == 1)
+                    {
+                        resultList[i].InsertDatetime = now;
+                        resultList[i].InsertUserId = int.Parse(this.UserId);
+                        resultList[i].UpdateDatetime = now;
+                        resultList[i].UpdateUserId = int.Parse(this.UserId);
+
+                        // 新規登録
+                        // 機器別管理基準部位
+                        (bool returnFlag, long id) managementStandardsComponent = registInsertDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.InsertManagementStandardsComponent);
+                        if (!managementStandardsComponent.returnFlag)
+                        {
+                            return false;
+                        }
+                        // 機器別管理基準内容
+                        resultList[i].ManagementStandardsComponentId = managementStandardsComponent.id;
+                        (bool returnFlag, long id) managementStandardsContent = registInsertDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.InsertManagementStandardsContent);
+                        if (!managementStandardsContent.returnFlag)
+                        {
+                            return false;
+                        }
+                        // 保全スケジュール
+                        resultList[i].ManagementStandardsContentId = managementStandardsContent.id;
+                        (bool returnFlag, long id) maintainanceSchedule = registInsertDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.InsertMaintainanceSchedule);
+                        if (!maintainanceSchedule.returnFlag)
+                        {
+                            return false;
+                        }
+                        // 保全スケジュール詳細
+                        if (!insertExcelPortMainteScheduleDetail(resultList[i], maintainanceSchedule.id, now))
+                        {
+                            return false;
+                        }
+
+                    }
+                    // 更新
+                    else if (resultList[i].ProcessId == 2)
+                    {
+                        resultList[i].UpdateDatetime = now;
+                        resultList[i].UpdateUserId = int.Parse(this.UserId);
+
+                        // 更新
+                        // 機器別管理基準部位
+                        if (!registUpdateDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.UpdateManagementStandardsComponent))
+                        {
+                            return false;
+                        }
+                        // 機器別管理基準内容
+                        if (!registUpdateDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.UpdateManagementStandardsContent))
+                        {
+                            return false;
+                        }
+
+                        IList<Dao.managementStandardResult> dbresult = null;
+                        // 最新DBデータ取得
+                        dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
+                        dbresult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
+
+                        bool cycleChangeFlg = false;
+                        if (resultList[i].CycleYear == dbresult[0].CycleYear && resultList[i].CycleMonth == dbresult[0].CycleMonth && resultList[i].CycleDay == dbresult[0].CycleDay && resultList[i].StartDate == dbresult[0].StartDate)
+                        {
+                            cycleChangeFlg = false;
+                        }
+                        else
+                        {
+                            cycleChangeFlg = true;
+                        }
+
+                        // 周期・開始日変更有
+                        if (cycleChangeFlg)
+                        {
+                            // 「作成済み保全スケジュール詳細データ(開始日以降)」削除
+                            if (!registDeleteDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.DeleteMaintainanceScheduleDetailRemake))
+                            {
+                                // エラーの場合
+                                this.Status = CommonProcReturn.ProcStatus.Error;
+                                return false;
+                            }
+
+                            // 変更後開始日 < 変更前開始日であれば変更前開始日レコード削除
+                            if (resultList[i].StartDate <= dbresult[0].StartDate)
+                            {
+                                // 入力された日付以降の日付で設定されていた保全スケジュールデータは削除
+                                if (!registDeleteDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.DeleteMaintainanceScheduleRemake))
+                                {
+                                    // エラーの場合
+                                    this.Status = CommonProcReturn.ProcStatus.Error;
+                                    return false;
+                                }
+                            }
+
+                            // 新規登録者および新規登録日付をセット
+                            resultList[i].InsertUserId = int.Parse(this.UserId);
+                            resultList[i].InsertDatetime = now;
+
+                            // 保全スケジュールにデータ新規作成
+                            (bool returnFlag, long id) maintainanceSchedule = registInsertDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.InsertMaintainanceSchedule);
+                            if (!maintainanceSchedule.returnFlag)
+                            {
+                                return false;
+                            }
+
+                            // 保全スケジュール詳細にデータ新規作成
+                            if (!insertExcelPortMainteScheduleDetail(resultList[i], maintainanceSchedule.id, now))
+                            {
+                                return false;
+                            }
+
+                            resultList[i].MaintainanceScheduleId = maintainanceSchedule.id;
+                        }
+
+                    }
+                    // 削除
+                    else if (resultList[i].ProcessId == 9)
+                    {
+                        // 削除処理
+                        // 削除SQL取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.DeleteMaintainanceScheduleDetailSingle, out string sql1))
+                        {
+                            return false;
+                        }
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.DeleteMaintainanceScheduleSingle, out string sql2))
+                        {
+                            return false;
+                        }
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.DeleteManagementStandardsContentSingle, out string sql3))
+                        {
+                            return false;
+                        }
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.DeleteManagementStandardsComponentSingle, out string sql4))
+                        {
+                            return false;
+                        }
+                        // 添付ファイル存在チェックSQL取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetAttachmentCount, out string sql5))
+                        {
+                            return false;
+                        }
+
+                        // 保全スケジュール詳細
+                        int result = this.db.Regist(sql1, resultList[i]);
+                        if (result < 0)
+                        {
+                            // 削除エラー
+                            return false;
+                        }
+                        // 保全スケジュール
+                        result = this.db.Regist(sql2, resultList[i]);
+                        if (result < 0)
+                        {
+                            // 削除エラー
+                            return false;
+                        }
+                        // 機器別管理基準内容
+                        result = this.db.Regist(sql3, resultList[i]);
+                        if (result < 0)
+                        {
+                            // 削除エラー
+                            return false;
+                        }
+                        // 機器別管理基準部位
+                        result = this.db.Regist(sql4, resultList[i]);
+                        if (result < 0)
+                        {
+                            // 削除エラー
+                            return false;
+                        }
+
+                        // 指定された機能タイプID、キーIDのデータが存在しない場合は何もしない
+                        dynamic param = null; // WHERE句パラメータ
+                        param = new { FunctionTypeId = (int)TMQConsts.Attachment.FunctionTypeId.Content, KeyId = resultList[i].ManagementStandardsContentId };
+                        // SQLを取得
+                        TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameMpInfo.GetAttachmentCount, out string cntSql);
+                        if (this.db.GetCount(cntSql, param) > 0)
+                        {
+                            // 添付情報削除
+                            if (!new ComDao.AttachmentEntity().DeleteByKeyId(TMQConsts.Attachment.FunctionTypeId.Content, (int)resultList[i].ManagementStandardsContentId, this.db))
+                            {
+                                // 削除エラー
+                                return false;
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 保全スケジュール詳細データ新規登録
+        /// </summary>
+        /// <param name="res">登録データ</param>
+        /// <returns>正常終了:True 異常終了:False</returns>
+        private bool insertExcelPortMainteScheduleDetail(Dao.excelPortManagementStandardResult res, long maintainanceScheduleId, DateTime updateTime)
+        {
+
+            if (res.IsCyclic == true)
+            {
+                // スケジュール作成上限取得
+                string strMaxYear = getItemExData(1, 2, (int)TMQConsts.MsStructure.GroupId.MakeScheduleYear, 0);
+
+                // 対象機器の工場ID取得
+                dynamic whereParam = new { MachineId = res.MachineId };
+                string sql;
+                TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
+                IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParam);
+                if (results == null || results.Count == 0)
+                {
+                    return false;
+                }
+                List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId, true);
+
+                // 工場毎年度終了月取得
+                string strstartMonth = getItemExData(1, 2, (int)TMQConsts.MsStructure.GroupId.BeginningMonth, results[0].FactoryId);
+                if (strstartMonth == null)
+                {
+                    // 工場毎の設定が取得できなければ工場共通
+                    strstartMonth = getItemExData(1, 2, (int)TMQConsts.MsStructure.GroupId.BeginningMonth, 0);
+                }
+                if (int.Parse(strstartMonth) < 10)
+                {
+                    strstartMonth = "0" + strstartMonth;
+                }
+
+                DateTime endDate = DateTime.Parse(strMaxYear + "/" + strstartMonth + "/01");
+                endDate = endDate.AddYears(1).AddDays(-1);
+
+                DateTime dt = (DateTime)res.StartDate;
+
+                // 保全スケジュール詳細データ
+                ComDao.McMaintainanceScheduleDetailEntity scheduleDetail = new();
+                scheduleDetail.InsertDatetime = updateTime;
+                scheduleDetail.InsertUserId = int.Parse(this.UserId);
+                scheduleDetail.UpdateDatetime = updateTime;
+                scheduleDetail.UpdateUserId = int.Parse(this.UserId);
+                scheduleDetail.SummaryId = null;
+                scheduleDetail.Complition = false;
+                scheduleDetail.MaintainanceScheduleId = maintainanceScheduleId;
+                scheduleDetail.SequenceCount = 1;
+                scheduleDetail.ScheduleDate = dt;
+                (bool returnFlag, long id) maintainanceSchedule = (true, -1);
+                // 開始日から終了日までスケジュール詳細作成
+                while (dt <= endDate.Date)
+                {
+                    // 登録
+                    maintainanceSchedule = registInsertDb<ComDao.McMaintainanceScheduleDetailEntity>(scheduleDetail, SqlNameManagementStandard.InsertMaintainanceScheduleDetail);
+                    if (!maintainanceSchedule.returnFlag)
+                    {
+                        return false;
+                    }
+
+                    // 回数カウントアップ
+                    scheduleDetail.SequenceCount = scheduleDetail.SequenceCount + 1;
+
+                    // スケジュール日設定
+                    if (res.CycleYear != null && res.CycleYear > 0)
+                    {
+                        dt = dt.AddYears((int)res.CycleYear);
+                    }
+                    if (res.CycleMonth != null && res.CycleMonth > 0)
+                    {
+                        dt = dt.AddMonths((int)res.CycleMonth);
+                    }
+                    if (res.CycleDay != null && res.CycleDay > 0)
+                    {
+                        dt = dt.AddDays((int)res.CycleDay);
+                    }
+                    scheduleDetail.ScheduleDate = dt;
+                }
+            }
+            else
+            {
+                // 保全スケジュール詳細データ
+                ComDao.McMaintainanceScheduleDetailEntity scheduleDetail = new();
+                scheduleDetail.InsertDatetime = updateTime;
+                scheduleDetail.InsertUserId = int.Parse(this.UserId);
+                scheduleDetail.UpdateDatetime = updateTime;
+                scheduleDetail.UpdateUserId = int.Parse(this.UserId);
+                scheduleDetail.SummaryId = null;
+                scheduleDetail.Complition = false;
+                scheduleDetail.MaintainanceScheduleId = maintainanceScheduleId;
+                scheduleDetail.SequenceCount = 1;
+                scheduleDetail.ScheduleDate = res.StartDate;
+
+                // 登録
+                (bool returnFlag, long id) maintainanceSchedule = registInsertDb<ComDao.McMaintainanceScheduleDetailEntity>(scheduleDetail, SqlNameManagementStandard.InsertMaintainanceScheduleDetail);
+                if (!maintainanceSchedule.returnFlag)
+                {
+                    return false;
+                }
+
+            }
+
+            return true;
+        }
+
     }
 }

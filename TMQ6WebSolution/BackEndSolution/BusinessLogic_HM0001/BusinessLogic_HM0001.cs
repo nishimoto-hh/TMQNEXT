@@ -148,8 +148,6 @@ namespace BusinessLogic_HM0001
                 public const string GetChkParentInfo = "GetParentInfo";
                 /// <summary>SQL名：ループ構成存在取得</summary>
                 public const string GetChkLoopInfo = "GetLoopInfo";
-                /// <summary>SQL名：付属品構成存在取得</summary>
-                public const string GetChkAccessoryInfo = "GetAccessoryInfo";
                 /// <summary>SQL名：機番情報更新SQL</summary>
                 public const string UpdateMachineInfo = "UpdateMachineInfo";
                 /// <summary>SQL名：機器情報更新SQL</summary>

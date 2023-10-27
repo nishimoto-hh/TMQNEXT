@@ -238,46 +238,75 @@ function getConditionData(formNo, listsCondition, isDispVal) {
         var val = "";
         var ctrlId = $(list).attr("data-ctrlid");
 
+        var makeTmpData = function (ctrlId, formNo, rowNo) {
+            var tmpData = {
+                CTRLID: ctrlId,     // 一覧のctrlId
+                FORMNO: formNo,     // 画面番号
+                ROWNO: rowNo,           // 行番号
+            };
+            return tmpData;
+        }
+
         // 検索条件取得
         //CTRLID,FORMNO
-        var conditionData = {
-            CTRLID: ctrlId,     // 一覧のctrlId
-            FORMNO: formNo,     // 画面番号
-            ROWNO: 1,           // 行番号
-        };
+        var conditionData = makeTmpData(ctrlId, formNo, 1);
 
-        //条件ﾃﾞｰﾀ行
-        var dataTr = $(list).find("tbody tr:not([class^='base_tr'])");
-        if ($(dataTr).length) {
+        var setFormValue = function (list, rowNo, conditionData) {
+            //条件ﾃﾞｰﾀ行
+            var dataTr = $(list).find("table[data-rowno=" + rowNo + "]").find("tbody tr:not([class^='base_tr'])");
+            if ($(dataTr).length) {
 
-            // 選択チェックボックス
-            var td = $(dataTr).find("td[data-name='SELTAG']");
-            if (td != null && td.length > 0) {
-                //ｾﾙの値(表示値、入力値)を取得
-                var valW = getCellVal(td);
-                conditionData[$(td).data("name")] = valW;
+                // 選択チェックボックス
+                var td = $(dataTr).find("td[data-name='SELTAG']");
+                if (td != null && td.length > 0) {
+                    //ｾﾙの値(表示値、入力値)を取得
+                    var valW = getCellVal(td);
+                    conditionData[$(td).data("name")] = valW;
+                }
+                td = null;
+
+                //VAL1～
+                var tds = $(dataTr).find("td[data-name^='VAL']");
+                $.each(tds, function (i, td) {
+
+                    //ｾﾙの値(表示値、入力値)を取得
+                    var valW = getCellVal(td, isDispVal);
+                    conditionData[$(td).data("name")] = valW;
+
+                });
+                tds = null;
+
+                //排他ﾃﾞｰﾀ保持用列
+                td = $(dataTr).find("td[data-name='lockData']");
+                conditionData["lockData"] = $(td).text();
+                td = null;
             }
-            td = null;
-
-            //VAL1～
-            var tds = $(dataTr).find("td[data-name^='VAL']");
-            $.each(tds, function (i, td) {
-
-                //ｾﾙの値(表示値、入力値)を取得
-                var valW = getCellVal(td, isDispVal);
-                conditionData[$(td).data("name")] = valW;
-
-            });
-            tds = null;
-
-            //排他ﾃﾞｰﾀ保持用列
-            td = $(dataTr).find("td[data-name='lockData']");
-            conditionData["lockData"] = $(td).text();
-            td = null;
+            dataTr = null;
         }
-        dataTr = null;
+        // 行の情報を取得
+        setFormValue(list, 1, conditionData);
 
         conditionDataList.push(conditionData);
+
+        // 追加行のデータ取得(複数ツリー選択)
+        let trAdd = $(list).find("table[data-rowno!=1]").find("tbody tr");
+        if (trAdd == null || trAdd.length == 0) {
+            // 無い場合終了
+            return true;
+        }
+        let addRowNo = 2; // 2行目以降
+        while (true) {
+            let target = $(list).find("table[data-rowno=" + addRowNo + "]").find("tbody tr");
+            if (target == null || target.length == 0) {
+                // 無い場合終了
+                break;
+            }
+            // 取得して次へ
+            var newData = makeTmpData(ctrlId, formNo, addRowNo);
+            setFormValue(list, addRowNo, newData);
+            conditionDataList.push(newData);
+            addRowNo++;
+        }
     });
     return conditionDataList;
 }

@@ -184,10 +184,16 @@
                 ApplicationStatus = 2090,
                 // 変更管理 申請区分
                 ApplicationDivision = 2100,
+                // ExcelPort送信時処理区分
+                ProcessDivision = 2120,
+                // 変更管理帳票出力対象項目定義
+                OutputItem = 2150,
                 // 権限
                 Authority = 9040,
                 // テンポラリフォルダパス
-                TempFolderPath = 9200
+                TempFolderPath = 9200,
+                // ExcelPort 出力可能最大行数
+                ExcelPortMaxCount = 9220
             }
 
             /// <summary>
@@ -423,6 +429,21 @@
                 }
 
                 /// <summary>
+                /// 変更管理帳票出力対象項目定義(2150) 帳票区分
+                /// </summary>
+                public enum OutputItemConduct
+                {
+                    /// <summary>
+                    /// 機器台帳
+                    /// </summary>
+                    HM0001 = 1,
+                    /// <summary>
+                    /// 長期計画
+                    /// </summary>
+                    HM0002 = 2
+                }
+
+                /// <summary>
                 /// 変更管理 申請機能
                 /// </summary>
                 public enum ApplicationConduct
@@ -454,6 +475,29 @@
                     /// 変更管理モード
                     /// </summary>
                     history
+                }
+
+                /// <summary>
+                /// ExcelPort送信時処理区分
+                /// </summary>
+                public enum ExcelPortProcessDivision
+                {
+                    /// <summary>
+                    /// 送信時処理区分なし(選択されていない)
+                    /// </summary>
+                    None = 0,
+                    /// <summary>
+                    /// 新規登録
+                    /// </summary>
+                    Insert = 1,
+                    /// <summary>
+                    /// 更新
+                    /// </summary>
+                    Update = 2,
+                    /// <summary>
+                    /// 削除
+                    /// </summary>
+                    Delete = 9
                 }
             }
         }
@@ -514,6 +558,26 @@
             /// 切り捨て
             /// </summary>
             Floor = 3
+        }
+
+        /// <summary>
+        /// 送信時処理ID
+        /// </summary>
+        public static class SendProcessId
+        {
+            /// <summary>
+            /// 登録
+            /// </summary>
+            public const int Regist = 1;
+            /// <summary>
+            /// 内容更新
+            /// </summary>
+            public const int Update = 2;
+            /// <summary>
+            /// 削除
+            /// </summary>
+            public const int Delete = 9;
+
         }
     }
 }

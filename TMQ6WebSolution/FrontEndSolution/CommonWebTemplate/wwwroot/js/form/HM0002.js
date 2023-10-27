@@ -21,7 +21,7 @@ function getPath() {
 document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
 document.write("<script src=\"" + getPath() + "/SU0001.js\"></script>");
 document.write("<script src=\"" + getPath() + "/HM0003.js\"></script>");
-document.write("<script src=\"" + getPath() + "/RM0001.js\"></script>");
+document.write("<script src=\"" + getPath() + "/HM0004.js\"></script>");
 
 // 保全活動一覧関連の定義 ↓
 // 保全情報一覧の列情報
@@ -265,11 +265,8 @@ function getFormInfoByFormNo(formNo) {
 function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data) {
     //申請状況変更画面の初期化処理
     HM0003_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
-    }
+    //帳票出力画面の初期化処理
+    HM0004_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
 
     if (conductId != ConductId_HM0002) {
         // HM0002以外なら終了
@@ -466,9 +463,6 @@ function prevInitFormData(appPath, formNo, btnCtrlId, conditionDataList, listDef
  */
 function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom, transPtn) {
 
-    // 機能IDが「帳票出力」の場合
-    RM0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
-
     // 共通-申請状況変更画面の画面再表示前処理
     // 共通-申請状況変更画面を閉じたときの再表示処理はこちらで行うので、各機能での呼出は不要
     HM0003_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
@@ -480,43 +474,6 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     if (formNo == FormDetail.No) {
         setDisplayCloseBtn(transPtn);
     }
-}
-
-/**
- *【オーバーライド用関数】
- *  検索処理前
- *
- *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @btn {string} 　　　：対象ボタン
- *  @conductId {string} ：機能ID
- *  @pgmId {string} 　　：プログラムID
- *  @formNo {number} 　 ：画面番号
- *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
- */
-function beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW) {
-
-    // 機能IDが「帳票出力」の場合
-    if (conductIdW == RM00001_ConductId) {
-        return RM0001_beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW);
-    }
-
-}
-
-/**
- *【オーバーライド用関数】
- *  個別実装ボタン
- *
- *  @param {string} appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @param {number} formNo      ：画面NO
- *  @param {string} btnCtrlId   ：ボタンCTRLID
- */
-function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_clickIndividualImplBtn(appPath, formNo, btnCtrlId);
-    }
-
 }
 
 /**
@@ -573,24 +530,6 @@ function getRows(ctrlId) {
     // 削除されていない行を取得
     var list = $(P_Article).find("div#" + ctrlId + getAddFormNo() + ".ctrlId").find("div:not([class^='tabulator-header'])").find("div.tabulator-row");
     return list;
-}
-
-/**
- *【オーバーライド用関数】
- *  画面状態設定後の個別実装
- *
- * @status        ：ﾍﾟｰｼﾞ状態　0：初期状態、1：検索後、2：明細表示後ｱｸｼｮﾝ、3：ｱｯﾌﾟﾛｰﾄﾞ後
- * @pageRowCount  ：ﾍﾟｰｼﾞ全体のﾃﾞｰﾀ行数
- * @conductPtn    ：com_conduct_mst.ptn
- * @formNo        ：画面番号
- */
-function setPageStatusEx(status, pageRowCount, conductPtn, formNo) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_setPageStatusEx(status, pageRowCount, conductPtn, formNo);
-    }
-
 }
 
 /**
@@ -661,7 +600,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
         if (btn_ctrlId == FormDetail.Button.ChangeApplicationRequest || btn_ctrlId == FormDetail.Button.ChangeApplicationDenial) {
             //承認依頼、否認押下時、申請状況変更画面(HM0003)を開くための条件を設定する
-            // 処理モード
+            // 変更管理ID
             var historyManagementId = getValue(FormDetail.Info.Id, FormDetail.Info.HistoryManagementId, 1, CtrlFlag.Label);
             conditionDataList = getParamToHM0003(btn_ctrlId == FormDetail.Button.ChangeApplicationRequest, historyManagementId);
         }
@@ -700,6 +639,11 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             // 画面遷移をキャンセルして一括否認処理実行
             $(getButtonCtrl(FormList.Button.DenialAll)).click()
             return [false, conditionDataList];
+        }
+
+        if (btn_ctrlId == FormList.Button.Output) {
+            //出力押下時、変更管理帳票出力画面(HM0004)を開くための条件を設定する
+            conditionDataList = getParamToHM0004(ConductId_HM0002);
         }
     }
 
@@ -763,10 +707,6 @@ function preDeleteRow(appPath, btn, id, checkes) {
  */
 function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
 
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
-    }
     //申請状況変更画面の実行後処理
     HM0003_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
 
@@ -809,22 +749,6 @@ function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) 
 }
 
 /**
- *【オーバーライド用関数】取込処理個別入力チェック
- *  @param appPath       ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @param conductId     ：機能ID
- *  @param formNo        ：画面番号
- */
-function preInputCheckUpload(appPath, conductId, formNo) {
-
-    if (getConductId() == RM00001_ConductId) {
-        // 共通-帳票出力画面 入力チェック
-        return RM0001_preInputCheckUpload(appPath, conductId, formNo);
-    }
-
-    return [false, false, true];
-}
-
-/**
  * 【オーバーライド用関数】
  *   コンボボックス変更時イベント
  * @param  appPath    : アプリケーションルートパス
@@ -836,12 +760,6 @@ function preInputCheckUpload(appPath, conductId, formNo) {
  * @param  valNo      : イベントの発生したコンボボックスのコントロール番号
  */
 function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo);
-    }
-
     // スケジュール表示単位コンボの変更時イベント
     var eventChangeScheduleUnit = function (formInfo) {
         if (!(ctrlId == formInfo.Condition.Id && valNo == formInfo.Condition.Schedule.Unit)) {
@@ -1131,12 +1049,6 @@ function setMaintKindListGrouping(formInfo) {
  * @param {any} id 一覧のID(#,_FormNo付き)
  */
 function postBuiltTabulator(tbl, id) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_postBuiltTabulator(tbl, id);
-    }
-
     // 保全一覧のスタイル設定処理、行追加、行削除ボタンの表示制御
     callSetMaintListStyle(id);
 
@@ -1245,27 +1157,8 @@ function clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrl
  */
 function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId) {
 
-    // 共通-帳票出力画面の個別実装ボタン
-    RM0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
-
     // 担当者検索画面
     SU0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
-}
-
-/**
- *【オーバーライド用関数】Excel出力ﾁｪｯｸ処理 - 前処理
- *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @conductId   {string}   ：機能ID
- *  @formNo      {number}   ：画面番号
- *  @btn         {button}   ：押下されたボタン要素
- */
-function reportCheckPre(appPath, conductId, formNo, btn) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_reportCheckPre(appPath, conductId, formNo, btn)
-    }
-    return true;
 }
 
 /**
@@ -1276,12 +1169,6 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
  * @param {Element} headerElement   ：ヘッダー要素
  */
 function prevSetTabulatorHeader(appPath, id, header, headerElement) {
-    // Tabuator一覧に個別で追加したい列等の設定が行えます
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return;
-    }
-
     var compareIds = []
     $.each(ScheduleListIds, function (index, value) {
         var settedId = "#" + value + getAddFormNo();
@@ -1291,23 +1178,6 @@ function prevSetTabulatorHeader(appPath, id, header, headerElement) {
     if (compareIds.indexOf(id) > -1) {
         // スケジュール表示用ヘッダー情報の設定
         setScheduleHeaderInfo(appPath, header, headerElement);
-    }
-
-}
-
-/**
- * 【オーバーライド用関数】Tabuator一覧の描画前処理
- * @param {string} appPath  ：アプリケーションルートパス
- * @param {string} id       ：一覧のID(#,_FormNo付き)
- * @param {string} options  ： 一覧のオプション情報
- * @param {object} header   ：ヘッダー情報
- * @param {object} dispData ：データ
- */
-function prevCreateTabulator(appPath, id, options, header, dispData) {
-
-    // 機能IDが「帳票出力」の場合
-    if (getConductId() == RM00001_ConductId) {
-        return RM0001_prevCreateTabulator(appPath, id, options, header, dispData);
     }
 
 }

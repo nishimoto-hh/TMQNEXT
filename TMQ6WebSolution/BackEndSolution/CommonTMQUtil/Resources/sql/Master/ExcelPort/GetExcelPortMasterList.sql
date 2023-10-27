@@ -1,16 +1,42 @@
-SELECT
-    item.structure_id,                                  -- 構成ID
-    item.structure_group_id,                            -- 構成グループID
-    item.factory_id,                                    -- 工場ID
-    item.item_translation_id AS translation_id,         -- アイテム翻訳ID
-    item.translation_text,                              -- アイテム翻訳
-    item.parent_structure_id,                           -- 親構成アイテムID
-    parent.translation_text AS parent_translation_text, -- 親構成アイテム翻訳
-    ex1.extension_data AS ex_data1,                     -- 拡張項目1
-    ex2.extension_data AS ex_data2,                     -- 拡張項目2
-    ex3.extension_data AS ex_data3,                     -- 拡張項目3
-    ---------------------------------- 以下は翻訳を取得 ----------------------------------
-    COALESCE((
+WITH structure_factory AS(
+    SELECT
+        structure_id,
+        location_structure_id AS factory_id
+    FROM
+        v_structure_item_all
+    WHERE
+        structure_group_id IN(1000, @StructureGroupId)
+    AND language_id = @LanguageId
+),
+target AS(
+    SELECT
+        ms.structure_id,
+        ms.structure_group_id,
+        ms.factory_id,
+        mi.item_translation_id AS translation_id,
+        ex1.extension_data AS ex_data1,-- 拡張項目1
+        ex2.extension_data AS ex_data2,-- 拡張項目2
+        ex3.extension_data AS ex_data3,-- 拡張項目3
+        ---------------------------------- 以下は翻訳を取得 ----------------------------------
+        (
+            SELECT
+                tra.translation_text
+            FROM
+                v_structure_item_all AS tra
+            WHERE
+                tra.language_id = @LanguageId
+            AND tra.location_structure_id = (
+                    SELECT
+                        MIN(st_f.factory_id)
+                    FROM
+                        structure_factory AS st_f
+                    WHERE
+                        st_f.structure_id = ms.structure_id
+                    AND st_f.factory_id IN(0, ms.factory_id)
+                )
+            AND tra.structure_id = ms.structure_id
+        ) AS translation_text, -- アイテム翻訳
+        (
             SELECT
                 tra.translation_text
             FROM
@@ -23,37 +49,43 @@ SELECT
                     FROM
                         structure_factory AS st_f
                     WHERE
-                        st_f.structure_id = item.factory_id
-                    AND st_f.factory_id IN(0, item.factory_id)
+                        st_f.structure_id = ms.factory_id
+                    AND st_f.factory_id IN(0, ms.factory_id)
                 )
-            AND tra.structure_id = item.factory_id
-        ),(
-            SELECT
-                mt.translation_text
-            FROM
-                ms_translation mt
-            WHERE
-                mt.translation_id = 131070006
-            AND mt.location_structure_id = 0
-            AND mt.language_id = @LanguageId
-        )) AS factory_name -- 工場名(アイテムの工場名が取得できる場合はアイテムの工場名、取得できない場合は「共通工場」)
+            AND tra.structure_id = ms.factory_id
+        ) AS factory_name -- 工場名
+    FROM
+        ms_structure ms
+        LEFT JOIN
+            ms_item mi
+        ON  ms.structure_item_id = mi.item_id
+        LEFT JOIN
+            ms_item_extension ex1 -- 拡張項目1
+        ON  ms.structure_item_id = ex1.item_id
+        AND ex1.sequence_no = 1
+        LEFT JOIN
+            ms_item_extension ex2 -- 拡張項目2
+        ON  ms.structure_item_id = ex2.item_id
+        AND ex2.sequence_no = 2
+        LEFT JOIN
+            ms_item_extension ex3 -- 拡張項目3
+        ON  ms.structure_item_id = ex3.item_id
+        AND ex3.sequence_no = 3
+    WHERE
+        ms.structure_group_id = @StructureGroupId
+    AND ms.delete_flg = 0
+)
+SELECT
+    target.structure_id,                                -- 構成ID
+    target.structure_group_id,                          -- 構成グループID
+    target.factory_id,                                  -- 工場ID
+    target.factory_id AS factory_id_before,             -- 初期表示時の工場ID(入力チェック時に使用)
+    target.factory_name,                                -- 工場名
+    target.translation_id,                              -- アイテム翻訳ID
+    target.translation_text,                            -- アイテム翻訳
+    target.translation_text AS translation_text_before, -- 初期表示時のアイテム翻訳(入力チェックに使用)
+    target.ex_data1,                                    -- 拡張項目1
+    target.ex_data2,                                    -- 拡張項目2
+    target.ex_data3                                     -- 拡張項目3
 FROM
-    v_structure_item item
-    LEFT JOIN
-        v_structure_item parent
-    ON  item.parent_structure_id = parent.structure_id
-    LEFT JOIN
-        ms_item_extension ex1 -- 拡張項目1
-    ON  item.structure_item_id = ex1.item_id
-    AND ex1.sequence_no = 1
-    LEFT JOIN
-        ms_item_extension ex2 -- 拡張項目2
-    ON  item.structure_item_id = ex2.item_id
-    AND ex2.sequence_no = 2
-    LEFT JOIN
-        ms_item_extension ex3 -- 拡張項目3
-    ON  item.structure_item_id = ex3.item_id
-    AND ex3.sequence_no = 3
-WHERE
-    item.structure_group_id = @StructureGroupId
-AND item.language_id = @LanguageId
+    target

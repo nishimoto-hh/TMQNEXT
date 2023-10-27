@@ -1607,7 +1607,11 @@
             /// <summary>
             ///指定されたEXCELから更新対象機能が特定できません。
             /// </summary>
-            public const string ID141120012 = "141120012"; 
+            public const string ID141120012 = "141120012";
+            /// <summary>
+            ///出力可能上限データ数を超えているため、ダウンロードできません。
+            /// </summary>
+            public const string ID141120013 = "141120013";
             /// <summary>
             /// {0}データを登録します。よろしいですか？
             /// </summary>
@@ -1630,6 +1634,25 @@
             /// </summary>
             public const string ID141270003 = "141270003";
 
+            /// <summary>
+            /// あり
+            /// </summary>
+            public const string ID111010021 = "111010021";
+
+            /// <summary>
+            /// 選択内容が不正です。
+            /// </summary>
+            public const string ID141140004 = "141140004";
+
+            /// <summary>
+            /// 新規追加データに対して内容更新・削除は指定できません。
+            /// </summary>
+            public const string ID141120014 = "141120014";
+
+            /// <summary>
+            /// 既存データに対して登録は指定できません。
+            /// </summary>
+            public const string ID141070006 = "141070006";
         }
     }
 }

@@ -62,7 +62,7 @@ WITH factory AS(
         ON  (
         /*IF param3==1*/
         -- 予備品以外(ExcelPortなど)、自身の所属工場のみを表示する場合
-                st.factoryId = dbo.get_target_layer_id(ub.location_structure_id, 1))
+                st.factoryId = dbo.get_target_layer_id(ub.location_structure_id, 1)
             )
         /*END*/
         /*IF param3!=1*/

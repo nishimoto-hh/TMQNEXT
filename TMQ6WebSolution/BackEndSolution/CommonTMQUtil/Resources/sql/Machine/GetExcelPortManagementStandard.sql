@@ -26,6 +26,7 @@ SELECT
 		) AS equipment_level_name, -- 機器レベル
 	   ma.machine_no,                                -- 機器番号
 	   ma.machine_name,                              -- 機器名称
+	   ma.machine_no + ' ' + ma.machine_name AS machine,
 	   eq.maintainance_kind_manage,                  -- 点検種別毎管理
 	   mcp.inspection_site_structure_id,             -- 部位ID
 		( 
@@ -125,6 +126,24 @@ SELECT
 			   AND tra.structure_id = msc.maintainance_division
 		) AS maintainance_division_name, -- 保全区分
 	   msc.maintainance_kind_structure_id,           -- 点検種別ID
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = msc.maintainance_kind_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = msc.maintainance_kind_structure_id
+		) AS maintainance_kind_name, -- 点検種別
 	   msc.budget_amount,                            -- 予算金額
 	   msc.preparation_period,                       -- 準備期間(日)
 	   msc.order_no,                                 -- 並び順
@@ -183,4 +202,5 @@ AND mcp.machine_id = ma.machine_id
 AND ma.machine_id = eq.machine_id
 AND mcp.is_management_standard_conponent = 1    -- 機器別管理基準フラグ
 --AND mcp.machine_id = @MachineId
-
+AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND ma.location_structure_id = temp.structure_id)
+AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1010 AND  ma.job_structure_id = temp.structure_id)

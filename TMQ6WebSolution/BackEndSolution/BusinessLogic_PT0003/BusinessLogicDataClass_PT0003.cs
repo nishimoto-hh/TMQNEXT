@@ -290,6 +290,9 @@ namespace BusinessLogic_PT0003
             /// <summary>Gets or sets 年月</summary>
             /// <value>年月</value>
             public DateTime MonthYear { get; set; }
+            /// <summary>Gets or sets 対象年月(月初)</summary>
+            /// <value>対象年月(月初)</value>
+            public DateTime TargetYearMonth { get; set; }
             /// <summary>Gets or sets 作業区分(入出庫区分)</summary>
             /// <value>作業区分(入出庫区分)</value>
             public long? workDivisionStructureId { get; set; }

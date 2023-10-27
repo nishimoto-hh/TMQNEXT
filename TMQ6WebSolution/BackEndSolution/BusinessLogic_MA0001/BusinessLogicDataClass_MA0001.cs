@@ -1110,5 +1110,346 @@ namespace BusinessLogic_MA0001
             public string SmallClassficationName { get; set; }
             #endregion
         }
+
+        /// <summary>
+        /// ExcelPort 保全活動のデータクラス
+        /// </summary>
+        public class excelPortMaintenance : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public string JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 依頼No.</summary>
+            /// <value>依頼No.</value>
+            public string RequestNo { get; set; }
+            /// <summary>Gets or sets 件名</summary>
+            /// <value>件名</value>
+            public string Subject { get; set; }
+            /// <summary>Gets or sets 作業計画・実施内容</summary>
+            /// <value>作業計画・実施内容</value>
+            public string PlanImplementationContent { get; set; }
+            /// <summary>Gets or sets 件名メモ</summary>
+            /// <value>件名メモ</value>
+            public string SubjectNote { get; set; }
+            /// <summary>Gets or sets MQ分類ID</summary>
+            /// <value>MQ分類ID</value>
+            public int? MqClassStructureId { get; set; }
+            /// <summary>Gets or sets MQ分類(表示用)</summary>
+            /// <value>MQ分類(表示用)</value>
+            public string MqClassName { get; set; }
+            /// <summary>Gets or sets 修繕費分類ID</summary>
+            /// <value>修繕費分類ID</value>
+            public int? RepairCostClassStructureId { get; set; }
+            /// <summary>Gets or sets 修繕費分類(表示用)</summary>
+            /// <value>修繕費分類(表示用)</value>
+            public string RepairCostClassName { get; set; }
+            /// <summary>Gets or sets 予算管理区分ID</summary>
+            /// <value>予算管理区分ID</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理区分(表示用)</summary>
+            /// <value>予算管理区分(表示用)</value>
+            public string BudgetManagementName { get; set; }
+            /// <summary>Gets or sets 予算性格区分ID</summary>
+            /// <value>予算性格区分ID</value>
+            public int? BudgetPersonalityStructureId { get; set; }
+            /// <summary>Gets or sets 予算性格区分(表示用)</summary>
+            /// <value>予算性格区分(表示用)</value>
+            public string BudgetPersonalityName { get; set; }
+            /// <summary>Gets or sets 突発区分ID</summary>
+            /// <value>突発区分ID</value>
+            public int? SuddenDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 突発区分(表示用)</summary>
+            /// <value>突発区分(表示用)</value>
+            public string SuddenDivisionName { get; set; }
+            /// <summary>Gets or sets 系停止ID</summary>
+            /// <value>系停止ID</value>
+            public int? StopSystemStructureId { get; set; }
+            /// <summary>Gets or sets 系停止(表示用)</summary>
+            /// <value>系停止(表示用)</value>
+            public string StopSystemName { get; set; }
+            /// <summary>Gets or sets 系停止時間(Hr)</summary>
+            /// <value>系停止時間(Hr)</value>
+            public decimal? StopTime { get; set; }
+            /// <summary>Gets or sets カウント件数</summary>
+            /// <value>カウント件数</value>
+            public int? MaintenanceCount { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public int? ChangeManagementStructureId { get; set; }
+            /// <summary>Gets or sets 変更管理(表示用)</summary>
+            /// <value>変更管理(表示用)</value>
+            public string ChangeManagementName { get; set; }
+            /// <summary>Gets or sets 環境安全管理区分ID</summary>
+            /// <value>環境安全管理区分ID</value>
+            public int? EnvSafetyManagementStructureId { get; set; }
+            /// <summary>Gets or sets 環境安全管理区分(表示用)</summary>
+            /// <value>環境安全管理区分(表示用)</value>
+            public string EnvSafetyManagementName { get; set; }
+            /// <summary>Gets or sets 依頼内容</summary>
+            /// <value>依頼内容</value>
+            public string RequestContent { get; set; }
+            /// <summary>Gets or sets 発行日</summary>
+            /// <value>発行日</value>
+            public DateTime? IssueDate { get; set; }
+            /// <summary>Gets or sets 緊急度ID</summary>
+            /// <value>緊急度ID</value>
+            public int? UrgencyStructureId { get; set; }
+            /// <summary>Gets or sets 緊急度(表示用)</summary>
+            /// <value>緊急度(表示用)</value>
+            public string UrgencyStructureName { get; set; }
+            /// <summary>Gets or sets 発見方法ID</summary>
+            /// <value>発見方法ID</value>
+            public int? DiscoveryMethodsStructureId { get; set; }
+            /// <summary>Gets or sets 発見方法(表示用)</summary>
+            /// <value>発見方法(表示用)</value>
+            public string DiscoveryMethodsName { get; set; }
+            /// <summary>Gets or sets 着工希望日</summary>
+            /// <value>着工希望日</value>
+            public DateTime? DesiredStartDate { get; set; }
+            /// <summary>Gets or sets 完了希望日</summary>
+            /// <value>完了希望日</value>
+            public DateTime? DesiredEndDate { get; set; }
+            /// <summary>Gets or sets 依頼部課係ID</summary>
+            /// <value>依頼部課係ID</value>
+            public int? RequestDepartmentClerkId { get; set; }
+            /// <summary>Gets or sets 依頼部課係(表示用)</summary>
+            /// <value>依頼部課係(表示用)</value>
+            public string RequestDepartmentClerkName { get; set; }
+            /// <summary>Gets or sets 依頼担当者ID</summary>
+            /// <value>依頼担当者ID</value>
+            public int? RequestPersonnelId { get; set; }
+            /// <summary>Gets or sets 依頼担当者名</summary>
+            /// <value>依頼担当者名</value>
+            public string RequestPersonnelName { get; set; }
+            /// <summary>Gets or sets 依頼担当者TEL</summary>
+            /// <value>依頼担当者TEL</value>
+            public string RequestPersonnelTel { get; set; }
+            /// <summary>Gets or sets 依頼係長ID</summary>
+            /// <value>依頼係長ID</value>
+            public int? RequestDepartmentChiefId { get; set; }
+            /// <summary>Gets or sets 依頼係長名</summary>
+            /// <value>依頼係長名</value>
+            public string RequestDepartmentChiefName { get; set; }
+            /// <summary>Gets or sets 依頼課長ID</summary>
+            /// <value>依頼課長ID</value>
+            public int? RequestDepartmentManagerId { get; set; }
+            /// <summary>Gets or sets 依頼課長名</summary>
+            /// <value>依頼課長名</value>
+            public string RequestDepartmentManagerName { get; set; }
+            /// <summary>Gets or sets 依頼職長ID</summary>
+            /// <value>依頼職長ID</value>
+            public int? RequestDepartmentForemanId { get; set; }
+            /// <summary>Gets or sets 依頼職長名</summary>
+            /// <value>依頼職長名</value>
+            public string RequestDepartmentForemanName { get; set; }
+            /// <summary>Gets or sets 保全部課係ID</summary>
+            /// <value>保全部課係ID</value>
+            public int? MaintenanceDepartmentClerkId { get; set; }
+            /// <summary>Gets or sets 保全部課係(表示用)</summary>
+            /// <value>保全部課係(表示用)</value>
+            public string MaintenanceDepartmentClerkName { get; set; }
+            /// <summary>Gets or sets 依頼事由</summary>
+            /// <value>依頼事由</value>
+            public string RequestReason { get; set; }
+            /// <summary>Gets or sets 件名検討結果</summary>
+            /// <value>件名検討結果</value>
+            public string ExaminationResult { get; set; }
+            /// <summary>Gets or sets 工事区分ID</summary>
+            /// <value>工事区分ID</value>
+            public int? ConstructionDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 工事区分(表示用)</summary>
+            /// <value>工事区分(表示用)</value>
+            public string ConstructionDivisionStructureName { get; set; }
+            /// <summary>Gets or sets 実施件名</summary>
+            /// <value>実施件名</value>
+            public string PlanSubject { get; set; }
+            /// <summary>Gets or sets 発生日</summary>
+            /// <value>発生日</value>
+            public DateTime? OccurrenceDate { get; set; }
+            /// <summary>Gets or sets 着工予定日</summary>
+            /// <value>着工予定日</value>
+            public DateTime? ExpectedConstructionDate { get; set; }
+            /// <summary>Gets or sets 完了予定日</summary>
+            /// <value>完了予定日</value>
+            public DateTime? ExpectedCompletionDate { get; set; }
+            /// <summary>Gets or sets 全体予算金額</summary>
+            /// <value>全体予算金額</value>
+            public decimal? TotalBudgetCost { get; set; }
+            /// <summary>Gets or sets 予定工数</summary>
+            /// <value>予定工数</value>
+            public decimal? PlanManHour { get; set; }
+            /// <summary>Gets or sets 自・他責ID</summary>
+            /// <value>自・他責ID</value>
+            public int? ResponsibilityStructureId { get; set; }
+            /// <summary>Gets or sets 自・他責(表示用)</summary>
+            /// <value>自・他責(表示用)</value>
+            public string ResponsibilityName { get; set; }
+            /// <summary>Gets or sets 故障影響</summary>
+            /// <value>故障影響</value>
+            public string FailureEffect { get; set; }
+            /// <summary>Gets or sets 着工日</summary>
+            /// <value>着工日</value>
+            public DateTime? ConstructionDate { get; set; }
+            /// <summary>Gets or sets 完了日</summary>
+            /// <value>完了日</value>
+            public DateTime? CompletionDate { get; set; }
+            /// <summary>Gets or sets 保全時期ID</summary>
+            /// <value>保全時期ID</value>
+            public int? MaintenanceSeasonStructureId { get; set; }
+            /// <summary>Gets or sets 保全時期(表示用)</summary>
+            /// <value>保全時期(表示用)</value>
+            public string MaintenanceSeasonName { get; set; }
+            /// <summary>Gets or sets 呼出回数</summary>
+            /// <value>呼出回数</value>
+            public int? CallCount { get; set; }
+            /// <summary>Gets or sets 施工会社</summary>
+            /// <value>施工会社</value>
+            public string ConstructionCompany { get; set; }
+            /// <summary>Gets or sets 施工担当者ID</summary>
+            /// <value>施工担当者ID</value>
+            public int? ConstructionPersonnelId { get; set; }
+            /// <summary>Gets or sets 施工担当者名 </summary>
+            /// <value>施工担当者名 </value>
+            public string ConstructionPersonnelName { get; set; }
+            /// <summary>Gets or sets 実績結果</summary>
+            /// <value>実績結果</value>
+            public int? ActualResultStructureId { get; set; }
+            /// <summary>Gets or sets 実績結果(表示用)</summary>
+            /// <value>実績結果(表示用)</value>
+            public string ActualResultName { get; set; }
+            /// <summary>Gets or sets 休損量</summary>
+            /// <value>休損量</value>
+            public int? LossAbsence { get; set; }
+            /// <summary>Gets or sets 休損型数</summary>
+            /// <value>休損型数</value>
+            public int? LossAbsenceTypeCount { get; set; }
+            /// <summary>Gets or sets 保全見解</summary>
+            /// <value>保全見解</value>
+            public string MaintenanceOpinion { get; set; }
+            /// <summary>Gets or sets 自係(Hr)</summary>
+            /// <value>自係(Hr)</value>
+            public decimal? WorkingTimeSelf { get; set; }
+            /// <summary>Gets or sets 作業時間(施工会社)</summary>
+            /// <value>作業時間(施工会社)</value>
+            public decimal? WorkingTimeCompany { get; set; }
+            /// <summary>Gets or sets 総計(Hr)</summary>
+            /// <value>総計(Hr)</value>
+            public decimal? TotalWorkingTime { get; set; }
+            /// <summary>Gets or sets 費用メモ</summary>
+            /// <value>費用メモ</value>
+            public string CostNote { get; set; }
+            /// <summary>Gets or sets 実績金額</summary>
+            /// <value>実績金額</value>
+            public decimal? Expenditure { get; set; }
+            /// <summary>Gets or sets 製造担当者ID</summary>
+            /// <value>製造担当者ID</value>
+            public int? ManufacturingPersonnelId { get; set; }
+            /// <summary>Gets or sets 製造担当者名</summary>
+            /// <value>製造担当者名</value>
+            public string ManufacturingPersonnelName { get; set; }
+            /// <summary>Gets or sets 作業・故障区分ID</summary>
+            /// <value>作業・故障区分ID</value>
+            public int? WorkFailureDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 作業・故障区分(表示用)</summary>
+            /// <value>作業・故障区分(表示用)</value>
+            public string WorkFailureDivisionName { get; set; }
+            /// <summary>Gets or sets 発生時刻</summary>
+            /// <value>発生時刻</value>
+            public DateTime? OccurrenceTime { get; set; }
+            /// <summary>Gets or sets 完了時刻</summary>
+            /// <value>完了時刻</value>
+            public DateTime? CompletionTime { get; set; }
+            /// <summary>Gets or sets 系停止回数</summary>
+            /// <value>系停止回数</value>
+            public int? StopCount { get; set; }
+            /// <summary>Gets or sets 発見者</summary>
+            /// <value>発見者</value>
+            public string DiscoveryPersonnel { get; set; }
+            /// <summary>Gets or sets 生産への影響ID</summary>
+            /// <value>生産への影響ID</value>
+            public int? EffectProductionStructureId { get; set; }
+            /// <summary>Gets or sets 生産への影響(表示用)</summary>
+            /// <value>生産への影響(表示用)</value>
+            public string EffectProductionName { get; set; }
+            /// <summary>Gets or sets 品質への影響ID</summary>
+            /// <value>品質への影響ID</value>
+            public int? EffectQualityStructureId { get; set; }
+            /// <summary>Gets or sets 品質への影響(表示用)</summary>
+            /// <value>品質への影響(表示用)</value>
+            public string EffectQualityName { get; set; }
+            /// <summary>Gets or sets 故障部位</summary>
+            /// <value>故障部位</value>
+            public string FailureSite { get; set; }
+            /// <summary>Gets or sets 予備品有無</summary>
+            /// <value>予備品有無</value>
+            public bool? PartsExistenceFlg { get; set; }
+            /// <summary>Gets or sets 調査時間</summary>
+            /// <value>調査時間</value>
+            public decimal? WorkingTimeResearch { get; set; }
+            /// <summary>Gets or sets 調達時間</summary>
+            /// <value>調達時間</value>
+            public decimal? WorkingTimeProcure { get; set; }
+            /// <summary>Gets or sets 修復時間</summary>
+            /// <value>修復時間</value>
+            public decimal? WorkingTimeRepair { get; set; }
+            /// <summary>Gets or sets 試運転時間</summary>
+            /// <value>試運転時間</value>
+            public decimal? WorkingTimeTest { get; set; }
+            /// <summary>Gets or sets 保全活動件名ID</summary>
+            /// <value>保全活動件名ID</value>
+            public long SummaryId { get; set; }
+            /// <summary>Gets or sets 活動区分ID</summary>
+            /// <value>活動区分ID</value>
+            public int? ActivityDivision { get; set; }
+            /// <summary>Gets or sets 活動区分(表示用)</summary>
+            /// <value>活動区分(表示用)</value>
+            public string ActivityDivisionName { get; set; }
+        }
+
     }
 }

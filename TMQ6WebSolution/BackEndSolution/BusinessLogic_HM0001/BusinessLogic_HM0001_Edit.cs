@@ -186,7 +186,10 @@ namespace BusinessLogic_HM0001
 
             // 変更管理ID・変更管理テーブルの更新シリアルIDを設定
             results[0].HistoryManagementId = condition.HistoryManagementId;
-            results[0].UpdateSerialid = new ComDao.HmHistoryManagementEntity().GetEntity(condition.HistoryManagementId, this.db).UpdateSerialid;
+            if (condition.HistoryManagementId > 0)
+            {
+                results[0].UpdateSerialid = new ComDao.HmHistoryManagementEntity().GetEntity(condition.HistoryManagementId, this.db).UpdateSerialid;
+            }
 
             // 画面表示タイプ
             results[0].DispType = editDispType;

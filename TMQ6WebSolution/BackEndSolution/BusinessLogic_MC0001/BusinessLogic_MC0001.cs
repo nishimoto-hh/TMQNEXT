@@ -2,6 +2,7 @@
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
 using CommonWebTemplate.Models.Common;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,17 +12,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
-using DbTransaction = System.Data.IDbTransaction;
 using Dao = BusinessLogic_MC0001.BusinessLogicDataClass_MC0001;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
-using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using DbTransaction = System.Data.IDbTransaction;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
-using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
-using Microsoft.AspNetCore.Http;
+using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_MC0001
 {
@@ -262,6 +262,9 @@ namespace BusinessLogic_MC0001
             public const string UploadExcel = "UploadExcel";
             /// <summary>取込(CSV)</summary>
             public const string UploadCsv = "UploadCsv";
+
+            /// <summary>ExcelPortアップロード</summary>
+            public const string ExcelPortUpload = "LIST_000_1";
         }
 
         /// <summary>
@@ -375,6 +378,31 @@ namespace BusinessLogic_MC0001
             public const string ScheduleCondMondStructureId = "4";
             // スケジュール表示単位 汎用項目SEQ
             public const int SeqNo = 1;
+        }
+
+        /// <summary>
+        /// ExcelPort機器台帳シート情報
+        /// </summary>
+        private static class ExcelPortMachineListInfo
+        {
+            // データ開始行
+            public const int StartRowNo = 4;
+            // 送信時処理列番号
+            public const int ProccesColumnNo = 4;
+            // 機器レベル列番号
+            public const int EquipmentLevelColumnNo = 28;
+        }
+        /// <summary>
+        /// ExcelPort機器台帳シート情報
+        /// </summary>
+        private static class ExcelPortManagementStandardListInfo
+        {
+            // データ開始行
+            public const int StartRowNo = 4;
+            // 送信時処理列番号
+            public const int ProccesColumnNo = 4;
+            // 開始日列番号
+            public const int StratDateColumnNo = 39;
         }
         #endregion
 
@@ -951,14 +979,18 @@ namespace BusinessLogic_MC0001
                 TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string withSql);
 
                 //// 場所分類＆職種機種＆詳細検索条件取得
-                if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
-                {
-                    // 「ダウンロード処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
-                    return ComConsts.RETURN_RESULT.NG;
-                }
-                ////SQLパラメータに言語ID設定
+                //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+                //{
+                //    // 「ダウンロード処理に失敗しました。」
+                //    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
+                //////SQLパラメータに言語ID設定
+                //whereParam.LanguageId = this.LanguageId;
+                string whereSql = null;
+                dynamic whereParam = new ExpandoObject();
                 whereParam.LanguageId = this.LanguageId;
+
                 // 一覧検索SQL文の取得
                 string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
                 var selectSql = new StringBuilder(executeSql);
@@ -996,14 +1028,17 @@ namespace BusinessLogic_MC0001
                 // WITH句は別に取得
                 TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string withSql);
 
-                //// 場所分類＆職種機種＆詳細検索条件取得
-                if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
-                {
-                    // 「ダウンロード処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
-                    return ComConsts.RETURN_RESULT.NG;
-                }
-                ////SQLパラメータに言語ID設定
+                ////// 場所分類＆職種機種＆詳細検索条件取得
+                //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+                //{
+                //    // 「ダウンロード処理に失敗しました。」
+                //    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
+                //////SQLパラメータに言語ID設定
+                //whereParam.LanguageId = this.LanguageId;
+                string whereSql = null;
+                dynamic whereParam = new ExpandoObject();
                 whereParam.LanguageId = this.LanguageId;
                 // 一覧検索SQL文の取得
                 string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
@@ -1041,6 +1076,15 @@ namespace BusinessLogic_MC0001
                 return ComConsts.RETURN_RESULT.NG;
             }
 
+            // 出力最大データ数チェック
+            if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                resultMsg = GetResMessage(ComRes.ID.ID141120013);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
             // 個別シート出力処理
             if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg))
             {
@@ -1069,21 +1113,77 @@ namespace BusinessLogic_MC0001
 
             // ExcelPortテンプレートファイル情報初期化
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
             }
 
             // ExcelPortアップロードデータの取得
-            if(!excelPort.GetUploadDataList(file, this.IndividualDictionary,
-                out List<BusinessLogicDataClass_MC0001.searchResult> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+            if (excelPort.UploadCondition.SheetNo == 1)
             {
-                this.Status = CommonProcReturn.ProcStatus.Error;
-                return ComConsts.RETURN_RESULT.NG;
-            }
+                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
+                    out List<BusinessLogicDataClass_MC0001.excelPortMachineList> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
 
-            // TODO:個別チェック＆登録処理
+                // エラー情報リスト
+                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+
+                // 機器台帳登録チェック処理
+                if (!checkExcelPortRegistDetail(ref resultList, ref errorInfoList))
+                {
+                    if(errorInfoList.Count > 0)
+                    {
+                        // エラー情報シートへ設定
+                        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                    }
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機器台帳登録処理
+                if (!executeExcelPortRegistDetail(resultList))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+            }
+            else if (excelPort.UploadCondition.SheetNo == 2)
+            {
+                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
+                    out List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // エラー情報リスト
+                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+
+                // 機器別管理基準登録チェック処理
+                if (!checkExcelPortManagementStandardRegist(ref resultList, ref errorInfoList))
+                {
+                    if (errorInfoList.Count > 0)
+                    {
+                        // エラー情報シートへ設定
+                        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                    }
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機器別管理基準登録処理
+                if (!executeExcelPortManagementStandardRegist(resultList))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+            }
 
             return ComConsts.RETURN_RESULT.OK;
         }
@@ -1188,7 +1288,7 @@ namespace BusinessLogic_MC0001
             searchMPInfo(machineId);
 
             // スケジュール表示条件エラーかどうか
-            if(manageScheduleCondError == true || longPlanScheduleCondError == true)
+            if (manageScheduleCondError == true || longPlanScheduleCondError == true)
             {
                 return false;
             }
@@ -1232,7 +1332,7 @@ namespace BusinessLogic_MC0001
                     {
                         targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.EditDetail10);
                     }
-                    else if(this.CtrlId == "ReSearch")
+                    else if (this.CtrlId == "ReSearch")
                     {
                         targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.Detail00);
                     }
@@ -1331,7 +1431,7 @@ namespace BusinessLogic_MC0001
             }
 
             //URL直接起動時、参照データの権限チェック
-            if(!CheckAccessUserBelong(results[0].LocationStructureId, results[0].JobStructureId))
+            if (!CheckAccessUserBelong(results[0].LocationStructureId, results[0].JobStructureId))
             {
                 return false;
             }
@@ -1343,7 +1443,7 @@ namespace BusinessLogic_MC0001
             // コントロールIDより画面の項目を取得
             Dictionary<string, object> condition = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.SearchList);
             // 検索条件データの設定
-            if(condition != null)
+            if (condition != null)
             {
                 if (!SetSearchConditionByDataClass(new List<Dictionary<string, object>> { condition }, TargetCtrlId.SearchList, conditionObj, pageInfo))
                 {
@@ -1691,7 +1791,7 @@ namespace BusinessLogic_MC0001
                     return false;
                 }
                 // 適用法規
-                if (!registApplicable(machineResult.id, now))
+                if (!registApplicable(machineResult.id, now, false, false))
                 {
                     return false;
                 }
@@ -1718,7 +1818,7 @@ namespace BusinessLogic_MC0001
                     return false;
                 }
                 // 適用法規
-                if (!registApplicable(registMachineInfo.MachineId, now, true))
+                if (!registApplicable(registMachineInfo.MachineId, now, true, false))
                 {
                     return false;
                 }
@@ -2313,32 +2413,32 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
-            // mc_accessory_info
-            whereParam = null; // WHERE句パラメータ
-            sql = string.Empty;
-            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetChkAccessoryInfo, out sql))
-            {
-                // エラー終了
-                if (!updCheck)
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                }
-                return false;
-            }
-            whereParam = new { MachineId = machineId };
-            // 総件数を取得
-            cnt = db.GetCount(sql, whereParam);
-            if (cnt > 0)
-            {
-                // エラー終了
-                if (!updCheck)
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「 構成機器が登録されている機器の為、削除できません。」
-                    this.MsgId = GetResMessage("141070001");
-                }
-                return false;
-            }
+            //// mc_accessory_info
+            //whereParam = null; // WHERE句パラメータ
+            //sql = string.Empty;
+            //if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetChkAccessoryInfo, out sql))
+            //{
+            //    // エラー終了
+            //    if (!updCheck)
+            //    {
+            //        this.Status = CommonProcReturn.ProcStatus.Error;
+            //    }
+            //    return false;
+            //}
+            //whereParam = new { MachineId = machineId };
+            //// 総件数を取得
+            //cnt = db.GetCount(sql, whereParam);
+            //if (cnt > 0)
+            //{
+            //    // エラー終了
+            //    if (!updCheck)
+            //    {
+            //        this.Status = CommonProcReturn.ProcStatus.Error;
+            //        // 「 構成機器が登録されている機器の為、削除できません。」
+            //        this.MsgId = GetResMessage("141070001");
+            //    }
+            //    return false;
+            //}
 
             return true;
         }
@@ -2396,6 +2496,33 @@ namespace BusinessLogic_MC0001
             Dao.searchResult result = new Dao.searchResult();
             result.EquipmentId = equipmentId;
             if (!registDeleteDb<Dao.searchResult>(result, SqlName.DeleteEquipmentAttachment))
+            {
+                // エラーの場合
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 機器情報削除(ExcelPort)
+        /// </summary>
+        /// <returns>正常終了:True 異常終了:False</returns>
+        private bool deleteExcelPortEquipmentInfo(long equipmentId)
+        {
+            ComDao.McEquipmentEntity result = new ComDao.McEquipmentEntity();
+            result.EquipmentId = equipmentId;
+            if (!registDeleteDb<ComDao.McEquipmentEntity>(result, SqlName.DeleteEquipmentInfo))
+            {
+                // エラーの場合
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+
+            // 機器添付削除
+            Dao.searchResult result1 = new Dao.searchResult();
+            result.EquipmentId = equipmentId;
+            if (!registDeleteDb<Dao.searchResult>(result1, SqlName.DeleteEquipmentAttachment))
             {
                 // エラーの場合
                 this.Status = CommonProcReturn.ProcStatus.Error;
@@ -2583,7 +2710,7 @@ namespace BusinessLogic_MC0001
         /// <param name="machineId">機番ID</param>
         /// <param name="dt">登録日時</param>
         /// <returns>正常終了:True 異常終了:False</returns>
-        private bool registApplicable(long machineId, DateTime dt, bool updateFlg = false)
+        private bool registApplicable(long machineId, DateTime dt, bool updateFlg, bool epFlg, string epValue = null)
         {
             if (updateFlg)
             {
@@ -2597,7 +2724,16 @@ namespace BusinessLogic_MC0001
             }
 
             // 複数選択データを分割し1件ずつINSERT
-            string applicableItems = getValue(TargetCtrlId.EditDetail20, "applicable_laws_structure_id");
+            string applicableItems = null;
+            // ExcelPort用制御
+            if (!epFlg)
+            {
+                applicableItems = getValue(TargetCtrlId.EditDetail20, "applicable_laws_structure_id");
+            }
+            else
+            {
+                applicableItems = epValue;
+            }
             string[] appItem = applicableItems.Split('|');
             foreach (string val in appItem)
             {
@@ -2722,6 +2858,327 @@ namespace BusinessLogic_MC0001
             // 画面に設定
             var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
             SetSearchResultsByDataClass<Dao.HiddenInfo>(pageInfo, new List<Dao.HiddenInfo> { hideInfo }, 1);
+        }
+
+        /// <summary>
+        /// ExcelPort機器台帳チェック処理
+        /// </summary>
+        /// <returns>true:正常終了</returns>
+        private bool checkExcelPortRegistDetail(ref List<BusinessLogicDataClass_MC0001.excelPortMachineList> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            // 入力チェック
+            bool errFlg = false;
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                // 送信時処理IDが設定されているもののみ
+                if (resultList[i].ProcessId != null)
+                {
+                    // 場所階層セット
+                    resultList[i].LocationStructureId = (int)resultList[i].FactoryId;
+                    if (resultList[i].PlantId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].PlantId;
+                    }
+                    if (resultList[i].SeriesId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].SeriesId;
+                    }
+                    if (resultList[i].StrokeId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].StrokeId;
+                    }
+                    if (resultList[i].FacilityId != null)
+                    {
+                        resultList[i].LocationStructureId = (int)resultList[i].FacilityId;
+                    }
+
+                    // 職種階層セット
+                    resultList[i].JobStructureId = (int)resultList[i].JobId;
+                    if (resultList[i].LargeClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].LargeClassficationId;
+                    }
+                    if (resultList[i].MiddleClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].MiddleClassficationId;
+                    }
+                    if (resultList[i].SmallClassficationId != null)
+                    {
+                        resultList[i].JobStructureId = (int)resultList[i].SmallClassficationId;
+                    }
+
+                    // 保全方式
+                    resultList[i].ConservationStructureId = resultList[i].InspectionSiteConservationStructureId;
+
+                    // 更新
+                    if (resultList[i].ProcessId == 2)
+                    {
+                        // 変更前の機器レベルを取得
+                        if (!checkEpEquipmentLevel(resultList[i]))
+                        {
+                            // 構成機器が登録されている機器の為、機器レベルを変更できません。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.EquipmentLevelColumnNo, GetResMessage("111070003"), GetResMessage("141100001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                    }
+                    // 削除
+                    else if (resultList[i].ProcessId == 9)
+                    {
+                        // 長計存在チェック
+                        if (!checkEpLongPlanExsits(resultList[i]))
+                        {
+                            // 長期計画で使用される機器の為、削除できません。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141170001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                        // 保全活動存在チェック
+                        if (!checkEpMaSummaryExsits(resultList[i]))
+                        {
+                            // 保全活動で使用される機器の為、削除できません。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141300003"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+
+                        // 構成存在チェック
+                        if (!checkComposition((long)resultList[i].MachineId, true))
+                        {
+                            // 構成機器が登録されている機器の為、削除できません。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141070001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errFlg = true;
+                        }
+                    }
+                }
+            }
+
+            // 全件問題無ければ登録処理
+            if (errFlg)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort機器台帳登録処理
+        /// </summary>
+        /// <returns>true:正常終了</returns>
+        private bool executeExcelPortRegistDetail(List<BusinessLogicDataClass_MC0001.excelPortMachineList> resultList)
+        {
+            // 登録処理
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                // 送信時処理IDが設定されているもののみ
+                if (resultList[i].ProcessId != null)
+                {
+                    DateTime now = DateTime.Now;
+                    // 新規登録
+                    if (resultList[i].ProcessId == 1)
+                    {
+                        resultList[i].InsertDatetime = now;
+                        resultList[i].InsertUserId = int.Parse(this.UserId);
+                        resultList[i].UpdateDatetime = now;
+                        resultList[i].UpdateUserId = int.Parse(this.UserId);
+
+                        // 機番情報
+                        (bool returnFlag, long id) machineResult = registInsertDb<BusinessLogicDataClass_MC0001.excelPortMachineList>(resultList[i], SqlName.InsertMachineInfo);
+                        if (!machineResult.returnFlag)
+                        {
+                            return false;
+                        }
+                        // 機器情報
+                        // 登録した機番IDをセット
+                        resultList[i].MachineId = machineResult.id;
+                        (bool returnFlag, long id) equipResult = registInsertDb<BusinessLogicDataClass_MC0001.excelPortMachineList>(resultList[i], SqlName.InsertEquipmentInfo);
+                        if (!equipResult.returnFlag)
+                        {
+                            return false;
+                        }
+                        // 適用法規
+                        if (!registApplicable(machineResult.id, now, false, true, resultList[i].ApplicableLawsStructureId))
+                        {
+                            return false;
+                        }
+                        // 構成
+                        if (!insertParent(machineResult.id, now))
+                        {
+                            return false;
+                        }
+
+                    }
+                    // 更新
+                    else if (resultList[i].ProcessId == 2)
+                    {
+                        resultList[i].UpdateDatetime = now;
+                        resultList[i].UpdateUserId = int.Parse(this.UserId);
+
+                        // 機番情報
+                        if (!registUpdateDb<BusinessLogicDataClass_MC0001.excelPortMachineList>(resultList[i], SqlName.UpdateMachineInfo))
+                        {
+                            return false;
+                        }
+                        // 機器情報
+                        if (!registUpdateDb<BusinessLogicDataClass_MC0001.excelPortMachineList>(resultList[i], SqlName.UpdateEquipmentInfo))
+                        {
+                            return false;
+                        }
+                        // 適用法規
+                        if (!registApplicable((long)resultList[i].MachineId, now, true, true, resultList[i].ApplicableLawsStructureId))
+                        {
+                            return false;
+                        }
+
+                    }
+                    // 削除
+                    else if (resultList[i].ProcessId == 9)
+                    {
+                        // 削除処理
+                        // 機番情報削除
+                        if (!deleteMachineInfo((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                        // 機器情報削除
+                        if (!deleteExcelPortEquipmentInfo((long)resultList[i].EquipmentId))
+                        {
+                            return false;
+                        }
+
+                        // 仕様情報削除
+                        if (!deleteEquipmentSpecInfo((long)resultList[i].EquipmentId))
+                        {
+                            return false;
+                        }
+
+                        // 適用法規削除
+                        if (!deleteApplicableLaws((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                        // 機器別管理基準削除
+                        if (!deleteManagementStandards((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                        // 機番使用部品情報削除
+                        if (!deleteUseParts((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                        // 構成機器情報削除
+                        if (!deleteComposition((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                        // MP情報削除
+                        if (!deleteMpInfo((long)resultList[i].MachineId))
+                        {
+                            return false;
+                        }
+
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Ep用機器レベル変更チェック
+        /// </summary>
+        /// <param name="result">データ</param>
+        /// <returns>true:エラーなし</returns>
+        private bool checkEpEquipmentLevel(BusinessLogicDataClass_MC0001.excelPortMachineList result)
+        {
+            string whereClause = string.Empty; // WHERE句文字列
+            dynamic whereParam = null; // WHERE句パラメータ
+            string sql;
+            if (!TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql))
+            {
+                return false;
+            }
+            whereParam = new { MachineId = result.MachineId };
+            sql = sql + whereClause;
+            // 一覧検索実行
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParam);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            // 機器レベルが変更されているか
+            if (result.EquipmentLevelStructureId != results[0].EquipmentLevelStructureId)
+            {
+                // 機器構成が存在する場合エラー
+                if (!checkComposition((long)result.MachineId, true))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Ep用長計存在チェック
+        /// </summary>
+        /// <param name="result">データ</param>
+        /// <returns>true:エラーなし</returns>
+        private bool checkEpLongPlanExsits(BusinessLogicDataClass_MC0001.excelPortMachineList result)
+        {
+            dynamic whereParam = null; // WHERE句パラメータ
+            string sql = string.Empty;
+            // 検索SQL文の取得
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetChkLongPlan, out sql))
+            {
+                // エラー終了
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+            whereParam = new { MachineId = result.MachineId };
+            // 総件数を取得
+            int cnt = db.GetCount(sql, whereParam);
+            if (cnt > 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Ep用保全活動存在チェック
+        /// </summary>
+        /// <param name="result">データ</param>
+        /// <returns>true:エラーなし</returns>
+        private bool checkEpMaSummaryExsits(BusinessLogicDataClass_MC0001.excelPortMachineList result)
+        {
+
+            dynamic whereParam = null; // WHERE句パラメータ
+
+            string sql = string.Empty;
+            // 検索SQL文の取得
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetChkMsSummary, out sql))
+            {
+                // エラー終了
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+            whereParam = new { MachineId = result.MachineId };
+            // 総件数を取得
+            int cnt = db.GetCount(sql, whereParam);
+            if (cnt > 0)
+            {
+                return false;
+            }
+            return true;
         }
 
         #endregion

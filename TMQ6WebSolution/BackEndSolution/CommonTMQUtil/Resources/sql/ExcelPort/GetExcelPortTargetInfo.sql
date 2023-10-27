@@ -17,6 +17,6 @@ AND item_ex2.sequence_no=2
 
 WHERE
     item.structure_group_id = 2110
-AND item.language_id = /*LanguageId*/'ja'
-AND item_ex1.extension_data = /*ConductId*/'MC0001'
-AND item_ex2.extension_data = /*SheetNo*/1
+AND item.language_id = @LanguageId
+AND item_ex1.extension_data = @ConductId
+AND item_ex2.extension_data = @SheetNo

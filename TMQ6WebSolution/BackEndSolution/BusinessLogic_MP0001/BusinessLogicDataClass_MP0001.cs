@@ -18,8 +18,8 @@ namespace BusinessLogic_MP0001
         /// </summary>
         public class searchCondition : ComDao.SearchCommonClass
         {
-            /// <summary>Gets or sets 場所階層ID</summary>
-            /// <value>場所階層ID</value>
+            /// <summary>Gets or sets 場所階層ID(カンマ区切り)</summary>
+            /// <value>場所階層ID(カンマ区切り)</value>
             public string LocationId { get; set; }
             /// <summary>Gets or sets 対象年月度</summary>
             /// <value>対象年月度</value>

@@ -1573,6 +1573,7 @@ namespace CommonWebTemplate.CommonUtil
             }
             return returnInfo;
         }
+
         /// <summary>
         /// 処理区分に応じた共通処理
         /// 　93:CSVファイル取り込み処理
@@ -1590,7 +1591,6 @@ namespace CommonWebTemplate.CommonUtil
         public CommonProcReturn ComUploadProcess(CommonProcData procData, out object result)
         {
             result = null;
-
             //ビジネスロジック実行
             //①ファイルを読込み⇒COM_TMPTBL_UPLOAD
             //③取り込み処理
@@ -1607,6 +1607,114 @@ namespace CommonWebTemplate.CommonUtil
                 returnInfo.MESSAGE = ConvertResourceName("941120012", resources);
             }
             return returnInfo;
+        }
+
+        /// <summary>
+        /// 処理区分に応じた共通処理
+        /// 　93:CSVファイル取り込み処理
+        /// </summary>
+        /// <param name="procData">
+        /// 業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ(※以下、使用項目、内(*)：必須項目)
+        /// 　ConductId:機能ID(*)
+        /// 　PgmId:ﾌﾟﾛｸﾞﾗﾑID(*)
+        /// 　FormNo:画面NO(*)
+        /// 　CtrlId:ｺﾝﾄﾛｰﾙID(*)
+        /// 　　※ｲﾍﾞﾝﾄﾎﾞﾀﾝのｺﾝﾄﾛｰﾙID
+        /// 　ConditionData(val1～100):条件ﾃﾞｰﾀ(*)
+        /// </param>
+        /// <returns>処理ｽﾃｰﾀｽ情報</returns>
+        public CommonProcReturn ExcelPortUploadProcess(CommonProcData procData, out object retResults)
+        {
+            retResults = null;
+
+            //処理結果を初期化
+            object logicResult = null;
+            MemoryStream stream = null;
+            try
+            {
+                //ビジネスロジック実行
+                //①ファイルを読込み⇒COM_TMPTBL_UPLOAD
+                //③取り込み処理
+                //⑥ｴﾗｰの場合、処理を中断
+                CommonProcReturn returnInfo = businessLogicExec(procData, out logicResult);    //ﾃﾞｰﾀ保存なし
+                                                                                          //処理結果を初期化
+                if (returnInfo.IsProcEnd())
+                {
+                    Dictionary<string, object> resultsW = logicResult as Dictionary<string, object>;
+                    if (resultsW.ContainsKey("OutputStream") && resultsW["OutputStream"] != null)
+                    {
+                        //ﾌｧｲﾙﾀﾞｳﾝﾛｰﾄﾞを同期に設定
+                        procData.FileDownloadSet = AppConstants.FileDownloadSet.Hidouki.GetHashCode();
+
+                        // メッセージ取得
+                        GetResourceName(procData, new List<string> { "141220007" }, out IDictionary<string, string> resources);
+                        // 「入力エラーが存在します。ダウンロードされたEXCELよりエラー内容を確認してください。」
+                        returnInfo.MESSAGE = ConvertResourceName("141220007", resources);
+
+                        // OutputStreamが設定されている場合のみ出力処理を行う
+                        stream = resultsW["OutputStream"] as MemoryStream;
+                        var fileType = resultsW["fileType"].ToString();
+                        var fileName = resultsW["fileName"].ToString();
+
+                        //⑦以降、ファイル出力処理
+                        //※4：出力②～の処理に同じ
+
+                        // ファイル保存処理
+                        // - ﾌｧｲﾙを一時ﾌｫﾙﾀﾞに保存
+                        //作成ファイル情報設定
+                        FileUtil.Extension ext = FileUtil.GetFileExtFromFileType(fileType);      //ファイル拡張子
+                        CommonProcReturn returnInfoW = setCreateFileInfo(procData, stream.ToArray(), fileName, ext);
+                        if (returnInfoW.IsProcEnd())
+                        {
+                            return returnInfoW;
+                        }
+
+                        //処理結果をマージ
+                        MargeReturnInfo(ref returnInfo, returnInfoW);
+
+                        Dictionary<string, object> results = new Dictionary<string, object>();
+                        if (resultsW.ContainsKey("Result"))
+                        {
+                            results.Add("Result", resultsW["Result"]);
+                        }
+                        if (resultsW.ContainsKey("Individual"))
+                        {
+                            results.Add("Individual", resultsW["Individual"]);
+                        }
+                        if (resultsW.ContainsKey("ButtonStatus"))
+                        {
+                            results.Add("ButtonStatus", resultsW["ButtonStatus"]);
+                        }
+                        if (results.Count > 0)
+                        {
+                            retResults = results;
+                        }
+                    }
+                    else
+                    {
+                        retResults = logicResult;
+                    }
+                    return returnInfo;
+                }
+
+                //処理ｽﾃｰﾀｽ：正常
+                // - 処理完了ﾒｯｾｰｼﾞを設定
+                if (string.IsNullOrEmpty(returnInfo.MESSAGE))
+                {
+                    //メッセージ取得
+                    GetResourceName(procData, new List<string> { "941120012" }, out IDictionary<string, string> resources);
+                    //処理が完了しました。
+                    returnInfo.MESSAGE = ConvertResourceName("941120012", resources);
+                }
+                return returnInfo;
+            }
+            finally
+            {
+                if (stream != null)
+                {
+                    stream.Close();
+                }
+            }
         }
 
         /// <summary>

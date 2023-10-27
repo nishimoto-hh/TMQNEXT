@@ -22,6 +22,7 @@ function getPath() {
 document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
 document.write("<script src=\"" + getPath() + "/tmqmaster.js\"></script>");
 document.write("<script src=\"" + getPath() + "/SI0001.js\"></script>");
+document.write("<script src=\"" + getPath() + "/SU0001.js\"></script>");// MS1000で使用
 document.write("<script src=\"" + getPath() + "/MS1000.js\"></script>");
 document.write("<script src=\"" + getPath() + "/MS1001.js\"></script>");
 document.write("<script src=\"" + getPath() + "/MS1010.js\"></script>");
@@ -48,9 +49,9 @@ const FormList = {
 //const ItemExCtrlCol = { ExData1: 0, ExData2: 2, ExData3: 2, ExData4: 2, ExData5: 2 }
 
 // 拡張項目列
-var ItemExCol = { }
+var ItemExCol = {}
 // 拡張項目コントロール列(TextBox: 0, Label: 1, Combo: 2, ChkBox: 3, Link: 4, Input: 5, Textarea: 6, Password: 7, Button: 8)
-var ItemExCtrlCol = { }
+var ItemExCtrlCol = {}
 
 // 機能別拡張項目列
 // 拡張項目列
@@ -136,6 +137,9 @@ var ItemExCtrlCol_MS2070 = { ExData1: 3, ExData2: 0 }
 //--【MS2080】長期計画メール送信情報マスタ
 var ItemExCol_MS2080 = { ExData1: 11, ExData2: 12, ExData3: 13, ExData4: 14, ExData5: 15, ExData6: 16, ExData7: 17, ExData8: 18, ExData9: 19 }
 var ItemExCtrlCol_MS2080 = { ExData1: 0, ExData2: 0, ExData3: 0, ExData4: 0, ExData5: 0, ExData6: 0, ExData7: 0, ExData8: 0, ExData9: 0 }
+//--【MS2140】変更管理メール送信情報マスタ
+var ItemExCol_MS2140 = { ExData1: 11, ExData2: 12, ExData3: 13, ExData4: 14, ExData5: 15 }
+var ItemExCtrlCol_MS2140 = { ExData1: 0, ExData2: 0, ExData3: 0, ExData4: 0, ExData5: 0}
 //--【MS9020】言語マスタ
 var ItemExCol_MS9020 = { ExData1: 11 }
 var ItemExCtrlCol_MS9020 = { ExData1: 0 }
@@ -216,8 +220,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             ItemExCtrlCol = ItemExCtrlCol_MS1540;
         }
         else if ((conductId == ConductIdMS1600) || (conductId == ConductIdMS1610) || (conductId == ConductIdMS1620) || (conductId == ConductIdMS1630)
-             || (conductId == ConductIdMS1640) || (conductId == ConductIdMS1650) || (conductId == ConductIdMS1660) || (conductId == ConductIdMS1670)
-             || (conductId == ConductIdMS1680) || (conductId == ConductIdMS1690) || (conductId == ConductIdMS1700) || (conductId == ConductIdMS1750)
+            || (conductId == ConductIdMS1640) || (conductId == ConductIdMS1650) || (conductId == ConductIdMS1660) || (conductId == ConductIdMS1670)
+            || (conductId == ConductIdMS1680) || (conductId == ConductIdMS1690) || (conductId == ConductIdMS1700) || (conductId == ConductIdMS1750)
             || (conductId == ConductIdMS1780)) { //1600:文書種類_機器台帳_機番添付マスタ～MS1780:文書種類_予備品一覧_予備品地図マスタ
             ItemExCol = ItemExCol_MS1600;
             ItemExCtrlCol = ItemExCtrlCol_MS1600;
@@ -281,6 +285,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         else if (conductId == ConductIdMS2080) { //2080:長期計画メール送信情報マスタ
             ItemExCol = ItemExCol_MS2080;
             ItemExCtrlCol = ItemExCtrlCol_MS2080;
+        }
+        else if (conductId == ConductIdMS2140) { //2140:変更管理メール送信情報マスタ
+            ItemExCol = ItemExCol_MS2140;
+            ItemExCtrlCol = ItemExCtrlCol_MS2140;
         }
         else if (conductId == ConductIdMS9020) { //9020:言語マスタ
             ItemExCol = ItemExCol_MS9020;
@@ -525,6 +533,12 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
         // 共通-アイテム検索画面を閉じたとき
         SI0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
     }
+
+    // ユーザーマスタ・機種別仕様マスタでない場合
+    if (conductId != ConductIdMS0010 && conductId != ConductIdMS0020) {
+        // 共通-担当者検索画面を閉じたとき
+        SU0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    }
 }
 
 /**
@@ -608,6 +622,9 @@ function afterSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPt
 function clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrlId, fromConductId) {
     // アイテム検索画面
     SI0001_clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrlId, fromConductId);
+
+    // 担当者検索画面
+    SU0001_clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrlId, fromConductId);
 }
 
 /*==1:実行処理==*/
@@ -734,6 +751,8 @@ function preDeleteProcess(appPath, conductId, pgmId, formNo, conductPtn, btn, is
 function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId) {
     // アイテム検索画面
     SI0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
+    // 担当者検索画面
+    SU0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
 }
 
 /**

@@ -171,6 +171,9 @@ namespace BusinessLogic_MP0001
             public const string ColumnNameStrokeName = "stroke_name";
             /// <summary>カラム名職種名</summary>
             public const string ColumnNameJobName = "job_name";
+            /// <summary>カラム名：年度開始月</summary>
+            public const string ColumnNameYearStartMonth = "year_start_month";
+
             // 見出し（VAL1～VAL3）
             public const string ValTitle1 = "VAL1";
             public const string ValTitle2 = "VAL2";
@@ -601,7 +604,7 @@ namespace BusinessLogic_MP0001
                             targetMonth = conditionObj.BeginningMonth;
 
                             //出力テンプレートIDを上期、下期で変更する
-                            if (conditionObj.TargetYear.Month >= 4 && conditionObj.TargetYear.Month <= 9)
+                            if (conditionObj.TargetYear >= conditionObj.BeginningMonth && conditionObj.TargetYear <= conditionObj.BeginningMonth.AddMonths(6).AddDays(-1))
                             {
                                 // 上期用テンプレートを使用
                                 templateId = ReportDefine.TemplateId1;
@@ -675,6 +678,8 @@ namespace BusinessLogic_MP0001
                             sql += ",'" + plantName + "' AS " + ReportDefine.ColumnNamePlantName;
                             sql += ",'" + strokeName + "' AS " + ReportDefine.ColumnNameStrokeName;
                             sql += ",'" + jobName + "' AS " + ReportDefine.ColumnNameJobName;
+                            // 年度開始月を埋め込む
+                            sql += ",'" + conditionObj.BeginningMonth.Month.ToString() + "' AS " + ReportDefine.ColumnNameYearStartMonth;
                         }
                         var summaryDataList = db.GetListByDataClass<dynamic>(sql.ToString());
                         dicSummaryDataList.Add(sheetDefine.SheetNo, summaryDataList);
@@ -1035,27 +1040,24 @@ namespace BusinessLogic_MP0001
             // ユーザの本務工場取得
             int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
 
-            // 期首月、期の期間取得
+            // 年度開始月、期の期間取得
             TMQUtil.GetBeginningMonth(out int beginningMonth, out int term, this.db, userFactoryId);
-
             // 対象指定年月度から年度取得
-            int year = conditionObj.TargetYear.Year;
-            // 月取得
-            int month = conditionObj.TargetYear.Month;
-
-            // 期の開始月取得
-            int startMonth = GetStartMonth(beginningMonth, term, month);
-            if (startMonth == 0)
+            int year = ComUtil.GetNendoStartDay(conditionObj.TargetYear, beginningMonth).Year;
+            conditionObj.BeginningMonth = new DateTime(year, beginningMonth, 1); // 累計集計条件設定(1日固定)
+            // 半期集計条件設定(1日固定)
+            conditionObj.StartMonth = getTermDate(beginningMonth, term, conditionObj.TargetYear, out bool isErrorTermDate);
+            if (isErrorTermDate)
             {
                 return false;
             }
-            conditionObj.StartMonth = new DateTime(year, startMonth, 1);         // 半期集計条件設定(1日固定)
-            conditionObj.BeginningMonth = new DateTime(year, beginningMonth, 1); // 累計集計条件設定(1日固定)
 
             // 場所階層ツリーの取得
             locationIdList = GetLocationTreeValues();
             // 場所階層追加
             conditionObj.LocationId = getStructureId(locationIdList);
+
+            return true;
 
             string getStructureId(List<int> structureIdList)
             {
@@ -1064,7 +1066,32 @@ namespace BusinessLogic_MP0001
                 // パラメータ用にカンマ区切りで文字列に変換
                 return string.Join(",", list);
             }
-            return true;
+
+            // 期の開始年月を取得する処理
+            // nendoStartMonth：年度開始月
+            // termMonths：期の月数
+            // condDate：指定された年月の日付(月末日)
+            // isError：out エラーがあった場合Trueを返す
+            DateTime getTermDate(int nendoStartMonth, int termMonths, DateTime condDate, out bool isError)
+            {
+                isError = false;
+                // 期の開始月を取得
+                int month = GetStartMonth(nendoStartMonth, termMonths, condDate.Month);
+                if (month == 0)
+                {
+                    isError = true;
+                    return DateTime.Now;
+                }
+                // 期の年
+                // 期の開始月の値が指定年月の月より大きければ前年となる
+                int termYear = condDate.Year;
+                if (month > condDate.Month)
+                {
+                    termYear = termYear - 1;
+                }
+                DateTime termDate = new DateTime(termYear, month, 1);
+                return termDate;
+            }
         }
 
         /// <summary>
@@ -1433,13 +1460,10 @@ namespace BusinessLogic_MP0001
             int[] halfTotal = new int[4];
             int[] totalTotal = new int[4];
 
-            // 選択された構成リストから配下の構成IDを全て取得
-            locationIdList = GetLowerStructureIdList(locationIdList);
-
             //カンマ区切りの文字列にする
             string ids = string.Join(',', locationIdList);
 
-            // IDのリストより上位の階層を検索し、階層情報のリストを取得
+            // IDのリストより上位の階層を検索し、階層情報（工場階層）のリストを取得
             var param = new { StructureIdList = ids, LanguageId = this.LanguageId };
             var structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureIdByexdata, SqlName.SubDir, param, db);
             if (structureInfoList == null)
@@ -1451,18 +1475,18 @@ namespace BusinessLogic_MP0001
             foreach (var data in structureInfoList)
             {
                 int extensionData = data.extensionData ?? (int)MaintenanceHistoryFlg.General; //NULLの場合は一般工場
-                conditionObj.StructureId = data.StructureId;     // 構成ID
+                conditionObj.StructureId = data.StructureId;     // 工場の構成ID
                 conditionObj.ExtensionData = extensionData; // 拡張データ(保全履歴個別工場フラグ)
 
-                // 0の場合は一般工場
-                if (extensionData == (int)MaintenanceHistoryFlg.General)
-                {
-                    resultsList = getSummaryInfo(conditionObj, SqlName.GetOthersDetailFlg0, string.Empty);
-                }
                 // 1の場合は個別工場
-                else
+                if (extensionData == (int)MaintenanceHistoryFlg.Individual)
                 {
                     resultsList = getSummaryInfo(conditionObj, SqlName.GetOthersDetailFlg1, string.Empty);
+                }
+                // 1以外の場合は一般工場
+                else
+                {
+                    resultsList = getSummaryInfo(conditionObj, SqlName.GetOthersDetailFlg0, string.Empty);
                 }
 
                 //データが取得できなければエラー

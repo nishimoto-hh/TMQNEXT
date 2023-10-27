@@ -11,6 +11,8 @@ SELECT DISTINCT
 	-- 追加条件区分(拡張項目)
 	,item.structure_id
     -- 構成ID(ソートするため)
+	,ms_structure_order.display_order
+	-- 並び順
 FROM
 	v_structure_item_all AS item
 	LEFT OUTER JOIN
@@ -34,6 +36,10 @@ FROM
 	LEFT JOIN
 	ms_item_extension
 	ON	item.structure_item_id = ms_item_extension.item_id
+	LEFT JOIN
+	ms_structure_order
+	ON item.structure_id = ms_structure_order.structure_id
+	AND item.structure_group_id = ms_structure_order.structure_group_id
 WHERE
 	item.structure_group_id = 2110
 AND	item.structure_layer_no = 1
@@ -46,4 +52,4 @@ AND item_ex1.extension_data IN (
          WHERE 
             user_id = @UserId)
 ORDER BY 
-	item.structure_id
+	ms_structure_order.display_order

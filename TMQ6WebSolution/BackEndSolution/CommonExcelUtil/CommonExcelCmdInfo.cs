@@ -29,6 +29,12 @@ namespace CommonExcelUtil
         public const string CExecCmdDeleteSheet = "DeleteSheet";
         /// <summary>シート非表示</summary>
         public const string CExecCmdHiddenSheet = "HiddenSheet";
+        /// <summary>シート表示</summary>
+        public const string CExecCmdShowSheet = "ShowSheet";
+        /// <summary>シート移動</summary>
+        public const string CExecCmdMoveSheet = "MoveSheet";
+        /// <summary>シートアクティブ化</summary>
+        public const string CExecCmdActivateSheet = "ActivateSheet";
         /// <summary>行高自動調整</summary>
         public const string CExecCmdAutoFit = "AutoFit";
         /// <summary>クリア</summary>

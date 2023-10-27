@@ -109,6 +109,7 @@ WITH department AS (
         LEFT JOIN pt_inventory pit                  --棚卸データ
             ON plt.department_structure_id = pit.department_structure_id
             AND pls.parts_location_id = pit.parts_location_id
+            AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(pit.parts_location_detail_no, '')
         LEFT JOIN ( 
             SELECT
                 pih.inout_quantity

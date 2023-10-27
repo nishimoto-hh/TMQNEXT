@@ -8,6 +8,7 @@ using TMQDataClass = CommonTMQUtil.TMQCommonDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using STDDao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using ComDataBaseClass = CommonSTDUtil.CommonDataBaseClass;
 using ExData = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId;
@@ -15,6 +16,7 @@ using System.Collections.Generic;
 using System;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using CommonWebTemplate.Models.Common;
 
 namespace CommonTMQUtil
 {
@@ -1706,6 +1708,26 @@ namespace CommonTMQUtil
 
                 // 取得した工場IDを返す
                 return results[0].FactoryId;
+
+            }
+
+            /// <summary>
+            /// 構成IDより、工場IDを取得する
+            /// </summary>
+            /// <param name="structureId">構成ID</param>
+            /// <returns></returns>
+            public int getFactoryIdByStructureId(int structureId)
+            {
+                // SQL実行
+                var result = new STDDao.VStructureItemEntity().GetEntity(structureId, this.Db);
+                if (result == null)
+                {
+                    // 取得できない場合-1を返す
+                    return -1;
+                }
+
+                // 取得した工場IDを返す
+                return result.FactoryId.Value;
 
             }
 

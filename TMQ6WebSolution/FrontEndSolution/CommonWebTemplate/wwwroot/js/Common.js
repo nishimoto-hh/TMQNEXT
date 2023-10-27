@@ -9346,6 +9346,8 @@ function excelPortDownload(appPath, btn, conductId, pgmId, formNo, conductPtn, b
         // ExcelPortダウンロード一覧画面の場合、選択行データから取得
         var rowNo = $(btn).closest("div.tabulator-row").find("div[tabulator-field=ROWNO]")[0].innerText;
         var tblId = "#" + $(btn).closest("div.ctrlId").attr("id");
+        // フィルターを掛けている場合を考慮して以下で行番号を取得
+        rowNo = P_listData[tblId].getRowFromPosition(rowNo, true).getData().ROWNO -1;
         conditionDataList.push(getTempDataForTabulator(formNo, rowNo, tblId));
 
     } else {
@@ -12494,6 +12496,7 @@ function initComUploadBtn(appPath, btn, FileSize) {
         var formNoW = $(P_Article).data("formno");
         var isEdit = false;
         var conductPtnW = $(form).find("input:hidden[name='CONDUCTPTN']").val();
+        var actionKbn = $(this).data("actionkbn");
 
         //submitｴﾘｱのform要素
         var form = null;
@@ -12505,7 +12508,7 @@ function initComUploadBtn(appPath, btn, FileSize) {
         }
         else {
             var search_div = $(btn).closest(".action_search_div");
-            if (search_div.length > 0) {
+            if (search_div.length > 0 || actionKbn == actionkbn.ExcelPortUpload) {
                 //条件ｴﾘｱ
                 form = $(P_Article).find("form[id^='formSearch']");
             }
@@ -12711,7 +12714,11 @@ function initComUploadBtn(appPath, btn, FileSize) {
 
         //処理継続用ｺｰﾙﾊﾞｯｸ関数を生成
         var eventFunc = function () {
-            clickComUploadBtnConfirmOK(appPath, btn, conductIdW, pgmIdW, formNoW, ctrlId, form, isEdit, conductPtnW, isAutoBackFlg);
+            if (actionKbn != actionkbn.ExcelPortUpload) {
+                clickComUploadBtnConfirmOK(appPath, btn, conductIdW, pgmIdW, formNoW, ctrlId, form, isEdit, conductPtnW, isAutoBackFlg);
+            } else {
+                clickExcelPortUploadBtnConfirmOK(appPath, btn, conductIdW, pgmIdW, formNoW, ctrlId, actionKbn, form, isEdit, conductPtnW, isAutoBackFlg, 0);
+            }
         }
 
         // 確認メッセージを表示
@@ -12974,6 +12981,177 @@ function clickComUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrl
             P_ProcExecuting = false;
             // ボタンを活性化
             $(btn).prop("disabled", false);
+        });
+    $('html,body').animate({ scrollTop: 0 }, '1');      //ｽｸﾛｰﾙを先頭へ移動
+    if (isEdit) {
+        $(P_Article).find(".edit_div").focus();
+    }
+    else {
+        $(P_Article).find(".detail_div").focus();
+    }
+
+}
+
+/**
+ *  【共通 - ExcelPort】アップロードボタン - 確認メッセージOK時、実行処理
+ *  @param {string} appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {Element} btn        ：ボタン要素
+ *  @param {string} conductId   ：機能ID
+ *  @param {string} pgmId       ：プログラムID
+ *  @param {number} formNo      ：画面番号
+ *  @param {string} ctrlId      ：ボタンCtrlId
+ *  @param {string} actionKbn   ：ボタンアクション区分
+ *  @param {Element} form       ：submitｴﾘｱのform要素
+ */
+function clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrlId, actionKbn, form, isEdit, conductPtn, autoBackFlg, confirmNo) {
+
+    // 実行中フラグON
+    P_ProcExecuting = true;
+
+    if (confirmNo > 0) {
+        //処理中メッセージ：on
+        processMessage(true);
+        dispLoading();
+    }
+
+    //FormData生成
+   var formData = new FormData($(form).get(0));
+
+    // クリックされたボタンを判定
+    var btnClickedBtn;
+    $.each(btn, function (index, element) {
+        var tmpPgmId = getProgramIdByElement(element);
+        if (tmpPgmId == pgmId) {
+            btnClickedBtn = element;
+        }
+    })
+
+    // ボタンのアクション区分の設定
+    formData.append("ActionKbn", actionKbn);
+    if (confirmNo > 0) {
+        // 対象機能確認後の場合、対象機能IDを個別実装条件から取得
+        var pgmIdw = P_dicIndividual["TargetConductId"];
+        formData.set("PGMID", pgmIdw);
+        formData.set("ListIndividual", JSON.stringify(P_dicIndividual));
+    }
+
+    // 【オーバーライド用関数】追加条件取得処理
+    var addConditionData = addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
+    if (addConditionData.length) {
+        formData.append("AddRegistData", JSON.stringify(addConditionData));
+    }
+
+    var formNo = 0;
+    var ctrlId = "";
+    var input = $(form).find("input:hidden[name='FORMNO']");
+    if (input != null && input.length > 0) {
+        formNo = input.val();
+    }
+    input = $(form).find("input:hidden[name='CTRLID']");
+    if (input != null && input.length > 0) {
+        ctrlId = input.val();
+    }
+
+    $.ajax({
+        url: appPath + 'Common/ExcelPortUpload/',   // ExcelPortアップロード
+        method: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false
+    }).then(
+        // 1つめは通信成功時のコールバック
+        function (resultInfo) {
+            //正常時
+            var status = resultInfo[0];                     //[0]:処理ステータス - CommonProcReturn
+            var data = separateDicReturn(resultInfo[1], conductId);    //[1]:結果データ - Dictionary<string, object>※結果ﾃﾞｰﾀ："Result"、個別実装用ﾃﾞｰﾀ："Individual"
+            confirmNo = 0;
+
+            //完了ﾒｯｾｰｼﾞを表示
+            setMessage(status.MESSAGE, status.STATUS);
+            addMessageLogNo(status.LOGNO, status.STATUS);
+
+            // エラー情報を表示
+            dispErrorDetail(data, true);
+
+            // 正常の場合
+            if (status.STATUS == procStatus.Valid ||
+                status.STATUS == procStatus.Warning ||
+                status.STATUS == procStatus.WarnDisp) {
+
+                // 結果ﾃﾞｰﾀをｾｯﾄ
+                //ﾀﾌﾞ内ﾎﾞﾀﾝか判定
+                var tab = $(btn).closest(".tab_contents");
+                var isTab = $(tab).length;
+                setExecuteResults(appPath, conductId, pgmId, formNo, ctrlId, conductPtn, isEdit, autoBackFlg, data, status, isTab);
+            } else if (status.STATUS == procStatus.Error) {
+
+                // ※エラー情報シートをダウンロードさせる場合は正常ルートで返ってくる
+                // ダウンロードファイル名の取得
+                var fileName = status.FILEDOWNLOADNAME;
+                var filePath = status.FILEPATH;
+
+                if (fileName != null && fileName.length > 0) {
+                    // ダウンロードファイル名が指定されている場合、ダウンロード処理実行
+                    var formDetail = $(P_Article).find("#" + P_formDetailId);
+                    setAttrByNativeJs(formDetail, "method", "POST");
+                    setAttrByNativeJs(formDetail, "action", appPath + "Common/Report?output=2&fileName=" + fileName + "&filePath=" + filePath);
+                    $(formDetail).submit();
+                }
+            }
+
+            //【オーバーライド用関数】実行正常終了後処理
+            postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
+            //ﾌｧｲﾙ情報をｸﾘｱ ※連続処理を制御
+            $(P_Article).find("input:file").val("");
+
+        },
+
+        // 2つめは通信失敗時のコールバック
+        function (resultInfo) {
+            var result = resultInfo.responseJSON;
+            var status = result[0];                     //[0]:処理ステータス - CommonProcReturn
+            var data = separateDicReturn(result[1], conductId);    //[1]:結果データ - Dictionary<string, object>※結果ﾃﾞｰﾀ："Result"、個別実装用ﾃﾞｰﾀ："Individual"
+
+            confirmNo = 0;
+            if (status.LOGNO && status.LOGNO.length > 0) {
+                confirmNo = parseInt(status.LOGNO, 10);
+            }
+            if (confirmNo == 0) {
+                //エラー詳細を表示
+                dispErrorDetail(data);
+            }
+
+            //処理継続用ｺｰﾙﾊﾞｯｸ関数を生成
+            var eventFunc = function () {
+                clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrlId, actionKbn, form, isEdit, conductPtn, autoBackFlg, confirmNo)
+            }
+
+            //処理結果ｽﾃｰﾀｽを画面状態に反映
+            if (!setReturnStatus(appPath, status, eventFunc)) {
+                return false;
+            }
+        }
+    ).always(
+        //通信の完了時に必ず実行される
+        function (resultInfo) {
+            if (confirmNo == 0) {
+                // 個別実装用データ初期化
+                $(form).find("input:hidden[name='ListIndividual']").val("");
+                P_dicIndividual["TargetConductId"] = null;
+                P_dicIndividual["TargetSheetNo"] = null;
+
+                // 画面変更ﾌﾗｸﾞ初期化
+                dataEditedFlg = false;
+
+               //処理中メッセージ：off
+                processMessage(false);
+                // 実行中フラグOFF
+                P_ProcExecuting = false;
+                // ボタンを活性化
+                $(btn).prop("disabled", false);
+            }
+
         });
     $('html,body').animate({ scrollTop: 0 }, '1');      //ｽｸﾛｰﾙを先頭へ移動
     if (isEdit) {

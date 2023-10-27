@@ -1,28 +1,23 @@
-﻿using System;
+﻿using CommonExcelUtil;
+using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using CommonExcelUtil;
-using Microsoft.AspNetCore.Http;
-using ComConsts = CommonSTDUtil.CommonConstants;
-using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
-using ExcelUtil = CommonExcelUtil.CommonExcelUtil;
-using TMQDataClass = CommonTMQUtil.TMQCommonDataClass;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
-using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
-using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
-using STDDao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
-using Const = CommonTMQUtil.CommonTMQConstants;
-using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
-using System.Dynamic;
 using ComBase = CommonSTDUtil.CommonDataBaseClass;
-using InputDao = CommonSTDUtil.CommonSTDUtil.CommonInputReportDataClass;
+using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
 using ComRes = CommonSTDUtil.CommonResources;
-using System.Text.RegularExpressions;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using Const = CommonTMQUtil.CommonTMQConstants;
+using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
+using ExcelUtil = CommonExcelUtil.CommonExcelUtil;
+using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using STDDao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
+using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -209,7 +204,7 @@ namespace CommonTMQUtil
             public static bool IsCommonColumn(string colName)
             {
                 string[] comNames = new string[] { 
-                    ComTitle, ComDate, ComTitle, ComSheetTitle, ComVersion, ComDateTime, ComConductId, ComSheetNo 
+                    ComTitle, ComDate, ComTime, ComSheetTitle, ComVersion, ComDateTime, ComConductId, ComSheetNo 
                 };
                 return comNames.Contains(colName);
             }
@@ -489,6 +484,174 @@ namespace CommonTMQUtil
             public const string ReportId = "RP0410";
             /// <summary>帳票ID</summary>
             public const string password = "";
+        }
+        #endregion
+
+        #region RP0420・RP0430 変更履歴一覧 出力条件のデータクラス
+        /// <summary>
+        /// RP0420・RP0430 変更履歴一覧 出力条件のデータクラス
+        /// </summary>
+        public class HistoryCondition : ComDao.SearchCommonClass
+        {
+            #region 変更管理
+            /// <summary>Gets or sets 申請状況ID</summary>
+            /// <value>申請状況ID</value>
+            public List<int> ApplicationStatusIdList { get; set; }
+            /// <summary>Gets or sets 申請区分ID</summary>
+            /// <value>申請区分ID</value>
+            public List<int> ApplicationDivisionIdList { get; set; }
+            /// <summary>Gets or sets 申請者名称</summary>
+            /// <value>申請者名称</value>
+            public string ApplicationUserName { get; set; }
+            /// <summary>Gets or sets 承認者名称</summary>
+            /// <value>承認者名称</value>
+            public string ApprovalUserName { get; set; }
+            /// <summary>Gets or sets 申請日(From)</summary>
+            /// <value>申請日(From)</value>
+            public DateTime? ApplicationDateFrom { get; set; }
+            /// <summary>Gets or sets 申請日(To)</summary>
+            /// <value>申請日(To)</value>
+            public DateTime? ApplicationDateTo { get; set; }
+            /// <summary>Gets or sets 承認日(From)</summary>
+            /// <value>承認日(From)</value>
+            public DateTime? ApprovalDateFrom { get; set; }
+            /// <summary>Gets or sets 承認日(To)</summary>
+            /// <value>承認日(To)</value>
+            public DateTime? ApprovalDateTo { get; set; }
+            /// <summary>Gets or sets 申請理由</summary>
+            /// <value>申請理由</value>
+            public string ApplicationReason { get; set; }
+            #endregion
+
+            #region 機器台帳
+            /// <summary>Gets or sets 機器番号</summary>
+            /// <value>機器番号</value>
+            public string MachineNo { get; set; }
+            /// <summary>Gets or sets 機器名称</summary>
+            /// <value>機器名称</value>
+            public string MachineName { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public List<int> EquipmentLevelStructureIdList { get; set; }
+            /// <summary>Gets or sets 重要度</summary>
+            /// <value>重要度</value>
+            public List<int> ImportanceStructureIdList { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public List<int> ConservationStructureIdList { get; set; }
+            /// <summary>Gets or sets 設置場所</summary>
+            /// <value>設置場所</value>
+            public string InstallationLocation { get; set; }
+            /// <summary>Gets or sets 設置台数(From)</summary>
+            /// <value>設置台数(From)</value>
+            public decimal? NumberOfInstallationFrom { get; set; }
+            /// <summary>Gets or sets 設置台数(To)</summary>
+            /// <value>設置台数(To)</value>
+            public decimal? NumberOfInstallationTo { get; set; }
+            /// <summary>Gets or sets 設置日(From)</summary>
+            /// <value>設置日(From)</value>
+            public DateTime? DateOfInstallationFrom { get; set; }
+            /// <summary>Gets or sets 設置日(To)</summary>
+            /// <value>設置日(To)</value>
+            public DateTime? DateOfInstallationTo { get; set; }
+            /// <summary>Gets or sets 適用法規ID</summary>
+            /// <value>適用法規ID</value>
+            public List<long> ApplicableLawsStructureIdList { get; set; }
+            /// <summary>Gets or sets 機番メモ</summary>
+            /// <value>機番メモ</value>
+            public string MachineNote { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public List<int> ManufacturerStructureIdList { get; set; }
+            /// <summary>Gets or sets メーカー型式</summary>
+            /// <value>メーカー型式</value>
+            public string ManufacturerType { get; set; }
+            /// <summary>Gets or sets 型式コード</summary>
+            /// <value>型式コード</value>
+            public string ModelNo { get; set; }
+            /// <summary>Gets or sets 製造番号</summary>
+            /// <value>製造番号</value>
+            public string SerialNo { get; set; }
+            /// <summary>Gets or sets 製造日(From)</summary>
+            /// <value>製造日(From)</value>
+            public DateTime? DateOfManufactureFrom { get; set; }
+            /// <summary>Gets or sets 製造日(To)</summary>
+            /// <value>製造日(To)</value>
+            public DateTime? DateOfManufactureTo { get; set; }
+            /// <summary>Gets or sets 納期(From)</summary>
+            /// <value>納期(From)</value>
+            public int? DeliveryDateFrom { get; set; }
+            /// <summary>Gets or sets 納期(To)</summary>
+            /// <value>納期(To)</value>
+            public int? DeliveryDateTo { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public List<int> UseSegmentStructureIdList { get; set; }
+            /// <summary>Gets or sets 使用区分追加条件</summary>
+            /// <value>使用区分追加条件</value>
+            public bool UseSegmentFlg { get; set; }
+            /// <summary>Gets or sets 使用区分(NULLのみ)</summary>
+            /// <value>使用区分(NULLのみ)</value>
+            public string UseSegmentIsNull { get; set; }
+            /// <summary>Gets or sets 固定資産番号</summary>
+            /// <value>固定資産番号</value>
+            public string FixedAssetNo { get; set; }
+            /// <summary>Gets or sets 機器メモ</summary>
+            /// <value>機器メモ</value>
+            public string EquipmentNote { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public bool MaintainanceKindManage { get; set; }
+            #endregion
+
+            #region 長期計画
+            /// <summary>Gets or sets 件名</summary>
+            /// <value>件名</value>
+            public string Subject { get; set; }
+            /// <summary>Gets or sets 件名メモ</summary>
+            /// <value>件名メモ</value>
+            public string SubjectNote { get; set; }
+            /// <summary>Gets or sets 保全時期</summary>
+            /// <value>保全時期</value>
+            public List<int> MaintenanceSeasonStructureIdList { get; set; }
+            /// <summary>Gets or sets 担当者名</summary>
+            /// <value>担当者名</value>
+            public string PersonName { get; set; }
+            /// <summary>Gets or sets 作業項目</summary>
+            /// <value>作業項目</value>
+            public List<int> WorkItemStructureIdList { get; set; }
+            /// <summary>Gets or sets 予算管理区分</summary>
+            /// <value>予算管理区分</value>
+            public List<int> BudgetManagementStructureIdList { get; set; }
+            /// <summary>Gets or sets 予算性格区分</summary>
+            /// <value>予算性格区分</value>
+            public List<int> BudgetPersonalityStructureIdList { get; set; }
+            /// <summary>Gets or sets 目的区分</summary>
+            /// <value>目的区分</value>
+            public List<int> PurposeStructureIdList { get; set; }
+            /// <summary>Gets or sets 作業区分</summary>
+            /// <value>作業区分</value>
+            public List<int> WorkClassStructureIdList { get; set; }
+            /// <summary>Gets or sets 処置区分</summary>
+            /// <value>処置区分</value>
+            public List<int> TreatmentStructureIdList { get; set; }
+            /// <summary>Gets or sets 設備区分</summary>
+            /// <value>設備区分</value>
+            public List<int> FacilityStructureIdList { get; set; }
+            #endregion
+
+            /// <summary>Gets or sets 機能場所階層IDリスト(カンマ区切り)</summary>
+            /// <value>機能場所階層IDリスト(カンマ区切り)</value>
+            public string LocationStructureIds { get; set; }
+            /// <summary>Gets or sets 職種機種階層IDリスト(カンマ区切り)</summary>
+            /// <value>職種機種階層IDリスト(カンマ区切り)</value>
+            public string JobStructureIds { get; set; }
+            /// <summary>Gets or sets 対象機能（1：機器台帳、2：長期計画）</summary>
+            /// <value>対象機能（1：機器台帳、2：長期計画）</value>
+            public string ConductCode { get; set; }
+            /// <summary>Gets or sets SQLの中でコメントアウトを解除したい箇所のリスト</summary>
+            /// <value>SQLの中でコメントアウトを解除したい箇所のリスト</value>
+            public List<string> ListUnComment { get; set; }
         }
         #endregion
 
@@ -894,7 +1057,8 @@ namespace CommonTMQUtil
         Option option = null,
         CondAccountReport condAccountReport = null,
         Dictionary<int, IList<dynamic>> dicSummaryDataList = null,
-        Dictionary<string, string> dicFixedValueForOutput = null)
+        Dictionary<string, string> dicFixedValueForOutput = null,
+        HistoryCondition condHistoryManagementReport = null)
         {
 
             //==========
@@ -1020,6 +1184,12 @@ namespace CommonTMQUtil
                     else if (dicSummaryDataList != null)
                     {
                         dataList = new List<dynamic>(dicSummaryDataList[sheetDefine.SheetNo]);
+                    }
+                    //変更管理の変更履歴一覧帳票の場合
+                    else if (condHistoryManagementReport != null)
+                    {
+                        //変更履歴一覧を取得
+                        dataList = GetHistoryManagementReportData(targetSql, languageId, db, condHistoryManagementReport);
                     }
                     else
                     {
@@ -1891,6 +2061,92 @@ namespace CommonTMQUtil
             }
         }
         #endregion
+
+        /// <summary>
+        /// RP0420・RP0430 変更履歴一覧のデータ取得
+        /// </summary>
+        /// <param name="targetSql">対象SQL</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB情報</param>
+        /// <param name="condition">検索条件</param>
+        /// <returns>取得データ</returns>
+        public static IList<dynamic> GetHistoryManagementReportData(string targetSql, string languageId, ComDB db, HistoryCondition condition)
+        {
+            // 検索SQLの取得
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath, targetSql, out string selectSql, condition.ListUnComment))
+            {
+                return null;
+            }
+            //出力機能毎に変更項目が異なるので、ここでSQLを作成する
+            string colName = condition.ConductCode == ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001).ToString() ? "machine_id" : "long_plan_id";
+            //追加SQL
+            StringBuilder sql = new StringBuilder();
+            sql.AppendLine("SELECT");
+            sql.AppendLine("    hd." + colName);
+            sql.AppendLine("    , hd.history_management_id");
+            sql.AppendLine("    , hd.history_order");
+            sql.AppendLine("    , hd.row_num");
+            sql.AppendLine("    , hd.application_reason");
+            sql.AppendLine("    , hd.application_user_name");
+            sql.AppendLine("    , hd.application_date");
+            sql.AppendLine("    , hd.approval_user_name");
+            sql.AppendLine("    , hd.approval_date");
+            sql.AppendLine("    , hd.division_cd");
+            sql.AppendLine("    , hd.status");
+            sql.AppendLine("    , hd.division");
+            sql.AppendLine("    , rpc.col_order AS col_no");
+            sql.AppendLine("    , rpc.col_name AS col_name");
+            sql.AppendLine("    , hd.@ItemName AS col_value");
+            sql.AppendLine("FROM");
+            sql.AppendLine("    #temp_history_data AS hd");
+            sql.AppendLine("    CROSS JOIN report_col_info AS rpc");
+            sql.AppendLine("WHERE");
+            sql.AppendLine("    rpc.col_order = @ColOrder");
+
+            //構成アイテムを取得するパラメータ設定
+            TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+            //構成グループID
+            param.StructureGroupId = (int)Const.MsStructure.GroupId.OutputItem;
+            //言語
+            param.LanguageId = languageId;
+
+            // 変更管理帳票出力対象項目定義を取得
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, db, Const.CommonFactoryId, true);
+            //機能IDで絞った構成ID（項目）のリスト
+            List<int> structureIdList = list.Where(x => x.Seq == 1 && x.ExData == condition.ConductCode).Select(x => x.StructureId).ToList();
+            //対象の構成IDで絞ったリスト
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> targetList = list.Where(x => structureIdList.Contains(x.StructureId)).ToList();
+            //拡張データ2の表示順で並べる
+            List<int> orderIdList = targetList.Where(x => x.Seq == 2).OrderBy(x => int.Parse(x.ExData)).Select(x => x.StructureId).ToList();
+
+            StringBuilder addSql = new StringBuilder();
+            bool isFirst = true;
+            foreach (int structureId in orderIdList)
+            {
+                if (!isFirst)
+                {
+                    //2項目目以降
+                    addSql.AppendLine("UNION");
+                }
+                //表示順
+                string colOrder = targetList.Where(x => x.StructureId == structureId && x.Seq == 2).Select(x => x.ExData).FirstOrDefault();
+                //項目物理名
+                string itemName = targetList.Where(x => x.StructureId == structureId && x.Seq == 3).Select(x => x.ExData).FirstOrDefault();
+                if (string.IsNullOrEmpty(colOrder) || string.IsNullOrEmpty(itemName))
+                {
+                    continue;
+                }
+
+                string text = sql.ToString().Replace("@ItemName", itemName).Replace("@ColOrder", colOrder);
+                addSql.AppendLine(text);
+                isFirst = false;
+            }
+            selectSql = selectSql.Replace("@HistoryVertical", addSql.ToString());
+
+            //SQL実行
+            var results = db.GetListByDataClass<dynamic>(selectSql.ToString(), condition);
+            return results;
+        }
 
         #region　予備品関連処理
         /// <summary>
@@ -3976,7 +4232,7 @@ namespace CommonTMQUtil
                         //    }
                         //}
                         // アップロード共通チェック実行
-                        if(ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, db, tmpErrorInfo))
+                        if(!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, db, tmpErrorInfo))
                         {
                             continue;
                         }
@@ -4031,7 +4287,7 @@ namespace CommonTMQUtil
         /// <param name="msgResources">メッセージリソース</param>
         /// <param name="db">DB操作クラス</param>
         /// <param name="tmpErrorInfo">エラー情報リスト</param>
-        /// <returns></returns>
+        /// <returns>エラーの場合False</returns>
         public static bool ExecuteCommonUploadCheck(
             ComBase.InputDefine reportInfo, 
             string val, 
@@ -4098,7 +4354,7 @@ namespace CommonTMQUtil
         /// <param name="error">エラー内容</param>
         /// <param name="dataDirection">入力方式</param>
         /// <returns>エラー情報</returns>
-        private static ComBase.UploadErrorInfo setTmpErrorInfo(int rowNo, int columnNo, string columnName, string error, int dataDirection)
+        public static ComBase.UploadErrorInfo setTmpErrorInfo(int rowNo, int columnNo, string columnName, string error, int dataDirection)
         {
             // エラー情報を初期化
             ComBase.UploadErrorInfo errorInfo = new ComBase.UploadErrorInfo();

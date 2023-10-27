@@ -1267,6 +1267,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>実行結果(0:OK/0未満:NG)</returns>
         protected virtual int ExcelPortUpload()
         {
+            this.LogNo = string.Empty;
+
             string fileType = string.Empty;
             string fileName = string.Empty;
             MemoryStream ms = null;
@@ -1284,7 +1286,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             var file = this.InputStream[0];
             // ファイル拡張子チェック
             string extension = Path.GetExtension(file.FileName);
-            if (extension != ComUtil.FileExtension.Excel || extension != ComUtil.FileExtension.ExcelMacro)
+            if (extension != ComUtil.FileExtension.Excel && extension != ComUtil.FileExtension.ExcelMacro)
             {
                 // 「ファイル形式が有効ではありません。」
                 this.MsgId = GetResMessage(ComRes.ID.ID941280004);
@@ -1337,7 +1339,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         // 詳細メッセージがセットされている場合、ログ出力
                         writeErrorLog(detailMsg);
                     }
-                    if(ms != null)
+                    if (ms != null)
                     {
                         // OUTPUTパラメータに設定
                         this.OutputFileType = fileType;
@@ -2419,6 +2421,19 @@ namespace CommonSTDUtil.CommonBusinessLogic
         {
             // マッピング情報よりグループ番号で抽出
             var temp = this.mapInfoList.Where(x => x.GrpNo == grpNo).ToList();
+            // 複製して渡すから操作されても元々のマッピング情報に変更はない
+            return new MappingInfo(new List<ComUtil.DBMappingInfo>(temp));
+        }
+
+        /// <summary>
+        /// マッピング情報リストよりグループ番号のリストを指定して、対象のマッピング情報を取得する(複製)
+        /// </summary>
+        /// <param name="grpNoList">取得したいマッピング情報のグループ番号のリスト</param>
+        /// <returns>対象のコントロールIDのマッピング情報</returns>
+        protected MappingInfo getResultMappingInfoByGrpNoList(List<int> grpNoList)
+        {
+            // マッピング情報よりグループ番号で抽出
+            var temp = this.mapInfoList.Where(x => grpNoList.Contains(x.GrpNo)).ToList();
             // 複製して渡すから操作されても元々のマッピング情報に変更はない
             return new MappingInfo(new List<ComUtil.DBMappingInfo>(temp));
         }
@@ -3950,7 +3965,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 foreach (var mapInfo in mappingList)
                 {
                     var paramName = mapInfo.ParamName;
-                    var prop = properties.FirstOrDefault(x => x.Name.ToUpper().Equals(paramName.ToUpper()));
+                    var prop = getProperty(properties, paramName);
                     if (prop != null)
                     {
                         // 指定したカラム名が検索結果に存在する場合、結果オブジェクトへ追加
@@ -3988,6 +4003,24 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 list.Add(pramObj);
             }
             return list;
+
+            // プロパティのリストより指定された名称のプロパティを取得する処理
+            static PropertyInfo getProperty(PropertyInfo[] properties, string pParamName)
+            {
+                // 以下と等価
+                // var prop = properties.FirstOrDefault(x => x.Name.ToUpper().Equals(paramName.ToUpper()));
+                // LinqでなくForeachで書く方がメモリの関係で高速
+                // 一覧画面などでは行数*列数で繰り返すため、性能が問題となる
+                string paramName = pParamName.ToUpper();
+                foreach (PropertyInfo prop in properties)
+                {
+                    if (paramName == prop.Name.ToUpper())
+                    {
+                        return prop;
+                    }
+                }
+                return null;
+            }
         }
 
         /// <summary>
@@ -6113,6 +6146,9 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         locationIdList.Add(-1);
                     }
 
+                    // 共通の工場ID「0」を追加
+                    locationIdList.Add(0);
+
                     // WHERE句を生成
                     existsWhere = true;
                     sbSql.Append("WHERE ");
@@ -6297,7 +6333,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             string getExistsText(string tempTableName, string columnName)
             {
                 string sqlText = "";
-                if(!string.IsNullOrEmpty(tempTableName) && !string.IsNullOrEmpty(columnName))
+                if (!string.IsNullOrEmpty(tempTableName) && !string.IsNullOrEmpty(columnName))
                 {
                     sqlText = "EXISTS(SELECT * FROM " + tempTableName + " temp WHERE " + columnName + " = temp.structure_id)";
                 }
@@ -6701,8 +6737,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             return checkFlg;
         }
-		
-		//↓↓↓2022/12/14 CommonSTDUtilへ移植↓↓↓
+
+        //↓↓↓2022/12/14 CommonSTDUtilへ移植↓↓↓
         ///// <summary>
         ///// 固定SQL文の取得
         ///// </summary>
@@ -6743,7 +6779,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
         //    return result;
         //}
-		//↑↑↑2022/12/14 CommonSTDUtilへ移植↑↑↑
+        //↑↑↑2022/12/14 CommonSTDUtilへ移植↑↑↑
     }
 
     /// <summary>
