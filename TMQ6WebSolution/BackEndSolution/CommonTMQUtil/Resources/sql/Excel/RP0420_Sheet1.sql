@@ -1028,13 +1028,14 @@ FROM
 WHERE
     st.structure_group_id = 2150 
     AND st.language_id = @LanguageId 
-    AND st.factory_id = 0; 
+    AND st.factory_id = 0
+    AND st.location_structure_id = 0;
 
 -- 帳票出力対象の列の定義を取得(機器台帳or長期計画)
 -- 作業用の帳票出力項目定義を取得するために連番1で機能を絞り、連番2の表示順を取得
 INSERT 
 INTO #report_col_info 
-SELECT
+SELECT DISTINCT
     rci.col_name
     , CONVERT(INT, rci.ex_data) AS col_order 
 FROM

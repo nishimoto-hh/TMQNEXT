@@ -2322,9 +2322,10 @@ namespace CommonTMQUtil
                 sql.AppendLine("    rpc.col_order = @ColOrder");
 
                 //機能IDで絞った構成ID（項目）のリスト
-                List<int> structureIdList = list.Where(x => x.Seq == 1 && x.ExData == outputItem).Select(x => x.StructureId).ToList();
-                //対象の構成IDで絞ったリスト
-                List<TMQUtil.StructureItemEx.StructureItemExInfo> targetList = list.Where(x => structureIdList.Contains(x.StructureId)).ToList();
+                List<int> structureIdList = list.Where(x => x.Seq == 1 && x.ExData == outputItem && x.FactoryId == Const.CommonFactoryId).Select(x => x.StructureId).ToList();
+                //対象の構成IDで絞ったリスト(項目が重複して定義されている場合は重複削除)
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> targetStructureList = list.Where(x => structureIdList.Contains(x.StructureId) && x.LocationStructureId == Const.CommonFactoryId).ToList();
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> targetList = targetStructureList.GroupBy(x => new { x.Seq, x.ExData }).Select(x => x.First()).ToList();
                 //拡張データ2の表示順で並べる
                 List<int> orderIdList = targetList.Where(x => x.Seq == 2).OrderBy(x => int.Parse(x.ExData)).Select(x => x.StructureId).ToList();
 
@@ -4846,7 +4847,7 @@ namespace CommonTMQUtil
         /// <param name="msgResources">メッセージリソース</param>
         /// <param name="error">エラー情報</param>
         /// <returns>true:正常、false:異常</returns>
-        public static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
+        private static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
         {
             // データタイプによって処理を分岐
             int dataType = reportInfo.DataType;
