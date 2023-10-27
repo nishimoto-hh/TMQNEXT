@@ -975,6 +975,37 @@ namespace CommonSTDUtil.CommonSTDUtil
                 // 検索条件を再設定
                 searchCondition = setCondition(condition);
 
+                // 条件でキー名称が「param」で始まり、値がnullの件数を取得する
+                var paramNullCnt = condition.Where(x => (x.Key.ToString()).StartsWith("param"))
+                                            .Where(y => y.Value == null || y.Value.ToString() == "null")
+                                            .ToList().Count();
+
+
+                // コンボ・オートコンプリートとして実行されるSQLで、param〇の中に文字列の「null」が含まれている場合は例外エラーとなるので実行しない
+                // 右記SQLは文字列の「null」が入ってくることを想定したSQLのため実行可とする　「"A0004", "C0006", "C0020"」
+                // 新たにコンボ・オートコンプリートのSQLを作成した場合は「notExecuteSqlIdList」に含めるかどうかをチェックすること
+                List<string> notExecuteSqlIdList = new()
+                {
+                    "A0001",
+                    "A0003",
+                    "A0005",
+                    "A0006",
+                    "A0008",
+                    "A0009",
+                    "A0011",
+                    "C0001",
+                    "C0016",
+                    "C0017",
+                    "C0022",
+                    "C0028",
+                    "C0030"
+                };
+
+                if (notExecuteSqlIdList.Contains(ctrlSQLId) && paramNullCnt > 0)
+                {
+                    return true;
+                }
+
                 // 検索実行
                 results = db.GetListByOutsideSql<Dao.AutoCompleteEntity>(ctrlSQLId, sqlDir, searchCondition);
                 if (results != null && results.Count > 0)

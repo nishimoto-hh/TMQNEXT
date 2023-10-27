@@ -192,22 +192,30 @@ namespace BusinessLogic_Common
                     outParam.MsgId = this.MsgId;
                     outParam.LogNo = this.LogNo;
                     outParam.ResultList = this.resultInfoDictionary;
-
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    this.MsgId = ex.Message;
-                    this.LogNo = string.Empty;
+                    // エラーログ出力
+                    logger.ErrorLog(this.FactoryId, this.UserId, ex.ToString());
+                    // エラーが発生しました。システム管理者に問い合わせてください。
+                    string msg = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941040004, this.LanguageId);
+
+                    outParam.Status = CommonProcReturn.ProcStatus.Error;
+                    outParam.MsgId = msg;
 
                     return -3;
                 }
             }
             catch (Exception ex)
             {
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, ex.ToString());
+                // エラーが発生しました。システム管理者に問い合わせてください。
+                string msg = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941040004, this.LanguageId);
+
                 outParam.Status = CommonProcReturn.ProcStatus.Error;
-                outParam.MsgId = ex.Message;
+                outParam.MsgId = msg;
 
                 return -2;
             }
@@ -347,8 +355,9 @@ namespace BusinessLogic_Common
                     if (result < 0)
                     {
                         this.Status = CommonProcReturn.ProcStatus.Error;
+                        string factoryId = string.IsNullOrWhiteSpace(this.FactoryId) ? null : this.FactoryId;
                         //ログイン認証処理に失敗しました。
-                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941430003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(this.FactoryId) });
+                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941430003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(factoryId) });
 
                         return -1;
                     }
