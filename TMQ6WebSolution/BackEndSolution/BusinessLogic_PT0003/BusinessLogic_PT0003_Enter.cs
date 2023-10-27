@@ -41,7 +41,7 @@ namespace BusinessLogic_PT0003
             var pageInfo = GetPageInfo(ConductInfo.FormList.EnterList.List, this.pageInfoList);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true, isJobNullAble: true))
             {
                 return false;
             }
@@ -52,6 +52,11 @@ namespace BusinessLogic_PT0003
             // 総件数を取得
             int cnt = db.GetCount(execSql, condition);
             // 総件数のチェック
+            if (cnt == 0)
+            {
+                //0件の場合は問題なし（対象年月の棚卸が未実施の場合）
+                return true;
+            }
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
                 return false;

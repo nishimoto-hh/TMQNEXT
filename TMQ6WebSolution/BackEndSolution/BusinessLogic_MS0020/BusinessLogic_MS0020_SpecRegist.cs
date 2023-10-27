@@ -18,6 +18,7 @@ using Master = CommonTMQUtil.CommonTMQUtil.ComMaster;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using SpecType = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.SpecType;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 /// <summary>
 /// 機種別仕様マスタメンテ 機種別仕様登録画面
@@ -84,7 +85,7 @@ namespace BusinessLogic_MS0020
             SetFormByDataClass<Dao.SpecRegist.SpecInfo>(FormInfo.SpecRegist.RelationInfos, specInfos);
 
             // 職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.SpecRegist.SpecInfo>(ref specInfos, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId, true);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.SpecRegist.SpecInfo>(ref specInfos, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId, true, searchCond.FactoryId);
             // 検索結果の設定
             SetFormByDataClass<Dao.SpecRegist.SpecInfo>(FormInfo.SpecRegist.Header, specInfos);
             // 退避した工場IDを再設定
@@ -247,12 +248,37 @@ namespace BusinessLogic_MS0020
                         regist.MachineSpecRelationId = keyInfo.MachineSpecRelationId ?? -1;
                         TMQUtil.SqlExecuteClass.Regist(Sql.SpecRegist.DeleteMsMachineSpecRelation, Sql.SpecRegist.SubDir, regist, this.db);
                     }
-                    // 職種の分繰り返しINSERT
-                    foreach (var jobRow in jobList)
+
+                    // ツリーで職種が選択されているかどうかを取得(未選択の場合でも空のデータが１件あるので選択されている件数)
+                    var isJobSelected = jobList.Where(x => x.JobStructureId > 0).ToList().Count > 0;
+
+                    // 選択状態を判定
+                    if (isJobSelected)
                     {
-                        regist.JobStructureId = jobRow.JobStructureId ?? -1;
-                        TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out int relationId, Sql.SpecRegist.InsertMsMachineSpecRelation, Sql.SpecRegist.SubDir, regist, this.db);
-                        relationIds.Add(relationId);
+                        // ツリーで職種が選択されている場合
+                        // 職種の分繰り返しINSERT
+                        foreach (var jobRow in jobList)
+                        {
+                            regist.JobStructureId = jobRow.JobStructureId ?? -1;
+                            TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out int relationId, Sql.SpecRegist.InsertMsMachineSpecRelation, Sql.SpecRegist.SubDir, regist, this.db);
+                            relationIds.Add(relationId);
+                        }
+                    }
+                    else
+                    {
+                        // 職種が選択されていない場合
+                        // 工場配下で権限のある職種を取得
+                        List<int> jobIdList = this.BelongingInfo.JobInfoList.Where(x => x.LayerNo == 0)
+                                                                            .Where(x => x.FactoryId == keyInfo.FactoryId || x.FactoryId == TMQConst.CommonFactoryId)
+                                                                            .Select(x => x.StructureId).ToList();
+
+                        // 権限のある職種のデータで登録
+                        foreach (var jobId in jobIdList)
+                        {
+                            regist.JobStructureId = jobId;
+                            TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out int relationId, Sql.SpecRegist.InsertMsMachineSpecRelation, Sql.SpecRegist.SubDir, regist, this.db);
+                            relationIds.Add(relationId);
+                        }
                     }
 
                     return true;

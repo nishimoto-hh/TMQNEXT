@@ -11,6 +11,7 @@ using ExData = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId;
 using System.Reflection;
 using System;
 using System.Collections.Generic;
+using TMQDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace CommonTMQUtil
 {
@@ -1222,13 +1223,51 @@ namespace CommonTMQUtil
 
         }
 
+        /// <summary>
+        /// ラベル出力 共通クラス
+        /// </summary>
+        public class Label : TMQDao.PtPartsEntity
+        {
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string Maker { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string SubjectCode { get; set; }
+            /// <summary>Gets or sets 標準棚番</summary>
+            /// <value>標準棚番</value>
+            public string ShedName { get; set; }
+            /// <summary>Gets or sets QRコード</summary>
+            /// <value>QRコード</value>
+            public string Qrc { get; set; }
+            /// <summary>Gets or sets 管理工場ID</summary>
+            /// <value>管理工場ID</value>
+            public int PartsFactoryId { get; set; }
+        }
 
-
-
-
-
-
-
-
+        /// <summary>
+        /// ラベル出力をするための条件
+        /// </summary>
+        public class LabelCondition
+        {
+            /// <summary>Gets or sets 予備品ID</summary>
+            /// <value>予備品ID</value>
+            public long PartsId { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 棚ID</summary>
+            /// <value>棚ID</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番</summary>
+            /// <value>棚枝番</value>
+            public string PartsLocationDetailNoEnter { get; set; }
+        }
     }
 }

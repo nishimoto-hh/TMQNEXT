@@ -1849,6 +1849,7 @@ namespace CommonWebTemplate.CommonUtil
                 {
                     returnInfo.STATUS = CommonProcReturn.ProcStatus.Error;
                     returnInfo.MESSAGE = string.Format("<DLLに業務ロジッククラスが存在しません。{0}>", this.dllFileName);
+                    throw new Exception(returnInfo.MESSAGE);
                 }
             }
             catch (Exception ex)
@@ -1862,6 +1863,7 @@ namespace CommonWebTemplate.CommonUtil
                 {
                     returnInfo.MESSAGE = string.Format("<DLLが存在しません。{0}>", this.dllFileName);
                 }
+                throw new Exception(returnInfo.MESSAGE, ex);
             }
 
             //実行ステータスを返却

@@ -47,8 +47,8 @@ namespace BusinessLogic_PT0001
             {
                 /// <summary>SQL名：一覧取得</summary>
                 public const string GetPartsList = "GetPartsList";
-                /// <summary>SQL名：一覧画面検索時、データの件数を取得するSQL</summary>
-                public const string GetCountPartsList = "GetCountPartsList";
+                /// <summary>SQL名：RFタグ情報を取得するSQL</summary>
+                public const string GetRftagOutputData = "GetRftagOutputData";
             }
 
             /// <summary>
@@ -99,6 +99,14 @@ namespace BusinessLogic_PT0001
                 public const string GetUnitRoundDivision = "GetUnitRoundDivision";
                 /// <summary>SQL名：金額管理単位小数点以下桁数・丸め処理区分取得</summary>
                 public const string GetCurrencyDigitAndDivision = "GetCurrencyDigitAndDivision";
+                /// <summary>SQL名：工場IDより地区IDを取得</summary>
+                public const string GetDistrictIdByFactoryId = "GetDistrictIdByFactoryId";
+                /// <summary>SQL名：予備品No採番テーブルより、指定された地区の連番を取得</summary>
+                public const string GetNewPartsNo = "GetNewPartsNo";
+                /// <summary>SQL名：予備品No採番テーブルより、指定された地区のレコードが存在しない場合、登録</summary>
+                public const string InsertNewPartsNoData = "InsertNewPartsNoData";
+                /// <summary>SQL名：予備品No採番テーブルより、指定された地区レコードを更新</summary>
+                public const string UpdatePartsNoData = "UpdatePartsNoData";
             }
 
             /// <summary>
@@ -116,6 +124,24 @@ namespace BusinessLogic_PT0001
                 public const string InsertCommonFactoryIdToTemp = "InsertCommonFactoryIdToTemp";
             }
 
+            /// <summary>
+            /// RFタグ取込画面
+            /// </summary>
+            public static class RFUpload
+            {
+                /// <summary>SQL名：ユーザに権限がある予備品No件数取得</summary>
+                public const string GetCountPartsNoByFactory = "GetCountPartsNoByFactory";
+                /// <summary>SQL名：取込データ一時テーブルの作成</summary>
+                public const string CreateTempTableRftagData = "CreateTempTableRftagData";
+                /// <summary>SQL名：取込データ一時テーブルへの登録</summary>
+                public const string InsertTempTableRftagData = "InsertTempTableRftagData";
+                /// <summary>SQL名：RFタグ予備品マスタの登録</summary>
+                public const string InsertRftagPartsLink = "InsertRftagPartsLink";
+            }
+
+            /// <summary>
+            /// ExcelPort
+            /// </summary>
             public static class ExcelPort
             {
                 /// <summary>SQL名：ExcelPort予備品仕様取得</summary>
@@ -153,6 +179,20 @@ namespace BusinessLogic_PT0001
                     /// </summary>
                     public const string List = "BODY_020_00_LST_0";
                 }
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class Button
+                {
+                    /// <summary>
+                    /// RFタグ情報出力ボタン
+                    /// </summary>
+                    public const string RftagOutput = "RftagOutput";
+                }
+                /// <summary>
+                /// RFタグ情報出力ファイル名
+                /// </summary>
+                public const string RftagFileName = "Himozuke";
             }
 
             /// <summary>
@@ -221,6 +261,21 @@ namespace BusinessLogic_PT0001
                     /// 入出庫履歴一覧
                     /// </summary>
                     public const string InOutHistoryList = "BODY_140_00_LST_1";
+                }
+
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class Button
+                {
+                    /// <summary>
+                    /// 画面上部(戻るボタンの横)のラベル出力
+                    /// </summary>
+                    public const string OutputLabelDetail = "OutputLabelDetail";
+                    /// <summary>
+                    /// 棚別在庫一覧のラベル出力
+                    /// </summary>
+                    public const string OutputLabelDetailShed = "OutputLabelDetailShed";
                 }
             }
 
@@ -305,6 +360,55 @@ namespace BusinessLogic_PT0001
                     /// </summary>
                     public const string PartsIdList = "BODY_020_00_LST_3";
                 }
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class Button
+                {
+                    /// <summary>
+                    /// ラベル出力
+                    /// </summary>
+                    public const string OutputLabel = "OutputLabel";
+                }
+            }
+
+            /// <summary>
+            /// RFタグ取込画面
+            /// </summary>
+            public static class FormRFUpload
+            {
+                /// <summary>
+                /// フォーム番号
+                /// </summary>
+                public const short FormNo = 4;
+                /// <summary>
+                /// コントロールID
+                /// </summary>
+                public static class ControlId
+                {
+                    /// <summary>
+                    /// 取込、エラーメッセージ表示一覧
+                    /// </summary>
+                    public const string Info = "BODY_010_00_LST_4";
+                    /// <summary>
+                    /// 非表示一覧
+                    /// </summary>
+                    public const string Hide = "BODY_020_00_LST_4";
+                    public static class Button
+                    {
+                        /// <summary>
+                        /// 戻るボタン
+                        /// </summary>
+                        public const string BackUpload = "BackUpload";
+                    }
+                }
+
+                /// <summary>取込ファイルレコード長</summary>
+                public const int FileRowLength = 56;
+                /// <summary>取込ファイル 読取日時の書式</summary>
+                public const string ReadDatetimeFormat = "yyyyMMddHHmmssfff";
+                /// <summary>取込後、一覧画面に表示するメッセージのキー</summary>
+                public const string GlobalKey = "RFUploadMessage";
             }
 
             /// <summary>ExcelPortアップロード</summary>
@@ -322,7 +426,7 @@ namespace BusinessLogic_PT0001
                 // 予備品No列番号
                 public const int PartsNoColumnNo = 5;
                 // 棚枝番列番号
-                public const int PartsLocationDetailNoColumnNo = 27;
+                public const int PartsLocationDetailNoColumnNo = 29;
             }
         }
 
@@ -440,6 +544,8 @@ namespace BusinessLogic_PT0001
                 {
                     return ComConsts.RETURN_RESULT.NG;
                 }
+
+                return ComConsts.RETURN_RESULT.OK;
             }
 
             // この部分は到達不能なので、エラーを返す
@@ -535,12 +641,64 @@ namespace BusinessLogic_PT0001
                 }
                 return ComConsts.RETURN_RESULT.OK;
             }
-            // ラベル用データ出力
-            if (!outputLabelData())
+            else if (compareId.IsStartId(ConductInfo.FormList.Button.RftagOutput))
             {
+                //RFタグ情報出力
+                if (!outputRftagInfo())
+                {
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                return ComConsts.RETURN_RESULT.OK;
+            }
+            // ラベル出力ボタンを判定
+            switch (this.CtrlId)
+            {
+                case ConductInfo.FormDetail.Button.OutputLabelDetail: // 詳細画面-画面上部(戻るボタンの横)のラベル出力
+                    if (!outputLabelDetail())
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+
+                case ConductInfo.FormDetail.Button.OutputLabelDetailShed: // 詳細画面-棚別在庫一覧のラベル出力
+                    if (!outputLabelInventoryData())
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+
+                case ConductInfo.FormLabel.Button.OutputLabel: // ラベル出力画面-出力
+                    if (!outputLabelData())
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+
+                default:
+                    return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// 取込処理
+        /// </summary>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int UploadImpl()
+        {
+            this.ResultList = new();
+
+            // 取込と入力チェック
+            if (!uploadRftag())
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
                 return ComConsts.RETURN_RESULT.NG;
             }
 
+            // 正常終了
+            this.Status = CommonProcReturn.ProcStatus.Valid;
             return ComConsts.RETURN_RESULT.OK;
         }
 
@@ -561,7 +719,7 @@ namespace BusinessLogic_PT0001
 
             // ExcelPortテンプレートファイル情報初期化
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, false, null, true))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
@@ -596,7 +754,9 @@ namespace BusinessLogic_PT0001
                 GroupId.Vender,
                 GroupId.Unit,
                 GroupId.Currency,
-                GroupId.PartsUseSegment
+                GroupId.PartsUseSegment,
+                GroupId.Department,
+                GroupId.Account
             };
             listPf.GetCreateTranslation(); // テーブル作成
             listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
@@ -730,7 +890,7 @@ namespace BusinessLogic_PT0001
                     if (!string.IsNullOrEmpty(result.PartsLocationDetailNo))
                     {
                         var enc = Encoding.GetEncoding("Shift_JIS");
-                        if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(result.PartsLocationDetailNo))
+                        if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(result.PartsLocationDetailNo.Replace("-", "")))
                         {
                             // 半角英数字で入力してください。
                             errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPortPartsListInfo.PartsLocationDetailNoColumnNo, GetResMessage(new string[] { ComRes.ID.ID111270032 }), GetResMessage(new string[] { ComRes.ID.ID141260002 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
@@ -745,7 +905,7 @@ namespace BusinessLogic_PT0001
                         continue;
                     }
 
-                    // 予備品No重複チェック
+                    // 予備品No重複チェック(予備品Noは自動採番になったので重複チェックを行わない 手入力に変わったときのために処理を残しておく)
                     if (result.PartsNo != result.PartsNoBefore)
                     {
                         TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.GetPartsNoCount, out string outSql);
@@ -764,6 +924,18 @@ namespace BusinessLogic_PT0001
                         continue;
                     }
                 }
+
+                // 新規登録の場合、予備品Noを採番する
+                //if (result.ProcessId == TMQConst.SendProcessId.Regist)
+                //{
+                //    if (!getNewPartsNo(result.PartsFactoryId, now, out string newPartsNo))
+                //    {
+                //        return false;
+                //    }
+
+                //    // 登録情報に採番した予備品No.を設定
+                //    result.PartsNo = newPartsNo;
+                //}
 
                 // 登録用データクラスに格納
                 Dao.editResult registInfo = setRegistInfo(result);
@@ -858,7 +1030,7 @@ namespace BusinessLogic_PT0001
                 registInfo.StandardSize = result.StandardSize;                       // 規格・寸法
                 registInfo.PartsServiceSpace = result.PartsServiceSpace;             // 使用場所
                 registInfo.PartsFactoryId = result.PartsFactoryId;                   // 管理工場
-                registInfo.JobStructureId = result.JobId;                            // 職種
+                registInfo.JobStructureId = result.JobId <= 0 ? null : result.JobId; // 職種
                 registInfo.UseSegmentStructureId = result.UseSegmentStructureId;     // 使用区分
                 registInfo.PartsLocationDetailNo = string.IsNullOrEmpty(result.PartsLocationDetailNo) ? string.Empty : result.PartsLocationDetailNo; // 標準棚枝番(入力されていない場合は空文字)
                 registInfo.LeadTimeExceptUnit = result.LeadTime == null ? 0 : result.LeadTime; // 発注点
@@ -874,6 +1046,8 @@ namespace BusinessLogic_PT0001
                 registInfo.LocationFactoryStructureId = result.FactoryId;            // 工場ID
                 registInfo.LocationWarehouseStructureId = result.WarehouseId;        // 倉庫ID
                 registInfo.LocationRackStructureId = result.RackId;                  // 棚ID
+                registInfo.DepartmentStructureId = result.DepartmentStructureId;     // 標準部門ID
+                registInfo.AccountStructureId = result.AccountStructureId;           // 標準勘定科目ID
 
                 // 丸め処理
                 // 発注点
@@ -927,6 +1101,90 @@ namespace BusinessLogic_PT0001
                     currencyDigitDic.Add(currencyStructureId, int.Parse(extensionInfo.ExtensionData));
                 }
             }
+        }
+
+        /// <summary>
+        /// 予備品No.の新規採番
+        /// </summary>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="newPartsNo">採番した予備品No.</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getNewPartsNo(long factoryId, DateTime now, out string newPartsNo)
+        {
+            newPartsNo = string.Empty;
+
+            // 引数の工場IDより地区IDを取得
+            if (!getDistrictId(out long districtId))
+            {
+                return false;
+            }
+
+            // 登録する予備品Noを取得
+            ComDao.PtPartsNoNumberingEntity registInfo = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.PtPartsNoNumberingEntity>(SqlName.Edit.GetNewPartsNo, SqlName.SubDir, new { @DistrictId = districtId }, this.db);
+
+            // 予備品Noが取得できているかで登録/更新を行う
+            string sqlName = string.Empty;
+            if (registInfo == null)
+            {
+                // 取得できていない(地区に対する連番のデータが存在しない)場合、採番テーブルに登録する
+                // 登録用のSQLを設定
+                sqlName = SqlName.Edit.InsertNewPartsNoData;
+                registInfo = new();
+                registInfo.SeqNo = 1;
+            }
+            else
+            {
+                // 取得できた(地区に対する連番のデータが存在する)場合、採番テーブルを更新する
+                // 更新用のSQLを設定
+                sqlName = SqlName.Edit.UpdatePartsNoData;
+            }
+
+            // 共通の更新日時などを設定
+            int userId = int.Parse(this.UserId);
+            setExecuteConditionByDataClassCommon<ComDao.PtPartsNoNumberingEntity>(ref registInfo, now, userId, userId);
+
+            // 地区IDを設定
+            registInfo.DistrictId = districtId;
+
+            // SQL実行
+            int val = -1;
+            bool returnFlag = TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out val, sqlName, SqlName.SubDir, registInfo, this.db);
+            if (!returnFlag)
+            {
+                return false;
+            }
+
+            //コミット
+            db.Commit();
+            //トランザクション終了
+            db.EndTransaction();
+            //トランザクション開始
+            db.BeginTransaction();
+
+            // 登録した連番を返り値に設定
+            newPartsNo = val.ToString();
+
+            return true;
+
+            // 工場IDより地区IDを取得
+            bool getDistrictId(out long outDistrictId)
+            {
+                outDistrictId = -1;
+
+                // 地区ID取得SQL実行
+                ComDao.MsStructureEntity structureInfo = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.MsStructureEntity>(SqlName.Edit.GetDistrictIdByFactoryId, SqlName.SubDir, new { @FactoryId = factoryId }, this.db);
+                if (structureInfo == null)
+                {
+                    // 地区IDが取得できていない場合はエラー
+                    return false;
+                }
+
+                // 取得した地区IDを返り値に設定
+                outDistrictId = structureInfo.StructureId;
+
+                return true;
+            }
+
         }
         #endregion
     }

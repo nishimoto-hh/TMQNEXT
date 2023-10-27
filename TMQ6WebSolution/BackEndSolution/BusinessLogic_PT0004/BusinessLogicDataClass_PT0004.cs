@@ -37,7 +37,7 @@ namespace BusinessLogic_PT0004
             public long FactoryId { get; set; }
             /// <summary>Gets or sets 職種ID</summary>
             /// <value>職種ID</value>
-            public long PartsJobId { get; set; }
+            public long? PartsJobId { get; set; }
             /// <summary>Gets or sets 最終確定年月</summary>
             /// <value>最終確定年月</value>
             public DateTime? LastConfirmedDate { get; set; }
@@ -106,7 +106,7 @@ namespace BusinessLogic_PT0004
             public long FactoryId { get; set; }
             /// <summary>Gets or sets 職種ID</summary>
             /// <value>職種ID</value>
-            public long PartsJobId { get; set; }
+            public long? PartsJobId { get; set; }
             /// <summary>Gets or sets 受払日時From</summary>
             /// <value>受払日時From</value>
             public DateTime? InoutDatetimeFrom { get; set; }

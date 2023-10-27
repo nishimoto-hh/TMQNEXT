@@ -173,6 +173,10 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         // 勘定科目の変更時イベントを発生させ、翻訳を表示
         var account = getCtrl(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Account, 1, CtrlFlag.TextBox, false, false);
         changeNoEdit(account);
+        // 部門の変更時イベントを発生させ、翻訳を表示
+        var department = getCtrl(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Department, 1, CtrlFlag.TextBox, false, false);
+        changeNoEdit(department);
+
     }, 300); //300ミリ秒
 
 
@@ -191,6 +195,15 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         if (!venderCode || venderCode == '') {
             setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.VenderStructureId, 1, CtrlFlag.Label, '', false, false);
         }
+    });
+
+    // 棚枝番からフォーカスアウトした場合
+    var partsLocationDetailNo = getCtrl(PT0005_FormList.InputArea4.Id, PT0005_FormList.InputArea4.PartsLocationDetailNo, 1, CtrlFlag.TextBox, false, false);
+    $(partsLocationDetailNo).blur(function () {
+        // 入力された棚枝番の値を取得
+        var partsLocationDetailNoValue = getValue(PT0005_FormList.InputArea4.Id, PT0005_FormList.InputArea4.PartsLocationDetailNo, 1, CtrlFlag.TextBox, false, false);
+        // 非表示の「棚枝番」に設定する
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationDetailNo, 1, CtrlFlag.TextBox, partsLocationDetailNoValue, false, false);
     });
 
     // 登録ボタンにフォーカスをセット

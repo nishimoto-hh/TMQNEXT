@@ -1450,9 +1450,9 @@ function getParamToPT0005(PartsId, HistoryId, Flg) {
     var conditionData = {};
     conditionData['CTRLID'] = PT0001_List_CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL34'] = PartsId;
-    conditionData['VAL36'] = HistoryId;
-    conditionData['VAL37'] = Flg;
+    conditionData['VAL38'] = PartsId;
+    conditionData['VAL40'] = HistoryId;
+    conditionData['VAL41'] = Flg;
     return conditionData;
 }
 /**
@@ -1466,9 +1466,9 @@ function getParamToPT0006(PartsId, InoutHistoryId, Flg) {
     var conditionData = {};
     conditionData['CTRLID'] = PT0001_List_CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL34'] = PartsId;
-    conditionData['VAL36'] = InoutHistoryId;
-    conditionData['VAL37'] = Flg;
+    conditionData['VAL38'] = PartsId;
+    conditionData['VAL40'] = InoutHistoryId;
+    conditionData['VAL41'] = Flg;
     return conditionData;
 }
 
@@ -1496,7 +1496,7 @@ function getParamToPT0007FromPT0001(CtrlId, PartsId) {
     var conditionData = {};
     conditionData['CTRLID'] = CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL34'] = PartsId;
+    conditionData['VAL38'] = PartsId;
     return conditionData;
 }
 

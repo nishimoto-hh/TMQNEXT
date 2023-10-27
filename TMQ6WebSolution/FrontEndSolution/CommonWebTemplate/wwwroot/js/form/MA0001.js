@@ -2710,8 +2710,9 @@ function setDetailSearchConditionFromMP0001() {
  * @param {any} selector ツリービューのセレクタ
  * @param {any} isTreeMenu 左側メニューの場合true
  * @param {any} grpId 構成グループID
+ * @param {any} isTreeMenu 指定階層を展開した状態で表示するツリーの場合true、選択階層までを展開する場合はfalse
  */
-function afterLoadedTreeView(selector, isTreeMenu, grpId) {
+function afterLoadedTreeView(selector, isTreeMenu, grpId, isOpenNode) {
     if (!isTreeMenu || grpId != structureGroupDef.Job) {
         return;
     }
@@ -2730,12 +2731,12 @@ function afterLoadedTreeView(selector, isTreeMenu, grpId) {
 
     // ノードのチェックをすべて解除し閉じる
     $(selector).jstree(true).uncheck_all();
-    $(selector).jstree(true).close_all();
+    //$(selector).jstree(true).close_all();
     if (jobId != JobAll) {
         //職種IDリスト
         var selectedIdList = jobId.split("|").map(Number);
         //職種ツリーの選択
-        setSelectedDataToTreeView(selector, selectedIdList, true);
+        setSelectedDataToTreeView(selector, selectedIdList, true, isOpenNode);
     } else {
         //セッションストレージに保存している職種の選択値をクリア
         setSaveDataToSessionStorage([], sessionStorageCode.TreeViewSelected, structureGroupDef.Job);

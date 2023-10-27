@@ -2021,7 +2021,13 @@ function filterStructureItemByFactory(data, factoryIdList) {
                 var item = $.grep(list, function (obj, index) {
                     return (obj.TranslationFactoryId.toString() == factoryId);
                 });
-                resultList.push(item[0]);
+
+                if (item.length == 0) {
+                    resultList.push(list[0]);
+                }
+                else {
+                    resultList.push(item[0]);
+                }          
             }
         }
     );

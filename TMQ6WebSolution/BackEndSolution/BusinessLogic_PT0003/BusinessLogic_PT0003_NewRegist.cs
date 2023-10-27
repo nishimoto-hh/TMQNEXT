@@ -61,7 +61,7 @@ namespace BusinessLogic_PT0003
             }
 
             // 部門の初期表示値取得
-            var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.registInfo>(SqlName.GetInitDepartmentStructureId, SqlName.SubDirInventry, info, this.db);
+            var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.registInfo>(SqlName.GetInitDepartmentStructureId, SqlName.SubDir, info, this.db);
             if (initDepartmentInfo != null)
             {
                 // 部門(工場表示順の最上位)
@@ -264,7 +264,7 @@ namespace BusinessLogic_PT0003
                 if (!string.IsNullOrEmpty(info.PartsLocationDetailNo))
                 {
                     var enc = Encoding.GetEncoding("Shift_JIS");
-                    if (enc.GetByteCount(info.PartsLocationDetailNo) != info.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(info.PartsLocationDetailNo))
+                    if (enc.GetByteCount(info.PartsLocationDetailNo) != info.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(info.PartsLocationDetailNo.Replace("-", "")))
                     {
                         // 半角英数字で入力してください。
                         string errMsg = GetResMessage(ComRes.ID.ID141260002);

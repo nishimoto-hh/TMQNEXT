@@ -102,32 +102,38 @@ FROM
         FROM
             (
                 SELECT
-                    fix.parts_id,
-                    fix.target_month,
-                    SUM(fix.inventory_quantity) AS inout_quantity, -- 入庫数
-                    SUM(fix.inventory_amount) AS storage_amount,   -- 入庫金額
-                    SUM(fix.inventory_quantity) AS stock_quantity, -- 在庫数
-                    SUM(fix.inventory_amount) AS stock_amount      -- 在庫金額
+                  fix.parts_id,
+                    (
+                        SELECT
+                            TOP 1 fix.target_month
+                        FROM
+                            pt_fixed_stock fix
+                        WHERE
+                            fix.target_month < @DispYearFrom
+                        AND fix.parts_id = @PartsId
+                        ORDER BY
+                            fix.target_month DESC
+                    ) target_month,
+                    fix.inout_quantity,
+                    fix.storage_amount,
+                    fix.stock_quantity,
+                    fix.stock_amount
                 FROM
-                    pt_fixed_stock fix
-                    LEFT JOIN
-                        (
-                            SELECT
-                                ROW_NUMBER() OVER(ORDER BY fix.target_month DESC) AS order_num,
-                                fix.target_month
-                            FROM
-                                pt_fixed_stock fix
-                                WHERE
-                                   fix.target_month < @DispYearFrom
-                                AND fix.parts_id = @PartsId
-                        ) new_date
-                    ON  fix.target_month = new_date.target_month
-                WHERE
-                    new_date.order_num = 1
-                AND fix.parts_id = @PartsId
-                GROUP BY
-                    fix.parts_id,
-                    fix.target_month
+                    (
+                        SELECT
+                            fix.parts_id,
+                            SUM(fix.inventory_quantity) AS inout_quantity, -- 入庫数
+                            SUM(fix.inventory_amount) AS storage_amount,   -- 入庫金額
+                            SUM(fix.inventory_quantity) AS stock_quantity, -- 在庫数
+                            SUM(fix.inventory_amount) AS stock_amount      -- 在庫金額
+                        FROM
+                            pt_fixed_stock fix
+                        WHERE
+                            fix.parts_id = @PartsId
+                        AND fix.target_month < @DispYearFrom
+                        GROUP BY
+                            fix.parts_id
+                    ) fix
             ) new_data
             LEFT JOIN
                 pt_parts parts

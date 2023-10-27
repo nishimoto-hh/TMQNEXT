@@ -77,6 +77,10 @@ namespace BusinessLogic_PT0002
                 /// </summary>
                 public const string OutputEnter = "OutputEnter";
                 /// <summary>
+                /// ラベル出力ボタン（入庫一覧）
+                /// </summary>
+                public const string OutputLabelEnter = "OutputLabelEnter";
+                /// <summary>
                 /// 出力ボタン（出庫一覧）
                 /// </summary>
                 public const string OutputIssue = "OutputIssue";
@@ -85,9 +89,17 @@ namespace BusinessLogic_PT0002
                 /// </summary>
                 public const string OutputShed = "OutputShed";
                 /// <summary>
+                /// ラベル出力ボタン（棚番移庫一覧）
+                /// </summary>
+                public const string OutputLabelShed = "OutputLabelShed";
+                /// <summary>
                 /// 出力ボタン（部門移庫一覧）
                 /// </summary>
                 public const string OutputCategory = "OutputCategory";
+                /// <summary>
+                /// ラベル出力ボタン（部門移庫一覧）
+                /// </summary>
+                public const string OutputLabelCategory = "OutputLabelCategory";
                 /// <summary>
                 /// 購入明細書ボタン
                 /// </summary>
@@ -270,6 +282,41 @@ namespace BusinessLogic_PT0002
 
             switch (this.CtrlId)
             {
+                // 入庫一覧 ラベル出力
+                case TargetCtrlId.Button.OutputLabelEnter:
+                    if (!outputLabelEnter())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    return ComConsts.RETURN_RESULT.OK;
+                // 棚番移庫一覧 ラベル出力
+                case TargetCtrlId.Button.OutputLabelShed:
+                    if (!outputLabelShed())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    return ComConsts.RETURN_RESULT.OK;
+                // 部門移庫一覧 ラベル出力
+                case TargetCtrlId.Button.OutputLabelCategory:
+                    if (!outputLabelCategory())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    return ComConsts.RETURN_RESULT.OK;
+
+
                 //入庫一覧出力
                 case TargetCtrlId.Button.OutputEnter:
                 //出庫一覧出力
@@ -731,6 +778,12 @@ namespace BusinessLogic_PT0002
 
             // ページ情報取得(作業日)
             var workingDayInfo = GetPageInfo(TargetCtrlId.WorkingDay, this.pageInfoList);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(workingDayInfo, "parts_factory_id job_structure_id", out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true, isJobNullAble: true))
+            {
+                return false;
+            }
 
             // 検索条件データの取得(作業日)
             if (!SetSearchConditionByDataClass(new List<Dictionary<string, object>> { condition }, TargetCtrlId.WorkingDay, conditionObj, workingDayInfo))

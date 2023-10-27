@@ -57,6 +57,9 @@ SET
     , [failure_site] = @FailureSite
     , [parts_existence_flg] = @PartsExistenceFlg
     , [follow_flg] = @FollowFlg
+    , [rank_structure_id] = @RankStructureId
+    , [failure_equipment_model_structure_id] = @FailureEquipmentModelStructureId
+    , [failure_time] = @FailureTime
     , [update_serialid] = update_serialid + 1
     , [update_datetime] = @UpdateDatetime
     , [update_user_id] = @UpdateUserId 

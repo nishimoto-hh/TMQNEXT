@@ -69,7 +69,7 @@ namespace BusinessLogic_PT0006
 
             /// <summary>Gets or sets 棚ID</summary>
             /// <value>棚ID</value>
-            public int PartsLocationId { get; set; }
+            public long PartsLocationId { get; set; }
 
             /// <summary>Gets or sets 棚枝番</summary>
             /// <value>棚枝番</value>
@@ -94,6 +94,9 @@ namespace BusinessLogic_PT0006
             /// <summary>Gets or sets 制御用フラグ</summary>
             /// <value>制御用フラグ</value>
             public string ControlFlag { get; set; }
+            /// <summary>Gets or sets 数量管理単位ID</summary>
+            /// <value>数量管理単位ID</value>
+            public long UnitStructureId { get; set; }
 
         }
 
@@ -170,34 +173,39 @@ namespace BusinessLogic_PT0006
             /// <summary>Gets or sets 新旧区分</summary>
             /// <value>新旧区分</value>
             public string OldNewStructureId { get; set; }
-
             /// <summary>Gets or sets 部門コード</summary>
             /// <value>部門コード</value>
             public string DepartmentCd { get; set; }
-
             /// <summary>Gets or sets 部門名</summary>
             /// <value>部門名</value>
             public string DepartmentNm { get; set; }
-
             /// <summary>Gets or sets 勘定科目コード</summary>
             /// <value>勘定科目コード</value>
             public string SubjectCd { get; set; }
-
             /// <summary>Gets or sets 勘定科目名</summary>
             /// <value>勘定科目名</value>
             public string SubjectNm { get; set; }
-
             /// <summary>Gets or sets 新旧区分(在庫一覧検索用)</summary>
             /// <value>新旧区分(在庫一覧検索用)</value>
             public long OldNewNm { get; set; }
-
             /// <summary>Gets or sets 部門(在庫一覧検索用)</summary>
             /// <value>部門(在庫一覧検索用)</value>
             public long ToDepartmentNm { get; set; }
-
             /// <summary>Gets or sets 勘定科目(在庫一覧検索用)</summary>
             /// <value>勘定科目(在庫一覧検索用)</value>
             public long ToSubjectNm { get; set; }
+            /// <summary>Gets or sets 棚番ID</summary>
+            /// <value>棚番ID</value>
+            public long PartsLocationId { get; set; }
+            /// <summary>Gets or sets 棚番</summary>
+            /// <value>棚番</value>
+            public string PartsLocationName { get; set; }
+            /// <summary>Gets or sets 棚枝番</summary>
+            /// <value>棚枝番</value>
+            public string PartsLocationDetailNo { get; set; }
+            /// <summary>Gets or sets 数量管理単位ID</summary>
+            /// <value>数量管理単位ID</value>
+            public long UnitStructureId { get; set; }
         }
 
         /// <summary>
@@ -245,7 +253,7 @@ namespace BusinessLogic_PT0006
         {
             /// <summary>Gets or sets ロットNo</summary>
             /// <value>ロットNo</value>
-            public string lotNo { get; set; }
+            public long lotNo { get; set; }
 
             /// <summary>Gets or sets 入庫日</summary>
             /// <value>入庫日</value>

@@ -1140,7 +1140,7 @@ namespace CommonTMQUtil
                 List<string> listUnComment = ComUtil.GetNotNullNameByClass<ComDao.HmHistoryManagementEntity>(condition);
 
                 // 工場IDはNullにならないので0以下の場合はコメントにするためリストから除外
-                if(condition.FactoryId <= 0)
+                if (condition.FactoryId <= 0)
                 {
                     listUnComment.Remove("FactoryId");
                 }
@@ -1634,7 +1634,7 @@ namespace CommonTMQUtil
                     if (historyFactoryIdList.Contains(userFactoryId))
                     {
                         // 変更管理対象の工場あり
-                        isExistsHistoryManagementFactory= true;
+                        isExistsHistoryManagementFactory = true;
                     }
                     else
                     {
@@ -1735,7 +1735,7 @@ namespace CommonTMQUtil
             public int getFactoryIdByStructureId(int structureId)
             {
                 // SQL実行
-                var result =  STDDao.VStructureItemEntity.GetEntityById(structureId, this.Db);
+                var result = STDDao.VStructureItemEntity.GetEntityById(structureId, this.Db);
                 if (result == null)
                 {
                     // 取得できない場合-1を返す
@@ -1754,7 +1754,7 @@ namespace CommonTMQUtil
             /// <returns>変更管理ID(取得できない場合NULL)</returns>
             public long? getHistoryManagementIdByKeyId(long keyId)
             {
-                return SqlExecuteClass.SelectEntity<long?>(Sql.GetHistoryManagementIdByKeyId, Sql.SubDir, new { KeyId = keyId, ApplicationConductId = this.ApplicationConductId}, this.Db);
+                return SqlExecuteClass.SelectEntity<long?>(Sql.GetHistoryManagementIdByKeyId, Sql.SubDir, new { KeyId = keyId, ApplicationConductId = this.ApplicationConductId }, this.Db);
             }
 
             /// <summary>
@@ -1800,6 +1800,109 @@ namespace CommonTMQUtil
                 }
                 // グローバルリストから削除
                 searchConditionDictionary.Remove(targetDic);
+            }
+        }
+
+
+        /// <summary>
+        /// 予備品 ラベル出力共通メソッド
+        /// </summary>
+        public class Label
+        {
+            /// <summary>DB接続</summary>
+            protected ComDB Db { get; set; }
+            /// <summary>言語ID</summary>
+            protected string LanguageId { get; set; }
+            /// <summary>
+            /// 帳票ID(出力したファイルの先頭に設定)
+            /// </summary>
+            public string ReportId = "RP0280";
+
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            /// <param name="db">DB接続</param>
+            /// <param name="languageId">言語ID</param>
+            public Label(ComDB db, string languageId)
+            {
+                this.Db = db;
+                this.LanguageId = languageId;
+            }
+
+            /// <summary>
+            /// SQLファイル
+            /// </summary>
+            protected class Sql
+            {
+                /// <summary>SQLファイル格納フォルダ</summary>
+                public const string SubDir = @"Common\Label";
+                /// <summary>ラベル情報登録SQL</summary>
+                public const string GetLabelData = "GetLabelData";
+            }
+
+            /// <summary>
+            /// ラベル出力データ取得処理
+            /// </summary>
+            /// <param name="conditionList">検索条件</param>
+            /// <param name="outList">実際に出力するリスト</param>
+            /// <returns>エラーの場合はFalse</returns>
+            public bool GetLabelData(List<Dao.LabelCondition> conditionList, out List<object[]> outList)
+            {
+                // 出力するリストを初期化
+                outList = new();
+
+                // CSV出力時の値を囲む文字列
+                string encircleValue = "\"";
+
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
+                string strJoin = string.Empty;
+
+                foreach (Dao.LabelCondition condition in conditionList)
+                {
+                    // 移庫先の在庫データを取得
+                    Dao.Label labelData = TMQUtil.SqlExecuteClass.SelectEntity<Dao.Label>(Sql.GetLabelData,
+                                                                                          Sql.SubDir,
+                                                                                          new
+                                                                                          {
+                                                                                              @LanguageId = this.LanguageId,                                     // 言語ID
+                                                                                              @PartsId = condition.PartsId,                                      // 予備品ID
+                                                                                              @SubjectCdEnter = condition.SubjectCdEnter,                        // 勘定科目コード
+                                                                                              @DepartmentCdEnter = condition.DepartmentCdEnter,                  // 部門コード
+                                                                                              @PartsLocationIdEnter = condition.PartsLocationIdEnter,            // 入庫した棚ID
+                                                                                              @PartsLocationDetailNoEnter = condition.PartsLocationDetailNoEnter // 入庫した棚枝番
+                                                                                          },
+                                                                                          this.Db);
+                    // ラベルデータがNULLの場合はスキップ
+                    if(labelData == null)
+                    {
+                        continue;
+                    }
+
+                    // 結合文字取得
+                    strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(labelData.PartsFactoryId, this.LanguageId, this.Db, ref factoryJoinDic);
+
+                    // 棚番 + 棚枝番
+                    labelData.ShedName = TMQUtil.GetDisplayPartsLocation(labelData.ShedName, labelData.PartsLocationDetailNo, strJoin);
+
+                    // 出力するリストにラベルデータを格納
+                    outList.Add(new object[]
+                    {
+                     encircleValue + labelData.PartsNo + encircleValue,                                                      // 予備品No.
+                     encircleValue + labelData.PartsName + encircleValue,                                                    // 予備品名
+                     encircleValue + labelData.Maker + encircleValue,                                                        // メーカー
+                     encircleValue + labelData.ModelType + encircleValue,                                                    // 型式
+                     encircleValue + labelData.StandardSize + encircleValue,                                                 // 規格・寸法
+                     encircleValue + labelData.DepartmentCode + encircleValue,                                               // 部門コード
+                     encircleValue + labelData.SubjectCode + encircleValue,                                                  // 勘定科目コード
+                     encircleValue + labelData.ShedName + encircleValue,                                                     // 標準棚番 + 枝番
+                     encircleValue + labelData.LeadTime + encircleValue,                                                     // 発注点
+                     encircleValue + labelData.OrderQuantity + encircleValue,                                                // 発注量
+                     encircleValue + labelData.Qrc + encircleValue                                                           // QRコード
+                    });
+                }
+
+                return true;
             }
         }
     }

@@ -76,6 +76,7 @@ SET
     , [request_reason] = @RequestReason
     , [examination_result] = @ExaminationResult
     , [construction_division_structure_id] = @ConstructionDivisionStructureId
+    , [construction_place] = @ConstructionPlace
     , [update_serialid] = update_serialid + 1
     , [update_datetime] = @UpdateDatetime
     , [update_user_id] = @UpdateUserId 

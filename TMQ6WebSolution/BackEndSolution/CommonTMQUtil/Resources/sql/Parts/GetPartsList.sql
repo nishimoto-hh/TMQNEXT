@@ -8,7 +8,7 @@ SELECT
     parts.factory_id,                                                                                            -- 管理工場
     parts.factory_id AS parts_factory_id,                                                                        -- 管理工場(ツリーの絞り込み用)
     parts.location_factory_structure_id AS default_factory_id,                                                   -- 棚番から取得した工場ID
-    parts.job_structure_id,                                                                                      -- 職種
+    COALESCE(parts.job_structure_id, 0) AS job_structure_id,                                                     -- 職種
     parts.parts_service_space,                                                                                   -- 使用場所
     parts.parts_location_id,                                                                                     -- 標準棚番ID
     parts.parts_location_detail_no,                                                                              -- 枝番
@@ -73,7 +73,8 @@ SELECT
                 ORDER BY
                     document_no FOR xml path('')
             ), ' ', '') AS file_link_image,-- ダウンロードリンク(画像)
-
+    parts.department_structure_id,                                                                               -- 標準部門
+    parts.account_structure_id,                                                                                  -- 標準勘定科目
     ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
       SELECT
@@ -254,7 +255,43 @@ SELECT
               AND st_f.factory_id IN(0, parts.factory_id)
            )
       AND tra.structure_id = parts.job_structure_id
-    ) AS job_name                                                                                             -- 職種
+    ) AS job_name,                                                                                             -- 職種
+    dep_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.department_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.department_structure_id
+    ) AS department_name,                                                                                        -- 部門コード + 部門名
+    acc_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.account_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.account_structure_id
+    ) AS account_name                                                                                            -- 勘定科目コード + 勘定科目名
 FROM
     pt_parts AS parts
     LEFT JOIN
@@ -284,3 +321,17 @@ FROM
     LEFT JOIN -- RFIDタグ件数単位
         matter_unit
     ON 1 = 1
+    LEFT JOIN
+        ms_structure dep_ms -- 部門コード(構成マスタ)
+    ON parts.department_structure_id = dep_ms.structure_id
+    LEFT JOIN
+        ms_item_extension dep_ex  -- 部門コード(拡張)
+    ON dep_ms.structure_item_id = dep_ex.item_id
+    AND dep_ex.sequence_no = 1
+    LEFT JOIN
+        ms_structure acc_ms -- 勘定科目コード(構成マスタ)
+    ON parts.account_structure_id = acc_ms.structure_id
+    LEFT JOIN
+        ms_item_extension acc_ex  -- 勘定科目コード(拡張)
+    ON acc_ms.structure_item_id = acc_ex.item_id
+    AND acc_ex.sequence_no = 1

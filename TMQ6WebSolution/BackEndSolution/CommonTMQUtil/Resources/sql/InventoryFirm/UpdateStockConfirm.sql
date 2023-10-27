@@ -6,7 +6,7 @@ SET
     update_datetime = @UpdateDatetime,
     update_user_id = @UpdateUserId
 WHERE
-    format(target_month, 'yyyy/MM') = @TargetMonth
+    FORMAT(target_month, 'yyyy/MM') = @TargetMonth
 AND factory_id = @FactoryId
-AND parts_job_id = @PartsJobId
+AND COALESCE(parts_job_id, 0) = COALESCE(@PartsJobId, 0)
 AND delete_flg = 0

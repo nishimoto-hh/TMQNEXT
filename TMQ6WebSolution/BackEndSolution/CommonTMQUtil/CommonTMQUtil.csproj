@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -103,6 +103,8 @@
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatusApproval.sql" />
     <None Remove="Resources\sql\Common\InsertTempJob.sql" />
     <None Remove="Resources\sql\Common\InsertTempLocation.sql" />
+    <None Remove="Resources\sql\Common\Label\GetLabelData.sql" />
+    <None Remove="Resources\sql\Common\Label\GetLabelDataDepartment.sql" />
     <None Remove="Resources\sql\Common\ListPerformance\CreateTableTempAttachment.sql" />
     <None Remove="Resources\sql\Common\ListPerformance\CreateTableTempTranslation.sql" />
     <None Remove="Resources\sql\Common\ListPerformance\CreateTableTempTranslationAll.sql" />
@@ -152,6 +154,7 @@
     <None Remove="Resources\sql\ExcelPort\GetExcelPortTargetInfo.sql" />
     <None Remove="Resources\sql\ExcelPort\GetExcelPortVersion.sql" />
     <None Remove="Resources\sql\ExcelPort\GetInputControlDefineForExcelPort.sql" />
+    <None Remove="Resources\sql\ExcelPort\InsertNullJobIdForPartsList.sql" />
     <None Remove="Resources\sql\ExcelPort\Insert_StructureList.sql" />
     <None Remove="Resources\sql\ExcelPort\WITH_GetExcelPortDownLoadList.sql" />
     <None Remove="Resources\sql\Excel\ComInoutItemDefine_GetInfo.sql" />
@@ -288,6 +291,7 @@
     <None Remove="Resources\sql\InventoryControl\GetInitAccountStructureId.sql" />
     <None Remove="Resources\sql\InventoryControl\GetInitDepartmentStructureId.sql" />
     <None Remove="Resources\sql\InventoryControl\GetInitOldNewStructureId.sql" />
+    <None Remove="Resources\sql\InventoryControl\GetInitValueByPartsInfo.sql" />
     <None Remove="Resources\sql\InventoryControl\GetIssueDepartmentList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetIssueDepartmentListEdit.sql" />
     <None Remove="Resources\sql\InventoryControl\GetIssueInput.sql" />
@@ -352,6 +356,7 @@
     <None Remove="Resources\sql\Inventory\GetEnterList.sql" />
     <None Remove="Resources\sql\Inventory\GetExistInventory.sql" />
     <None Remove="Resources\sql\Inventory\GetFixedTargetMonth.sql" />
+    <None Remove="Resources\sql\Inventory\GetInitDepartmentStructureId.sql" />
     <None Remove="Resources\sql\Inventory\GetInoutHistryForwardList.sql" />
     <None Remove="Resources\sql\Inventory\GetInoutHistryList.sql" />
     <None Remove="Resources\sql\Inventory\GetInoutQuantity.sql" />
@@ -846,12 +851,15 @@
     <None Remove="Resources\sql\Master\User\UpdateUser.sql" />
     <None Remove="Resources\sql\Master\User\WITH_GetUserList.sql" />
     <None Remove="Resources\sql\Master\WITH_GetMasterMenuList.sql" />
+    <None Remove="Resources\sql\Parts\CreateTempTableRftagData.sql" />
     <None Remove="Resources\sql\Parts\GetAttachmentInfo.sql" />
     <None Remove="Resources\sql\Parts\GetCategoryChildList.sql" />
     <None Remove="Resources\sql\Parts\GetCategoryParentList.sql" />
     <None Remove="Resources\sql\Parts\GetCountPartsList.sql" />
+    <None Remove="Resources\sql\Parts\GetCountPartsNoByFactory.sql" />
     <None Remove="Resources\sql\Parts\GetCurrencyDigitAndDivision.sql" />
     <None Remove="Resources\sql\Parts\GetDetailPartsInfo.sql" />
+    <None Remove="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetExcelPortPartsList.sql" />
     <None Remove="Resources\sql\Parts\GetFactoryIdByPartsId.sql" />
     <None Remove="Resources\sql\Parts\GetHistoryCountByPartsId.sql" />
@@ -864,17 +872,23 @@
     <None Remove="Resources\sql\Parts\GetLabelSubjectList.sql" />
     <None Remove="Resources\sql\Parts\GetLocationInventoryList.sql" />
     <None Remove="Resources\sql\Parts\GetMaxDateByPartsId.sql" />
+    <None Remove="Resources\sql\Parts\GetNewPartsNo.sql" />
     <None Remove="Resources\sql\Parts\GetParentIdByLocationId.sql" />
     <None Remove="Resources\sql\Parts\GetPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\GetPartsList.sql" />
     <None Remove="Resources\sql\Parts\GetPartsNoCount.sql" />
+    <None Remove="Resources\sql\Parts\GetRftagOutputData.sql" />
     <None Remove="Resources\sql\Parts\GetRoundDivision.sql" />
     <None Remove="Resources\sql\Parts\GetStartMonthByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetUnitDigit.sql" />
     <None Remove="Resources\sql\Parts\GetUnitRoundDivision.sql" />
     <None Remove="Resources\sql\Parts\InsertCommonFactoryIdToTemp.sql" />
+    <None Remove="Resources\sql\Parts\InsertNewPartsNoData.sql" />
     <None Remove="Resources\sql\Parts\InsertPartsInfo.sql" />
+    <None Remove="Resources\sql\Parts\InsertRftagPartsLink.sql" />
+    <None Remove="Resources\sql\Parts\InsertTempTableRftagData.sql" />
     <None Remove="Resources\sql\Parts\UpdatePartsInfo.sql" />
+    <None Remove="Resources\sql\Parts\UpdatePartsNoData.sql" />
     <None Remove="Resources\sql\Parts\WITH_Common.sql" />
     <None Remove="Resources\sql\Parts\WITH_GetExcelPortPartsList.sql" />
     <None Remove="Resources\sql\Parts\WITH_GetLocationInventory.sql" />
@@ -930,9 +944,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources\sql\Common\GetControlDefineTransListCommon.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\Label\GetLabelData.sql" />
     <EmbeddedResource Include="Resources\sql\Common\ListPerformance\InsertTempTranslationLayer.sql" />
     <EmbeddedResource Include="Resources\sql\Common\GetControlDefineTransList.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\InsertNullJobIdForPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\CreateTableTempGetLongPlanList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetCountHistoryManagementList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\InsertTempGetLongPlanList.sql" />
@@ -940,7 +960,9 @@
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetLongPlanSingleHistory.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetMachineLevel.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetManagementStandardOriginal.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitValueByPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetCountInventoryFirmList.sql" />
+    <EmbeddedResource Include="Resources\sql\Inventory\GetInitDepartmentStructureId.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\ExcelPort\DeleteAttachment.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\ExcelPort\GetScheduleDetailSequenceCountMax.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\ExcelPort\GetScheduleInfo.sql" />
@@ -1014,9 +1036,17 @@
     <EmbeddedResource Include="Resources\sql\Master\MachineSpec\ExcelPort\GetSpecList.sql" />
     <EmbeddedResource Include="Resources\sql\Master\User\GetUserCustomizeData.sql" />
     <EmbeddedResource Include="Resources\sql\Master\User\UpdateCustomizeData.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\CreateTempTableRftagData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetCountPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetExcelPortPartsList.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetCountPartsNoByFactory.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetNewPartsNo.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetRftagOutputData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetRoundDivision.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\InsertNewPartsNoData.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\InsertRftagPartsLink.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\InsertTempTableRftagData.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\UpdatePartsNoData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\WITH_GetExcelPortPartsList.sql" />
   </ItemGroup>
 

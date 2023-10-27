@@ -468,7 +468,6 @@ namespace BusinessLogic_PT0007
             // 初期化
             Dao.searchCondition searchCondition = new();
             searchCondition.LanguageId = this.LanguageId;                              // 言語ID
-            searchCondition.UserFactoryId = TMQUtil.GetUserFactoryId(this.UserId, db); // 本務工場
 
             // PT0001(予備品一覧)のディクショナリを取得
             var targetDicPT0001List = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.OtherConduct.PT0001List);
@@ -476,6 +475,7 @@ namespace BusinessLogic_PT0007
             {
                 SetDataClassFromDictionary(targetDicPT0001List, ConductInfo.OtherConduct.PT0001List, searchCondition);
                 searchCondition.TransFlg = TransFlg.FlgNew; // 画面遷移フラグ(新規)
+                searchCondition.UserFactoryId = new ComDao.PtPartsEntity().GetEntity(searchCondition.PartsId, this.db).FactoryId; // 工場
                 return searchCondition;
             }
             // PT0002(棚番)のディクショナリを取得
@@ -485,6 +485,7 @@ namespace BusinessLogic_PT0007
                 SetDataClassFromDictionary(targetDicPT0002Location, ConductInfo.OtherConduct.PT0002Location, searchCondition);
                 searchCondition.TransFlg = TransFlg.FlgEdit;   // 画面遷移フラグ(修正)
                 searchCondition.TransType = TransType.Subject; // 画面遷移タイプ(棚番)
+                searchCondition.UserFactoryId = new ComDao.PtPartsEntity().GetEntity(searchCondition.PartsId, this.db).FactoryId; // 工場
                 return searchCondition;
             }
             // PT0002(部門)のディクショナリを取得
@@ -494,6 +495,7 @@ namespace BusinessLogic_PT0007
                 SetDataClassFromDictionary(targetDicPT0002Department, ConductInfo.OtherConduct.PT0002Department, searchCondition);
                 searchCondition.TransFlg = TransFlg.FlgEdit;      // 画面遷移フラグ(修正)
                 searchCondition.TransType = TransType.Department; // 画面遷移タイプ(部門)
+                searchCondition.UserFactoryId = new ComDao.PtPartsEntity().GetEntity(searchCondition.PartsId, this.db).FactoryId; // 工場
                 return searchCondition;
             }
 

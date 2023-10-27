@@ -32,4 +32,6 @@ REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
  ORDER BY ma.applicable_laws_structure_id
  FOR XML PATH('')),' ','') AS applicable_laws_structure_id,
 dbo.get_file_download_info(1600,mc.machine_id) AS file_link_machine,
-dbo.get_file_download_info(1610,eq.equipment_id) AS file_link_equip 
+dbo.get_file_download_info(1610,eq.equipment_id) AS file_link_equip,
+eq.budget_management_structure_id as budget_management_structure_id,
+eq.diagram_storage_location_structure_id as diagram_storage_location_structure_id

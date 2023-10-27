@@ -42,12 +42,15 @@ const PT0002_FormList = {
     ResultsShed: "BODY_070_00_LST_0",           // 棚番移庫検索結果一覧
     ResultsCategory: "BODY_090_00_LST_0",       // 部門移庫検索結果一覧
     ButtonOutputIdEnter: "OutputEnter",         // 出力ボタン(入庫)
+    ButtonOutputLabelEnter: "OutputLabelEnter", // ラベル出力ボタン(入庫)
     ButtonOutputIdIssue: "OutputIssue",         // 出力ボタン(出庫)
     ButtonOutputIdShed: "OutputShed",           // 出力ボタン(棚番移庫)
+    ButtonOutputLabelShed: "OutputLabelShed",   // ラベル出力ボタン(棚番移庫)
     ButtonOutputIdCategory: "OutputCategory",   // 出力ボタン(部門移庫)
-    ButtonOutputPurchaseDetails: "OutputPurchaseDetails",         // 購入明細書ボタン(出庫)
-    ParentKeyValueParent: 2,                    // 出庫一覧親キー値
-    ParentKeyValueChild: 11,                    // 出庫一覧子キー値
+    ButtonOutputLabelCategory: "OutputLabelCategory", // ラベル出力ボタン(部門移庫)
+    ButtonOutputPurchaseDetails: "OutputPurchaseDetails", // 購入明細書ボタン(出庫)
+    ParentKeyValueParent: 11,                    // 出庫一覧親キー値
+    ParentKeyValueChild: 13,                    // 出庫一覧子キー値
     WorkingDay: "COND_000_00_LST_0",            // 作業日
     WorkingDayKeyValue: 1                       // 作業日キー値
 };
@@ -117,9 +120,10 @@ function setPageStatusEx(status, pageRowCount, conductPtn, authShori) {
  *  @btn         {button}   ：押下されたボタン要素
  */
 function reportCheckPre(appPath, conductId, formNo, btn) {
-    if (btn.name == PT0002_FormList.ButtonOutputIdEnter) {
+    if (btn.name == PT0002_FormList.ButtonOutputIdEnter ||
+        btn.name == PT0002_FormList.ButtonOutputLabelEnter) {
 
-        // 入庫一覧画面で「出力」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
+        // 入庫一覧画面で「出力」「ラベル出力」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(PT0002_FormList.ResultsEnter)) {
             return false;
         }
@@ -132,14 +136,16 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
         }
     }
 
-    if (btn.name == PT0002_FormList.ButtonOutputIdShed) {
+    if (btn.name == PT0002_FormList.ButtonOutputIdShed || 
+        btn.name == PT0002_FormList.ButtonOutputLabelShed) {
         // 棚番移庫一覧画面で「出力」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(PT0002_FormList.ResultsShed)) {
             return false;
         }
     }
 
-    if (btn.name == PT0002_FormList.ButtonOutputIdCategory) {
+    if (btn.name == PT0002_FormList.ButtonOutputIdCategory ||
+        btn.name == PT0002_FormList.ButtonOutputLabelCategory) {
         // 部門移庫一覧画面で「出力」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(PT0002_FormList.ResultsCategory)) {
             return false;
@@ -392,4 +398,56 @@ function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
 
     // 出庫入力画面
     PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo);
+}
+
+/**
+ * 【オーバーライド用関数】全選択および全解除ボタンの押下後
+ * @param  formNo  : 画面番号
+ * @param  tableId : 一覧のコントロールID
+ */
+function afterAllSelectCancelBtn(formNo, tableId) {
+
+    // 出庫入力画面
+    PT0006_afterAllSelectCancelBtn(formNo, tableId);
+}
+
+/**
+ *【オーバーライド用関数】
+ *  検索処理前(一覧の選択チェックボックスが選択されているかチェック)
+ *
+ *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn {string} 　　　：対象ボタン
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} 　　：プログラムID
+ *  @formNo {number} 　 ：画面番号
+ *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
+ */
+function checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        return PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn);
+    }
+
+    return true;
+}
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData);
+    }
+
+    // 何もしていないのでそのまま返す
+    return listData;
 }

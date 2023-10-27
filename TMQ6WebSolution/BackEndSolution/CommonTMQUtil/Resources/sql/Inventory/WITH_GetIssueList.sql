@@ -82,7 +82,7 @@ WITH number_unit AS (
         , plt.account_structure_id                                                       --勘定科目ID
         , pps.factory_id                                                                 --工場ID
         , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pps.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inout_history pih                                --受払履歴
         LEFT JOIN pt_lot plt                                --ロット情報
@@ -163,7 +163,7 @@ WITH number_unit AS (
         , pit.account_structure_id                                                       --勘定科目ID
         , pps.factory_id                                                                 --工場ID
         , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pps.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inventory_difference pid                 --棚差調整データ
         LEFT JOIN pt_inventory pit                  --棚卸データ

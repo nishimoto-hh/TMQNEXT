@@ -206,7 +206,7 @@ namespace BusinessLogic_PT0006
             {
                 // エラー終了
                 this.Status = CommonProcReturn.ProcStatus.Error;
-                //メッセージが設定されていない場合
+                //メッセージが設定されていない場合5
                 if (string.IsNullOrEmpty(this.MsgId))
                 {
                     // 「出庫引当に失敗しました。」
@@ -393,15 +393,6 @@ namespace BusinessLogic_PT0006
                 return false;
             }
 
-            // 新規以外の場合は棚ID、棚枝番を在庫データテーブルから取得する
-            if (formMode != FormMode.New)
-            {
-                // 受払履歴IDより棚ID、棚枝番を取得する
-                var parts = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchCondition>(SqlName.SelectPartsLocationByIdList, SqlName.SubDirIssue, conditionObj, this.db);
-                conditionObj.PartsLocationId = parts.PartsLocationId;                        // 棚ID
-                conditionObj.PartsLocationDetailNo = parts.PartsLocationDetailNo;            // 棚枝番
-            }
-
             // 言語ID設定
             conditionObj.LanguageId = this.LanguageId;
 
@@ -410,14 +401,14 @@ namespace BusinessLogic_PT0006
             {
                 return false;
             }
-            // 部門在庫情報検索
-            if (!searchResultDepartmentInfo(formMode, ref conditionObj, out bool isEnterExsists))
+            // 棚別部門別在庫情報検索
+            if (!searchResultDepartmentInfo(formMode, ref conditionObj, out bool isEnterExsists, out List<Dao.searchResultDepartmentInfo> departmentInfoList))
             {
                 return false;
             }
             // 出庫情報検索
             Dao.registIssue issueInputInfo = new();
-            if (!searchResultIssueInput(ref formMode, ref conditionObj, out issueInputInfo, isEnterExsists))
+            if (!searchResultIssueInput(ref formMode, ref conditionObj, out issueInputInfo, isEnterExsists, departmentInfoList))
             {
                 return false;
             }
@@ -427,7 +418,7 @@ namespace BusinessLogic_PT0006
             {
                 List<Dao.searchResultInventory> result = new();
                 // 在庫一覧の検索
-                if (!searchInventoryList(formMode, out result, conditionObj))
+                if (!searchInventoryList(formMode, out result, conditionObj, departmentInfoList))
                 {
                     return false;
                 }
@@ -506,8 +497,11 @@ namespace BusinessLogic_PT0006
         /// <param name="conditionObj">検索条件</param>
         /// <param name="isEnterExsists">予備品情報に対して入庫があるかどうか</param>
         /// <returns>正常：0、異常：10</returns>
-        private bool searchResultDepartmentInfo(string formMode, ref Dao.searchCondition conditionObj, out bool isEnterExsists)
+        private bool searchResultDepartmentInfo(string formMode, ref Dao.searchCondition conditionObj, out bool isEnterExsists, out List<Dao.searchResultDepartmentInfo> departmentInfoList)
         {
+            // 画面に表示するための一覧(編集の場合に使用)
+            departmentInfoList = new();
+
             // ページ情報取得
             var sparesInfo = getPageInfoBlank(TargetCtrlId.DepartmentInformation);
 
@@ -533,21 +527,52 @@ namespace BusinessLogic_PT0006
             // 編集の場合
             else
             {
-                // 受払履歴IDより新旧区分、部門、勘定科目を取得する
-                var whereId = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchCondition>(SqlName.SelectWhereByInoutHistoryId, SqlName.SubDirIssue, conditionObj, this.db);
-                if (whereId == null)
+                // 受払履歴IDより出庫を行った新旧区分、部門、勘定科目、棚番、棚枝番を取得
+                List<Dao.searchCondition> conditions = TMQUtil.SqlExecuteClass.SelectList<Dao.searchCondition>(SqlName.SelectWhereByInoutHistoryId, SqlName.SubDirIssue, conditionObj, this.db);
+
+                // 条件が取得できない場合はエラー
+                if (conditions == null)
                 {
-                    return false;　//エラー
+                    return false;
                 }
 
-                // 条件追加
-                conditionObj.OldNewStructureId = whereId.OldNewStructureId;          // 新旧区分
-                conditionObj.DepartmentStructureId = whereId.DepartmentStructureId;　// 部門
-                conditionObj.AccountStructureId = whereId.AccountStructureId;　　　　// 勘定科目
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
+                string strJoin = string.Empty;
 
-                // 部門在庫情報取得
-                var results = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultDepartmentInfo>(SqlName.GetIssueDepartmentListEdit, SqlName.SubDirIssue, conditionObj, this.db);
-                if (results == null)
+                // 出庫した明細より取得した条件で棚別部門別在庫情報を検索する
+                foreach (Dao.searchCondition condition in conditions)
+                {
+                    // 検索条件を設定
+                    conditionObj.PartsId = condition.PartsId;                             // 予備品ID
+                    conditionObj.OldNewStructureId = condition.OldNewStructureId;         // 新旧区分
+                    conditionObj.DepartmentStructureId = condition.DepartmentStructureId; // 部門
+                    conditionObj.AccountStructureId = condition.AccountStructureId;       // 勘定科目
+                    conditionObj.PartsLocationId = condition.PartsLocationId;             // 棚
+                    conditionObj.PartsLocationDetailNo = condition.PartsLocationDetailNo; // 棚枝番
+
+                    // 検索処理
+                    var result = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultDepartmentInfo>(SqlName.GetIssueDepartmentListEdit, SqlName.SubDirIssue, conditionObj, this.db);
+
+                    // 間に空白を結合
+                    result.DepartmentNm = TMQUtil.CombineNumberAndUnit(result.DepartmentCd, result.DepartmentNm, true);
+                    result.SubjectNm = TMQUtil.CombineNumberAndUnit(result.SubjectCd, result.SubjectNm, true);
+
+                    // 数量と単位結合
+                    result.StockQuantity = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.Inventry.ToString(), result.UnitDigit, result.UnitRoundDivision), result.Unit, false);
+
+                    // 結合文字取得
+                    strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(result.FactoryId, this.LanguageId, this.db, ref factoryJoinDic);
+
+                    // 棚番と棚枝番を結合
+                    result.PartsLocationName = TMQUtil.GetDisplayPartsLocation(result.PartsLocationName, result.PartsLocationDetailNo, strJoin);
+
+                    // 画面に表示する一覧に設定する
+                    departmentInfoList.Add(result);
+                }
+
+                // 検索結果が1件も存在しない場合
+                if (departmentInfoList == null || departmentInfoList.Count == 0)
                 {
                     // 1件もない場合はエラーメッセージ(ここに来ることは通常ないと思うが一応)
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941160005, ComRes.ID.ID111280045 });
@@ -555,15 +580,16 @@ namespace BusinessLogic_PT0006
                     return true;
                 }
 
-                // 間に空白を結合
-                results.DepartmentNm = TMQUtil.CombineNumberAndUnit(results.DepartmentCd, results.DepartmentNm, true);
-                results.SubjectNm = TMQUtil.CombineNumberAndUnit(results.SubjectCd, results.SubjectNm, true);
-
-                // 数量と単位結合
-                results.StockQuantity = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(results.Inventry.ToString(), results.UnitDigit, results.UnitRoundDivision), results.Unit, false);
+                // 検索結果を並び替え
+                // 新旧区分、部門、勘定科目、棚番、棚枝番の昇順に並び替え
+                departmentInfoList = departmentInfoList.OrderBy(x => x.OldNewStructureId)
+                                                       .ThenBy(x => x.ToDepartmentNm)
+                                                       .ThenBy(x => x.ToSubjectNm)
+                                                       .ThenBy(x => x.PartsLocationId)
+                                                       .ThenBy(x => x.PartsLocationDetailNo).ToList();
 
                 // 検索結果の設定
-                if (SetSearchResultsByDataClass<Dao.searchResultDepartmentInfo>(sparesInfo, new List<Dao.searchResultDepartmentInfo> { results }, 1, true))
+                if (SetSearchResultsByDataClass<Dao.searchResultDepartmentInfo>(sparesInfo, departmentInfoList, departmentInfoList.Count, true))
                 {
                     // 正常終了
                     return true;
@@ -590,6 +616,10 @@ namespace BusinessLogic_PT0006
                 return true;
             }
 
+            // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+            Dictionary<int, string> factoryJoinDic = new();
+            string strJoin = string.Empty;
+
             // 部門在庫情報取得
             foreach (var data in results)
             {
@@ -599,6 +629,12 @@ namespace BusinessLogic_PT0006
 
                 // 数量と単位結合
                 data.StockQuantity = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(data.Inventry.ToString(), data.UnitDigit, data.UnitRoundDivision), data.Unit, false);
+
+                // 結合文字取得
+                strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(data.FactoryId, this.LanguageId, this.db, ref factoryJoinDic);
+
+                // 棚番と棚枝番を結合
+                data.PartsLocationName = TMQUtil.GetDisplayPartsLocation(data.PartsLocationName, data.PartsLocationDetailNo, strJoin);
             }
 
             // 検索結果の設定
@@ -617,7 +653,7 @@ namespace BusinessLogic_PT0006
         /// <param name="conditionObj">検索条件</param>
         /// <param name="isEnterExsists">予備品情報に対して入庫があるかどうか</param>
         /// <returns>正常：0、異常：10</returns>
-        private bool searchResultIssueInput(ref string formMode, ref Dao.searchCondition conditionObj, out Dao.registIssue result, bool isEnterExsists)
+        private bool searchResultIssueInput(ref string formMode, ref Dao.searchCondition conditionObj, out Dao.registIssue result, bool isEnterExsists, List<Dao.searchResultDepartmentInfo> departmentInfoList = null)
         {
             // ページ情報取得
             var issueInputInfo = getPageInfoBlank(TargetCtrlId.IssueInformation);
@@ -703,8 +739,30 @@ namespace BusinessLogic_PT0006
                 // 在庫確定日取得
                 DateTime targetMonth = TMQUtil.PartsGetInfo.GetInventoryConfirmationDate(conditionObj, this.db);
 
-                // 棚卸確定日取得
-                DateTime fixedDatetime = TMQUtil.PartsGetInfo.GetTakeInventoryConfirmationDate(conditionObj, this.db);
+                // 出庫日が棚卸確定日以前のデータが存在するかどうか
+                bool isErrorFixedDatetime = false;
+
+                // 棚別部門別在庫一覧(複数のレコードから出庫できるので選択されたレコードごとにチェックを行う)
+                foreach (Dao.searchResultDepartmentInfo departmentInfo in departmentInfoList)
+                {
+                    // 検索条件を設定
+                    conditionObj.OldNewStructureId = departmentInfo.OldNewStructureId;             // 新旧区分ID
+                    conditionObj.DepartmentStructureId = departmentInfo.ToDepartmentNm.ToString(); // 部門ID
+                    conditionObj.AccountStructureId = departmentInfo.ToSubjectNm.ToString();       // 勘定科目ID
+                    conditionObj.PartsLocationId = departmentInfo.PartsLocationId;                 // 棚番ID
+                    conditionObj.PartsLocationDetailNo = departmentInfo.PartsLocationDetailNo;     // 棚枝番
+
+                    // 棚卸確定日取得
+                    DateTime fixedDatetime = TMQUtil.PartsGetInfo.GetTakeInventoryConfirmationDate(conditionObj, this.db);
+
+                    // 出庫日が棚卸確定日以前の場合
+                    if (result.InoutDatetime <= fixedDatetime)
+                    {
+                        // エラーフラグをTrueにして繰り返し処理終了
+                        isErrorFixedDatetime = true;
+                        break;
+                    }
+                }
 
                 // 出庫日が在庫確定日以前の場合
                 if (result.InoutDatetime <= targetMonth)
@@ -715,7 +773,7 @@ namespace BusinessLogic_PT0006
                     result.FormType = int.Parse(FormMode.Reference);
                 }
                 // 出庫日が棚卸確定日以前の場合
-                else if (result.InoutDatetime <= fixedDatetime)
+                else if (isErrorFixedDatetime)
                 {
                     // 「棚卸確定以前の情報のため、修正・取消することはできません。」
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141160005 });
@@ -822,13 +880,46 @@ namespace BusinessLogic_PT0006
         /// <param name="result">検索結果</param>
         /// <param name="conditionObj">検索条件</param>
         /// <returns>エラーの場合False</returns>
-        private bool searchInventoryList(string formMode, out List<Dao.searchResultInventory> result, Dao.searchCondition conditionObj = null)
+        private bool searchInventoryList(string formMode, out List<Dao.searchResultInventory> result, Dao.searchCondition conditionObj = null, List<Dao.searchResultDepartmentInfo> departmentInfoList = null)
         {
             // 初期化
             result = new();
             if (conditionObj == null)
             {
                 conditionObj = new Dao.searchCondition();
+            }
+
+            // 棚別部門別在庫一覧で選択されている行
+            List<Dao.searchResultDepartmentInfo> selectedList = new();
+
+            // 引数にわたってきた一覧が空かどうか判定
+            if (departmentInfoList != null && departmentInfoList.Count > 0)
+            {
+                // 引数に検索結果が渡ってきている場合は代入
+                selectedList = departmentInfoList;
+            }
+            else
+            {
+                // 引数に検索結果が渡ってきていない場合
+                // 棚別部門別在庫一覧で選択されている行を取得
+                List<object> departmentList = (List<object>)this.IndividualDictionary["deaprtment"];
+                foreach (object row in departmentList)
+                {
+                    // 行をディクショナリに変換
+                    Dictionary<string, object> dicRow = (Dictionary<string, object>)row;
+
+                    // 選択チェックボックスが選択されているか判定
+                    if (dicRow["SELTAG"].ToString() == "1")
+                    {
+                        // ディクショナリをデータクラスに変換
+                        Dao.searchResultDepartmentInfo departmentInfo = new();
+                        SetDataClassFromDictionary((Dictionary<string, object>)row, TargetCtrlId.DepartmentInformation, departmentInfo);
+
+                        // 一覧に格納
+                        selectedList.Add(departmentInfo);
+                    }
+                }
+
             }
 
             // 指定されたコントロールIDの結果情報のみ抽出
@@ -847,14 +938,11 @@ namespace BusinessLogic_PT0006
             // 新規の場合入力チェック
             if (formMode == FormMode.New)
             {
-                // 新旧区分、部門、勘定科目の条件取得
-                Dictionary<string, object> selectCondition = this.IndividualDictionary;
-
                 // エラー情報セット用Dictionary
                 var errorInfoDictionary = new List<Dictionary<string, object>>();
 
                 // 出庫日、出庫数、出庫区分入力チェック
-                if (isErrorInout(conditionObj, condition, ref errorInfoDictionary))
+                if (isErrorInout(conditionObj, condition, ref errorInfoDictionary, selectedList))
                 {
                     // エラー情報を画面に反映
                     SetJsonResult(errorInfoDictionary);
@@ -862,24 +950,20 @@ namespace BusinessLogic_PT0006
                 }
 
                 // 出庫数入力チェック
-                if (isErrorNumberShipments(condition, selectCondition, ref errorInfoDictionary))
+                if (isErrorNumberShipments(condition, ref errorInfoDictionary, selectedList))
                 {
                     // エラー情報を画面に反映
                     SetJsonResult(errorInfoDictionary);
                     return false;
                 }
-
-                // 検索条件に追加
-                conditionObj.OldNewStructureId = selectCondition["OldNewStructureId"].ToString();             // 新旧区分
-                conditionObj.DepartmentStructureId = selectCondition["DepartmentStructureId"].ToString();     // 部門
-                conditionObj.AccountStructureId = selectCondition["AccountStructureId"].ToString();           // 勘定科目
             }
 
             // 在庫一覧検索
-            if (searchResultInventory(formMode, condition, conditionObj, out result) != CommonProcReturn.ProcStatus.Valid)
+            if (searchResultInventory(formMode, condition, conditionObj, out result, selectedList) != CommonProcReturn.ProcStatus.Valid)
             {
                 return false;
             }
+
             return true;
         }
 
@@ -891,7 +975,7 @@ namespace BusinessLogic_PT0006
         /// <param name="conditionObj">検索条件</param>
         /// <param name="result">検索結果</param>
         /// <returns>正常：0、異常：10</returns>
-        private int searchResultInventory(string formMode, Dictionary<string, object> condition, Dao.searchCondition conditionObj, out List<Dao.searchResultInventory> result)
+        private int searchResultInventory(string formMode, Dictionary<string, object> condition, Dao.searchCondition conditionObj, out List<Dao.searchResultInventory> totalResult, List<Dao.searchResultDepartmentInfo> selectedList)
         {
             // 受払区分
             long inoutDivision;
@@ -917,16 +1001,43 @@ namespace BusinessLogic_PT0006
             // 受払区分
             conditionObj.InoutDivisionStructureId = inoutDivision;
 
-            // 在庫一覧情報取得
-            result = TMQUtil.SqlExecuteClass.SelectList<Dao.searchResultInventory>(sqlName, SqlName.SubDirIssue, conditionObj, this.db);
+            // 検索後の在庫一覧(棚別部門別在庫一覧で選択された行を条件に検索し、各検索結果を格納する)
+            totalResult = new();
+
+            // 棚別部門別在庫一覧で選択された行を対象に検索
+            foreach (Dao.searchResultDepartmentInfo departmentInfo in selectedList)
+            {
+                // 検索条件を設定
+                conditionObj.OldNewStructureId = departmentInfo.OldNewStructureId;             // 新旧区分ID
+                conditionObj.DepartmentStructureId = departmentInfo.ToDepartmentNm.ToString(); // 部門ID
+                conditionObj.AccountStructureId = departmentInfo.ToSubjectNm.ToString();       // 勘定科目ID
+                conditionObj.PartsLocationId = departmentInfo.PartsLocationId;                 // 棚番ID
+                conditionObj.PartsLocationDetailNo = departmentInfo.PartsLocationDetailNo;     // 棚枝番
+                conditionObj.UnitStructureId = departmentInfo.UnitStructureId;                 // 数量管理単位
+
+                // 在庫一覧情報取得
+                List<Dao.searchResultInventory> results = TMQUtil.SqlExecuteClass.SelectList<Dao.searchResultInventory>(sqlName, SqlName.SubDirIssue, conditionObj, this.db);
+
+                // 取得できなかった場合は次の条件で検索
+                if (results == null || results.Count == 0)
+                {
+                    continue;
+                }
+
+                // 画面に表示する一覧に設定する
+                foreach (Dao.searchResultInventory result in results)
+                {
+                    totalResult.Add(result);
+                }
+            }
 
             // 丸め処理・数量と単位を結合
-            result.ToList().ForEach(x => x.JoinStrAndRound());
+            totalResult.ToList().ForEach(x => x.JoinStrAndRound());
 
             // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
             Dictionary<int, string> factoryJoinDic = new();
             string strJoin = string.Empty;
-            foreach (var data in result)
+            foreach (var data in totalResult)
             {
                 // 結合文字取得
                 strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(data.FactoryId, this.LanguageId, this.db, ref factoryJoinDic);
@@ -934,11 +1045,14 @@ namespace BusinessLogic_PT0006
                 data.PartsLocationDisplay = TMQUtil.GetDisplayPartsLocation(data.PartsLocationCd, data.PartsLocationDetailNo, strJoin);
             }
 
+            // 入庫日、ロットNo.の昇順に並び替え
+            totalResult = totalResult.OrderBy(x => x.ReceivingDatetime).ThenBy(x => x.lotNo).ToList();
+
             // 新規の場合は入力チェック
             if (formMode == FormMode.New)
             {
                 // 出庫日が入庫日以降のデータを取得
-                var checkList = result.Where(x => DateTime.Parse(x.ReceivingDatetime) <= DateTime.Parse(getDictionaryKeyValue(condition, "inout_datetime"))).ToList();
+                var checkList = totalResult.Where(x => DateTime.Parse(x.ReceivingDatetime) <= DateTime.Parse(getDictionaryKeyValue(condition, "inout_datetime"))).ToList();
 
                 // データが無ければ引当不可とする
                 if (checkList.Count() == 0)
@@ -953,11 +1067,12 @@ namespace BusinessLogic_PT0006
             var inventoryInfo = getPageInfoBlank(TargetCtrlId.InventoryInformation);
 
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResultInventory>(inventoryInfo, result, result.Count(), true))
+            if (SetSearchResultsByDataClass<Dao.searchResultInventory>(inventoryInfo, totalResult, totalResult.Count(), true))
             {
                 // 正常終了
                 return this.Status = CommonProcReturn.ProcStatus.Valid;
             }
+
             return CommonProcReturn.ProcStatus.Error;
         }
 
@@ -1255,8 +1370,9 @@ namespace BusinessLogic_PT0006
         /// <param name="conditionObj">検索条件</param>
         /// <param name="condition">出庫情報</param>
         /// <param name="errorInfoDictionary">エラー情報リスト</param>
+        /// <param name="selectedList">棚別部門別在庫一覧で選択された行</param>
         /// <returns>エラーがあればTrue</returns>
-        private bool isErrorInout(Dao.searchCondition conditionObj, Dictionary<string, object> condition, ref List<Dictionary<string, object>> errorInfoDictionary)
+        private bool isErrorInout(Dao.searchCondition conditionObj, Dictionary<string, object> condition, ref List<Dictionary<string, object>> errorInfoDictionary, List<Dao.searchResultDepartmentInfo> selectedList)
         {
             // エラー情報セット用Dictionary
             errorInfoDictionary = new List<Dictionary<string, object>>();
@@ -1273,21 +1389,8 @@ namespace BusinessLogic_PT0006
             var errorInfo = new ErrorInfo(targetDic);
             string errMsg = string.Empty;
 
-            // 在庫確定日取得
+            // 予備品IDより、在庫確定日取得
             DateTime targetMonth = TMQUtil.PartsGetInfo.GetInventoryConfirmationDate(conditionObj, this.db);
-
-            // 条件追加
-            conditionObj.OldNewStructureId = this.IndividualDictionary["OldNewStructureId"].ToString();         // 新旧区分
-            conditionObj.DepartmentStructureId = this.IndividualDictionary["DepartmentStructureId"].ToString(); // 部門
-            conditionObj.AccountStructureId = this.IndividualDictionary["AccountStructureId"].ToString();       // 勘定科目
-
-            // 新旧区分、部門、勘定科目より棚IDと棚枝番を取得する
-            var parts = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchCondition>(SqlName.SelectLocationInfo, SqlName.SubDirIssue, conditionObj, this.db);
-            conditionObj.PartsLocationId = parts.PartsLocationId;                        // 棚ID
-            conditionObj.PartsLocationDetailNo = parts.PartsLocationDetailNo;            // 棚枝番
-
-            // 棚卸確定日取得
-            DateTime fixedDatetime = TMQUtil.PartsGetInfo.GetTakeInventoryConfirmationDate(conditionObj, this.db);
 
             // 出庫日取得
             DateTime inoutDatetime = DateTime.Parse(getDictionaryKeyValue(condition, "inout_datetime"));
@@ -1299,6 +1402,7 @@ namespace BusinessLogic_PT0006
                 errMsg = GetResMessage(new string[] { ComRes.ID.ID111320002 });
                 errorInfo.setError(errMsg, val1);           // エラー情報をセット
                 errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
+                return true;
             }
             // 出庫日が在庫確定日前の場合
             else if (inoutDatetime <= targetMonth)
@@ -1310,17 +1414,53 @@ namespace BusinessLogic_PT0006
                 errMsg = GetResMessage(new string[] { ComRes.ID.ID141110001, dispTargetMonth });
                 errorInfo.setError(errMsg, val1);           // エラー情報をセット
                 errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
+                return true;
             }
-            // 出庫日が棚卸確定日前の場合
-            else if (inoutDatetime <= fixedDatetime)
-            {
-                // 日付を変換
-                string dispFixedDatetime = fixedDatetime.ToString(GetResMessage(new string[] { ComRes.ID.ID150000003 }));
 
-                // 「棚卸確定前[{0}]の日付は入力できません。」
-                errMsg = GetResMessage(new string[] { ComRes.ID.ID141160004, dispFixedDatetime });
-                errorInfo.setError(errMsg, val1);           // エラー情報をセット
-                errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
+            // 棚・部門の組み合わせのリスト
+            List<string> selectCheckList = new();
+            string checkKey = string.Empty;
+
+            // 棚別部門別在庫一覧で選択された行を対象にチェック
+            foreach (Dao.searchResultDepartmentInfo departmentInfo in selectedList)
+            {
+                // 検索条件を設定
+                conditionObj.OldNewStructureId = departmentInfo.OldNewStructureId;             // 新旧区分ID
+                conditionObj.DepartmentStructureId = departmentInfo.ToDepartmentNm.ToString(); // 部門ID
+                conditionObj.AccountStructureId = departmentInfo.ToSubjectNm.ToString();       // 勘定科目ID
+                conditionObj.PartsLocationId = departmentInfo.PartsLocationId;                 // 棚番ID
+                conditionObj.PartsLocationDetailNo = departmentInfo.PartsLocationDetailNo;     // 棚枝番
+
+                // 棚ID、棚枝番、部門IDを文字列としてチェック用リストに追加
+                checkKey = departmentInfo.PartsLocationId.ToString() + "_" + departmentInfo.ToDepartmentNm.ToString() + "_" + departmentInfo.PartsLocationDetailNo;
+                if (!selectCheckList.Contains(checkKey))
+                {
+                    selectCheckList.Add(checkKey);
+                }
+
+                // 棚卸確定日取得
+                DateTime fixedDatetime = TMQUtil.PartsGetInfo.GetTakeInventoryConfirmationDate(conditionObj, this.db);
+
+                // 出庫日が棚卸確定日前の場合
+                if (inoutDatetime <= fixedDatetime)
+                {
+                    // 日付を変換
+                    string dispFixedDatetime = fixedDatetime.ToString(GetResMessage(new string[] { ComRes.ID.ID150000003 }));
+
+                    // 「棚卸確定前[{0}]の日付は入力できません。」
+                    errMsg = GetResMessage(new string[] { ComRes.ID.ID141160004, dispFixedDatetime });
+                    errorInfo.setError(errMsg, val1);           // エラー情報をセット
+                    errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
+                    return true;
+                }
+            }
+
+            // 棚・部門の組み合わせが複数選択されている場合はエラー
+            if (selectCheckList.Count > 1)
+            {
+                // 「同一の棚番・部門を選択してください。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141200008 });
+                return true;
             }
 
             // @単位の形で渡ってくるため数値、小数点、符号のみを抽出
@@ -1358,10 +1498,10 @@ namespace BusinessLogic_PT0006
         /// 在庫数チェック
         /// </summary>
         /// <param name="condition">出庫情報</param>
-        /// <param name="selectCondition">在庫情報</param>
         /// <param name="errorInfoDictionary">エラー情報リスト</param>
+        /// <param name="selectedList">棚別部門別在庫一覧で選択された行</param>
         /// <returns>エラーがあればTrue</returns>
-        private bool isErrorNumberShipments(Dictionary<string, object> condition, Dictionary<string, object> selectCondition, ref List<Dictionary<string, object>> errorInfoDictionary)
+        private bool isErrorNumberShipments(Dictionary<string, object> condition, ref List<Dictionary<string, object>> errorInfoDictionary, List<Dao.searchResultDepartmentInfo> selectedList)
         {
             // エラー情報セット用Dictionary
             errorInfoDictionary = new List<Dictionary<string, object>>();
@@ -1377,6 +1517,16 @@ namespace BusinessLogic_PT0006
             var errorInfo = new ErrorInfo(targetDic);
             string errMsg = string.Empty;
 
+            // 棚別部門別在庫一覧で選択されている行の在庫数の合計
+            decimal totalStock = 0;
+
+            // 棚別部門別在庫一覧で選択された行を対象にチェック
+            foreach (Dao.searchResultDepartmentInfo departmentInfo in selectedList)
+            {
+                // 選択された行の合計在庫数を取得する
+                totalStock += decimal.Parse(Regex.Replace(departmentInfo.StockQuantity, @"[^-0-9.]", ""));
+            }
+
             // 出庫数は@単位の形で渡ってくるため数値、小数点、符号のみを抽出
             string nums = Regex.Replace(getDictionaryKeyValue(condition, "number_shipments"), @"[^-0-9.]", "");
 
@@ -1386,12 +1536,8 @@ namespace BusinessLogic_PT0006
                 nums = "0" + nums;
             }
 
-            //在庫数取得
-            string stockQuantity = selectCondition["StockQuantity"].ToString();
-            decimal stocks = decimal.Parse(Regex.Replace(stockQuantity, @"[^-0-9.]", ""));
-
             // 出庫数が在庫数よりも多ければエラーを出す
-            if (decimal.Parse(nums) > stocks)
+            if (decimal.Parse(nums) > totalStock)
             {
                 // 「在庫数以下の数値で入力してください。」
                 errMsg = GetResMessage(new string[] { ComRes.ID.ID111110056 });

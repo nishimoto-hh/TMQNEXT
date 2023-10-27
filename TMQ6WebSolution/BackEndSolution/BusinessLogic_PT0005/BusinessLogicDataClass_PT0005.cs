@@ -225,5 +225,30 @@ namespace BusinessLogic_PT0005
             /// <value>管理工場ID</value>
             public long PartsFactoryId { get; set; }
         }
+
+        /// <summary>
+        /// 予備品情報とその関連情報を取得(初期表示する際に使用)
+        /// </summary>
+        public class initValByPartsInfo
+        {
+            /// <summary>Gets or sets 部門ID</summary>
+            /// <value>部門ID</value>
+            public long DepartmentStructureId { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 勘定科目ID</summary>
+            /// <value>勘定科目ID</value>
+            public long AccountStructureId { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string AccountCode { get; set; }
+            /// <summary>Gets or sets 新旧区分ID</summary>
+            /// <value>新旧区分ID</value>
+            public long OldNewStructureId { get; set; }
+            /// <summary>Gets or sets 新旧区分ID</summary>
+            /// <value>新旧区分</value>
+            public string OldNewDivision { get; set; }
+        }
     }
 }

@@ -12,9 +12,53 @@ SELECT
     COALESCE(currency_digit.currency_digit, 0) AS currency_digit,                                                                                   -- 小数点以下桁数(金額)
     COALESCE(round_division.extension_data, 1) AS unit_round_division,                                                                              -- 丸め処理区分(数量)
     COALESCE(round_division.extension_data, 1) AS currency_round_division,                                                                          -- 丸め処理区分(金額)
+    department.department_code AS department_cd_enter,                                                                                              -- 部門CD(ラベル出力用)
+    subject.subject_code AS subject_cd_enter,                                                                                                       -- 勘定科目CD(ラベル出力用)
+    parts.parts_id,                                                                                                                                 -- 予備品ID(ラベル出力用)
+    stock.parts_location_id AS parts_location_id_enter,                                                                                             -- 棚ID(ラベル出力用)
+    stock.parts_location_detail_no AS parts_location_detail_no_enter,                                                                               -- 棚枝番(ラベル出力用)
          ---------------------------------- 以下は翻訳を取得 ---------------------------------- 
-    department.department_code + ' ' + department_trans.department_name AS department_nm,                                                           -- 部門
+    department.department_code + ' ' +
+    COALESCE(
+        (
+          SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = lot.department_structure_id
+              AND st_f.factory_id IN(0, @UserFactoryId)
+           )
+      AND tra.structure_id = lot.department_structure_id
+    ) , 
+        (
+          SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = lot.department_structure_id
+              AND st_f.factory_id NOT IN(0, @UserFactoryId)
+           )
+      AND tra.structure_id = lot.department_structure_id
+    )
+    ) AS department_nm,                                                                                                                           -- 部門
     subject.subject_code + ' ' +
+    COALESCE(
         (
           SELECT
           tra.translation_text
@@ -32,9 +76,28 @@ SELECT
               AND st_f.factory_id IN(0, @UserFactoryId)
            )
       AND tra.structure_id = lot.account_structure_id
+    ),
+        (
+          SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = lot.account_structure_id
+              AND st_f.factory_id NOT IN(0, @UserFactoryId)
+           )
+      AND tra.structure_id = lot.account_structure_id
+    )
     ) AS subject_nm,                                                                                                                               -- 勘定科目
     
-            (
+    (
       SELECT
           tra.translation_text
       FROM
@@ -93,9 +156,6 @@ FROM
     LEFT JOIN
         round_division --丸め処理区分
     ON  parts.factory_id = round_division.factory_id
-    LEFT JOIN -- 部門名称
-        department_trans
-    ON  lot.department_structure_id = department_trans.department_id
 WHERE
     lot.parts_id = @PartsId -- 在庫があるものを抽出
 AND COALESCE(stock.stock_quantity, 0) > 0

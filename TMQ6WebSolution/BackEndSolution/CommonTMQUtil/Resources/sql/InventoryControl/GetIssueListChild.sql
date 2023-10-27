@@ -215,6 +215,7 @@ SELECT DISTINCT
     plt.management_no,                                                               --管理No
     plt.management_division,                                                         --管理区分
     pih.work_no,                                                                     --作業No(紐付け用)
+    CONVERT(varchar, pih.work_no) + '_' + CONVERT(varchar, plt.old_new_structure_id) AS nest_key,
     pih.inout_datetime,                                                              --受払日時(ソート用)
     ppt.factory_id AS parts_factory_id,                                              --工場ID
     COALESCE(number_unit.unit_digit, 0) AS unit_digit,                               --小数点以下桁数(数量)

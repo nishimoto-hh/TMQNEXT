@@ -25,6 +25,7 @@ INSERT INTO ma_request(
     ,[request_authorizer1_id]
     ,[request_authorizer2_id]
     ,[request_authorizer3_id]
+    ,[construction_place]
     ,[update_serialid]
     ,[insert_datetime]
     ,[insert_user_id]
@@ -86,6 +87,7 @@ VALUES(
     ,@RequestAuthorizer1Id
     ,@RequestAuthorizer2Id
     ,@RequestAuthorizer3Id
+    ,@ConstructionPlace
     ,@UpdateSerialid
     ,@InsertDatetime
     ,@InsertUserId

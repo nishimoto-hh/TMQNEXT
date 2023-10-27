@@ -134,6 +134,11 @@ namespace BusinessLogic_PT0004
         /// 対象年月が当月以上の場合一覧にセットする値
         /// </summary>
         private const int FlgJudgeTargetMonth = 1;
+
+        /// <summary>
+        /// 職種がNULLのデータを扱うときの代わりの構成ID
+        /// </summary>
+        private const long JobNullId = 0;
         #endregion
 
         #region コンストラクタ
@@ -302,19 +307,14 @@ namespace BusinessLogic_PT0004
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
 
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetInventoryFirmList, out string baseSql);
-            // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetInventoryFirmList, out string withSql);
-
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereClause, out dynamic whereParam, out bool isDetailConditionApplied, unUseLocation: true))
+            if (!GetWhereClauseAndParam2(pageInfo, "parts_factory_id job_structure_id", out string whereClause, out dynamic whereParam, out bool isDetailConditionApplied, unUseLocation: true))
             {
                 return false;
             }
 
-            // 共通通工場を一時テーブルに登録
-            getCommonFactoryIdToTemp();
+            // 一時テーブルに職種がNULL(値は「0」)を登録する→職種がNULLのデータを検索するため
+            registJobNullData(out bool isJobSelected);
 
             // 再検索かどうか判定
             if (isResearch)
@@ -326,11 +326,38 @@ namespace BusinessLogic_PT0004
                 }
 
                 // 非表示の一覧に退避している職種IDを取得
-                if (!getHideJobIdList())
+                if (!getHideJobIdList(out bool containsNullJob))
                 {
                     return false;
                 }
+
+                // 非表示の一覧に職種がNullのID「0」が含まれてる場合、ツリーで何も選択されなかったとする
+                if (containsNullJob)
+                {
+                    isJobSelected = false;
+                }
             }
+
+            // SQL文でコメントを解除する部分
+            List<string> uncommentList = new();
+            if (isJobSelected)
+            {
+                // ツリーで職種が選択されている場合
+                uncommentList.Add("isJobSelected");
+            }
+            else
+            {
+                // ツリーで職種が選択されていない場合
+                uncommentList.Add("isJobNotSelected");
+            }
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetInventoryFirmList, out string baseSql, uncommentList);
+            // WITH句は別に取得
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetInventoryFirmList, out string withSql);
+
+            // 共通通工場を一時テーブルに登録
+            getCommonFactoryIdToTemp();
 
             // 検索条件で入力された対象年月を取得
             whereParam.TargetMonth = getSearchCondition();
@@ -338,7 +365,7 @@ namespace BusinessLogic_PT0004
 
             // 総件数を取得
             // 件数を取得するSQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCountInventoryFirmList, out string countSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCountInventoryFirmList, out string countSql, uncommentList);
             // 総件数を取得
             int cnt = db.GetCount(countSql, whereParam);
             // 総件数のチェック
@@ -465,6 +492,38 @@ namespace BusinessLogic_PT0004
             return;
         }
 
+        private void registJobNullData(out bool isJobSelected)
+        {
+            isJobSelected = true;
+
+            // ツリーで選択された職種を取得
+            List<int> jobIdList = getIdListBySearchCond(STRUCTURE_CONSTANTS.CONDITION_KEY.Job);
+
+            // ツリーで何も選択されていない場合
+            if (jobIdList == null || jobIdList.Count <= 0)
+            {
+                isJobSelected = false;
+                // 一時テーブル登録用のSQL文字列を取得
+                ComUtil.GetFixedSqlStatement(SqlName.CommonSubDir, SqlName.InsertTempJob, out string insertSql);
+
+                // 一時テーブルへ構成ID(職種がNULL用の「0」)を登録
+                this.db.Regist(insertSql, new { LocationIds = JobNullId.ToString() });
+            }
+
+            // ツリーで選択された職種を取得
+            List<int> getIdListBySearchCond(string keyName)
+            {
+                List<int> results = new();
+                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
+                if (dic != null && dic.ContainsKey(keyName))
+                {
+                    // 選択された構成IDリストから配下の構成IDをすべて取得
+                    results = dic[keyName] as List<int>;
+                }
+                return results;
+            }
+        }
+
         /// <summary>
         /// 非表示の工場IDリストに工場IDを設定する
         /// </summary>
@@ -566,15 +625,17 @@ namespace BusinessLogic_PT0004
         /// 非表示の職種IDリストの値を取得する
         /// </summary>
         /// <returns>エラーの場合False</returns>
-        private bool getHideJobIdList()
+        private bool getHideJobIdList(out bool containsNullJob)
         {
+            containsNullJob = false;
+
             // 一時テーブルの値を削除
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.DeleteTempJobList, out string delJobSql);
             this.db.Regist(delJobSql);
 
             // 職種ID一覧の情報を取得
-            List<long> jobIdList = new();
+            List<long?> jobIdList = new();
             List<Dictionary<string, object>> list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormList.ControlId.JobIdList);
             foreach (var val in list)
             {
@@ -592,6 +653,12 @@ namespace BusinessLogic_PT0004
 
             // 場所階層用の一時テーブルへ構成IDを登録
             this.db.Regist(insertSql, new { LocationIds = string.Join(',', jobIdList) });
+
+            // 職種なしのID「0」が含まれているかどうか
+            if (jobIdList.Contains(JobNullId))
+            {
+                containsNullJob = true;
+            }
 
             return true;
         }
@@ -658,6 +725,13 @@ namespace BusinessLogic_PT0004
             if (!getSearchCondition(selectedRow, ctrlId, now, out Dao.searchConditionFixedStock searchCondition))
             {
                 return false;
+            }
+
+            // 職種がNullのデータの場合
+            if (searchCondition.PartsJobId <= JobNullId)
+            {
+                // 登録する値をNullにする
+                searchCondition.PartsJobId = null;
             }
 
             // SQLを取得
@@ -749,6 +823,13 @@ namespace BusinessLogic_PT0004
                                                         59,
                                                         59);
             registInfo.ExecutionUserId = this.UserId;                     // 実行ユーザ―ID
+
+            // 職種がNullのデータの場合
+            if (registInfo.PartsJobId <= JobNullId)
+            {
+                // 登録する値をNullにする
+                registInfo.PartsJobId = null;
+            }
 
             // 登録処理
             if (!TMQUtil.SqlExecuteClass.Regist(SqlName.InsertStockConfirm, SqlName.SubDir, registInfo, db))
@@ -871,6 +952,12 @@ namespace BusinessLogic_PT0004
                     return false;
                 }
                 registInfo.TargetMonth = targetMonth.TargetMonth; // 対象年月
+                // 職種がNullのデータの場合
+                if (registInfo.PartsJobId <= JobNullId)
+                {
+                    // 登録する値をNullにする
+                    registInfo.PartsJobId = null;
+                }
 
                 // 在庫確定管理データ更新処理
                 if (!updateStockConfirm(registInfo))

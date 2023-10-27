@@ -40,7 +40,7 @@ namespace BusinessLogic_PT0007
             public int TransType { get; set; }
             /// <summary>Gets or sets ユーザーの本務工場</summary>
             /// <value>ユーザーの本務工場</value>
-            public int UserFactoryId { get; set; }
+            public long UserFactoryId { get; set; }
         }
 
         /// <summary>
@@ -81,6 +81,9 @@ namespace BusinessLogic_PT0007
             /// <summary>Gets or sets メーカー</summary>
             /// <value>メーカー</value>
             public string ManufacturerName { get; set; }
+            /// <summary>Gets or sets 管理工場ID</summary>
+            /// <value>管理工場ID</value>
+            public long PartsFactoryId { get; set; }
             /// <summary>
             /// 丸め処理・数量と単位の結合
             /// </summary>
@@ -640,7 +643,7 @@ namespace BusinessLogic_PT0007
             public long OldNewStructureId { get; set; }
             /// <summary>Gets or sets 工場ID</summary>
             /// <value>工場ID</value>
-            public int PartsFactoryId { get; set; }
+            public long PartsFactoryId { get; set; }
             /// <summary>Gets or sets 更新シリアルID</summary>
             /// <value>更新シリアルID</value>
             public int UpdateSerialid { get; set; }

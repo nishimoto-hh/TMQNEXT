@@ -1117,7 +1117,7 @@
 
         }
         Dictionary<string, object> headerFilterParams = null;
-        var headerFilter = isReadOnly && define.FILTERUSEKBN == LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.Use ? "input" : "";
+        var headerFilter = isReadOnly && define.FILTERUSEKBN != LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.None ? "input" : "";
         // 必須項目設定
         var mark_required = !isReadOnly && define.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "<span class=\"required\"><span class=\"mark\"></span></span>" : "";
         List<string> cssClassList = new List<string>();
@@ -1252,7 +1252,7 @@
                 break;
         }
 
-        if(isReadOnly && define.FILTERUSEKBN == LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.Use)
+        if(isReadOnly && define.FILTERUSEKBN != LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.None)
         {
             //列フィルターをコンボボックスとする（Tabulatorが候補を自動で生成）
             switch (define.DETAILED_SEARCH_CELLTYPE)
@@ -1302,6 +1302,8 @@
             { "headerFilter", headerFilter },
             // 列フィルター コンボのアイテムを作成
             { "headerFilterParams", headerFilterParams },
+            // 列フィルタータイプ（標準は部分一致）
+            { "headerFilterFunc", define.FILTERUSEKBN },
             // 列のフィルターのリアルタイムフィルターOFF（入力後確定が必要になる）
             //{ "headerFilterLiveFilter", false },
             // 列フィルターのプレースホルダ（列毎）

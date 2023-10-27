@@ -185,6 +185,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 依頼担当</summary>
             /// <value>依頼担当</value>
             public string RequestPersonnelName { get; set; }
+            /// <summary>Gets or sets 場所</summary>
+            /// <value>場所</value>
+            public string ConstructionPlace { get; set; }
             /// <summary>Gets or sets 施工担当者</summary>
             /// <value>施工担当者</value>
             public string ConstructionPersonnelName { get; set; }
@@ -442,6 +445,9 @@ namespace BusinessLogic_MA0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ConstructionPlace, nameof(this.ConstructionPlace), mapDic);
+
+
 
                 return paramObj;
             }
@@ -666,6 +672,16 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 発生日</summary>
             /// <value>発生日</value>
             public DateTime? OccurrenceDate { get; set; }
+            /// <summary>Gets or sets ランク</summary>
+            /// <value>ランク</value>
+            public int? RankStructureId { get; set; }
+            /// <summary>Gets or sets 故障時間</summary>
+            /// <value>故障時間</value>
+            public decimal? FailureTime { get; set; }
+            /// <summary>Gets or sets 故障機器</summary>
+            /// <value>故障機器</value>
+            public int? FailureEquipmentModelStructureId { get; set; }
+
         }
 
         /// <summary>

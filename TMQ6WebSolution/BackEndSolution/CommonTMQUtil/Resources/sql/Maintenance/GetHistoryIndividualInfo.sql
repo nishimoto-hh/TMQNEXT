@@ -27,6 +27,8 @@ SELECT
     , hi.working_time_company                   --施工業者(Hr)
     , hi.history_id                             --履歴ID
     , hi.update_serialid                        --更新シリアルID
+    , hi.failure_time                           --故障時間20230426AEC shiraishi
+    , hi.failure_equipment_model_structure_id   --故障機器20230426AEC shiraishi
 FROM
     ma_summary su 
     LEFT JOIN ma_plan pl 

@@ -7,6 +7,7 @@ SELECT
     coalesce(unit_digit.extension_data, 0) AS unit_digit,                                                -- 小数点以下桁数
     coalesce(round_division.extension_data, 1) AS unit_round_division,                                   -- 丸め処理区分
     parts.parts_id,                                                                                      -- 予備品ID
+    parts.factory_id AS parts_factory_id,                                                                -- 管理工場ID
     ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
       SELECT

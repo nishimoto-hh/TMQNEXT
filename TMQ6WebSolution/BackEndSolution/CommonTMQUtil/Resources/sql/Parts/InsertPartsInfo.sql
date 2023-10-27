@@ -24,6 +24,8 @@ INSERT INTO pt_parts(
     [unit_price],                         --標準単価
     [purchasing_no],                      --購買システムコード
     [parts_memo],                         --メモ
+    [department_structure_id],            --標準部門
+    [account_structure_id],               --標準勘定科目
     [update_serialid],                    --更新シリアルID
     [insert_datetime],                    --登録日時
     [insert_user_id],                     --登録ユーザー
@@ -56,6 +58,8 @@ VALUES(
     @UnitPriceExceptUnit,                 --標準単価
     @PurchasingNo,                        --購買システムコード
     @PartsMemo,                           --メモ
+    @DepartmentStructureId,               --標準部門
+    @AccountStructureId,                  --標準勘定科目
     @UpdateSerialid,                      --更新シリアルID
     @InsertDatetime,                      --登録日時
     @InsertUserId,                        --登録ユーザー

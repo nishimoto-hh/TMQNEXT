@@ -25,6 +25,8 @@ SET
     [unit_price] = @UnitPriceExceptUnit,                            --標準単価
     [purchasing_no] = @PurchasingNo,                                --購買システムコード
     [parts_memo] = @PartsMemo,                                      --メモ
+    [department_structure_id] = @DepartmentStructureId,             --標準部門
+    [account_structure_id] = @AccountStructureId,                   --標準勘定科目
     [update_serialid] = update_serialid + 1,                        --更新シリアルID
     [update_datetime] = @UpdateDatetime,                            --更新日時
     [update_user_id] = @UpdateUserId                                --更新ユーザー

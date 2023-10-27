@@ -1,6 +1,7 @@
 /*
 * 予備品　部門のオートコンプリート
-* ユーザがシステム管理者(99)の場合は全工場、そうでなければユーザ所属マスタの本務工場の地区に紐づく部門表示
+* ユーザがシステム管理者の場合は本務工場の地区配下の工場と標準工場のアイテムを表示
+* ユーザがシステム管理者以外の場合は本務工場と標準工場のアイテムを表示
 */
 WITH user_narrow AS(
     SELECT
@@ -25,7 +26,7 @@ user_district AS(
     WHERE
         ub.duty_flg = 1
 )
--- 構成マスタより工場または職種を取得
+-- 構成マスタより、取得した地区配下の工場を取得
 ,
 factory AS(
     SELECT
@@ -40,7 +41,7 @@ factory AS(
         ON  parent_structure_id = district.district_id
     WHERE
         structure_group_id = 1000
-    AND language_id = /*languageId*/'ja' 
+    AND language_id = /*languageId*/'ja'
     AND structure_layer_no = 1
 )
 -- ユーザ権限を特定するために拡張項目の値を取得
@@ -60,7 +61,7 @@ auth AS(
     WHERE
         st.structure_group_id = 9040
 )
--- ユーザ所属マスタの工場を取得
+-- ユーザ所属マスタの本務工場を取得
 ,
 user_factory AS(
     SELECT
@@ -140,89 +141,102 @@ temp AS(
     SELECT
         0
 ),
-facatory_max AS(
+main AS(
     SELECT
-        item.structure_id,
-        MAX(item.location_structure_id) AS location_structure_id
+        st.factory_id AS factoryId,                       -- 工場ID
+        st.location_structure_id AS translationFactoryId, -- 翻訳工場ID
+        ex.extension_data AS id,                          -- コード
+        --st.translation_text AS name,                    -- 名称
+        COALESCE((
+                SELECT
+                    tra.translation_text
+                FROM
+                    v_structure_item_all AS tra
+                WHERE
+                    tra.structure_id = st.structure_id
+                AND tra.language_id = /*languageId*/'ja'
+                AND tra.location_structure_id = st.location_structure_id
+            ),(
+                SELECT
+                    tra.translation_text
+                FROM
+                    v_structure_item_all AS tra
+                WHERE
+                    tra.structure_id = st.structure_id
+                AND tra.language_id = /*languageId*/'ja'
+                AND tra.location_structure_id = 0
+            )) AS name,                                   -- 名称
+        st.structure_id AS structureId,                   -- 構成ID
+        ex2.extension_data,                               -- 拡張データ
+        0 AS orderFactoryId,      -- 表示順用工場ID
+        row_number() over(partition BY coalesce(ft.factoryId, 0) ORDER BY coalesce(coalesce(order_factory.display_order, order_common.display_order), 32768), st.structure_id) row_num -- 行番号、表示行数を制限するのでソート順を指定(表示用工場ID毎)
     FROM
-        v_structure_item_all item
+        /*IF !getNameFlg */
+              v_structure_item
+        /*END*/
+        /*IF getNameFlg */
+              v_structure_item_all
+        /*END*/
+        AS st
+        INNER JOIN
+            temp
+        ON  st.factory_id = temp.factoryId
+        INNER JOIN
+            ms_item_extension AS ex
+        ON  ex.item_id = st.structure_item_id
+        AND ex.sequence_no = 1
+        LEFT JOIN
+            ms_item_extension AS ex2
+        ON  ex2.item_id = st.structure_item_id
+        AND ex2.sequence_no = 2
+        -- 工場ごとに工場別表示順を取得する
+        CROSS JOIN
+            factory AS ft
+        LEFT OUTER JOIN
+            ms_structure_order AS order_factory
+        ON  st.structure_id = order_factory.structure_id
+        AND order_factory.factory_id = /*param2*/0
+        -- 全工場共通の表示順
+        LEFT OUTER JOIN
+            ms_structure_order AS order_common
+        ON  st.structure_id = order_common.structure_id
+        AND order_common.factory_id = 0
     WHERE
-        item.structure_group_id = 1760
-    AND item.location_structure_id IN (
-                                       SELECT 0
-                                       UNION
-                                       SELECT f.factoryId FROM factory f)
-    AND item.language_id = /*languageId*/'ja' 
-    GROUP BY
-        item.structure_id
-)
-SELECT
-    * 
-FROM
-    ( 
+        st.structure_group_id = /*param1*/1760
+    AND st.language_id = /*languageId*/'ja'
+   /*IF param3 != null && param3 != ''*/
+        /*IF !getNameFlg */
+        -- コードで検索
+        AND (ex.extension_data LIKE '%'+/*param3*/'%')
+        /*END*/
+   /*END*/
+   /*IF getNameFlg */
+        -- 翻訳なのでID
+        AND ex.extension_data =/*param3*/'0'
+   /*END*/
+    -- 工場別未使用標準アイテムに工場が含まれていないものを表示
+AND NOT EXISTS(
         SELECT
             *
-            , row_number() over(ORDER BY coalesce(tbl.display_order,32768), tbl.structure_id) row_num
         FROM
-            ( 
-                SELECT distinct
-                    0 AS factoryId
-                    , 0 AS translationFactoryId
-                    , ex.extension_data AS 'values'
-                    , item.translation_text AS 'labels'
-                    , item.structure_id AS exparam1
-                    , COALESCE(ex2.extension_data, 0) AS exparam2 
-                    , order_common.display_order
-                    , item.structure_id
-                FROM
-                   /*IF !getNameFlg */
-                    v_structure_item
-                    /*END*/
-                    /*IF getNameFlg */
-                    v_structure_item_all
-                     /*END*/
-                    item
-                    INNER JOIN facatory_max fmax 
-                        ON item.structure_id = fmax.structure_id 
-                        AND item.location_structure_id = fmax.location_structure_id 
-                    CROSS JOIN temp 
-                    LEFT JOIN ms_item_extension ex 
-                        ON item.structure_item_id = ex.item_id 
-                        AND ex.sequence_no = 1 
-                    LEFT JOIN ms_item_extension AS ex2 
-                        ON ex2.item_id = item.structure_item_id 
-                        AND ex2.sequence_no = 2
-                    -- 全工場共通の表示順
-                    LEFT OUTER JOIN ms_structure_order AS order_common
-                    ON  item.structure_id = order_common.structure_id
-                    AND order_common.factory_id = 0
-                WHERE
-                    item.structure_group_id = /*param1*/1760 
-                    AND language_id = /*languageId*/'ja' 
-                /*IF param2 != null && param2 != ''*/
-                    /*IF !getNameFlg */
-                    -- コードで検索
-                    AND (ex.extension_data LIKE '%'+/*param2*/'%') 
-                    /*END*/
-                /*END*/
-                /*IF getNameFlg */
-                    -- 翻訳なのでID
-                    AND ex.extension_data = /*param2*/'0' 
-                /*END*/
-                /*IF factoryIdList != null && factoryIdList.Count > 0*/
-                    -- 工場別未使用標準アイテムに工場が含まれていないものを表示
-                    AND NOT EXISTS ( 
-                        SELECT
-                            * 
-                        FROM
-                            ms_structure_unused AS unused 
-                        WHERE
-                            temp.factoryId in (0, unused.factory_id) 
-                            AND unused.structure_id = item.structure_id
-                    ) 
-                /*END*/
-            ) tbl
-    ) tbl2 
+            ms_structure_unused AS unused
+        WHERE
+            unused.factory_id = /*param2*/0
+        AND unused.structure_id = st.structure_id
+    )
+)
+SELECT
+    0 AS factoryId,
+    0 AS translationFactoryId,
+    id AS 'values',
+    name AS 'labels',
+    structureId AS exparam1,
+    COALESCE(extension_data, 0) AS exparam2,
+    row_num,
+    orderFactoryId
+FROM
+    main
+WHERE
 /*IF rowLimit != null && rowLimit != ''*/
-WHERE row_num < /*rowLimit*/30
+    row_num < /*rowLimit*/30 
 /*END*/

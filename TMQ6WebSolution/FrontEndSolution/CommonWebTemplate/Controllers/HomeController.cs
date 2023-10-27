@@ -20,6 +20,11 @@ using System.Security.Claims;
 using System.Text;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Authentication;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.IdentityModel.Tokens.Saml2;
+using System.IO;
+using System.IO.Compression;
 
 namespace CommonWebTemplate.Controllers
 {
@@ -242,18 +247,65 @@ namespace CommonWebTemplate.Controllers
         /// Idpへの認証要求付きリダイレクトレスポンス
         /// </returns>
         [HttpGet]
-        public ActionResult ExternalLogin()
+        public void ExternalLogin()
         {
-            var redirectUrl = AppCommonObject.Config.AppSettings.TMQReturnUrl;
-
-            AuthenticationProperties properties = new AuthenticationProperties
+            //ID作成処理
+            int length = 32;
+            StringBuilder sb = new StringBuilder(length);
+            Random r = new Random();
+            string passwordChars = "0123456789abcdefghijklmnopqrstuvwxyz";
+            for (int i = 0; i < length; i++)
             {
-                RedirectUri = redirectUrl,
-                Items = {
-                    {"LoginProvider", "Saml2"},
-                }
-            };
-            return new ChallengeResult("Saml2", properties);
+                //文字の位置をランダムに選択
+                int pos = r.Next(passwordChars.Length);
+                //選択された位置の文字を取得
+                char c = passwordChars[pos];
+                //パスワードに追加
+                sb.Append(c);
+            }
+
+            DateTime dt = DateTime.Now;
+            string IssueInstant = dt.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'");
+
+
+            var TMQEntityId = AppCommonObject.Config.AppSettings.TMQEntityId;
+            var AzureADSingleSignOnServiceUrl = AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl;
+            var TMQReturnUrl = AppCommonObject.Config.AppSettings.TMQReturnUrl;
+
+            string samlRequest1 = "<saml2p:AuthnRequest xmlns:saml2p = \"urn:oasis:names:tc:SAML:2.0:protocol\" xmlns:saml2 = \"urn:oasis:names:tc:SAML:2.0:assertion\" ID = \"";
+            string id = "id" + sb.ToString();
+            string samlRequest2 = "\" Version = \"2.0\" IssueInstant = \"" + IssueInstant + "\" Destination = \"" + AzureADSingleSignOnServiceUrl + "\" AssertionConsumerServiceURL = \"" + TMQReturnUrl + "\" >\r\n  <saml2:Issuer >"+ TMQEntityId + "</saml2:Issuer >\r\n</saml2p:AuthnRequest >";
+
+            string redirecturlfull = samlRequest1 + id + samlRequest2 ;
+
+            byte[] source = Encoding.UTF8.GetBytes(redirecturlfull);
+
+            // 入出力用のストリームを生成します 
+            MemoryStream ms = new MemoryStream();
+            DeflateStream CompressedStream = new DeflateStream(ms, CompressionMode.Compress, true);
+            // ストリームに圧縮するデータを書き込みます 
+            CompressedStream.Write(source, 0, source.Length);
+            CompressedStream.Close();
+            // 圧縮されたデータを バイト配列で取得します 
+            byte[] destination = ms.ToArray();
+
+            //Base64で文字列に変換
+            string base64String;
+            base64String = System.Convert.ToBase64String(destination, Base64FormattingOptions.InsertLineBreaks);
+
+            var arr = AzureADSingleSignOnServiceUrl.Split('/').ToList();
+
+            var host = arr[0] + "//" + arr[2] + "/";
+            var path = String.Join(
+                "/",
+                arr.GetRange(3, arr.Count - 3).Select(s => System.Net.WebUtility.UrlEncode(s))
+            );
+            path = path.TrimEnd('/');
+
+            // + base64String;
+            base64String = System.Net.WebUtility.UrlEncode(base64String);
+
+            Response.Redirect(host + path + "?SAMLRequest=" + base64String);
         }
 
         /// <summary>

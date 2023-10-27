@@ -126,7 +126,8 @@ namespace BusinessLogic_PT0005
             public const string SelectPreIssueDayCount = "Select_preIssueDayCount";
             /// <summary>SQL名：倉庫IDより、工場IDを取得するSQL/summary>
             public const string GetFactoryIdByWarehouseId = "GetFactoryIdByWarehouseId";
-
+            /// <summary>SQL名：予備品IDより、予備品情報とその関連情報を取得する処理/summary>
+            public const string GetInitValueByPartsInfo = "GetInitValueByPartsInfo";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDirIssue = @"IssueInput";
             public const string SubDirInventry = @"InventoryControl";
@@ -482,6 +483,9 @@ namespace BusinessLogic_PT0005
                     return false;
                 }
 
+                // 予備品情報と関連情報を取得
+                Dao.initValByPartsInfo initValByPartsInfo = getInitInfo(result.PartsId);
+
                 // 入庫日
                 result.InoutDatetime = DateTime.Today;
                 // 入庫単価(表示用)
@@ -494,51 +498,76 @@ namespace BusinessLogic_PT0005
                 conditionObj.LanguageId = this.LanguageId;                   // 言語ID
                 conditionObj.FactoryIdList = Consts.CommonFactoryId.ToString() + ',' + result.FactoryId.ToString();     // 工場IDリスト
 
-                // 新旧区分の初期表示値取得
-                var initOldNewDivisionInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitOldNewStructureId, SqlName.SubDirInventry, conditionObj, this.db);
-                if (initOldNewDivisionInfo != null)
+                // 予備品情報に登録されている標準部門がNULLかどうか判定
+                if (initValByPartsInfo.DepartmentStructureId <= 0)
                 {
-                    // 新旧区分(0:新品)
-                    result.OldNewStructureId = initOldNewDivisionInfo.OldNewStructureId;
+                    // 予備品情報に標準部門が登録されていない場合
+
+                    // 部門の初期表示値取得
+                    // 条件を取得(倉庫IDから取得した工場ID)
+                    string getFactoryIdByWarehouseId(long warehouseId)
+                    {
+                        // SQLを取得
+                        TMQUtil.GetFixedSqlStatement(SqlName.SubDirInventry, SqlName.GetFactoryIdByWarehouseId, out string sql);
+                        // SQL実行
+                        IList<ComDao.MsStructureEntity> results = this.db.GetListByDataClass<ComDao.MsStructureEntity>(sql, new { WarehouseId = warehouseId });
+                        if (results == null || results.Count == 0)
+                        {
+                            // 取得できない場合は共通工場ID「0」
+                            return Consts.CommonFactoryId.ToString();
+                        }
+
+                        // 取得した工場ID
+                        return results[0].FactoryId.ToString();
+                    }
+                    var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitDepartmentStructureId,
+                                                                                                               SqlName.SubDirInventry,
+                                                                                                               new { @UserId = this.UserId, @LanguageId = this.LanguageId, @FactoryId = result.FactoryId },
+                                                                                                               this.db);
+                    if (initDepartmentInfo != null)
+                    {
+                        // 部門(工場表示順の最上位)
+                        result.DepartmentStructureId = initDepartmentInfo.DepartmentStructureId;
+                        result.DepartmentCd = initDepartmentInfo.DepartmentCd;
+                    }
+                }
+                else
+                {
+                    // 予備品情報に標準部門が登録されている場合、登録されている値を初期表示する
+                    result.DepartmentStructureId = initValByPartsInfo.DepartmentStructureId;
+                    result.DepartmentCd = initValByPartsInfo.DepartmentCode;
                 }
 
-                // 部門の初期表示値取得
-                List<string> conditionListForDepartment = new() { getFactoryIdByWarehouseId(result.PartsStorageLocationId) + "," + Consts.CommonFactoryId.ToString() };
-                // 条件を取得(倉庫IDから取得した工場ID、共通工場ID「0」)
-                string getFactoryIdByWarehouseId(long warehouseId)
+                // 予備品情報に登録されている標準勘定科目がNULLかどうか判定
+                if (initValByPartsInfo.AccountStructureId <= 0)
                 {
-                    // SQLを取得
-                    TMQUtil.GetFixedSqlStatement(SqlName.SubDirInventry, SqlName.GetFactoryIdByWarehouseId, out string sql);
-                    // SQL実行
-                    IList<ComDao.MsStructureEntity> results = this.db.GetListByDataClass<ComDao.MsStructureEntity>(sql, new { WarehouseId = warehouseId });
-                    if (results == null || results.Count == 0)
+                    // 予備品情報に標準勘定科目が登録されていない場合
+
+                    // 新旧区分の初期表示値取得
+                    var initOldNewDivisionInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitOldNewStructureId, SqlName.SubDirInventry, conditionObj, this.db);
+                    if (initOldNewDivisionInfo != null)
                     {
-                        // 取得できない場合は共通工場ID「0」
-                        return Consts.CommonFactoryId.ToString();
+                        // 新旧区分(0:新品)
+                        result.OldNewStructureId = initOldNewDivisionInfo.OldNewStructureId;
                     }
 
-                    // 取得した工場ID
-                    return results[0].FactoryId.ToString();
+                    // 勘定科目の初期表示値取得
+                    var initAccoutInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitAccountStructureId, SqlName.SubDirInventry, conditionObj, this.db);
+                    if (initAccoutInfo != null)
+                    {
+                        // 勘定科目(B4170:洗替貯蔵品)
+                        result.AccountStructureId = initAccoutInfo.AccountStructureId;
+                        result.AccountCd = initAccoutInfo.AccountCd;
+                        result.AccountOldNewDivision = initAccoutInfo.AccountOldNewDivision;
+                    }
                 }
-                var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitDepartmentStructureId,
-                                                                                                           SqlName.SubDirInventry,
-                                                                                                           new { FactoryIdList = conditionListForDepartment, LanguageId = this.LanguageId },
-                                                                                                           this.db);
-                if (initDepartmentInfo != null)
+                else
                 {
-                    // 部門(工場表示順の最上位)
-                    result.DepartmentStructureId = initDepartmentInfo.DepartmentStructureId;
-                    result.DepartmentCd = initDepartmentInfo.DepartmentCd;
-                }
-
-                // 勘定科目の初期表示値取得
-                var initAccoutInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitAccountStructureId, SqlName.SubDirInventry, conditionObj, this.db);
-                if (initAccoutInfo != null)
-                {
-                    // 勘定科目(B4140:設備貯蔵品)
-                    result.AccountStructureId = initAccoutInfo.AccountStructureId;
-                    result.AccountCd = initAccoutInfo.AccountCd;
-                    result.AccountOldNewDivision = initAccoutInfo.AccountOldNewDivision;
+                    // 予備品情報に標準勘定科目が登録されている場合、登録されている値を初期表示する
+                    result.OldNewStructureId = initValByPartsInfo.OldNewStructureId;
+                    result.AccountStructureId = initValByPartsInfo.AccountStructureId;
+                    result.AccountCd = initValByPartsInfo.AccountCode;
+                    result.AccountOldNewDivision = initValByPartsInfo.OldNewDivision;
                 }
 
                 // 入庫する予備品データを取得
@@ -973,7 +1002,7 @@ namespace BusinessLogic_PT0005
                         if (!string.IsNullOrEmpty(result.PartsLocationDetailNo))
                         {
                             var enc = Encoding.GetEncoding("Shift_JIS");
-                            if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(result.PartsLocationDetailNo))
+                            if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(result.PartsLocationDetailNo.Replace("-", "")))
                             {
                                 // 「半角英数字で入力してください。」
                                 errMsg = GetResMessage(new string[] { ComRes.ID.ID141260002 });
@@ -1141,6 +1170,26 @@ namespace BusinessLogic_PT0005
                 condInp.InoutQuantity = ConvertDecimal(result.StorageQuantityDisp);
                 condInp.UnitPrice = ConvertDecimal(result.UnitPriceDisp);
             }
+        }
+
+        /// <summary>
+        /// 予備品IDより、予備品情報とその関連情報を取得する処理(初期化処理で使用)
+        /// </summary>
+        /// <param name="partsId">予備品ID</param>
+        /// <returns>取得したデータクラス</returns>
+        private Dao.initValByPartsInfo getInitInfo(long partsId)
+        {
+            // 初期値情報
+            Dao.initValByPartsInfo initInfo = new();
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDirInventry, SqlName.GetInitValueByPartsInfo, out string sql);
+
+            // SQL実行
+            initInfo = db.GetEntityByDataClass<Dao.initValByPartsInfo>(sql, new { @PartsId = partsId });
+
+            // 取得した値を返して終了
+            return initInfo;
         }
 
         #endregion

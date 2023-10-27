@@ -33,6 +33,7 @@ SELECT
     , re.construction_division_structure_id     --工事区分
     , re.request_id                             --依頼ID
     , re.update_serialid                        --更新シリアルID
+    , re.construction_place
 FROM
     ma_request re 
     LEFT JOIN ms_user us_person 

@@ -40,20 +40,6 @@ WITH department AS (
     WHERE
         parts_id = @PartsId 
 ) 
-, location AS ( 
-    --拡張データ、翻訳を取得(棚)
-    SELECT
-        structure_id
-        , translation_text 
-    FROM
-        v_structure_item_all si 
-    WHERE
-        structure_group_id = 1040 
-    AND
-        structure_layer_no = 3
-    AND
-        si.language_id = @LanguageId
-)
 , number_unit AS(
     --数量管理単位
     SELECT
@@ -124,14 +110,31 @@ WITH department AS (
         v_structure_item_all 
     WHERE
         structure_group_id IN ( 
-            1730,1740,1760, 1770
+            1040, 1730,1740,1760, 1770
         ) 
         AND language_id = @LanguageId
 ) 
 SELECT
     plt.lot_no,                                                         --ロットNo
     FORMAT(plt.receiving_datetime, 'yyyy/MM/dd') AS receiving_datetime, --入庫日
-    lcn.translation_text AS parts_location_cd,                          --棚
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = pls.parts_location_id
+              AND st_f.factory_id IN(0, pps.factory_id)
+           )
+      AND tra.structure_id = pls.parts_location_id
+    ) AS parts_location_cd,                                             --棚
     pls.parts_location_id,                                              --棚ID
     pls.parts_location_detail_no,                                       --棚枝番
     plt.old_new_structure_id,                                           --新旧区分ID
@@ -275,8 +278,6 @@ FROM
         ON plt.department_structure_id = dpm.structure_id 
     LEFT JOIN account act 
         ON plt.account_structure_id = act.structure_id 
-    LEFT JOIN location lcn 
-        ON pls.parts_location_id = lcn.structure_id 
     LEFT JOIN number_unit --数量管理単位
         ON  plt.unit_structure_id = number_unit.unit_id
     LEFT JOIN unit_round --丸め処理区分
@@ -289,5 +290,8 @@ WHERE
     AND plt.old_new_structure_id = @OldNewStructureId             --新旧区分
     AND plt.department_structure_id = @DepartmentStructureId      --部門
     AND plt.account_structure_id = @AccountStructureId            --勘定科目
+    AND plt.unit_structure_id = @UnitStructureId                  --数量管理単位
+    AND pls.parts_location_id = @PartsLocationId                  --棚番
+    AND pls.parts_location_detail_no = COALESCE(@PartsLocationDetailNo, '')     --棚枝番
 ORDER BY
     plt.lot_no

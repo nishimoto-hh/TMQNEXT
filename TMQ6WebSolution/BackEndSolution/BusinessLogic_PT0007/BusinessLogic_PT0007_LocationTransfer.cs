@@ -459,7 +459,7 @@ namespace BusinessLogic_PT0007
                 if (!string.IsNullOrEmpty(locationInfo.PartsLocationDetailNo))
                 {
                     var enc = Encoding.GetEncoding("Shift_JIS");
-                    if (enc.GetByteCount(locationInfo.PartsLocationDetailNo) != locationInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(locationInfo.PartsLocationDetailNo))
+                    if (enc.GetByteCount(locationInfo.PartsLocationDetailNo) != locationInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(locationInfo.PartsLocationDetailNo.Replace("-", "")))
                     {
                         errMsg = GetResMessage(new string[] { ComRes.ID.ID141260002 }); // 半角英数字で入力してください。
                         val = infoDetailNo.getValName("DetailNo");

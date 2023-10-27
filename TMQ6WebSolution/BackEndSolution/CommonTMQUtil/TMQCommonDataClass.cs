@@ -99,6 +99,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 設備区分</summary>
             /// <value>設備区分</value>
             public int? FacilityStructureId { get; set; }
+            /// <summary>Gets or sets 長計区分</summary>
+            /// <value>長計区分</value>
+            public int? LongPlanDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 長計グループ</summary>
+            /// <value>長計グループ</value>
+            public int? LongPlanGroupStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -529,8 +535,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 承認者３ID</summary>
             /// <value>承認者３ID</value>
             public int? RequestAuthorizer3Id { get; set; }
-
-            /// <summary>
+            /// <summary>Gets or sets 場所</summary>
+            /// <value>場所</value>
+            public string ConstructionPlace { get; set; }
             /// プライマリーキー
             /// </summary>
             public class PrimaryKey
@@ -1695,6 +1702,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 点検種別毎管理</summary>
             /// <value>点検種別毎管理</value>
             public bool MaintainanceKindManage { get; set; }
+            /// <summary>Gets or sets 予算管理部門</summary>
+            /// <value>予算管理部門</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 図面保管場所</summary>
+            /// <value>図面保管場所</value>
+            public int? DiagramStorageLocationStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -2872,7 +2885,7 @@ namespace CommonTMQUtil
             public long FactoryId { get; set; }
             /// <summary>Gets or sets 職種ID</summary>
             /// <value>職種ID</value>
-            public long JobStructureId { get; set; }
+            public long? JobStructureId { get; set; }
             /// <summary>Gets or sets 標準棚ID</summary>
             /// <value>標準棚ID</value>
             public long PartsLocationId { get; set; }
@@ -2918,6 +2931,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 使用区分</summary>
             /// <value>使用区分</value>
             public long? UseSegmentStructureId { get; set; }
+            /// <summary>Gets or sets 標準部門</summary>
+            /// <value>標準部門</value>
+            public long? DepartmentStructureId { get; set; }
+            /// <summary>Gets or sets 標準勘定科目</summary>
+            /// <value>標準勘定科目</value>
+            public long? AccountStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -2980,6 +2999,91 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
+        /// 予備品No採番テーブル
+        /// </summary>
+        public class PtPartsNoNumberingEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public PtPartsNoNumberingEntity()
+            {
+                TableName = "pt_partsno_numbering";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 採番ID</summary>
+            /// <value>採番ID</value>
+            public long NumberingId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public long DistrictId { get; set; }
+            /// <summary>Gets or sets 連番</summary>
+            /// <value>連番</value>
+            public int SeqNo { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 採番ID</summary>
+                /// <value>採番ID</value>
+                public long NumberingId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pNumberingId)
+                {
+                    NumberingId = pNumberingId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.NumberingId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public PtPartsNoNumberingEntity GetEntity(long pNumberingId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pNumberingId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<PtPartsNoNumberingEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pNumberingId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pNumberingId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
         /// 在庫確定管理データ
         /// </summary>
         public class PtStockComfirmEntity : CommonTableItem
@@ -3005,7 +3109,7 @@ namespace CommonTMQUtil
             public long FactoryId { get; set; }
             /// <summary>Gets or sets 職種id</summary>
             /// <value>職種id</value>
-            public long PartsJobId { get; set; }
+            public long? PartsJobId { get; set; }
             /// <summary>Gets or sets 実行日時</summary>
             /// <value>実行日時</value>
             public DateTime ExecutionDatetime { get; set; }
@@ -5527,5 +5631,96 @@ namespace CommonTMQUtil
                 return result > 0;
             }
         }
+        /// <summary>
+        /// RFタグ予備品マスタ
+        /// </summary>
+        public class PtRftagPartsLinkEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public PtRftagPartsLinkEntity()
+            {
+                TableName = "pt_rftag_parts_link";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets RFタグ管理ID</summary>
+            /// <value>RFタグ管理ID</value>
+            public string RftagId { get; set; }
+            /// <summary>Gets or sets 予備品ID</summary>
+            /// <value>予備品ID</value>
+            public long PartsId { get; set; }
+            /// <summary>Gets or sets 部門ID</summary>
+            /// <value>部門ID</value>
+            public long DepartmentStructureId { get; set; }
+            /// <summary>Gets or sets 勘定科目ID</summary>
+            /// <value>勘定科目ID</value>
+            public long AccountStructureId { get; set; }
+            /// <summary>Gets or sets 連番</summary>
+            /// <value>連番</value>
+            public int SerialNo { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets RFタグ管理ID</summary>
+                /// <value>RFタグ管理ID</value>
+                public string RftagId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(string pRftagId)
+                {
+                    RftagId = pRftagId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.RftagId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public PtRftagPartsLinkEntity GetEntity(string pRftagId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pRftagId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<PtRftagPartsLinkEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(string pRftagId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pRftagId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
     }
 }

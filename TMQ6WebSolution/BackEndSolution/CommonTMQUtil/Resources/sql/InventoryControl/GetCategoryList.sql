@@ -72,6 +72,7 @@ SELECT DISTINCT
     , pih.management_no                         --管理No
     , pih.management_division                   --管理区分
     , tdp.extension_data AS to_department_cd    --部門コード
+    , tdp.extension_data AS department_cd_enter --部門コード(ラベル出力用)
     , COALESCE(
     ( 
         SELECT
@@ -112,6 +113,7 @@ SELECT DISTINCT
     ) AS to_department_nm  --部門(翻訳)
 
     , tsus.extension_data AS to_subject_cd      --勘定科目コード
+    , tsus.extension_data AS subject_cd_enter   --勘定科目コード(ラベル出力用)
     , tpih.management_no AS to_management_no    --管理No
     , tpih.management_division AS to_management_division --管理区分
     , receiving_datetime                        --受払日時
@@ -122,9 +124,11 @@ SELECT DISTINCT
     , COALESCE(unit_round.round_division, 0) AS unit_round_division
     , COALESCE(unit_round.round_division, 0) AS currency_round_division
     , '1' AS TransitionFlg                      --遷移フラグ
-    , pp.job_structure_id                       --職種
+    , COALESCE(pp.job_structure_id, 0) AS job_structure_id --職種
     , pp.parts_location_id                      --棚ID
-    , pp.factory_id AS parts_factory_id,        --工場ID
+    , pp.factory_id AS parts_factory_id        --工場ID
+    , pls_label.parts_location_id AS parts_location_id_enter -- 棚ID(ラベル出力用)
+    , pls_label.parts_location_detail_no AS parts_location_detail_no_enter, -- 棚枝番(ラベル出力用)
     ( 
         SELECT
             tra.translation_text 
@@ -213,6 +217,7 @@ FROM
             , pih.management_no
             , pih.inout_datetime
             , pih.inout_quantity 
+            , pih.inventory_control_id
         FROM
             pt_inout_history pih 
             LEFT JOIN inout_division ids 
@@ -237,6 +242,7 @@ FROM
             , pih.management_no
             , pih.inout_datetime
             , pih.inout_quantity 
+            , pih.inventory_control_id
         FROM
             pt_inout_history pih 
             LEFT JOIN inout_division ids 
@@ -250,6 +256,7 @@ FROM
     ) AS tpih                                   --受払履歴
         ON pl.lot_control_id = tpih.lot_control_id 
         AND pih.work_no = tpih.work_no
+        AND pih.inventory_control_id = tpih.inventory_control_id
     LEFT JOIN pt_location_stock AS pls          --在庫データ
         ON pl.parts_id = pls.parts_id 
     LEFT JOIN Department AS dp                  --部門
@@ -266,13 +273,11 @@ FROM
         ON  pp.factory_id = unit_round.factory_id
     LEFT JOIN currency_unit                     --金額単位数量
         ON pl.currency_structure_id = currency_unit.currency_id
+    LEFT JOIN pt_location_stock pls_label -- 在庫情報(ラベル出力用)
+        ON tpih.inventory_control_id = pls_label.inventory_control_id
 
 WHERE
     pih.inout_datetime >= @WorkingDay 
     AND pih.inout_datetime < @WorkingDayNext    --作業日
-/*@FactoryIdList
-    AND pp.factory_id IN @FactoryIdList
-@FactoryIdList*/
-/*@JobIdList
-    AND pp.job_structure_id IN @JobIdList
-@JobIdList*/
+
+AND EXISTS(SELECT * FROM #temp_location temp WHERE pp.factory_id = temp.structure_id)AND EXISTS(SELECT * FROM #temp_job temp WHERE COALESCE(pp.job_structure_id, 0) = temp.structure_id)

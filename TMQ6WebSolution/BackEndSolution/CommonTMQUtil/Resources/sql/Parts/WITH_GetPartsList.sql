@@ -180,6 +180,6 @@ AND tr.location_structure_id = 0
     FROM
         v_structure_item_all 
     WHERE
-        structure_group_id IN (1000, 1150, 1720, 1730,1740,1000,1010,1040) 
+        structure_group_id IN (1000, 1150, 1720, 1730,1740, 1760, 1770 ,1000,1010,1040) 
         AND language_id = @LanguageId
 )

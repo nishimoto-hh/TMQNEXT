@@ -381,6 +381,8 @@ namespace CommonTMQUtil
                 public const string SubDirMapping = "Common";
                 /// <summary>SQL名：マッピング情報一覧取得</summary>
                 public const string GetMappingInfoList = "MappingInfo_GetList";
+                /// <summary>SQL名：職種がNullのデータを検索対象に含めるためにデータを一時テーブルに追加するSQL(予備品仕様の検索で仕様)</summary>
+                public const string InsertNullJobIdForPartsList = "InsertNullJobIdForPartsList";
             }
 
             /// <summary>
@@ -1057,7 +1059,7 @@ namespace CommonTMQUtil
             /// <param name="detailMsg">詳細メッセージ</param>
             /// <param name="isUpload"></param>
             /// <returns></returns>
-            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg, bool isUpload = false, Dictionary<string, object> dic = null)
+            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg, bool isUpload = false, Dictionary<string, object> dic = null, bool isJobNullAble = false)
             {
                 //==========
                 // 初期化
@@ -1120,11 +1122,15 @@ namespace CommonTMQUtil
                 this.TargetFactoryIdListAll.AddRange(this.belongingInfo.BelongingFactoryIdList);
                 this.TargetLocationInfoListAll.AddRange(this.belongingInfo.LocationInfoList);
 
+                // 所属情報の職種を対象としているかどうか
+                bool isBelongingInfo = false;
+
                 // 職種条件から対象職種情報を取得
                 if (this.jobIdList == null || this.jobIdList.Count == 0 || isUpload)
                 {
                     // 職種条件が未指定またはアップロードの場合、所属情報から取得
                     this.TargetJobInfoList.AddRange(this.belongingInfo.JobInfoList);
+                    isBelongingInfo = true;
                 }
                 else
                 {
@@ -1273,6 +1279,12 @@ namespace CommonTMQUtil
                 {
                     detailMsg = "Failed to create the temporary table.";
                     return false;
+                }
+
+                // 職種がNullのデータを検索対象に含める場合(予備品仕様の検索で仕様)
+                if (isJobNullAble && isBelongingInfo)
+                {
+                    registNullJobId();
                 }
 
                 if (isUpload && dic != null)
@@ -3622,7 +3634,7 @@ namespace CommonTMQUtil
                 return errorInfo;
 
                 // 連動元の値を取得
-                string getLinkColumnVal(InputDefineForExcelPort reportInfo,  List<ComBase.UploadErrorInfo> tmpErrorInfo)
+                string getLinkColumnVal(InputDefineForExcelPort reportInfo, List<ComBase.UploadErrorInfo> tmpErrorInfo)
                 {
                     // 連動元の値を取得
                     string linkColumnVal = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectLinkColumnNo, reportInfo.StartRowNo);
@@ -4520,6 +4532,23 @@ namespace CommonTMQUtil
                         return false;
                     }
                 }
+                return true;
+            }
+
+            /// <summary>
+            /// 職種がNullのデータ(登録値は「0」)を検索対象に含める場合(予備品仕様の検索で仕様)
+            /// </summary>
+            /// <returns></returns>
+            private bool registNullJobId()
+            {
+                // 一時テーブル登録用のSQL文字列を取得
+                if (!ComUtil.GetFixedSqlStatement(SqlName.SubDirName, SqlName.InsertNullJobIdForPartsList, out string insertSql))
+                {
+                    return false;
+                }
+
+                // 一時テーブルへ構成IDを登録
+                this.db.Regist(insertSql);
                 return true;
             }
             #endregion

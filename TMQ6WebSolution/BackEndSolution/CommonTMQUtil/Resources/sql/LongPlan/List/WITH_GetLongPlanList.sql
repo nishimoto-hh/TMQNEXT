@@ -25,6 +25,8 @@ WITH target AS(
         ,lp.work_item_structure_id
         ,lp.budget_management_structure_id
         ,lp.budget_personality_structure_id
+        ,lp.long_plan_division_structure_id
+        ,lp.long_plan_group_structure_id
 /*@UnExcelPort
         ,
         -- 機器添付有無

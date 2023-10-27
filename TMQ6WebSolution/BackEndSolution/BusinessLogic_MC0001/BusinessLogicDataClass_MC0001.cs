@@ -194,7 +194,12 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets タブNO</summary>
             /// <value>タブNO</value>
             public int TabNo { get; set; }
-
+            /// <summary>Gets or sets 予算管理部門</summary>
+            /// <value>予算管理部門</value>
+            public int BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 図面保管場所</summary>
+            /// <value>図面保管場所</value>
+            public int DiagramStorageLocationStructureId { get; set; }
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
             /// </summary>
@@ -268,6 +273,8 @@ namespace BusinessLogic_MC0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetManagementStructureId, nameof(this.BudgetManagementStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DiagramStorageLocationStructureId, nameof(this.DiagramStorageLocationStructureId), mapDic);
 
                 return paramObj;
             }
@@ -1788,6 +1795,8 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機種小分類名称</summary>
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }
+ 
+
         }
     }
 }

@@ -45,7 +45,7 @@ namespace BusinessLogic_MS0020
             }
 
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.SpecList.List>(ref results, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.SpecList.List>(ref results, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId, false, (int)cond.FactoryId);
             // 検索結果の設定
             SetFormByDataClass<Dao.SpecList.List>(FormInfo.SpecList.List, results);
 

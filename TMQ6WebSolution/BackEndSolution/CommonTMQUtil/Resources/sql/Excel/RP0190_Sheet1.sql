@@ -348,7 +348,43 @@ SELECT
                     AND st_f.factory_id IN(0, parts.factory_id)
                 )
             AND tra.structure_id = parts.location_rack_structure_id
-        ) rack_name -- 棚番
+        ) rack_name, -- 棚番
+    dep_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.department_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.department_structure_id
+    ) AS department_name, -- 部門コード + 部門名
+    acc_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.account_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.account_structure_id
+    ) AS account_name -- 勘定科目コード + 勘定科目名
 FROM
     #temp temp
     INNER JOIN
@@ -375,6 +411,20 @@ FROM
     LEFT JOIN -- 構成マスタ
         ms_structure ms
     ON  parts.parts_location_id = ms.structure_id
+    LEFT JOIN
+        ms_structure dep_ms -- 部門コード(構成マスタ)
+    ON parts.department_structure_id = dep_ms.structure_id
+    LEFT JOIN
+        ms_item_extension dep_ex  -- 部門コード(拡張)
+    ON dep_ms.structure_item_id = dep_ex.item_id
+    AND dep_ex.sequence_no = 1
+    LEFT JOIN
+        ms_structure acc_ms -- 勘定科目コード(構成マスタ)
+    ON parts.account_structure_id = acc_ms.structure_id
+    LEFT JOIN
+        ms_item_extension acc_ex  -- 勘定科目コード(拡張)
+    ON acc_ms.structure_item_id = acc_ex.item_id
+    AND acc_ex.sequence_no = 1
 ORDER BY
     parts.parts_no,
     parts.parts_name

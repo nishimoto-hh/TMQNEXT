@@ -30,6 +30,9 @@ INSERT INTO ma_history(
     ,[failure_site]
     ,[parts_existence_flg]
     ,[follow_flg]
+    ,[failure_equipment_model_structure_id]
+    ,[failure_time]
+    ,[rank_structure_id]
     ,[update_serialid]
     ,[insert_datetime]
     ,[insert_user_id]
@@ -82,6 +85,9 @@ VALUES(
     ,@FailureSite
     ,@PartsExistenceFlg
     ,@FollowFlg
+    ,@FailureEquipmentModelStructureId
+    ,@FailureTime
+    ,@RankStructureId
     ,@UpdateSerialid
     ,@InsertDatetime
     ,@InsertUserId

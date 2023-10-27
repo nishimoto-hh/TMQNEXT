@@ -35,6 +35,8 @@ SET
     work_class_structure_id = @WorkClassStructureId,
     treatment_structure_id = @TreatmentStructureId,
     facility_structure_id = @FacilityStructureId,
+    long_plan_division_structure_id = @LongPlanDivisionStructureId,
+    long_plan_group_structure_id = @LongPlanGroupStructureId,
     update_serialid = update_serialid + 1,
     update_datetime = @UpdateDatetime,
     update_user_id = @UpdateUserId

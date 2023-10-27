@@ -143,7 +143,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 受払履歴ID</summary>
             /// <value>受払履歴ID</value>
             public long InoutHistoryId { get; set; }
-
+            /// <summary>Gets or sets 棚ID(ラベル出力用)</summary>
+            /// <value>棚ID(ラベル出力用)</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番(ラベル出力用)</summary>
+            /// <value>棚枝番(ラベル出力用)</value>
+            public string PartsLocationDetailNoEnter { get; set; }
+            /// <summary>Gets or sets 部門CD(ラベル出力用)</summary>
+            /// <value>部門CD(ラベル出力用)</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
+            /// <value>勘定科目CD(ラベル出力用)</value>
+            public string SubjectCdEnter { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -191,6 +202,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationIdEnter, nameof(this.PartsLocationIdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
 
                 return paramObj;
             }
@@ -216,6 +231,9 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 出庫金額</summary>
             /// <value>出庫金額</value>
             public string IssueMonney { get; set; }
+            /// <summary>Gets or sets 入れ子キー</summary>
+            /// <value>入れ子キー</value>
+            public string NestKey { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -268,6 +286,7 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.NestKey, nameof(this.NestKey), mapDic);
 
                 return paramObj;
             }
@@ -409,6 +428,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets フラグ</summary>
             /// <value>フラグ</value>
             public string TransitionFlg { get; set; }
+            /// <summary>Gets or sets 棚ID(ラベル出力用)</summary>
+            /// <value>棚ID(ラベル出力用)</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番(ラベル出力用)</summary>
+            /// <value>棚枝番(ラベル出力用)</value>
+            public string PartsLocationDetailNoEnter { get; set; }
+            /// <summary>Gets or sets 部門CD(ラベル出力用)</summary>
+            /// <value>部門CD(ラベル出力用)</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
+            /// <value>勘定科目CD(ラベル出力用)</value>
+            public string SubjectCdEnter { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -462,6 +493,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationIdEnter, nameof(this.PartsLocationIdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
 
                 return paramObj;
             }
@@ -499,6 +534,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets フラグ</summary>
             /// <value>フラグ</value>
             public string TransitionFlg { get; set; }
+            /// <summary>Gets or sets 棚ID(ラベル出力用)</summary>
+            /// <value>棚ID(ラベル出力用)</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番(ラベル出力用)</summary>
+            /// <value>棚枝番(ラベル出力用)</value>
+            public string PartsLocationDetailNoEnter { get; set; }
+            /// <summary>Gets or sets 部門CD(ラベル出力用)</summary>
+            /// <value>部門CD(ラベル出力用)</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
+            /// <value>勘定科目CD(ラベル出力用)</value>
+            public string SubjectCdEnter { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -551,6 +598,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationIdEnter, nameof(this.PartsLocationIdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
 
                 return paramObj;
             }

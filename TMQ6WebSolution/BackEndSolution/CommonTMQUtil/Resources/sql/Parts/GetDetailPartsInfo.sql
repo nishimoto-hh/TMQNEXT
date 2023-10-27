@@ -19,7 +19,7 @@ SELECT
     parts.model_type,                                                                                            -- 型式
     parts.materials,                                                                                             -- 材質
     parts.standard_size,                                                                                         -- 規格・寸法
-    parts.job_structure_id,                                                                                      -- 職種
+    COALESCE(parts.job_structure_id, 0) AS job_structure_id,                                                     -- 職種
     parts.parts_service_space,                                                                                   -- 使用場所
     parts.parts_id,                                                                                              -- 予備品ID
     parts.factory_id,                                                                                            -- 工場ID
@@ -30,11 +30,16 @@ SELECT
     max_date.max_update_datetime,                                                                                -- 最大更新日時
     COALESCE(tag_count.t_count, 0) AS rf_count,                                                                  -- RFタグ件数
     matter_unit.translation_text AS matter,                                                                      -- RFタグ件数 単位
+    parts.department_structure_id,                                                                               -- 標準部門ID
+    dep_ex.extension_data AS department_code,                                                                    -- 標準部門コード
+    dep_ex.extension_data AS department_cd_enter,                                                                -- 標準部門コード(ラベル出力用)
     /**********標準保管場所情報**********/
     parts.parts_location_id,                                                                                     -- 標準棚番ID
     parts.parts_location_id AS location_structure_id,                                                            -- 標準棚番ID
     parts.parts_location_id AS location_id,                                                                      -- 標準棚番ID
     parts.parts_location_detail_no,                                                                              -- 標準棚枝番
+    parts.parts_location_id AS parts_location_id_enter,                                                          -- 標準棚番ID(ラベル出力用)
+    parts.parts_location_detail_no AS parts_location_detail_no_enter,                                            -- 標準棚枝番(ラベル出力用)
     (
     SELECT
         ms.structure_layer_no
@@ -62,6 +67,9 @@ SELECT
     COALESCE(round_division.extension_data, 1) AS unit_round_division,                                           -- 丸め処理区分(数量)
     COALESCE(round_division.extension_data, 1) AS currency_round_division,                                       -- 丸め処理区分(金額)
     parts.factory_id AS factory_round_division,                                                                  -- 工場の丸め処理区分
+    parts.account_structure_id,                                                                                  -- 標準勘定科目ID
+    acc_ex.extension_data AS account_code,                                                                       -- 標準勘定科目コード
+    acc_ex.extension_data AS subject_cd_enter,                                                                   -- 標準勘定科目コード(ラベル出力用)
     /****************画像****************/
     newest_image.file_path AS image,                                                                             -- 画像
      ---------------------------------- 以下は翻訳を取得 ----------------------------------
@@ -100,7 +108,43 @@ SELECT
               AND st_f.factory_id IN(0, parts.factory_id)
            )
       AND tra.structure_id = parts.currency_structure_id
-    ) AS currency_name                                                                                           -- 金額管理単位(名称)
+    ) AS currency_name,                                                                                          -- 金額管理単位(名称)
+    dep_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.department_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.department_structure_id
+    ) AS department_name,                                                                                        -- 部門コード + 部門名
+    acc_ex.extension_data + ' ' + (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.account_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.account_structure_id
+    ) AS account_name                                                                                            -- 勘定科目コード + 勘定科目名
 FROM
     pt_parts AS parts
     LEFT JOIN
@@ -130,5 +174,19 @@ FROM
     LEFT JOIN -- RFIDタグ件数単位
         matter_unit
     ON 1 = 1
+    LEFT JOIN
+        ms_structure dep_ms -- 部門コード(構成マスタ)
+    ON parts.department_structure_id = dep_ms.structure_id
+    LEFT JOIN
+        ms_item_extension dep_ex  -- 部門コード(拡張)
+    ON dep_ms.structure_item_id = dep_ex.item_id
+    AND dep_ex.sequence_no = 1
+    LEFT JOIN
+        ms_structure acc_ms -- 勘定科目コード(構成マスタ)
+    ON parts.account_structure_id = acc_ms.structure_id
+    LEFT JOIN
+        ms_item_extension acc_ex  -- 勘定科目コード(拡張)
+    ON acc_ms.structure_item_id = acc_ex.item_id
+    AND acc_ex.sequence_no = 1
 WHERE
     parts.parts_id = @PartsId

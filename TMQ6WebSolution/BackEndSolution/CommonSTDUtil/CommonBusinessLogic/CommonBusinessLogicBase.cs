@@ -490,6 +490,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         this.db.Close();
                     }
                 }
+                if (result == ComConsts.RETURN_RESULT.NG && this.Status == CommonProcReturn.ProcStatus.Valid)
+                {
+                    // 実行結果=NGでステータス=正常終了の場合、ステータス=エラーに修正
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                }
 
                 outParam.Status = this.Status;
                 outParam.MsgId = this.MsgId;
@@ -6276,8 +6281,9 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
         /// <param name="unUseLocation">予備品用の場所階層を使用する場合はTrue(デフォルトFalse)</param>
         /// <param name="isJobKindOnly">職種階層のみの検索画面の場合はTrue(デフォルトFalse)</param>
+        /// <param name="isJobNullAble">職種がNullのデータも検索対象に入れる場合はTrue(デフォルトFalse) 予備品一覧の検索で使用</param>
         /// <returns>WHERE句生成結果</returns>
-        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false, bool isJobKindOnly = false)
+        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false, bool isJobKindOnly = false, bool isJobNullAble = false)
         {
             sql = string.Empty;
             param = new ExpandoObject();
@@ -6450,6 +6456,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     string locationIds = string.Join(',', jobIdList);
                     // 職種機種用の一時テーブルへ構成IDを登録
                     this.db.Regist(insertSql, new { LocationIds = locationIds });
+
+                    // 職種が指定されていない かつ 職種がNULL(0)のデータを検索条件に含める場合、
+                    if (isJobNullAble && useBelongingInfo)
+                    {
+                        // 職種用の一時テーブルに「0」(null の代用)を登録する
+                        this.db.Regist(insertSql, new { LocationIds = "0" });
+                    }
+
                     // EXISTS句追加
                     sbSql.Append(getExistsText(TempTableName.Job, CommonColumnName.JobId));
                     //読込件数取得用のWHERE句を追加

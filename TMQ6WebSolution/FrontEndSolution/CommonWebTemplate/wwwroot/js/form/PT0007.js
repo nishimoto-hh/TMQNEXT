@@ -33,7 +33,8 @@ const PT0007_FormList = {
         BtnVisible: 9,                   // 登録・取消ボタンの活性/非活性
         TabSelected: 11,                 // タブ選択フラグ
         LocationDataCnt: 12,             // 棚別在庫一覧の件数
-        DepartmentDataCnt: 13            // 部門別在庫一覧の件数
+        DepartmentDataCnt: 13,           // 部門別在庫一覧の件数
+        PartsFactoryId: 14               // 管理工場ID(部門タブの部門の初期表示に使用)
     },
     LocationList: {
         Id: "CBODY_010_00_LST_7",        // 棚別在庫一覧
@@ -150,6 +151,7 @@ const PT0007_FormList = {
         PartsFactoryId: 24,              // 工場ID
         DepartmentIdBefore: 26,          // 部門ID(移庫元)
         SubjectIdBefore: 27,             // 勘定科目ID(移庫元)
+        PartsFactoryIdCmb: 28            // 管理工場(コンボ 部門タブの部門の初期表示に使用
     },
     Button:
     {
@@ -448,6 +450,16 @@ function PT0007_postBuiltTabulator(tbl, id) {
             setTimeout(function () {
                 var subject = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Subject, 1, CtrlFlag.TextBox, false, false);
                 changeNoEdit(subject);
+
+                // 予備品情報に非表示で設定している管理工場IDを取得
+                var partsFactoryId = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.PartsFactoryId, 0, CtrlFlag.Label, false, false);
+                // 取得した管理工場IDを部門タブの非表示の管理工場コンボに設定する
+                setValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.PartsFactoryIdCmb, 1, CtrlFlag.Combo, parseInt(partsFactoryId), false, false);
+
+                // 部門の翻訳表示は少し遅らせる
+                var department = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Department, 1, CtrlFlag.TextBox, false, false);
+                changeNoEdit(department);
+
             }, 300); //300ミリ秒
 
             if (transFlg == PT0007_TransFlg.FlgNew) {
@@ -480,8 +492,8 @@ function PT0007_postBuiltTabulator(tbl, id) {
                     setValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.InoutQuantity, 1, CtrlFlag.TextBox, unitPriceDisp, false, false);
 
                     // 金額単位名称を移庫数にセット
-                    var unitName = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.UnitName, 0, CtrlFlag.TextBox, false, false);
-                    setValueToDepartmentNumberUnit(unitName);
+                    var currencyName = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.CurrencyName, 0, CtrlFlag.TextBox, false, false);
+                    setValueToDepartmentNumberUnit(currencyName);
 
                     //部門のフラグ取得
                     var depFlg = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.DepFlg, 1, CtrlFlag.Label, false, false);

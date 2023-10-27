@@ -227,7 +227,10 @@ namespace BusinessLogic_PT0001
             // CSV出力処理
             if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFileNotencircleDobleQuotes(list, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
             {
-                this.MsgId = errMsg;
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { "941220002", "911120006" });
                 return false;
             }
 

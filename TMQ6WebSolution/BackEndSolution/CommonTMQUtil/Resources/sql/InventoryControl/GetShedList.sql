@@ -25,7 +25,9 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = ts.parts_location_id
     ) AS to_location_id                           --移庫先 棚番
+    , ts.parts_location_id AS parts_location_id_enter --移庫先 棚番(ラベル出力用)
     , ts.parts_location_detail_no AS to_parts_location_detail_no --移庫先 棚枝番
+    , ts.parts_location_detail_no AS parts_location_detail_no_enter --移庫先 棚枝番(ラベル出力用)
     , td.parts_location_id AS storage_location_id --移庫先 予備品倉庫
     , ( 
         SELECT
@@ -71,6 +73,8 @@ SELECT DISTINCT
     , ts.inout_quantity * pl.unit_price AS transfer_amount
     , dp.extension_data AS department_cd        --部門CD
     , sus.extension_data AS subject_cd          --勘定科目CD
+    , dp.extension_data AS department_cd_enter  --部門CD(ラベル出力用)
+    , sus.extension_data AS subject_cd_enter    --勘定科目CD(ラベル出力用)
     , pl.management_no                          --管理No
     , pl.management_division                    --管理区分
     , pp.parts_id                               --予備品ID
@@ -81,7 +85,7 @@ SELECT DISTINCT
     , COALESCE(unit_round.round_division, 0) AS currency_round_division              --丸め処理区分(金額)
     , '1' AS TransitionFlg                      --遷移フラグ
     , pl.receiving_datetime
-    , pp.job_structure_id                       --職種ID
+    , COALESCE(pp.job_structure_id, 0) AS job_structure_id --職種ID
     , pp.parts_location_id                      --棚ID
     , pp.factory_id AS parts_factory_id,        --工場ID
     COALESCE(
@@ -199,9 +203,6 @@ FROM
 WHERE
     ts.inout_datetime >= @WorkingDay 
     AND ts.inout_datetime < @WorkingDayNext 
-/*@FactoryIdList
-    AND pp.factory_id IN @FactoryIdList
-@FactoryIdList*/
-/*@JobIdList
-    AND pp.job_structure_id IN @JobIdList
-@JobIdList*/
+
+AND EXISTS(SELECT * FROM #temp_location temp WHERE pp.factory_id = temp.structure_id)AND EXISTS(SELECT * FROM #temp_job temp WHERE COALESCE(pp.job_structure_id, 0) = temp.structure_id)
+

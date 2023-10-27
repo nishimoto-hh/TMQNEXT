@@ -139,6 +139,7 @@ function PT0006_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
     $(quantity).blur(function () {
         PT0006roundQuantity();
     });
+
 }
 
 /**
@@ -177,10 +178,62 @@ function PT0006_postBuiltTabulator(tbl, id) {
         return;
     }
 
-    // 部門在庫一覧
+    // 棚別部門別在庫一覧
     if (id == "#" + PT0006_FormList.Department.Id + getAddFormNo()) {
-        // 予備品一覧条件追加
-        endSelectDepartmentList(tbl);
+
+        // 画面パターンを取得
+        var formType = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.FormType, 1, CtrlFlag.Label, false, false);
+
+        // 一覧の行を取得
+        var rows = $(tbl.element).find(".tabulator-row");
+
+        // 先頭行のチェックボックス(検索後に選択状態にするためのもの)
+        var firstRowCheckBox;
+
+        // 取得した行に対して繰り返し処理
+        $(rows).each(function (i, row) {
+            // チェックボックスを取得
+            var checkBox = $(row).find("div[tabulator-field='SELTAG']")[0];
+
+            // 画面タイプが「新規」以外の場合
+            if (formType == PartsTransFlg.New) {
+
+                // 先頭行のチェックボックス格納
+                if (!firstRowCheckBox) {
+                    firstRowCheckBox = $(checkBox).find("input")[0];
+                }
+
+                // チェック時のイベント付与
+                $(checkBox).on('change', function () {
+
+                    // チェック時イベント実行
+                    checkBoxChangeedByLocationDepartmentList(row, checkBox);
+                });
+            }
+            else {
+
+                // チェックボックスを選択状態にする
+                $(checkBox).find("input")[0].click();
+
+                // チェックボックスを非活性にする
+                changeInputControl($(checkBox).find("input")[0]);
+
+                // 行の背景色を変更
+                setHikiate(row, true);
+            }
+        });
+
+        // 画面タイプが「新規」以外の場合
+        if (formType != PartsTransFlg.New) {
+
+            // 棚別部門別在庫一覧の全選択/全解除を非表示にする
+            var allSelect = $(P_Article).find("#" + PT0006_FormList.Department.Id + getAddFormNo() + "_div").find("a[data-actionkbn='1241'],a[data-actionkbn='1242']");
+            allSelect.hide();
+        }
+        else {
+            // 画面タイプが「新規」の場合、先頭行を選択状態にする
+            $(firstRowCheckBox).click();
+        }
     }
 
     // 在庫一覧
@@ -257,35 +310,6 @@ function PT0006_postBuiltTabulator(tbl, id) {
  */
 function PT0006_prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element) {
     var conditionDataList = [];
-
-    // 遷移元が部門在庫情報の場合
-    if (ctrlId == PT0006_FormList.Department.Id) {
-        // 部門在庫一覧取得
-        var table = P_listData['#' + ctrlId + getAddFormNo()];
-        if (table) {
-            var trs = table.getRows();
-            $(trs).each(function (i, tr) {
-                var ele = tr.getElement();
-                if (i == rowNo - 1) {
-                    // 選択行背景水色
-                    setHikiate(ele, true);
-
-                    // 在庫一覧の条件を追加
-                    selectConditionList(element);
-
-                    // 部門在庫情報が1件より多い場合
-                    if (i != 0) {
-                        // 在庫一覧非表示、登録ボタン非活性
-                        hideBtnAndList();
-                    }
-                }
-                else {
-                    setHikiate(ele, false);
-                }
-            });
-        }
-        return [false, conditionDataList];
-    }
     return [true, conditionDataList];
 
 }
@@ -376,26 +400,6 @@ function PT0006_afterSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, co
     setPageStatus(pageStatus.SEARCH, 0, conductPtn);
 }
 
-/**
- * 部門在庫一覧検索後処理
- * @param {any} tbl 部門在庫一覧情報
- */
-function endSelectDepartmentList(tbl) {
-    // 対象コントール内の全行取得
-    var trsDpt = tbl.getRows();
-    $(trsDpt).each(function (i, tr) {
-
-        // 1行目に着色
-        if (i == 0) {
-            // html要素取得
-            var ele = tr.getElement();
-            setHikiate(ele, true);
-
-            // 在庫一覧の条件を追加
-            selectConditionListByRowNo(0);
-        }
-    });
-}
 
 /**
  * 在庫一覧検索後処理
@@ -508,37 +512,6 @@ function GoodsIssueReservation(tbl) {
     });
 }
 
-/**
- * 在庫一覧の条件を追加
- * @param {any} element 行の要素
- */
-function selectConditionList(element) {
-    var conditionData = {};
-    conditionData['CTRLID'] = 'SelectCondition';
-    conditionData['StockQuantity'] = getSiblingsValue(element, PT0006_FormList.Department.StockQuantity, CtrlFlag.Label);                     // 選択した部門の在庫数
-    conditionData['OldNewStructureId'] = getSiblingsValue(element, PT0006_FormList.Department.OldNewStructureId, CtrlFlag.Label);             // 新旧区分
-    conditionData['DepartmentStructureId'] = getSiblingsValue(element, PT0006_FormList.Department.DepartmentStructureId, CtrlFlag.Label);     // 部門
-    conditionData['AccountStructureId'] = getSiblingsValue(element, PT0006_FormList.Department.AccountStructureId, CtrlFlag.Label);           // 勘定科目
-
-    // 個別実装用変数に条件追加
-    P_dicIndividual = conditionData;
-}
-
-/**
- * 部門在庫一覧の条件を追加
- * @param {any} rowNo 行番号
- */
-function selectConditionListByRowNo(rowNo) {
-    var conditionData = {};
-    conditionData['CTRLID'] = 'SelectCondition';
-    conditionData['StockQuantity'] = getValue(PT0006_FormList.Department.Id, PT0006_FormList.Department.StockQuantity, rowNo, CtrlFlag.Label, false, false);                    // 選択した部門の在庫数
-    conditionData['OldNewStructureId'] = getValue(PT0006_FormList.Department.Id, PT0006_FormList.Department.OldNewStructureId, rowNo, CtrlFlag.Label, false, false);            // 新旧区分
-    conditionData['DepartmentStructureId'] = getValue(PT0006_FormList.Department.Id, PT0006_FormList.Department.DepartmentStructureId, rowNo, CtrlFlag.Label, false, false);    // 部門
-    conditionData['AccountStructureId'] = getValue(PT0006_FormList.Department.Id, PT0006_FormList.Department.AccountStructureId, rowNo, CtrlFlag.Label, false, false);          // 勘定科目
-
-    // 個別実装用変数に条件追加
-    P_dicIndividual = conditionData;
-}
 
 /**
  * 入力項目の非活性
@@ -571,9 +544,13 @@ function ChangeDisabled() {
  * 在庫一覧非表示、登録ボタン非活性
  */
 function hideBtnAndList() {
-    // 在庫一覧非表示
-    var ResultsInventoryList = $(P_Article).find("#" + PT0006_FormList.ResultsInventory.Id + getAddFormNo()).find(".tabulator-tableholder");
-    ResultsInventoryList.hide();
+
+    // 在庫一覧の行数を取得し、1件でもある場合は行を非表示
+    if ($(P_listData["#" + PT0006_FormList.ResultsInventory.Id + getAddFormNo()].element).find(".tabulator-row").length) {
+        // 在庫一覧非表示
+        var ResultsInventoryList = $(P_Article).find("#" + PT0006_FormList.ResultsInventory.Id + getAddFormNo()).find(".tabulator-tableholder");
+        ResultsInventoryList.hide();
+    }
 
     // 登録ボタン非活性
     var registBtn = getButtonCtrl(BtnName.Regist);
@@ -663,4 +640,102 @@ function PT0006roundQuantity() {
         // 空にする
         setValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, 1, CtrlFlag.TextBox, '', false, false);
     }
+}
+
+
+/**
+ * 棚別部門別在庫一覧 チェックボックスのチェック時イベント
+ * @param {any} row 選択された行
+ */
+function checkBoxChangeedByLocationDepartmentList(row, checkBox) {
+
+    // チェックボックスがチェックされた場合は行を指定された背景色に変更
+    setHikiate(row, $(checkBox).find("input")[0].checked);
+
+    // 在庫一覧非表示、登録ボタン非活性
+    hideBtnAndList();
+}
+
+
+/**
+ * 【オーバーライド用関数】全選択および全解除ボタンの押下後
+ * @param  formNo  : 画面番号
+ * @param  tableId : 一覧のコントロールID
+ */
+function PT0006_afterAllSelectCancelBtn(formNo, tableId) {
+
+    // 機能IDが「出庫入力」ではない場合は何もしない
+    if (getConductId() != PT0006_FormList.ConductId) {
+        return;
+    }
+
+    if (tableId == PT0006_FormList.Department.Id) {
+        // 棚別部門別在庫一覧を取得
+        var tbl = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()];
+
+        // 取得した一覧の行に対して繰り返し処理
+        $(tbl.element).find(".tabulator-row").each(function (i, row) {
+            // チェックボックスを取得
+            var checkBox = $(row).find("div[tabulator-field='SELTAG']")[0];
+
+            // チェック時イベント実行
+            checkBoxChangeedByLocationDepartmentList(row, checkBox);
+
+        });
+    }
+}
+
+
+/**
+ *【オーバーライド用関数】
+ *  検索処理前(一覧の選択チェックボックスが選択されているかチェック)
+ *
+ *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn {string} 　　　：対象ボタン
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} 　　：プログラムID
+ *  @formNo {number} 　 ：画面番号
+ *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
+ */
+function PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
+
+    // 棚別部門別在庫一覧にチェックされた行が存在しない場合、処理をキャンセル
+    if (!isCheckedList(PT0006_FormList.Department.Id)) {
+
+        P_ProcExecuting = false;
+        // ボタンを活性化
+        $(btn).prop("disabled", false);
+
+        return false;
+    }
+
+    // バックエンド側に渡す条件を作成
+    var conditionData = {};
+    // 棚別部門別在庫一覧のデータを取得
+    conditionData['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
+    P_dicIndividual = conditionData;
+
+    return true;
+}
+
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    // バックエンド側に渡す条件を作成
+    var conditionData = {};
+    // 棚別部門別在庫一覧のデータを取得
+    conditionData['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
+    P_dicIndividual = conditionData;
+
+    // 何もしていないのでそのまま返す
+    return listData;
 }

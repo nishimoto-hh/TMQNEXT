@@ -20,7 +20,8 @@ SELECT
     parts_id,
     job_structure_id,
     parts_location_id,
-    parts_factory_id
+    parts_factory_id,
+    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id) AS nest_key
 FROM
     target
 GROUP BY
@@ -40,4 +41,5 @@ GROUP BY
     parts_id,
     job_structure_id,
     parts_location_id,
-    parts_factory_id
+    parts_factory_id,
+    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id)

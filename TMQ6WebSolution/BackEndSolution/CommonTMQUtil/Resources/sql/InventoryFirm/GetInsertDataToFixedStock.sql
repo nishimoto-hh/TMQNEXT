@@ -27,7 +27,7 @@ WITH history_data AS( -- 今回の受払情報取得
     WHERE
         history.delete_flg = 0
     AND parts.factory_id = @FactoryId -- 一覧で選択されたレコードの工場
-    AND parts.job_structure_id = @PartsJobId -- 一覧で選択されたレコードの職種
+    AND COALESCE(parts.job_structure_id, 0) = COALESCE(@PartsJobId, 0) -- 一覧で選択されたレコードの職種
     --受払日時
     /*@InoutDatetimeFrom
     AND history.inout_datetime >= @InoutDatetimeFrom

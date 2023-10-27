@@ -297,11 +297,6 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var joinStr = getValue(FormRegist.PartsLocation.Id, FormRegist.PartsLocation.JoinString, 1, CtrlFlag.Label);
         setValue(FormRegist.PartsLocation.Id, FormRegist.PartsLocation.DetailNo, 1, CtrlFlag.Label, joinStr, false, true);
 
-        //棚枝番のテーブルタグの幅を調整（ヘッダが小さい為余白が目立つ為）
-        var detailNo = getCtrl(FormRegist.PartsLocation.Id, FormRegist.PartsLocation.DetailNo, 1, CtrlFlag.Label);
-        var table = $(detailNo).closest("table.vertical_tbl");
-        $(table).addClass("DetailNoTableWidth");
-
         //棚卸数にイベントを付与（棚差に値を設定する）
         setInventoryQuantityChangeEvent();
     }
@@ -1340,4 +1335,56 @@ function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
 
     // 出庫入力画面
     PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo);
+}
+
+/**
+ * 【オーバーライド用関数】全選択および全解除ボタンの押下後
+ * @param  formNo  : 画面番号
+ * @param  tableId : 一覧のコントロールID
+ */
+function afterAllSelectCancelBtn(formNo, tableId) {
+
+    // 出庫入力画面
+    PT0006_afterAllSelectCancelBtn(formNo, tableId);
+}
+
+/**
+ *【オーバーライド用関数】
+ *  検索処理前(一覧の選択チェックボックスが選択されているかチェック)
+ *
+ *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn {string} 　　　：対象ボタン
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} 　　：プログラムID
+ *  @formNo {number} 　 ：画面番号
+ *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
+ */
+function checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        return PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn);
+    }
+
+    return true;
+}
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData);
+    }
+
+    // 何もしていないのでそのまま返す
+    return listData;
 }

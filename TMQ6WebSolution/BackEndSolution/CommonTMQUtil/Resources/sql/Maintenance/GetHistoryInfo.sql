@@ -23,6 +23,7 @@ WITH history AS (
         , hi.expenditure                        --実績費用
         , hi.history_id                         --履歴ID
         , hi.update_serialid                    --更新シリアルID
+        , hi.rank_structure_id                  --ランク20230426 AEC shiraishi
     FROM
         ma_summary su 
         INNER JOIN ma_history hi 

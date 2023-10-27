@@ -17,6 +17,6 @@ FROM
             confirm.parts_job_id
     ) max_date
 WHERE
-    format(max_date.target_month, 'yyyy/MM') = @TargetMonth
+    FORMAT(max_date.target_month, 'yyyy/MM') = @TargetMonth
 AND max_date.factory_id = @FactoryId
-AND max_date.parts_job_id = @PartsJobId
+AND COALESCE(max_date.parts_job_id, 0) = COALESCE(@PartsJobId, 0)

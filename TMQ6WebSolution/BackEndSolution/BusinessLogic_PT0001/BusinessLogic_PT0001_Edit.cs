@@ -124,7 +124,7 @@ namespace BusinessLogic_PT0001
 
             // 検索条件を作成
             Dao.detailSearchCondition condition = getDetailSearchCondition(ConductInfo.FormDetail.ControlId.PartsInfo);
-            if (!searchPartsInfo(condition, ConductInfo.FormEdit.GroupNo))
+            if (!searchPartsInfo(ref condition, ConductInfo.FormEdit.GroupNo, compareId.IsCopy()))
             {
                 return false;
             }
@@ -200,6 +200,18 @@ namespace BusinessLogic_PT0001
             {
                 registInfo.OrderQuantityExceptUnit = 0;
             }
+
+            // 新規・複写の場合は予備品No.を採番する
+            //if (isInsertEdit(getEditType()))
+            //{
+            //    if (!getNewPartsNo(registInfo.PartsFactoryId, now, out string newPartsNo))
+            //    {
+            //        return false;
+            //    }
+
+            //    // 登録情報に採番した予備品No.を設定
+            //    registInfo.PartsNo = newPartsNo;
+            //}
 
             // 登録処理
             if (registDb(registInfo, out long partsId) == false)
@@ -293,7 +305,7 @@ namespace BusinessLogic_PT0001
                 // 起動パターンが新規、複写、修正の予備品Noが変更された時
                 if (pattern == (int)EditDispType.New || pattern == (int)EditDispType.Copy || isUpdateNumChanged)
                 {
-                    // 予備品Noの重複チェック
+                    // 予備品Noの重複チェック(予備品Noは自動採番になったので重複チェックを行わない 手入力に変わったときのために処理を残しておく)
                     checkPartsNo();
                 }
 
@@ -428,7 +440,7 @@ namespace BusinessLogic_PT0001
                     if (!string.IsNullOrEmpty(resultInfo.PartsLocationDetailNo))
                     {
                         var enc = Encoding.GetEncoding("Shift_JIS");
-                        if (enc.GetByteCount(resultInfo.PartsLocationDetailNo) != resultInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(resultInfo.PartsLocationDetailNo))
+                        if (enc.GetByteCount(resultInfo.PartsLocationDetailNo) != resultInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(resultInfo.PartsLocationDetailNo.Replace("-", "")))
                         {
                             string ctrlId = ConductInfo.FormEdit.ControlId.DetailNo;
                             // エラー情報を画面に設定するためのマッピング情報リスト

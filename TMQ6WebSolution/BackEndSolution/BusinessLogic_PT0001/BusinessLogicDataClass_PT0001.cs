@@ -46,7 +46,7 @@ namespace BusinessLogic_PT0001
             public string DispYearTo { get; set; }
             /// <summary>Gets or sets ユーザーの本務工場</summary>
             /// <value>ユーザーの本務工場</value>
-            public int UserFactoryId { get; set; }
+            public long UserFactoryId { get; set; }
         }
 
         /// <summary>
@@ -162,6 +162,33 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 標準棚番の階層番号</summary>
             /// <value>標準棚番の階層番号</value>
             public int StructureLayerNo { get; set; }
+            /// <summary>Gets or sets 標準部門コード</summary>
+            /// <value>標準部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 標準勘定科目コード</summary>
+            /// <value>標準勘定科目コード</value>
+            public string AccountCode { get; set; }
+            /// <summary>Gets or sets 標準部門名</summary>
+            /// <value>標準部門名</value>
+            public string DepartmentName { get; set; }
+            /// <summary>Gets or sets 標準勘定科目名</summary>
+            /// <value>標準勘定科目名</value>
+            public string AccountName { get; set; }
+            /// <summary>Gets or sets 予備品情報に「標準棚番」「標準部門」「標準勘定科目」が登録されているかどうか</summary>
+            /// <value>予備品情報に「標準棚番」「標準部門」「標準勘定科目」が登録されているかどうか</value>
+            public bool IsRegistedRequiredItemToOutLabel { get; set; }
+            /// <summary>Gets or sets 棚ID(ラベル出力用)</summary>
+            /// <value>棚ID(ラベル出力用)</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番(ラベル出力用)</summary>
+            /// <value>棚枝番(ラベル出力用)</value>
+            public string PartsLocationDetailNoEnter { get; set; }
+            /// <summary>Gets or sets 部門CD(ラベル出力用)</summary>
+            /// <value>部門CD(ラベル出力用)</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
+            /// <value>勘定科目CD(ラベル出力用)</value>
+            public string SubjectCdEnter { get; set; }
 
             #region 共通　地区・職種設定用
             /// <summary>Gets or sets 機能場所階層ID</summary>
@@ -357,6 +384,12 @@ namespace BusinessLogic_PT0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentStructureId, nameof(this.DepartmentStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AccountStructureId, nameof(this.AccountStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCode, nameof(this.DepartmentCode), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AccountCode, nameof(this.AccountCode), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentName, nameof(this.DepartmentName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AccountName, nameof(this.AccountName), mapDic);
 
                 return paramObj;
             }
@@ -389,6 +422,12 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 仕入先名</summary>
             /// <value>仕入先名</value>
             public string VenderName { get; set; }
+            /// <summary>Gets or sets 標準部門コード</summary>
+            /// <value>標準部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 標準勘定科目コード</summary>
+            /// <value>標準勘定科目コード</value>
+            public string AccountCode { get; set; }
 
             #region 共通　地区・職種設定用
             /// <summary>Gets or sets 機能場所階層ID</summary>
@@ -541,6 +580,18 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 丸め処理区分(金額)</summary>
             /// <value>丸め処理区分(金額)</value>
             public int CurrencyRoundDivision { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCdEnter { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 棚ID</summary>
+            /// <value>棚ID</value>
+            public long PartsLocationIdEnter { get; set; }
+            /// <summary>Gets or sets 棚枝番</summary>
+            /// <value>棚枝番</value>
+            public string PartsLocationDetailNoEnter { get; set; }
 
             /// <summary>
             /// 数量・金額の単位結合、丸め処理
@@ -906,6 +957,12 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 管理工場ID</summary>
             /// <value>管理工場ID</value>
             public long PartsFactoryId { get; set; }
+            /// <summary>Gets or sets 標準部門</summary>
+            /// <value>標準部門</value>
+            public string DepartmentName { get; set; }
+            /// <summary>Gets or sets 標準勘定科目</summary>
+            /// <value>標準勘定科目</value>
+            public string AccountName { get; set; }
 
             #region 以下は翻訳
             /// <summary>Gets or sets 管理工場</summary>
@@ -1005,6 +1062,68 @@ namespace BusinessLogic_PT0001
             public string RackName { get; set; }
             #endregion
             #endregion
+        }
+
+        /// <summary>
+        /// 一覧画面 RFタグ出力情報
+        /// </summary>
+        public class rftagFileInfo
+        {
+            /// <summary>Gets or sets RFタグ管理ID</summary>
+            /// <value>RFタグ管理ID</value>
+            public string RftagId { get; set; }
+            /// <summary>Gets or sets ISO識別子</summary>
+            /// <value>ISO識別子</value>
+            public string IsoIdentifier { get; set; }
+            /// <summary>Gets or sets 発番機関</summary>
+            /// <value>発番機関</value>
+            public string IssuingAgency { get; set; }
+            /// <summary>Gets or sets 起動コード：登録No</summary>
+            /// <value>起動コード：登録No</value>
+            public string SymbolicCode { get; set; }
+            /// <summary>Gets or sets 工場</summary>
+            /// <value>工場</value>
+            public string Factory { get; set; }
+            /// <summary>Gets or sets シリアルNo</summary>
+            /// <value>シリアルNo</value>
+            public string SerialNo { get; set; }
+            /// <summary>Gets or sets CD</summary>
+            /// <value>CD</value>
+            public string Cd { get; set; }
+            /// <summary>Gets or sets 予備品No</summary>
+            /// <value>予備品No</value>
+            public string PartsNo { get; set; }
+            /// <summary>Gets or sets 部門ID</summary>
+            /// <value>部門ID</value>
+            public long? DepartmentStructureId { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 勘定科目ID</summary>
+            /// <value>勘定科目ID</value>
+            public long? AccountStructureId { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string AccountCode { get; set; }
+            /// <summary>Gets or sets 読取日時(yyyyMMddHHmmssfff)</summary>
+            /// <value>読取日時(yyyyMMddHHmmssfff)</value>
+            public string ReadDatetimeStr { get; set; }
+            /// <summary>Gets or sets 読取日時</summary>
+            /// <value>読取日時</value>
+            public DateTime ReadDatetime { get; set; }
+        }
+
+        /// <summary>
+        /// 取込画面のデータクラス
+        /// </summary>
+        public class uploadInfo : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets エラー内容</summary>
+            /// <value>エラー内容</value>
+            public string ErrorMessage { get; set; }
+            /// <summary>Gets or sets 取込画面を閉じない場合（エラー等ある場合）true</summary>
+            /// <value>取込画面を閉じない場合（エラー等ある場合）true</value>
+            public bool Flg { get; set; }
         }
     }
 }

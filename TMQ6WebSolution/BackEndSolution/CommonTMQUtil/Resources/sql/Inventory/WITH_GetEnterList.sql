@@ -99,7 +99,7 @@ WITH department AS (
         plt.department_structure_id,                                                    --部門ID
         plt.account_structure_id,                                                       --勘定科目ID
         pps.factory_id as parts_factory_id,                                             --工場ID(ツリーの絞り込み用)
-        pps.job_structure_id                                                            --職種機種ID(ツリーの絞り込み用)
+        COALESCE(pps.job_structure_id, 0) AS job_structure_id                           --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_parts pps                                --予備品仕様マスタ
         LEFT JOIN pt_lot plt                        --ロット情報マスタ
@@ -181,7 +181,7 @@ WITH department AS (
         pit.department_structure_id,                                                    --部門ID
         pit.account_structure_id,                                                       --勘定科目ID
         pps.factory_id as parts_factory_id,                                             --工場ID(ツリーの絞り込み用)
-        pps.job_structure_id                                                            --職種機種ID(ツリーの絞り込み用)
+        COALESCE(pps.job_structure_id, 0) AS job_structure_id                           --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inventory pit 
         /*棚卸データ */

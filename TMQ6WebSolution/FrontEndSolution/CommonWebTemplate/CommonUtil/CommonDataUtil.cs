@@ -883,7 +883,7 @@ namespace CommonWebTemplate.CommonUtil
             }
             if(listItem.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompTransOnly)
             {
-                textWidth = transWidth;
+                //textWidth = transWidth;
                 transWidth = 0;
             }
             colWidth = textWidth + transWidth;

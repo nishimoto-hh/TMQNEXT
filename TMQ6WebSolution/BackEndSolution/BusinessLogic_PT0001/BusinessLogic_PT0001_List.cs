@@ -43,7 +43,7 @@ namespace BusinessLogic_PT0001
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetPartsList, out string withSql);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true, isJobNullAble: true))
             {
                 return false;
             }
@@ -69,7 +69,9 @@ namespace BusinessLogic_PT0001
                 GroupId.Unit,
                 GroupId.Currency,
                 GroupId.Job,
-                GroupId.SpareLocation
+                GroupId.SpareLocation,
+                GroupId.Department,
+                GroupId.Account
             };
             listPf.GetCreateTranslation(); // テーブル作成
             listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
@@ -112,6 +114,13 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
+            //RFタグ取込画面の取込後の再表示であれば、メッセージを設定
+            object message = GetGlobalData(ConductInfo.FormRFUpload.GlobalKey, true);
+            if (message != null)
+            {
+                this.MsgId = message.ToString();
+            }
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return true;
@@ -138,5 +147,68 @@ namespace BusinessLogic_PT0001
                 }
             }
         }
+
+        /// <summary>
+        /// RFタグ情報出力
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private bool outputRftagInfo()
+        {
+            // 出力データを取得する
+            List<Dao.rftagFileInfo> dataList = TMQUtil.SqlExecuteClass.SelectList<Dao.rftagFileInfo>(SqlName.List.GetRftagOutputData, SqlName.SubDir, new { UserId = this.UserId }, this.db);
+
+            // 出力対象データ
+            List<object[]> list = getDataRow();
+
+            // CSV出力処理
+            if (!ComUtil.ExportCsvFileNotencircleDobleQuotes(list, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
+            {
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { "941220002", "911120006" });
+                return false;
+            }
+
+            // 出力情報設定
+            this.OutputFileType = CommonConstants.REPORT.FILETYPE.CSV;
+            this.OutputFileName = ConductInfo.FormList.RftagFileName + ComConsts.REPORT.EXTENSION.CSV;
+            this.OutputStream = outStream;
+
+            return true;
+
+            // 出力するデータ
+            List<object[]> getDataRow()
+            {
+                // データ行を作成
+                List<object[]> dataRow = new();
+
+                if (dataList == null || dataList.Count == 0)
+                {
+                    return dataRow;
+                }
+
+                foreach (Dao.rftagFileInfo data in dataList)
+                {
+                    dataRow.Add(new object[]
+                    {
+                        data.IsoIdentifier, // ISO識別子
+                        data.IssuingAgency, // 発番機関
+                        data.SymbolicCode, // 記号コード：登録No
+                        data.Factory, // 工場
+                        data.SerialNo, // シリアルNo
+                        data.Cd, // CD
+                        data.PartsNo, // 予備品No.
+                        "", // ブランク
+                        data.DepartmentCode, // 部門コード
+                        "", // ブランク
+                        data.AccountCode // 勘定科目コード
+                    });
+                }
+
+                return dataRow;
+            }
+        }
+
     }
 }

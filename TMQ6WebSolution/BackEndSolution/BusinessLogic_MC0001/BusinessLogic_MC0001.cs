@@ -1229,6 +1229,9 @@ namespace BusinessLogic_MC0001
             // 総件数のチェック
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
                 return false;
             }

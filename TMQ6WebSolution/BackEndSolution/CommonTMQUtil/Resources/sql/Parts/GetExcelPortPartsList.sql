@@ -8,7 +8,7 @@ SELECT
     parts.location_factory_structure_id AS factory_id,     -- 工場ID
     parts.location_warehouse_structure_id AS warehouse_id, -- 倉庫ID
     parts.location_rack_structure_id AS rack_id,           -- 棚ID
-    parts.job_structure_id AS job_id,     -- 職種ID
+    COALESCE(parts.job_structure_id, 0) AS job_id,         -- 職種ID
     parts.manufacturer_structure_id,      -- メーカーID
     parts.model_type,                     -- 型式
     parts.materials,                      -- 材質
@@ -25,6 +25,8 @@ SELECT
     parts.unit_price,                     -- 標準単価
     parts.purchasing_no,                  -- 購買システムコード
     parts.parts_memo,                     -- メモ
+    parts.department_structure_id,        -- 標準部門ID
+    parts.account_structure_id,           -- 標準勘定科目ID
     ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
         SELECT
@@ -223,8 +225,59 @@ SELECT
                 AND st_f.factory_id IN(0, parts.factory_id)
             )
         AND tra.structure_id = parts.job_structure_id
-    ) AS job_name -- 職種
+    ) AS job_name, -- 職種
+    dep_ex.extension_data + ' ' + (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.department_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.department_structure_id
+    ) AS department_name, -- 標準部門
+    acc_ex.extension_data + ' ' + (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.account_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.account_structure_id
+    ) AS account_name -- 標準勘定科目
 FROM
     pt_parts AS parts
+LEFT JOIN
+    ms_structure dep_ms -- 標準部門(構成マスタ)
+ON parts.department_structure_id = dep_ms.structure_id
+LEFT JOIN
+    ms_item_extension dep_ex -- 標準部門(拡張項目)
+ON dep_ms.structure_item_id = dep_ex.item_id
+AND dep_ex.sequence_no = 1
+LEFT JOIN
+    ms_structure acc_ms -- 標準勘定科目(構成マスタ)
+ON parts.account_structure_id = acc_ms.structure_id
+LEFT JOIN
+    ms_item_extension acc_ex -- 標準勘定科目(拡張項目)
+ON acc_ms.structure_item_id = acc_ex.item_id
+AND acc_ex.sequence_no = 1
+    
 WHERE EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND parts.factory_id = temp.structure_id)
-AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1010 AND  parts.job_structure_id = temp.structure_id)
+AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1010 AND  COALESCE(parts.job_structure_id, 0) = temp.structure_id)

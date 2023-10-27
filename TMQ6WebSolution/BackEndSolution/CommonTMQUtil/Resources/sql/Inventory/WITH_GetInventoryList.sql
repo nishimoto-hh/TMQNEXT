@@ -262,7 +262,7 @@ WITH stock AS (
         , COALESCE(number_unit.unit_digit, 0) AS unit_digit --小数点以下桁数(数量)
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
         , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pp.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
         , CASE 
             WHEN @InventoryIdFlg = 0  
                 THEN pi.rftag_id 
@@ -407,7 +407,7 @@ WITH stock AS (
         , COALESCE(number_unit.unit_digit, 0) AS unit_digit --小数点以下桁数(数量)
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
         , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pp.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
         , CASE 
             WHEN @InventoryIdFlg = 0  
                 THEN pi.rftag_id 

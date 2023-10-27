@@ -13,6 +13,8 @@ INTO mc_equipment(
     , use_segment_structure_id                -- 使用区分
     , fixed_asset_no                          -- 固定資産番号
     , maintainance_kind_manage                -- 点検種別毎管理
+    , budget_management_structure_id          -- 予算管理部門　20230426 aec shiraishi
+    , diagram_storage_location_structure_id   -- 図面保管場所　20230426 aec shiraishi
     , update_serialid                         -- 更新シリアルID
     , insert_datetime                         -- 登録日時
     , insert_user_id                          -- 登録ユーザー
@@ -34,6 +36,8 @@ VALUES (
     , @UseSegmentStructureId                  -- 使用区分
     , @FixedAssetNo                           -- 固定資産番号
     , @MaintainanceKindManage                 -- 点検種別毎管理
+    , @BudgetManagementStructureId            -- 予算管理部門　20230426 aec shiraishi
+    , @DiagramStorageLocationStructureId      -- 図面保管場所　20230426 aec shiraishi
     , 0                                       -- 更新シリアルID
     , @InsertDatetime                         -- 登録日時
     , @InsertUserId                           -- 登録ユーザー

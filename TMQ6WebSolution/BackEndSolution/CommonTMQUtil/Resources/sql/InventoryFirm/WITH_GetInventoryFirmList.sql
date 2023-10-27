@@ -75,6 +75,18 @@ FROM
             ) job
     ) factory
 ),
+factory_job_main AS( -- 工場IDと職種IDの組み合わせに職種がNULLのレコードを追加したもの
+    SELECT
+        * 
+    FROM
+        factory_job 
+    UNION ALL 
+    SELECT DISTINCT
+        factory_id
+        , 0 
+    FROM
+        factory_job
+),
 confirm AS( -- 在庫確定管理データ
     SELECT
         confirm_max.factory_id,    -- 工場
@@ -101,7 +113,7 @@ confirm AS( -- 在庫確定管理データ
         LEFT JOIN
             pt_stock_confirm confirm
         ON  confirm_max.factory_id = confirm.factory_id
-        AND confirm_max.parts_job_id = confirm.parts_job_id
+        AND COALESCE(confirm_max.parts_job_id, 0) = COALESCE(confirm.parts_job_id, 0)
         AND confirm_max.target_month = confirm.target_month
         AND confirm.delete_flg = 0
         LEFT JOIN

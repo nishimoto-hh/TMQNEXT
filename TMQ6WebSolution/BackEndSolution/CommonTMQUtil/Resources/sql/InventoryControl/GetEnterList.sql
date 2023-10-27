@@ -23,6 +23,7 @@ SELECT DISTINCT
       AND tra.structure_id = pls.parts_location_id
     ) AS parts_location_name,--棚ID(名称)
     pls.parts_location_detail_no,                                                   --棚枝番
+    pls.parts_location_detail_no AS parts_location_detail_no_enter,                 --棚枝番(ラベル出力用)
     pps.parts_no,                                                                   --予備品No
     pps.parts_name,                                                                 --予備品名称
     (
@@ -49,6 +50,8 @@ SELECT DISTINCT
     pih.inout_quantity * plt.unit_price AS amount_money,                            --入庫金額
     dpm.extension_data AS department_cd,                                            --部門CD
     act.extension_data AS subject_cd,                                               --勘定科目CD
+    dpm.extension_data AS department_cd_enter,                                      --部門CD(ラベル出力用)
+    act.extension_data AS subject_cd_enter,                                         --勘定科目CD(ラベル出力用)
     plt.management_no,                                                              --管理No
     plt.management_division,                                                        --管理区分
     pps.parts_id,                                                                   --予備品ID
@@ -58,8 +61,9 @@ SELECT DISTINCT
     COALESCE(unit_round.round_division, 0) AS unit_round_division,                  --丸め処理区分(数量)
     COALESCE(unit_round.round_division, 0) AS currency_round_division,              --丸め処理区分(金額)
     '1' AS transition_flg,                                                          --遷移フラグ
-    pps.job_structure_id,                                                           --職種ID
+    COALESCE(pps.job_structure_id, 0) AS job_structure_id ,                         --職種ID
     pps.parts_location_id,                                                          --棚ID
+    pls.parts_location_id AS parts_location_id_enter,                               --棚ID(ラベル出力用)
     pih.inout_history_id,                                                           --受払履歴ID
     COALESCE(
         ( 
@@ -191,9 +195,5 @@ FROM
  WHERE
      pih.inout_datetime >= @WorkingDay
      AND pih.inout_datetime < @WorkingDayNext     --作業日
-/*@FactoryIdList
-    AND pps.factory_id IN @FactoryIdList
-@FactoryIdList*/
-/*@JobIdList
-    AND pps.job_structure_id IN @JobIdList
-@JobIdList*/
+
+AND EXISTS(SELECT * FROM #temp_location temp WHERE pps.factory_id = temp.structure_id)AND EXISTS(SELECT * FROM #temp_job temp WHERE COALESCE(pps.job_structure_id, 0) = temp.structure_id)

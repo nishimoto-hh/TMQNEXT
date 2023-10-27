@@ -892,8 +892,10 @@ namespace CommonWebTemplate.Models.Common
         {
             /// <summary>設定なし</summary>
             public const short None = 0;
-            /// <summary>フィルター使用</summary>
-            public const short Use = 1;
+            /// <summary>フィルター使用(部分一致)</summary>
+            public const short PartialMatch = 1;
+            /// <summary>フィルター使用(完全一致)</summary>
+            public const short ExactMatch = 2;
         }
 
         /// <summary>

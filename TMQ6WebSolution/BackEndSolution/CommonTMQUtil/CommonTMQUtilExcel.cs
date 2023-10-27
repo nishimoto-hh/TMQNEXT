@@ -4847,7 +4847,7 @@ namespace CommonTMQUtil
         /// <param name="msgResources">メッセージリソース</param>
         /// <param name="error">エラー情報</param>
         /// <returns>true:正常、false:異常</returns>
-        private static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
+        public static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
         {
             // データタイプによって処理を分岐
             int dataType = reportInfo.DataType;
@@ -5041,17 +5041,18 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
-            /// コンストラクタ(エンコーディング、区切り文字指定)
+            /// コンストラクタ(エンコーディング、区切り文字、改行コード指定)
             /// </summary>
             /// <param name="uploadFile">InputStream</param>
             /// <param name="encoding">ファイルのエンコーディング</param>
             /// <param name="delimiter">ファイルの区切り文字</param>
+            /// <param name="lineFeedCode">改行コード</param>
             /// <param name="languageId">言語ID</param>
             /// <param name="msgResources">メッセージリソース</param>
             /// <param name="db">DB接続</param>
-            public UploadText(Stream uploadFile, Encoding encoding, char delimiter, string languageId, ComUtil.MessageResources msgResources, ComDB db)
+            public UploadText(Stream uploadFile, Encoding encoding, char delimiter, string lineFeedCode, string languageId, ComUtil.MessageResources msgResources, ComDB db)
             {
-                setTextData(uploadFile, encoding, delimiter);
+                setTextData(uploadFile, encoding, delimiter, lineFeedCode);
                 setMemberValues(languageId, msgResources, db);
             }
 
@@ -5067,21 +5068,31 @@ namespace CommonTMQUtil
                 this.msgResources = inMsgResources;
                 this.db = inDb;
             }
+
+            /// <summary>
+            /// 取込ファイルの内容を取得
+            /// </summary>
+            /// <returns></returns>
+            public List<List<string>> getTextData()
+            {
+                return this.textData;
+            }
             /// <summary>
             /// 取込ファイルの内容を文字列のリストに設定する処理
             /// </summary>
             /// <param name="inUploadFile">InputStream</param>
             /// <param name="inEncoding">ファイルのエンコーディング</param>
             /// <param name="inDelimiter">ファイルの区切り文字</param>
+            /// <param name="lineFeedCode">改行コード</param>
             /// <remarks>コンストラクタで引数省略をしたいけど、出来ないからオーバーライド用のベースクラス</remarks>
-            private void setTextData(Stream inUploadFile, Encoding inEncoding, char inDelimiter)
+            private void setTextData(Stream inUploadFile, Encoding inEncoding, char inDelimiter, string lineFeedCode = "\r\n")
             {
                 // 初期化
                 this.textData = new List<List<string>>();
                 // 読み込み
                 string fileTexts = getFileText(inUploadFile, inEncoding);
                 // 改行コードで分割
-                string[] textData = fileTexts.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                string[] textData = fileTexts.Split(new string[] { lineFeedCode }, StringSplitOptions.None);
                 // 読み込んでリストに変換
                 // 行で繰り返し
                 foreach (string row in textData)

@@ -80,7 +80,7 @@
 
             // テーブル幅を決める
             // －　項目名列幅 + 列幅最大数 * N数 + バッチ、マスタ機能の共通自動配置項目列
-            var tblWidth = 120 + colWidthMax * itemCntMax;
+            var tblWidth = colHeaderWidthMax + colWidthMax * itemCntMax;
             //--※共通自動配置項目--
             if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Bat)
             {

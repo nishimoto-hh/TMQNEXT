@@ -127,6 +127,13 @@ namespace BusinessLogic_LN0001
             /// <summary>Gets or sets 設備区分(翻訳)</summary>
             /// <value>設備区分(翻訳)</value>
             public string FacilityStructureName { get; set; }
+            /// <summary>Gets or sets 設備区分(翻訳)</summary>
+            /// <value>設備区分(翻訳)</value>
+            public int? LongPlanDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 設備区分(翻訳)</summary>
+            /// <value>設備区分(翻訳)</value>
+            public int? LongPlanGroupStructureId { get; set; }
+
             #endregion
 
             #region 参照画面
@@ -229,6 +236,10 @@ namespace BusinessLogic_LN0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+//                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanDivisionName, nameof(this.LongPlanDivisionName), mapDic);
+//                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanGroupName, nameof(this.LongPlanGroupName), mapDic);
+//                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanDivisionStructureId, nameof(this.LongPlanDivisionStructureId), mapDic);
+//                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanGroupStructureId, nameof(this.LongPlanGroupStructureId), mapDic);
 
                 return paramObj;
             }

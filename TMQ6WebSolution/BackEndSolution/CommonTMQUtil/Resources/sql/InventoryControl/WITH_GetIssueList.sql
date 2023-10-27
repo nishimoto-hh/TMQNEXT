@@ -71,7 +71,7 @@ WITH inout_division AS (
 )
 ,target AS
 (
-SELECT DISTINCT
+SELECT
     FORMAT(pih.inout_datetime, 'yyyy/MM/dd') AS inout_datetime,                    --受払日時(画面：出庫日)
     pih.work_no,                                                                   --作業No(画面：出庫No)
     pps.parts_no,                                                                  --予備品No
@@ -94,6 +94,7 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = plt.old_new_structure_id
     ) AS old_new_structure_name,
+    plt.old_new_structure_id,
     pps.standard_size AS dimensions                                              --規格・寸法
   　, ( 
         SELECT
@@ -156,7 +157,7 @@ SELECT DISTINCT
     COALESCE(unit_round.round_division, 0) AS unit_round_division,                 --丸め処理区分(数量)
     COALESCE(unit_round.round_division, 0) AS currency_round_division,             --丸め処理区分(金額)
     pps.parts_id,                                                                  --画面遷移用
-    pps.job_structure_id,                                                          --職種ID
+    COALESCE(pps.job_structure_id, 0) AS job_structure_id,                         --職種ID
     pps.parts_location_id,                                                         --棚ID
     pps.factory_id AS parts_factory_id                                             --工場ID
     ,plt.unit_price
@@ -198,10 +199,6 @@ FROM
  WHERE
      pih.inout_datetime >= @WorkingDay
      AND pih.inout_datetime < @WorkingDayNext --作業日
-/*@FactoryIdList
-    AND pps.factory_id IN @FactoryIdList
-@FactoryIdList*/
-/*@JobIdList
-    AND pps.job_structure_id IN @JobIdList
-@JobIdList*/
+
+AND EXISTS(SELECT * FROM #temp_location temp WHERE pps.factory_id = temp.structure_id)AND EXISTS(SELECT * FROM #temp_job temp WHERE COALESCE(pps.job_structure_id, 0) = temp.structure_id)
 )

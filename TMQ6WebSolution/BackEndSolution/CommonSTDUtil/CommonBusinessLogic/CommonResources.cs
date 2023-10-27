@@ -1801,6 +1801,30 @@
             /// 名称により項目を絞り込むことができません。画面より項目を指定してください。
             /// </summary>
             public const string ID141340001 = "141340001";
+            /// <summary>
+            /// 同一の棚・部門を選択してください。
+            /// </summary>
+            public const string ID141200008 = "141200008";
+            /// <summary>
+            /// 部門コードが存在しません。
+            /// </summary>
+            public const string ID141280003 = "141280003";
+            /// <summary>
+            /// 勘定科目コードが存在しません。
+            /// </summary>
+            public const string ID141060010 = "141060010";
+            /// <summary>
+            /// 読取日時
+            /// </summary>
+            public const string ID111380072 = "111380072";
+            /// <summary>
+            /// 権限のない予備品は処理が行われませんでした。
+            /// </summary>
+            public const string ID141090007 = "141090007";
+            /// <summary>
+            /// 取込可能なデータが１件も存在しません。
+            /// </summary>
+            public const string ID141200009 = "141200009";
         }
     }
 }

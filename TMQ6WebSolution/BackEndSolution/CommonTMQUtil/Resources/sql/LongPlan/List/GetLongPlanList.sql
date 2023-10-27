@@ -20,6 +20,9 @@ SELECT
     ,target.work_item_structure_id
     ,target.budget_management_structure_id
     ,target.budget_personality_structure_id
+    ,target.long_plan_division_structure_id
+    ,target.long_plan_group_structure_id
+
 /*@UnExcelPort
     ,target.file_link_equip
     ,target.file_link_subject
@@ -190,6 +193,44 @@ SELECT
             )
         AND tra.structure_id = target.facility_structure_id
     ) AS facility_structure_name
+    -- 長計区分
+    ,(
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.long_plan_division_structure_id
+                AND st_f.factory_id IN(0, target.factory_id)
+            )
+        AND tra.structure_id = target.long_plan_division_structure_id
+    ) AS long_plan_division_name
+    -- 長計グループ
+    ,(
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.long_plan_group_structure_id
+                AND st_f.factory_id IN(0, target.factory_id)
+            )
+        AND tra.structure_id = target.long_plan_group_structure_id
+    ) AS long_plan_group_name
     -- 地区
     ,(
          SELECT

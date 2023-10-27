@@ -48,7 +48,7 @@ namespace BusinessLogic_PT0003
             var pageInfo = GetPageInfo(ConductInfo.FormList.List.InventoryList, this.pageInfoList);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true, isJobNullAble: true))
             {
                 return false;
             }
@@ -433,7 +433,10 @@ namespace BusinessLogic_PT0003
             // CSV出力処理
             if (!ComUtil.ExportCsvFileNotencircleDobleQuotes(list, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
             {
-                this.MsgId = errMsg;
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { "941220002", "911120006" });
                 return false;
             }
 

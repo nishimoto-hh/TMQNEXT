@@ -34,9 +34,9 @@ const FormList = {
     FilterId: "BODY_010_00_LST_0",            // フィルタ機能一覧ID
     Filter: 1,                                // フィルタの項目番号
     Id: "BODY_020_00_LST_0",                  // 予備品一覧
-    PartsId: 34,                              // 予備品ID(非表示)
+    PartsId: 38,                              // 予備品ID(非表示)
     OrderAlert: {                             // 発注アラート
-        CtrlNo: 28,                           // 項目番号
+        CtrlNo: 32,                           // 項目番号
         Value: "Y",                           // 判定文字
         CssClass: "orderAlert"                // CSSクラス
     },
@@ -56,6 +56,10 @@ const FormDetail = {
     No: 1,                                    // 画面番号
     PartsInfo: "BODY_010_00_LST_1",           // 予備品情報
     LocationInfo: "BODY_020_00_LST_1",        // 標準保管場所情報
+    PurchaseInfo: {                           // 購買管理工場
+        Id: "BODY_040_00_LST_1",              // 一覧ID
+        IsRegistedRequiredItemToOutLabel: 10  // 詳細画面上部のラベル出力ボタン用フラグ(予備品情報「標準棚番」「標準部門」「標準勘定科目」がすべて登録されている場合はTrue)
+    },
     InventoryParentList: {                    // 棚別在庫一覧(親一覧)
         Id: "BODY_080_00_LST_1",              // 一覧ID
         Key: 3                                // 入れ子に使用する項目番号
@@ -90,7 +94,6 @@ const FormDetail = {
         WorkNo: 18,                           // 作業No
         CarryLinkNone: "linkDisable",         // 繰越のデータのNo.リンクを無効にするCSSクラス
         ValueCarryCssStyle: "black"           // 繰越のデータのNo.リンクの文字色スタイル
-
     },
     LocationDetailNo: 5,                      // 棚枝番
     PartsId: 9,                               // 非表示で定義している予備品IDの項目番号
@@ -108,7 +111,9 @@ const FormDetail = {
         HistoryEnter: "HistoryEnter",         // 入庫(入出庫履歴)
         HistoryIssue: "HistoryIssue",         // 出庫(入出庫履歴)
         HistoryShelf: "HistoryShelf",         // 棚番移庫(入出庫履歴)
-        HistoryCategory: "HistoryCategory"    // 部門移庫(入出庫履歴)
+        HistoryCategory: "HistoryCategory",   // 部門移庫(入出庫履歴)
+        OutputLabelDetail: "OutputLabelDetail", // ラベル出力(画面上部)
+        OutputLabelDetailShed: "OutputLabelDetailShed" // ラベル出力(棚別在庫情報)
     },
     TabNo:                                    // タブ番号
     {
@@ -132,12 +137,15 @@ const FormEdit = {
     DetailNo: "BODY_070_00_LST_2",            // 棚枝番
     JoinString: "BODY_080_00_LST_2",          // 棚枝番
     PartsNo: 1,                               // 予備品No
+    PartsName: 6,                             // 予備品名
     ManufacureCode: 2,                        // メーカー
     Factory: 4,                               // 管理工場
     UseId: 5,                                 // 使用区分
     JobId: 9,                                 // 職種
     HideJobId: 13,                            // 職種ID(非表示)
     ManufactureStructureId: 14,               // メーカーの構成IDを設定する項目
+    DepartmentCode: 15,                       // 予備品情報の標準部門
+    DepartmentStructureId: 16,                // 予備品情報の標準部門(構成ID)
     Button: {
         Regist: "Regist",                     // 登録
     },
@@ -150,7 +158,9 @@ const FormEdit = {
         Vender: 6,                            // 標準仕入先
         DefaultPrice: 7,                      // 標準単価
         VenderStructureId: 8,                 // 標準仕入先(構成ID)
-        RoundDivision: 9                      // 丸め処理区分
+        RoundDivision: 9,                     // 丸め処理区分
+        AccountCode: 10,                      // 標準勘定科目
+        AccountStructureId: 11               // 標準勘定科目(構成ID)              
     }
 };
 
@@ -162,7 +172,27 @@ const FormLabel = {
     PartsIdList: "BODY_020_00_LST_3"          // 予備品ID一覧
 };
 
-
+// RFタグ取込画面
+const FormRFUpload = {
+    //画面No
+    No: 4,
+    //ファイルアップロード
+    Info: {
+        Id: "BODY_010_00_LST_4",
+        //エラー出力
+        ErrorMessage: 2,
+    },
+    //非表示
+    Hide: {
+        Id: "BODY_020_00_LST_4",
+        //エラー出力
+        Flg: 1,
+    },
+    Button: {
+        Upload: "Upload",
+        Back: "BackUpload",
+    }
+};
 // 入出庫区分コンボボックスの拡張アイテム番号
 const InoutDivisionNo =
 {
@@ -214,6 +244,11 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 新規ボタンにフォーカスを設定する
         setFocusButton(FormList.Button.New);
 
+        //RFタグ取込画面で設定されたメッセージを削除
+        if (P_dicIndividual["RFUploadMessage"]) {
+            delete P_dicIndividual["RFUploadMessage"];
+            return true;
+        }
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
@@ -236,6 +271,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var parsLocationDetailNo = $(P_Article).find("#" + FormDetail.LocationInfo + getAddFormNo()).find("*[data-name='VAL" + FormDetail.LocationDetailNo + "']");
         parsLocationDetailNo.hide();
 
+        // 詳細画面上部のラベル出力ボタンの活性/非活性を切り替える
+        changeOutLabelBtnStatus();
     }
     else if (formNo == FormEdit.No) { // 詳細編集画面
 
@@ -279,7 +316,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             setValue(FormEdit.Location.Id, FormEdit.Location.InputLocationId, 1, CtrlFlag.TextBox, '', false, false);
             setValue(FormEdit.Location.Id, FormEdit.Location.LocationId, 1, CtrlFlag.Label, '', false, false);
         }
-        
+
         // メーカーからフォーカスアウトした場合
         var manufacture = getCtrl(FormEdit.PartsInfo, FormEdit.ManufacureCode, 1, CtrlFlag.TextBox, false, false);
         $(manufacture).blur(function () {
@@ -335,11 +372,35 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             setValue(FormEdit.Purchase.Id, FormEdit.Purchase.RoundDivision, 1, CtrlFlag.Combo, factoryId, false, false);
         });
 
+        // 標準部門からフォーカスアウトした場合
+        var deaprtment = getCtrl(FormEdit.PartsInfo, FormEdit.DepartmentCode, 1, CtrlFlag.TextBox, false, false);
+        $(deaprtment).blur(function () {
+            var deaprtmentCode = getValue(FormEdit.PartsInfo, FormEdit.DepartmentCode, 1, CtrlFlag.TextBox, false, false);
+            // 入力されていない場合は非表示項目を空に設定する
+            if (!deaprtmentCode || deaprtmentCode == '') {
+                setValue(FormEdit.PartsInfo, FormEdit.DepartmentStructureId, 1, CtrlFlag.Label, '', false, false);
+            }
+        });
+
+        // 標準勘定科目からフォーカスアウトした場合
+        var account = getCtrl(FormEdit.Purchase.Id, FormEdit.Purchase.AccountCode, 1, CtrlFlag.TextBox, false, false);
+        $(account).blur(function () {
+            var accountCode = getValue(FormEdit.Purchase.Id, FormEdit.Purchase.AccountCode, 1, CtrlFlag.TextBox, false, false);
+            // 入力されていない場合は非表示項目を空に設定する
+            if (!accountCode || accountCode == '') {
+                setValue(FormEdit.Purchase.Id, FormEdit.Purchase.AccountStructureId, 1, CtrlFlag.Label, '', false, false);
+            }
+        });
     }
     else if (formNo == FormLabel.No) { // ラベル出力画面
 
         // 予備品ID一覧を非表示
         changeListDisplay(FormLabel.PartsIdList, false, false);
+    }
+    else if (formNo == FormRFUpload.No) {
+        //エラー出力を非活性にする
+        var errorMsg = getCtrl(FormRFUpload.Info.Id, FormRFUpload.Info.ErrorMessage, 1, CtrlFlag.Textarea);
+        changeInputControl(errorMsg, false);
     }
 }
 
@@ -599,12 +660,13 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
     // 画面番号を判定
     if (formNo == FormEdit.No) {
-        if (transDiv == transDivDef.Edit || transDiv == transDivDef.Copy) {
+        if (transDiv == transDivDef.New || transDiv == transDivDef.Edit || transDiv == transDivDef.Copy) {
 
-            // 修正入力、複写入力の場合予備品Noにフォーカスをセットする
-            setFocusDelay(FormEdit.PartsInfo, 1, 1, CtrlFlag.TextBox, false);
+            // 予備品名にフォーカスをセットする
+            setFocusDelay(FormEdit.PartsInfo, FormEdit.PartsName, 2, CtrlFlag.TextBox, false);
         }
-        else if (transDiv == transDivDef.New) {
+
+        if (transDiv == transDivDef.New) {
             // 新規入力の場合使用区分を非活性にする
             changeInputControl(getCtrl(FormEdit.PartsInfo, FormEdit.UseId, 1, CtrlFlag.Combo, false), false);
         }
@@ -736,6 +798,17 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     if (formNo == FormDetail.No) {
         setDispYear();
+    } else if (formNo == FormRFUpload.No) {
+        //RFタグ取込画面
+
+        //エラーなく登録が完了した場合（エラー出力に値が設定されていない場合）、画面を閉じる
+        var error = getValue(FormRFUpload.Hide.Id, FormRFUpload.Hide.Flg, 1, CtrlFlag.Label);
+        if (!convertStrToBool(error)) {
+            // 取込画面を閉じて、一覧画面へ戻る
+            var back = getButtonCtrl(FormRFUpload.Button.Back);
+            var modal = $(back).closest('section.modal_form');
+            $(modal).modal('hide');
+        }
     }
 }
 
@@ -775,9 +848,12 @@ function preInputCheckUpload(appPath, conductId, formNo) {
         // 共通-帳票出力画面 入力チェック
         return RM0001_preInputCheckUpload(appPath, conductId, formNo);
     }
-
-    // 取込処理は添付情報のみのため他機能の考慮不要
-    return DM0002_preInputCheckUpload(appPath, conductId, formNo);
+    if (conductId == DM0002_ConductId) {
+        // 添付情報
+        return DM0002_preInputCheckUpload(appPath, conductId, formNo);
+    }
+    //取込画面(自動で画面を閉じない)
+    return [true, false, false];
 }
 
 /**
@@ -864,6 +940,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         // 一覧の表示状態を切替
         changeListDisplay(FormDetail.InventoryParentList.Id, true); // 棚別在庫一覧を表示
         changeListDisplay(FormDetail.CategoryParentList.Id, false); // 部門別在庫一覧を非表示
+        setHideButton(FormDetail.Button.OutputLabelDetailShed, false); // ラベル出力ボタンを表示
 
         // ボタン色を変更
         getButtonCtrl(FormDetail.Button.ShelfInventory).removeClass(FormDetail.Button.changeDispCssCls);     // 棚別在庫一覧
@@ -874,6 +951,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         // 一覧の表示状態を切替
         changeListDisplay(FormDetail.InventoryParentList.Id, false); // 棚別在庫一覧を非表示
         changeListDisplay(FormDetail.CategoryParentList.Id, true);   // 部門別在庫一覧を表示
+        setHideButton(FormDetail.Button.OutputLabelDetailShed, true); // ラベル出力ボタンを非表示
 
         // ボタン色を変更
         getButtonCtrl(FormDetail.Button.ShelfInventory).addClass(FormDetail.Button.changeDispCssCls); // 棚別在庫一覧
@@ -959,7 +1037,7 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
         return RM0001_reportCheckPre(appPath, conductId, formNo, btn)
     }
 
-    if (formNo == FormLabel.No) {
+    if (formNo == FormLabel.No) { // ラベル出力画面
 
         // 勘定科目選択一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(FormLabel.SubjectList)) {
@@ -968,6 +1046,42 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
 
         // 部門選択一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(FormLabel.CategoryList)) {
+            return false;
+        }
+    }
+    else if (formNo == FormDetail.No) { // 詳細画面
+
+        if (btn.name == FormDetail.Button.OutputLabelDetailShed) {
+
+            // 棚別在庫一覧(子一覧)のデータ件数を取得
+            var dataCnt = P_listData['#' + FormDetail.InventoryChildList.Id + getAddFormNo()].getData().length;
+
+            // 棚別在庫一覧にデータが存在しない場合はエラーメッセージを表示して終了
+            if (dataCnt <= 0) {
+                // 「対象行が選択されていません。」
+                setMessage(P_ComMsgTranslated[941160003], procStatus.Error);
+                return false;
+            }
+
+            var ctrlId; // 入れ子になっている子一覧のコントロールID(入れ子になるとデフォルトのコントロールIDではなくなるため)   
+            for (var i = 1; i <= dataCnt; i++) {
+
+                // チェック対象の一覧のコントロールIDを設定
+                ctrlId = FormDetail.InventoryChildList.Id + "_" + i;
+
+                // 一覧が存在しない場合はスキップ
+                var table = P_listData['#' + ctrlId + getAddFormNo()];
+                if (!table) {
+                    continue;
+                }
+
+                // 在庫情報タブの「ラベル出力」ボタン押下時、棚別在庫一覧(子一覧)一覧にチェックされた行が存在する場合、終了して確認メッセージ表示
+                if (isCheckedList(ctrlId)) {
+                    return true;
+                }
+            }
+
+            // 在庫情報タブの「ラベル出力」ボタン押下時、棚別在庫一覧(子一覧)一覧にチェックされた行が存在しない場合、遷移をキャンセル
             return false;
         }
     }
@@ -1041,6 +1155,14 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
         else if (id.indexOf(FormEdit.Purchase.Id) > -1 && id.indexOf("VAL" + FormEdit.Purchase.Vender) > -1) {
             // 標準仕入先(オートコンプリート)選択時、構成IDを非表示の項目に設定する
             setValue(FormEdit.Purchase.Id, FormEdit.Purchase.VenderStructureId, 1, CtrlFlag.Label, data[0].VALUE1, false, false);
+        }
+        else if (id.indexOf(FormEdit.PartsInfo) > -1 && id.indexOf("VAL" + FormEdit.DepartmentCode) > -1) {
+            // 標準部門(オートコンプリート)選択時、構成IDを非表示の項目に設定する
+            setValue(FormEdit.PartsInfo, FormEdit.DepartmentStructureId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
+        }
+        else if (id.indexOf(FormEdit.Purchase.Id) > -1 && id.indexOf("VAL" + FormEdit.Purchase.AccountCode) > -1) {
+            // 標準勘定科目(オートコンプリート)選択時、構成IDを非表示の項目に設定する
+            setValue(FormEdit.Purchase.Id, FormEdit.Purchase.AccountStructureId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
         }
     }
 }
@@ -1294,4 +1416,72 @@ function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
 
     // 出庫入力画面
     PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo);
+}
+
+/**
+ * 詳細画面上部のラベル出力ボタンを活性/非活性の切り替えを行う
+ * */
+function changeOutLabelBtnStatus() {
+
+    // 予備品情報に「標準棚番」「標準部門」「標準勘定科目」がすべて登録されている場合はTrue、いずれかが登録されていない場合はFalse
+    var judgeFlg = convertStrToBool(getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.IsRegistedRequiredItemToOutLabel, 1, CtrlFlag.Label, false, false));
+
+    // ラベル出力ボタン コントロールを取得
+    var btn = getButtonCtrl(FormDetail.Button.OutputLabelDetail);
+
+    // ラベル出力ボタンを活性/非活性状態を変更
+    setDisableBtn(btn, !judgeFlg);
+}
+
+
+/**
+ * 【オーバーライド用関数】全選択および全解除ボタンの押下後
+ * @param  formNo  : 画面番号
+ * @param  tableId : 一覧のコントロールID
+ */
+function afterAllSelectCancelBtn(formNo, tableId) {
+
+    // 出庫入力画面
+    PT0006_afterAllSelectCancelBtn(formNo, tableId);
+}
+
+/**
+ *【オーバーライド用関数】
+ *  検索処理前(一覧の選択チェックボックスが選択されているかチェック)
+ *
+ *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn {string} 　　　：対象ボタン
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} 　　：プログラムID
+ *  @formNo {number} 　 ：画面番号
+ *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
+ */
+function checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        return PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn);
+    }
+
+    return true;
+}
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    if (conductId == PT0006_ConsuctId) {
+        // 出庫入力画面
+        PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData);
+    }
+
+    // 何もしていないのでそのまま返す
+    return listData;
 }

@@ -20,6 +20,7 @@ using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using TMQUtilDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_PT0001
 {
@@ -54,7 +55,7 @@ namespace BusinessLogic_PT0001
             Dao.detailSearchCondition condition = getDetailSearchCondition(judgeDetailPtn());
 
             // 予備品情報
-            if (!searchPartsInfo(condition, ConductInfo.FormDetail.GroupNo))
+            if (!searchPartsInfo(ref condition, ConductInfo.FormDetail.GroupNo))
             {
                 return false;
             }
@@ -113,8 +114,9 @@ namespace BusinessLogic_PT0001
         /// </summary>
         /// <param name="condition">検索条件</param>
         /// <param name="groupNo">値を取得する一覧のグループ番号</param>
+        /// <param name="isInitCopy">複写時の初期検索かどうか</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool searchPartsInfo(Dao.detailSearchCondition condition, short groupNo)
+        private bool searchPartsInfo(ref Dao.detailSearchCondition condition, short groupNo, bool isInitCopy = false)
         {
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetDetailPartsInfo, out string executeSql);
@@ -127,10 +129,16 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
-            //URL直接起動時、参照データの権限チェック
-            if (!CheckAccessUserBelong((int)results[0].FactoryId, (int)results[0].JobStructureId))
+            // 検索条件に工場IDを設定
+            condition.UserFactoryId = results[0].PartsFactoryId;
+
+            if ((int)results[0].FactoryId > 0 && (int)results[0].JobStructureId > 0)
             {
-                return false;
+                //URL直接起動時、参照データの権限チェック
+                if (!CheckAccessUserBelong((int)results[0].FactoryId, (int)results[0].JobStructureId))
+                {
+                    return false;
+                }
             }
 
             // 職種IDを非表示に項目に退避
@@ -149,6 +157,29 @@ namespace BusinessLogic_PT0001
             {
                 string[] rack = results[0].RackName.Split("|");
                 results[0].RackName = TMQUtil.GetDisplayPartsLocation(rack[0], results[0].PartsLocationDetailNo, (int)result[0].FactoryId, this.LanguageId, this.db) + "|" + rack[1];
+            }
+
+            // 予備品情報を取得
+            ComDao.PtPartsEntity judgeRequired = new ComDao.PtPartsEntity().GetEntity(condition.PartsId, this.db);
+
+            // 予備品情報に「標準棚番」「標準部門」「標準勘定科目」が登録されているか判定
+            if (judgeRequired.LocationRackStructureId != null &&
+                judgeRequired.DepartmentStructureId != null &&
+                judgeRequired.AccountStructureId != null)
+            {
+                // すべて登録されている場合はTrue
+                results[0].IsRegistedRequiredItemToOutLabel = true;
+            }
+            else
+            {
+                // いずれかが登録されていない場合はFalse
+                results[0].IsRegistedRequiredItemToOutLabel = false;
+            }
+
+            // 複写時の初期検索では予備品Noを表示する必要はないため空にする
+            if (isInitCopy)
+            {
+                //results[0].PartsNo = string.Empty;
             }
 
             // 一覧に対して繰り返し値を設定する
@@ -264,7 +295,7 @@ namespace BusinessLogic_PT0001
             // 工場の期首月を取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetStartMonthByFactoryId, out string outSql);
             string startMonth = db.GetEntityByDataClass<string>(outSql, condition);
-            if(string.IsNullOrEmpty(startMonth))
+            if (string.IsNullOrEmpty(startMonth))
             {
                 startMonth = "04";
             }
@@ -324,16 +355,22 @@ namespace BusinessLogic_PT0001
             // SQL実行
             IList<Dao.inoutHistoryList> results = db.GetListByDataClass<Dao.inoutHistoryList>(withSql + executeSql, condition);
 
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.InOutHistoryList, this.pageInfoList);
+
             if (results.Count == 0)
             {
+                // 検索結果の設定
+                if (!SetSearchResultsByDataClass<Dao.inoutHistoryList>(pageInfo, results, results.Count))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
                 return true;
             }
 
             // 丸め処理・数量と単位を結合
             Dao.inoutHistoryList.joinStrAndRound(results);
-
-            // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.InOutHistoryList, this.pageInfoList);
 
             // 検索結果の設定
             if (!SetSearchResultsByDataClass<Dao.inoutHistoryList>(pageInfo, results, results.Count))
@@ -354,7 +391,7 @@ namespace BusinessLogic_PT0001
         {
             // 検索条件を作成
             var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
-            if(targetDic == null && fromCtrlId == ConductInfo.FormList.ControlId.List)
+            if (targetDic == null && fromCtrlId == ConductInfo.FormList.ControlId.List)
             {
                 fromCtrlId = ConductInfo.FormDetail.ControlId.PartsInfo;
                 targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
@@ -362,7 +399,6 @@ namespace BusinessLogic_PT0001
             Dao.detailSearchCondition condition = new();
             SetDataClassFromDictionary(targetDic, fromCtrlId, condition, new List<string> { "PartsId" });
             condition.LanguageId = this.LanguageId;                              // 言語ID
-            condition.UserFactoryId = TMQUtil.GetUserFactoryId(this.UserId, db); // 本務工場
             return condition;
 
             /// <summary>
@@ -527,6 +563,123 @@ namespace BusinessLogic_PT0001
         {
             // パラメータ名と一致する項目番号を返す
             return info.Value.First(x => x.ParamName.Equals(keyName)).ValName;
+        }
+
+        /// <summary>
+        /// ラベル出力(棚別在庫一覧)
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool outputLabelInventoryData()
+        {
+            // 棚別在庫一覧(親一覧)のレコードを取得
+            var inventoryParentList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.InventoryParentList);
+
+            // 子一覧のレコード
+            List<Dictionary<string, object>> inventoryChildList = new();
+
+            // 親一覧を繰り返し処理
+            foreach (Dictionary<string, object> parentInfo in inventoryParentList)
+            {
+                // 親一覧のレコードから子一覧のレコードを取得(画面の一覧は入れ子になっているため、親一覧から取得)
+                List<object> childList = (List<object>)parentInfo.Where(x => x.Key == "SubData").ToList()[0].Value;
+
+                // 子一覧のレコードをリストに追加(resultInfoDictionaryと同じような状態になる)
+                foreach (Dictionary<string, object> childInfo in childList)
+                {
+                    inventoryChildList.Add(childInfo);
+                }
+            }
+
+            // ラベル出力クラス
+            TMQUtil.Label label = new(this.db, this.LanguageId);
+
+            // 入庫一覧で選択されたレコードを取得
+            var selectedList = getSelectedRowsByList(inventoryChildList, ConductInfo.FormDetail.ControlId.InventoryChildList);
+
+            // 出力をするための検索条件リスト
+            List<TMQUtilDao.LabelCondition> conditionList = new();
+
+            // 各レコードごとに出力データを作成
+            foreach (Dictionary<string, object> selectedRow in selectedList)
+            {
+                // 検索条件を取得
+                TMQUtilDao.LabelCondition condition = new();
+
+                // ディクショナリをデータクラスに変換
+                SetDataClassFromDictionary(selectedRow, ConductInfo.FormDetail.ControlId.InventoryChildList, condition);
+
+                // 検索条件リストに追加
+                conditionList.Add(condition);
+            }
+
+            // ラベル出力データ取得処理
+            if (!label.GetLabelData(conditionList, out List<object[]> outList))
+            {
+                return false;
+            }
+
+            // CSV出力処理
+            if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFileNotencircleDobleQuotes(outList, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
+            {
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120006 });
+                return false;
+            }
+
+            // 画面の出力へ設定
+            this.OutputFileType = CommonConstants.REPORT.FILETYPE.CSV;
+            this.OutputFileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", label.ReportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.CSV;
+            this.OutputStream = outStream;
+
+            return true;
+        }
+
+        /// <summary>
+        /// ラベル出力(詳細画面上部)
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool outputLabelDetail()
+        {
+            // 検索条件を取得
+            TMQUtilDao.LabelCondition condition = new();
+
+            // 予備品情報を取得
+            var partsInfoDic = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.PartsInfo);
+            // 購買管理情報を取得
+            var purchaseInfoDic = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.PurchaseInfo);
+
+            // ディクショナリをデータクラスに変換
+            SetDataClassFromDictionary(partsInfoDic[0], ConductInfo.FormDetail.ControlId.PartsInfo, condition);
+            // ディクショナリをデータクラスに変換
+            SetDataClassFromDictionary(purchaseInfoDic[0], ConductInfo.FormDetail.ControlId.PurchaseInfo, condition);
+
+            // ラベル出力クラス
+            TMQUtil.Label label = new(this.db, this.LanguageId);
+
+            // ラベル出力データ取得処理
+            if (!label.GetLabelData(new List<TMQUtilDao.LabelCondition>() { condition }, out List<object[]> outList))
+            {
+                return false;
+            }
+
+            // CSV出力処理
+            if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFileNotencircleDobleQuotes(outList, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
+            {
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120006 });
+                return false;
+            }
+
+            // 画面の出力へ設定
+            this.OutputFileType = CommonConstants.REPORT.FILETYPE.CSV;
+            this.OutputFileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", label.ReportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.CSV;
+            this.OutputStream = outStream;
+
+            return true;
         }
     }
 }

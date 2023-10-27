@@ -1,5 +1,5 @@
 --******************************************************************
---予備品　勘定科目の初期表示値(B4140:設備貯蔵品)を取得する
+--予備品　勘定科目の初期表示値(B4170:洗替貯蔵品)を取得する
 --******************************************************************
 SELECT
     ms.structure_id AS account_structure_id,
@@ -35,4 +35,4 @@ FROM
     AND ex2.sequence_no = 2
 WHERE
     ms.structure_group_id = 1770
-AND ex1.extension_data = 'B4140'
+AND ex1.extension_data = 'B4170'

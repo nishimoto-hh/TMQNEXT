@@ -242,7 +242,7 @@
                 Currency = 1740,
                 //部門
                 Department = 1760,
-                //金額管理単位
+                //勘定科目
                 Account = 1770,
                 // スケジュール作成上限
                 MakeScheduleYear = 1800,

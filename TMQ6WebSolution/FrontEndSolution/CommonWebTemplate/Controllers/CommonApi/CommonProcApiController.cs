@@ -787,15 +787,11 @@ namespace CommonWebTemplate.Controllers.CommonApi
         /// <returns></returns>
         private ActionResult returnActionResult(Exception exParam)
         {
+            //処理に失敗しました。
+            string messageStr = getMessage();
             try
             {
                 //実行時例外ｴﾗｰ
-                string messageStr = exParam.Message;
-                if (string.IsNullOrEmpty(messageStr))
-                {
-                    //処理に失敗しました。
-                    messageStr = getMessage();
-                }
 
                 //ﾛｸﾞ用のﾒｯｾｰｼﾞ生成
                 StringBuilder errLogMsg = new StringBuilder();
@@ -810,36 +806,38 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 return BadRequest(new CommonProcReturn(CommonProcReturn.ProcStatus.InValid, messageStr));
 
             }
-            catch (Exception ex)
+            catch
             {
-                //実行時例外ｴﾗｰ
-                string messageStr = ex.Message;
-                if (string.IsNullOrEmpty(messageStr))
-                {
-                    //処理に失敗しました。
-                    messageStr = getMessage();
-                }
-
+                // ログ出力で例外が発生した場合はメッセージを返すのみ
                 return BadRequest(new CommonProcReturn(CommonProcReturn.ProcStatus.InValid, messageStr));
             }
 
             //メッセージ取得
             string getMessage()
             {
-                //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
-                CommonProcData procData = new CommonProcData();
-                SetRequestInfo(ref procData);
-                var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
-                if (procData.LanguageId == null)
+                try
                 {
-                    procData.LanguageId = languageId;
-                }
+                    //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                    CommonProcData procData = new CommonProcData();
+                    SetRequestInfo(ref procData);
+                    var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+                    if (procData.LanguageId == null)
+                    {
+                        procData.LanguageId = languageId;
+                    }
 
-                BusinessLogicUtil blogic = new BusinessLogicUtil();
-                //メッセージ取得
-                blogic.GetResourceName(procData, new List<string> { "941400001" }, out IDictionary<string, string> resources);
-                //処理に失敗しました。
-                return blogic.ConvertResourceName("941400001", resources);
+                    BusinessLogicUtil blogic = new BusinessLogicUtil();
+                    //メッセージ取得
+                    blogic.GetResourceName(procData, new List<string> { "941120007" }, out IDictionary<string, string> resources);
+                    //処理に失敗しました。
+                    return blogic.ConvertResourceName("941120007", resources);
+                }
+                catch
+                {
+                    // メッセージ取得で例外発生時は固定メッセージを返す
+                    //処理に失敗しました。
+                    return "Processing failed.";
+                }
             }
         }
         #endregion

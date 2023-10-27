@@ -203,6 +203,7 @@ namespace CommonWebTemplate.CommonUtil
             ViewBag.Message = string.Empty;
 
             string filePath = String.Empty;
+            BusinessLogicUtil blogic = new BusinessLogicUtil();
             try
             {
                 //Excelﾀﾞｳﾝﾛｰﾄﾞ
@@ -222,8 +223,17 @@ namespace CommonWebTemplate.CommonUtil
             }
             catch (Exception ex)
             {
-                //代表ﾒｯｾｰｼﾞを初期化
-                ViewBag.ErrorMessage.Add(ex.Message);
+                //メッセージ取得
+                CommonProcData procData = new CommonProcData();
+                SetRequestInfo(ref procData);
+                if (procData.LanguageId == null)
+                {
+                    //ブラウザの言語を取得
+                    procData.LanguageId = GetBrowserLanguage();
+                }
+                blogic.GetResourceName(procData, new List<string> { CommonSTDUtil.CommonResources.ID.ID941040004 }, out IDictionary<string, string> resources);
+                // エラーが発生しました。システム管理者に問い合わせてください。
+                ViewBag.ErrorMessage = blogic.ConvertResourceName(CommonSTDUtil.CommonResources.ID.ID941040004, resources); ;
 
                 //ﾛｸﾞ用のﾒｯｾｰｼﾞ生成
                 StringBuilder errLogMsg = new StringBuilder();

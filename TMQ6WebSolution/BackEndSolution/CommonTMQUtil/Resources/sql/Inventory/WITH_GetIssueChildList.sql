@@ -104,7 +104,7 @@ WITH number_unit AS (
         , COALESCE(unit_round.round_division, 0) AS currency_round_division              --丸め処理区分(金額)
         , CAST(pih.work_no AS varchar) + '_0'  AS control_char     --作業No_0(子要素との連携用)
         , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pps.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inout_history pih                        --受払履歴
         LEFT JOIN pt_lot plt                        --ロット情報
@@ -173,7 +173,7 @@ WITH number_unit AS (
         , COALESCE(unit_round.round_division, 0) AS currency_round_division              --丸め処理区分(金額)
         , CAST(pit.inventory_id AS varchar) + '_1'  AS control_char     --棚卸ID_1(子要素との連携用)
         , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
-        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , COALESCE(pps.job_structure_id, 0) AS job_structure_id --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inventory_difference pid                 --棚差調整データ
         LEFT JOIN pt_inventory pit                  --棚卸データ

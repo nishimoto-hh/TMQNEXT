@@ -16,6 +16,7 @@ using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_PT0002.BusinessLogicDataClass_PT0002;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using TMQUtilDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_PT0002
 {
@@ -150,6 +151,58 @@ namespace BusinessLogic_PT0002
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// ラベル出力処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool outputLabelShed()
+        {
+            // ラベル出力クラス
+            TMQUtil.Label label = new(this.db, this.LanguageId);
+
+            // 棚番移庫一覧で選択されたレコードを取得
+            var selectedList = getSelectedRowsByList(this.resultInfoDictionary, TargetCtrlId.ShedResults);
+
+            // 出力をするための検索条件リスト
+            List<TMQUtilDao.LabelCondition> conditionList = new();
+
+            // 各レコードごとに出力データを作成
+            foreach (Dictionary<string, object> selectedRow in selectedList)
+            {
+                // 検索条件を取得
+                TMQUtilDao.LabelCondition condition = new();
+
+                // ディクショナリをデータクラスに変換
+                SetDataClassFromDictionary(selectedRow, TargetCtrlId.ShedResults, condition);
+
+                // 検索条件リストに追加
+                conditionList.Add(condition);
+            }
+
+            // ラベル出力データ取得処理
+            if (!label.GetLabelData(conditionList, out List<object[]> outList))
+            {
+                return false;
+            }
+
+            // CSV出力処理
+            if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFileNotencircleDobleQuotes(outList, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
+            {
+                // エラーログ出力
+                logger.ErrorLog(this.FactoryId, this.UserId, errMsg);
+                // 「出力処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120006 });
+                return false;
+            }
+
+            // 画面の出力へ設定
+            this.OutputFileType = CommonConstants.REPORT.FILETYPE.CSV;
+            this.OutputFileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", label.ReportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.CSV;
+            this.OutputStream = outStream;
+
             return true;
         }
     }

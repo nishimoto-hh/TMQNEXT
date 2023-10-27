@@ -32,12 +32,7 @@
 
 /*棚番と枝番のコントトールが重ならないように調整*/
 #CBODY_080_00_LST_7_0_div {
-    margin-left: 300px;
-}
-
-/*枝番のテキストボックスの幅調整*/
-input.DetailNo {
-    width: 110px !important;
+    margin-left: 210px;
 }
 
 /*移庫数のテキストボックスの幅調整*/
@@ -74,12 +69,7 @@ input#CBODY_090_00_LST_7_0VAL1 {
 
 /*棚番と棚枝番のコントトールが重ならないように調整*/
 #CBODY_050_00_LST_5_0_div {
-    margin-left: 300px;
-}
-
-/*棚枝番のテキストボックスの幅調整*/
-input.DetailNo {
-    width: 110px !important;
+    margin-left: 210px;
 }
 
 /*入庫情報 グループ化した要素の折り畳みリンクを非表示*/
