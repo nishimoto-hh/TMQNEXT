@@ -1,0 +1,14 @@
+カラム名,カラム名翻訳,属性,入力必須,桁数,ビットサイズ,コンボボックスアイテム,主キー,翻訳項目種類,編集不可
+conduct_id,機能ID,C,1,11,0,,1,0,0
+conduct_group_id,機能グループID,C,1,11,0,,0,0,0
+conduct_name,機能名,C,1,255,0,,0,1,0
+conduct_name_ryaku,機能名略称,C,1,255,0,,0,1,0
+process_pattern,処理パターン,N,1,0,0,10|11|20|30,0,0,0
+menu_order,メニュー表示順,N,1,0,0,,0,0,0
+menu_division,メニュー表示区分,N,1,0,0,0|1,0,0,0
+program_id,プログラムID,C,0,50,0,,0,0,0
+start_up_parameters,起動パラメータ,C,0,255,0,,0,0,0
+common_conduct_id,機能内使用共通機能ID,C,0,255,0,,0,0,0
+version,バージョン番号,C,0,20,0,,0,0,0
+update_information,更新情報,C,0,255,0,,0,0,0
+delete_flg,削除フラグ,N,1,0,0,0|1,0,0,0

@@ -1,0 +1,136 @@
+       /// <summary>
+        /// 機能マスタ(COM_CONDUCT_MST)定義
+        /// </summary>
+        ///// <summary>
+        ///// 機能マスタ(COM_CONDUCT_MST)定義
+        ///// </summary>
+        ///// <remarks>
+        ///// カラム名|カラム名翻訳|属性|入力必須|桁数|ビットサイズ|コンボボックスアイテム|入力ガイド
+        ///// ※属性　C：文字列、N：数値　※入力必須　1:必須
+        ///// </remarks>
+        //private static string[] COM_CONDUCT_MST_Column =
+        //{
+        //    "CONDUCTID|機能ID|C|1|10|0||※主キー",
+        //    "CONDUCTGRP|機能グループID|C|1|10|0||",
+        //    "NAME|機能名|C|1|255|0||",
+        //    "RYAKU|機能名略称|C|1|255|0||※多言語対応の為、翻訳IDを設定する。",
+        //    "PTN|処理パターン|N|1|0|0|10,11,20,30|処理パターンを以下の値で設定\n10：入力\n11：バッチ\n20：エクセル帳票\n30：マスタメンテナンス",
+        //    "MENUORDER|メニュー表示順|N|1|0|0||機能グループ毎のメニュー表示順を設定",
+        //    "MENUDISP|メニュー表示区分|N|1|0|0|0,1|メニュー表示区分を以下の値で設定\n0：非表示\n1：表示",
+        //    "PGMID|プログラムID|C|0|50|0||※COM_FORM_DEFINEテーブルとのリンクキー\nメニュー表示のみ(機能紐づけなし)の場合はNULLで設定",
+        //    "BOOTPARAM|起動パラメータ|C|0|20|0||異なる機能IDで同一のプログラムIDを使用する場合等に、\nバックエンドの処理分岐に使用するパラメータを設定",
+        //    "CM_CONDUCTID|機能内使用共通機能ID|C|0|255|0||機能内で呼び出される共通機能IDを定義する。\n複数の共通機能が呼び出される場合はパイプで区切って設定する。\n例）CM1001|CM1003",
+        //    "VERSION|バージョン番号|C|0|20|0||機能のバージョンを設定",
+        //    "CHANGELOG|更新情報|C|0|255|0||バージョン番号変更時の更新内容コメントを設定",
+        //    "DELFLG|削除フラグ|N|1|0|0|0,1|論理削除フラグ\n0：通常\n1：削除",
+        //    "UPDYMD|更新日|N|1|0|0||「yyyyMMdd」形式の数値で登録",
+        //    "UPDHMIS|更新時刻|N|1|0|0||「hhmmss」形式の数値で登録",
+        //    "UPDID|更新者ID|C|1|20|0||"
+        //};
+        ///// <summary>
+        ///// 画面マスタ(COM_FORM_DEFINE)定義
+        ///// </summary>
+        ///// <remarks>
+        ///// カラム名|カラム名翻訳|属性|入力必須|桁数|ビットサイズ|コンボボックスアイテム|入力ガイド
+        ///// ※属性　C：文字列、N：数値　※入力必須　1:必須
+        ///// </remarks>
+        //private static string[] COM_FORM_DEFINE_Column =
+        //{
+        //    "PGMID|プログラムID|C|1|50|0||",
+        //    "FORMNO|画面NO|N|1|0|0||",
+        //    "CTRLID|コントロールID|C|1|50|0||",
+        //    "CTRLNAME|コントロール名|C|1|50|0||※多言語対応の為、翻訳IDを設定する。",
+        //    "CTRLTYPE|コントロールタイプ|N|1|0|0|101,102,103,201,301|" + ColumnGuide.FORM_DEFINE_Guide("CTRLTYPE"),
+        //    "AREAKBN|エリア区分|N|1|0|0|1,2,3,4,5|" + ColumnGuide.FORM_DEFINE_Guide("AREAKBN"),
+        //    "DISPORDER|表示順|N|1|0|0||" + ColumnGuide.FORM_DEFINE_Guide("DISPORDER"),
+        //    "DAT_FORMTITLE|画面タイトル|C|0|30|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_FORMTITLE"),
+        //    "TABNO|タブ番号|N|1|0|0||" + ColumnGuide.FORM_DEFINE_Guide("TABNO"),
+        //    "TABNAME|タブ名|C|0|255|0||" + ColumnGuide.FORM_DEFINE_Guide("TABNAME"),
+        //    "DAT_TRANSPTN|画面遷移パターン|N|1|0|0|0,1,2,3,4|" + ColumnGuide.FORM_DEFINE_Guide("DAT_TRANSPTN"),
+        //    "DAT_TRANSDISPPTN|遷移表示パターン|N|1|0|0|0,1,2,3|" + ColumnGuide.FORM_DEFINE_Guide("DAT_TRANSDISPPTN"),
+        //    "DAT_TRANSTARGET|画面遷移先|C|1|50|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_TRANSTARGET"),
+        //    "DAT_TRANSPARAM|遷移パラメータ|C|0|255|0||共通機能へのパラメータが必要な場合に設定",
+        //    "DAT_TRANSICONKBN|遷移リンク区分|N|1|0|0|0,1,2|" + ColumnGuide.FORM_DEFINE_Guide("DAT_TRANSICONKBN"),
+        //    "DAT_EDITPTN|一覧編集パターン|N|1|0|0|0,1,2|" + ColumnGuide.FORM_DEFINE_Guide("DAT_EDITPTN"),
+        //    "DAT_DIRECTION|一覧表示方向|N|1|0|0|0,1,2|" + ColumnGuide.FORM_DEFINE_Guide("DAT_DIRECTION"),
+        //    "DAT_HEADERDISPKBN|ヘッダ行表示区分|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DAT_HEADERDISPKBN"),
+        //    "DAT_PAGEROWS|ページ行数|N|0|0|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_PAGEROWS"),
+        //    "DAT_MAXROWS|最大行数|N|0|0|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_MAXROWS"),
+        //    "DAT_TITLE|一覧情報名|C|0|255|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_TITLE"),
+        //    "DAT_SWITCHKBN|一覧表示切替設定|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DAT_SWITCHKBN"),
+        //    "DAT_ROWADDKBN|一覧行追加設定|N|1|0|0|0,1,2,3,4|" + ColumnGuide.FORM_DEFINE_Guide("DAT_ROWADDKBN"),
+        //    "DAT_ROWDELKBN|一覧行削除設定|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DAT_ROWDELKBN"),
+        //    "DAT_ROWSELKBN|一覧全選択全解除設定|N|1|0|0|0,1,2,3|" + ColumnGuide.FORM_DEFINE_Guide("DAT_ROWSELKBN"),
+        //    "DAT_COLSELKBN|ユーザー単位の表示列選択設定|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DAT_COLSELKBN"),
+        //    "DAT_ROWSORTKBN|一覧移動設定|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DAT_ROWSORTKBN"),
+        //    "DAT_HEIGHT|一覧高さ|N|1|0|0||" + ColumnGuide.FORM_DEFINE_Guide("DAT_HEIGHT"),
+        //    "CTR_RELATIONCTRLID|コントロールグループ関連一覧ID|C|1|50|0||" + ColumnGuide.FORM_DEFINE_Guide("CTR_RELATIONCTRLID"),
+        //    "CTR_POSITIONKBN|コントロールグループ配置区分|N|1|0|0|0,1,2,3|" + ColumnGuide.FORM_DEFINE_Guide("CTR_POSITIONKBN"),
+        //    "CSSNAME|CSSクラス名|C|0|50|0||コントロール単位でスタイルを設定したい場合に、スタイルシートのクラス名を設定",
+        //    "TOOLTIP|ツールチップ表示文言|C|0|255|0||コントロールのツールチップ設定\n※多言語対応の為、翻訳IDを設定する",
+        //    "DELFLG|削除フラグ|N|1|0|0|0,1|" + ColumnGuide.FORM_DEFINE_Guide("DELFLG"),
+        //    "UPDYMD|更新日|N|1|0|0||「yyyyMMdd」形式の数値で登録",
+        //    "UPDHMIS|更新時刻|N|1|0|0||「hhmmss」形式の数値で登録",
+        //    "UPDID|更新者ID|C|1|255|0||"
+        //};
+        ///// <summary>
+        ///// アイテムマスタ(COM_LISTITEM_DEFINE)定義
+        ///// </summary>
+        ///// <remarks>
+        ///// カラム名|カラム名翻訳|属性|入力必須|桁数|ビットサイズ|コンボボックスアイテム|入力ガイド
+        ///// ※属性　C：文字列、N：数値　※入力必須　1:必須
+        ///// </remarks>
+        //private static string[] COM_LISTITEM_DEFINE_Column =
+        //{
+        //    "PGMID|プログラムID|C|1|50|0||",
+        //    "FORMNO|画面NO|N|1|0|0||",
+        //    "CTRLID|コントロールID|C|1|50|0||FORM_DEFINEの一覧ID",
+        //    "DEFINETYPE|定義種類|N|1|0|0|1,2,3|" + ColumnGuide.LISTITEM_DEFINE_Guide("DEFINETYPE"),
+        //    "ITEMNO|項目番号|N|1|0|0||項目の番号を設定",
+        //    "ITEMNAME|項目名|C|0|100|0||項目の画面表示名を設定\n※多言語対応の為、翻訳IDを設定する。",
+        //    "DISPKBN|表示区分|N|1|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("DISPKBN"),
+        //    "ROWNO|行番号|N|1|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("ROWNO"),
+        //    "COLNO|列番号|N|1|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("COLNO"),
+        //    "ROWSPAN|行結合数|N|1|0|0||項目の行結合数を設定",
+        //    "COLSPAN|列結合数|N|1|0|0||項目の列結合数を設定",
+        //    "HEADER_ROWSPAN|ヘッダ行結合数|N|0|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("HEADER_ROWSPAN"),
+        //    "HEADER_COLSPAN|ヘッダ列結合数|N|0|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("HEADER_COLSPAN"),
+        //    "HEADER_ALIGN|ヘッダタイトル表示位置|N|1|0|0|0,1,2,3|" + ColumnGuide.LISTITEM_DEFINE_Guide("HEADER_ALIGN"),
+        //    "CELLTYPE|セルタイプ|C|1|4|0|0101,0102,0103,0104,0105,0106,0201,0301,0302,0303,0304,0401,0402,0501,0701,0702,0801,0901,0902,0903,1001,1101,1111,1112,1113,1114,1201,1301,1401|" + ColumnGuide.LISTITEM_DEFINE_Guide("CELLTYPE"),
+        //    "COLWIDTH|列幅|C|1|10|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("COLWIDTH"),
+        //    "FROMTOKBN|FromToフラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("FROMTOKBN"),
+        //    "ITEM_CNT|値の個数|N|1|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("ITEM_CNT"),
+        //    "INITVAL|初期値|C|0|200|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("INITVAL"),
+        //    "NULLCHKKBN|必須項目フラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("NULLCHKKBN"),
+        //    "MINVAL|最小値|C|0|100|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("MINVAL"),
+        //    "MAXVAL|最大値|C|0|100|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("MAXVAL"),
+        //    "FORMAT|表示書式|C|0|100|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("FORMAT"),
+        //    "MAXLENGTH|入力可能文字数|N|1|0|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("MAXLENGTH"),
+        //    "TXT_AUTOCOMPKBN|オートコンプリートフラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("TXT_AUTOCOMPKBN"),
+        //    "BTN_CTRLID|ボタンコントロールID|C|1|50|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("BTN_CTRLID"),
+        //    "BTN_ACTIONKBN|ボタンアクション区分|N|1|0|0|0,101,102,111,112,121,122,131,132,133,201,211,221,301,302,311,312,401,901|" + ColumnGuide.LISTITEM_DEFINE_Guide("BTN_ACTIONKBN"),
+        //    "BTN_AUTHCONTROLKBN|ボタン権限管理区分|N|1|0|0|0,1,2|" + ColumnGuide.LISTITEM_DEFINE_Guide("BTN_AUTHCONTROLKBN"),
+        //    "BTN_AFTEREXECKBN|ボタン実行後区分|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("BTN_AFTEREXECKBN"),
+        //    "BTN_MESSAGE|ボタン押下時の確認メッセージ|C|0|50|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("BTN_MESSAGE"),
+        //    "RELATIONID|関連情報ID|C|1|50|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("RELATIONID"),
+        //    "RELATIONPARAM|関連情報パラメータ|C|0|255|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("RELATIONPARAM"),
+        //    "OPTIONINFO|付加情報|C|0|50|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("OPTIONINFO"),
+        //    "UNCHANGEABLEKBN|変更不可項目フラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("UNCHANGEABLEKBN"),
+        //    "COLFIXKBN|列固定フラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("COLFIXKBN"),
+        //    "FILTERUSEKBN|フィルター使用区分|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("FILTERUSEKBN"),
+        //    "TXT_PLACEHOLDER|初期ガイド文言|C|0|255|0||" + ColumnGuide.LISTITEM_DEFINE_Guide("TXT_PLACEHOLDER"),
+        //    "CSSNAME|CSSクラス名|C|0|50|0||",
+        //    "TOOLTIP|ツールチップ表示文言|C|0|255|0||※多言語対応の為、翻訳IDを設定する。",
+        //    "EXP_KEY_NAME|項目キー名|C|0|30|0||機能側から項目の識別に指定する、コントロール単位で一意な項目",
+        //    "EXP_TABLE_NAME|テーブル名|C|0|30|0||検索条件および検索結果がどのテーブルと対応するか紐づけに指定する項目",
+        //    "EXP_COL_NAME|カラム名|C|0|30|0||検索条件および検索結果がどの列と対応するか紐づけに指定する項目",
+        //    "EXP_PARAM_NAME|パラメータ名|C|0|30|0||検索条件または検索結果の紐づけで、カラム名が重複する場合など独自の名称を指定する場合に使用する項目",
+        //    "EXP_ALIAS_NAME|別名|C|0|30|0||検索結果の紐づけで、カラム名が重複する場合など独自の名称を指定する場合に使用する項目",
+        //    "EXP_LIKE_PATTERN|条件パターン|N|1|0|0|0,1,2,3|" + ColumnGuide.LISTITEM_DEFINE_Guide("EXP_LIKE_PATTERN"),
+        //    "EXP_IN_CLAUSE_KBN|IN句判定区分|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("EXP_IN_CLAUSE_KBN"),
+        //    "EXP_LOCK_TYPE|排他ロック種類|N|1|0|0|0,1,2|0:対象外/1:ロック値/2:ロックキー",
+        //    "DELFLG|削除フラグ|N|1|0|0|0,1|" + ColumnGuide.LISTITEM_DEFINE_Guide("DELFLG"),
+        //    "UPDYMD|更新日|N|1|0|0||",
+        //    "UPDHMIS|更新時刻|N|1|0|0||",
+        //    "UPDID|更新者ID|C|1|255|0||"
+        //};
