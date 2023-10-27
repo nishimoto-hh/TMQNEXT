@@ -1247,6 +1247,9 @@ namespace BusinessLogic_MC0001
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }

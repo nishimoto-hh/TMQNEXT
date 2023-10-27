@@ -832,8 +832,10 @@ function getCellVal(td, isDispVal) {
 
         //参照モードかどうか取得
         var referenceFlg = $(td).closest("div.vertical_tbl.ctrlId").filter("[data-referencemode='" + referenceModeKbnDef.Reference + "']");
-        if (referenceFlg && referenceFlg.length > 0) {
-            //参照モードの場合、削除アイテムも取得する
+        //詳細検索条件かどうか
+        var isDetailSearch = $(td).closest(".detailsearch").length > 0;
+        if (referenceFlg && referenceFlg.length > 0 || isDetailSearch) {
+            //参照モードまたは詳細検索条件の場合、削除アイテムも取得する
             checkes = $(msul).find("li:not(.hide) :checkbox:checked");
         } else {
             //編集モードの場合、削除アイテムは取得しない
@@ -2252,8 +2254,10 @@ function setMutiSelectCheckOnText(td) {
 
             //参照モードかどうか取得
             var referenceFlg = $(td).closest("div.vertical_tbl.ctrlId").filter("[data-referencemode='" + referenceModeKbnDef.Reference + "']");
-            if (referenceFlg && referenceFlg.length > 0) {
-                //参照モードの場合、削除アイテムも取得する
+            //詳細検索条件の複数選択チェックボックスかどうか
+            var isDetailSearch = $(td).closest(".detailsearch").length > 0;
+            if (referenceFlg && referenceFlg.length > 0 || isDetailSearch) {
+                //参照モードまたは詳細検索条件の場合、削除アイテムも取得する
                 checkes = $(td).find("li:not(.hide) :checkbox:checked");
             } else {
                 //編集モードの場合、削除アイテムは取得しない

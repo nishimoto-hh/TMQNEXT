@@ -2945,6 +2945,9 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
     //「すべて」のコード値
     var optionCode = "0";
 
+    //詳細検索条件の複数選択チェックボックスかどうか
+    var isDetailSearch = $(selector).closest(".detailsearch").length > 0;
+
     if (isInitallize) {
         //ﾁｪｯｸﾎﾞｯｸｽ選択時ｲﾍﾞﾝﾄ処理を設定
         $(optioncheck).off('change');
@@ -2953,14 +2956,28 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
                 //ﾁｪｯｸ：onの場合
 
                 if ($(this).hasClass("ctrloption")) {
-                    //「全て」ｵﾌﾟｼｮﾝ項目の場合、その他のﾁｪｯｸﾎﾞｯｸｽをﾁｪｯｸ：on (削除アイテムは除外する)
-                    var checkes = $(selector).find("li>ul>li:not(.hide):not(.deleteItem) :checkbox:not(.ctrloption):unchecked");
+                    //「全て」ｵﾌﾟｼｮﾝ項目の場合、その他のﾁｪｯｸﾎﾞｯｸｽをﾁｪｯｸ：on 
+                    var checkes;
+                    if (isDetailSearch) {
+                        //詳細検索条件の場合、削除アイテムは除外しない
+                        checkes = $(selector).find("li>ul>li:not(.hide) :checkbox:not(.ctrloption):unchecked");
+                    } else {
+                        //削除アイテムは除外する
+                        checkes = $(selector).find("li>ul>li:not(.hide):not(.deleteItem) :checkbox:not(.ctrloption):unchecked");
+                    }
                     if (checkes != null && checkes.length > 0) {
                         $(checkes).prop('checked', true);
                     }
                 } else {
-                    //全ての項目がﾁｪｯｸon？(＝ﾁｪｯｸoffの項目がない？)(削除アイテムは除外する)
-                    var checkes = $(selector).find("li>ul>li:not(.hide):not(.deleteItem) :checkbox:not(.ctrloption):unchecked");
+                    //全ての項目がﾁｪｯｸon？(＝ﾁｪｯｸoffの項目がない？)
+                    var checkes;
+                    if (isDetailSearch) {
+                        //詳細検索条件の場合、削除アイテムは除外しない
+                        checkes = $(selector).find("li>ul>li:not(.hide) :checkbox:not(.ctrloption):unchecked");
+                    } else {
+                        //削除アイテムは除外する
+                        checkes = $(selector).find("li>ul>li:not(.hide):not(.deleteItem) :checkbox:not(.ctrloption):unchecked");
+                    }
                     if (checkes == null || checkes.length == 0) {
                         //ｵﾌﾟｼｮﾝ項目ﾁｪｯｸﾎﾞｯｸｽをﾁｪｯｸ：on
                         var allchk = $(selector).find(":checkbox.ctrloption");
@@ -10888,13 +10905,16 @@ function initAllSelectCancelBtn(isSelect, appPath, btns) {
                     return;
                 }
 
-                //表示中のページのみチェックボックスのON/OFF
+                //表示中のページのみチェックボックスのON/OFF(見えている行のみ)
                 checkes = $(tbl).find(".tabulator-row .tabulator-cell[tabulator-field='SELTAG'] :checkbox");
+                //チェックボックスをON/OFFした行
+                var checksRowNoList = [];
                 $.each(checkes, function (idx, chk) {
                     if (!$(chk).is(":disabled") && $(chk).is(":visible")) {
                         var tr = $(chk).closest(".tabulator-row");
                         setupDataEditedFlg(tr);
                         $(chk).prop('checked', isSelect);
+                        checksRowNoList.push($(chk).data("rowno"));
                     }
                 });
 
@@ -10908,11 +10928,14 @@ function initAllSelectCancelBtn(isSelect, appPath, btns) {
                     //チェック状態を設定
                     row.getData().SELTAG = val;
 
-                    ////行番号
-                    //var rowNo = row.getData().ROWNO;
-                    ////SELTAGに選択状態を設定
-                    //var item = { ROWNO: rowNo, SELTAG: val };
-                    //table.updateData([item]);
+                    //行番号
+                    var rowNo = row.getData().ROWNO;
+                    //表示中ページ内で見えていない行(HTMLが生成されていない行)のチェックボックスON/OFF設定
+                    if ($.inArray(rowNo, checksRowNoList) == -1 && row.getPosition() != false) {
+                        //SELTAGに選択状態を設定
+                        var item = { ROWNO: rowNo, SELTAG: val };
+                        table.updateData([item]);
+                    }
                 });
                 table = null;
             } else {
@@ -10972,7 +10995,7 @@ function initAllSelectCancelBtnPage(isSelect, appPath, btns) {
                     }
                 });
 
-                var rows = table.getData("display");//表示中のページの行のみ
+                var rows = table.getData("active");//表示中のページの行のみ
                 if (!rows) { return; }
                 $.each(rows, function (i, row) {
                     var val = isSelect ? 1 : 0;
