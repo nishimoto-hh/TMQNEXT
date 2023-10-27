@@ -313,13 +313,8 @@ function initFormOriginalForMaster(appPath, conductId, formNo, articleForm, curP
     } else if (formNo == MasterFormOrder.No) {
         // 表示順変更画面
 
-        //// TODO:一覧データ取得
-        //var tbl = $(P_Article).find('table#' + MasterFormOrder.ItemList.Id + getAddFormNo());
-        //var orderListData = getListDataHorizontal(MasterFormOrder.No, tbl)
-        //if (orderListData == null || orderListData.length == 0) {
-        //    // データが0件の場合、登録ボタンを非活性にする
-        //    setDispMode(MasterFormOrder.ButtonId.Regist, true);
-        //}
+        // フォーカス設定
+        setFocusButtonAvailable(MasterFormOrder.ButtonId.Regist, MasterFormOrder.ButtonId.Cancel);
     }
 }
 

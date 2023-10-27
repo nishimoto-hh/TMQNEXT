@@ -150,6 +150,7 @@ SELECT
     number_unit.unit_name,                                              --(数量単位名称)
     COALESCE(pih.inout_quantity,0) AS issue_quantity,                   --受払数(画面：出庫数)
     dpm.extension_data AS department_cd,                                --部門CD
+    COALESCE(
     ( 
         SELECT
             tra.translation_text 
@@ -167,8 +168,27 @@ SELECT
                     AND st_f.factory_id IN (0, pps.factory_id)
             ) 
             AND tra.structure_id = plt.department_structure_id
-    ) AS department_nm,  --部門(翻訳)
+    ) ,
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MIN(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.department_structure_id
+                    AND st_f.factory_id NOT IN (0, pps.factory_id)
+            ) 
+            AND tra.structure_id = plt.department_structure_id
+    )) AS department_nm,  --部門名
     act.extension_data AS subject_cd,                                   --勘定科目CD
+    COALESCE(
     ( 
         SELECT
             tra.translation_text 
@@ -186,7 +206,25 @@ SELECT
                     AND st_f.factory_id IN (0, pps.factory_id)
             ) 
             AND tra.structure_id = plt.account_structure_id
-    ) AS subject_nm,                                                    --勘定科目名
+    ) ,
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MIN(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.account_structure_id
+                    AND st_f.factory_id NOT IN (0, pps.factory_id)
+            ) 
+            AND tra.structure_id = plt.account_structure_id
+    )) AS subject_nm,                                                   --勘定科目名
     plt.management_no,                                                  --管理No
     plt.management_division,                                            --管理区分
     plt.lot_control_id,                                                 --ロット管理ID(登録用)

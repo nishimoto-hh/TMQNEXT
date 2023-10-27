@@ -79,6 +79,7 @@ WITH department AS (
 SELECT DISTINCT
     plt.old_new_structure_id,                          --新旧区分ID
     dpm.extension_data AS department_cd,               --部門CD
+    COALESCE(
     ( 
         SELECT
             tra.translation_text 
@@ -96,8 +97,27 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pps.factory_id)
             ) 
             AND tra.structure_id = plt.department_structure_id
-    ) AS department_nm,  --部門(翻訳)
+    ), 
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MIN(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.department_structure_id
+                    AND st_f.factory_id NOT IN (0, pps.factory_id)
+            ) 
+            AND tra.structure_id = plt.department_structure_id
+    )) AS department_nm,  --部門名
     act.extension_data AS subject_cd,                  --勘定科目CD
+    COALESCE(
     ( 
         SELECT
             tra.translation_text 
@@ -115,7 +135,25 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pps.factory_id)
             ) 
             AND tra.structure_id = plt.account_structure_id
-    ) AS subject_nm,                                   --勘定科目名
+    ), 
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MIN(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.account_structure_id
+                    AND st_f.factory_id NOT IN (0, pps.factory_id)
+            ) 
+            AND tra.structure_id = plt.account_structure_id
+    )) AS subject_nm,                                  --勘定科目名
     SUM(pls.stock_quantity) AS inventry,               --在庫数
     number_unit.unit_name AS unit,                     --(数量単位名称)
     plt.old_new_structure_id AS old_new_nm,            --新旧区分(在庫一覧検索用)

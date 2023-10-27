@@ -662,7 +662,7 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     const grpId = parseInt(getValueByOtherForm(MasterFormList.No, MasterFormList.HiddenList.Id, MasterFormList.HiddenList.StructureGroupId, 1, CtrlFlag.Label), 10);
 
     if (conductId == ConductIdMS1000 || conductId == ConductIdMS1001 || conductId == ConductIdMS1010 || conductId == ConductIdMS1020) {
-        // 地区/工場、場所階層、職種・機種の場合
+        // 地区/工場、場所階層、職種・機種、原因性格の場合
 
         // ツリービューの再作成
         refreshTreeView(appPath, conductId, grpId);

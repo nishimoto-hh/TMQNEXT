@@ -48,6 +48,7 @@ const MS0010_FormList = {
         LoginId: 3,                             // ログインID
         AuthLevel: 4,                           // 権限レベル
         Language: 6,                            // 言語
+        Delete: 10,                             // 削除
         ExData: 13,                             // 拡張データ
         Flg: 14                                 // 制御用フラグ
     },
@@ -315,4 +316,32 @@ function afterSelectBtnForTreeViewForMS0010(appPath, btn, ctrlId, structureGrpId
             setStructureInfoToTreeLabel(td, '', '');
         });
     }
+}
+
+/*==1:実行処理==*/
+
+/**
+ *【オーバーライド用関数】実行ﾁｪｯｸ処理 - 前処理
+ *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId   {string}   ：機能ID
+ *  @formNo      {number}   ：画面番号
+ *  @btn         {button}   ：押下されたボタン要素
+ */
+function registCheckPre(appPath, conductId, formNo, btn) {
+    // 詳細画面の場合
+    if (conductId == MS0010_FormList.ConductId && formNo == MS0010_FormList.EditNo) {
+        // ボタン押下時メッセージを一旦クリア
+        setAttrByNativeJs(btn, 'data-message', '');
+
+        if (dataEditedFlg) {
+            // 画面編集フラグONの場合
+            var isDelete = getValue(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.Delete, MS0010_FormList.FirstRowNo, CtrlFlag.ChkBox, false, false);
+            if (isDelete) {
+                // 削除にチェックが入っている場合、確認メッセージを変更
+                // 『削除してよろしいですか？』
+                setAttrByNativeJs(btn, 'data-message', P_ComMsgTranslated[941110001]);
+            }
+       }
+    }
+    return true;
 }

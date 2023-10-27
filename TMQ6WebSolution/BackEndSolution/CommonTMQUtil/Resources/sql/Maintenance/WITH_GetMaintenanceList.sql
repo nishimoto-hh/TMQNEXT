@@ -107,8 +107,8 @@ WITH get_factory AS (
         , hf.failure_note                       --特記（メモ）
         , CASE 
             WHEN su.activity_division = 1 
-                THEN hic.follow_flg 
-            ELSE hf.follow_flg 
+                THEN COALESCE(hic.follow_flg, 0)
+            ELSE COALESCE(hf.follow_flg, 0)
             END AS follow_flg                   --フォロー有無
         , CASE 
             WHEN su.activity_division = 1 

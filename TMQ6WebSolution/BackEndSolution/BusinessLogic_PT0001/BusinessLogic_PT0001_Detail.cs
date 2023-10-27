@@ -124,6 +124,13 @@ namespace BusinessLogic_PT0001
             {
                 return false;
             }
+
+            //URL直接起動時、参照データの権限チェック
+            if (!CheckAccessUserBelong((int)results[0].FactoryId, (int)results[0].JobStructureId))
+            {
+                return false;
+            }
+
             // 職種IDを非表示に項目に退避
             results[0].JobId = int.Parse(results[0].JobStructureId.ToString());
 

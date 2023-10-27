@@ -24,9 +24,12 @@ FROM
         ON tr.translation_id = it.item_translation_id
     INNER JOIN ms_structure AS ms
         ON it.item_id = ms.structure_item_id
+        AND ms.structure_group_id = @StructureGroupId
         AND ms.factory_id = @FactoryId
         AND ms.structure_layer_no = @StructureLayerNo
 @AddItem*/
 /*@AddItem2
         AND ms.parent_structure_id = @ParentStructureId
 @AddItem2*/
+ORDER BY
+    tr.translation_id

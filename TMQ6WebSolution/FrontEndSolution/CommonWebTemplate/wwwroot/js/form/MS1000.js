@@ -266,18 +266,6 @@ function initFormOriginalForMS1000(appPath, conductId, formNo, articleForm, curP
     } else if (formNo == MS1000_FormOrder.No) {
         // 表示順変更画面
 
-        //// TODO:一覧件数取得
-        //var rowCount = P_listData["#" + FormOrder.ItemList.Id + getAddFormNo()].getDataCount();
-        //if (rowCount == 0) {
-        //    // エラーメッセージを設定する
-        //    setMessage(P_ComMsgTranslated[941060001], procStatus.Error);
-        //    // 登録ボタンを非活性にする
-        //    setDispMode(getButtonCtrl(FormOrder.ButtonId.Regist), true);
-        //    // キャンセルボタンにフォーカス設定
-        //    setFocusButton(FormOrder.ButtonId.Cancel);
-        //    return;
-        //}
-
         // フォーカス設定
         setFocusButtonAvailable(MS1000_FormOrder.ButtonId.Regist, MS1000_FormOrder.ButtonId.Cancel);
     }

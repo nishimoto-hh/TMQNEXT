@@ -945,26 +945,52 @@ namespace CommonTMQUtil
             {
                 // 登録画面
 
-                //// 工場内に同じ翻訳が存在するか翻訳マスタを検索
-                //isNew = isNewTranslation(ref tranId);
-                if (hiddenInfo.StructureGroupId != (int)Const.MsStructure.GroupId.SpareLocation)
+                ////// 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                ////isNew = isNewTranslation(ref tranId);
+                //if (hiddenInfo.StructureGroupId != (int)Const.MsStructure.GroupId.SpareLocation)
+                //{
+                //    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                //    isNew = isNewTranslation(ref tranId);
+                //}
+                //else
+                //{
+                //    userTran2.FactoryId = hiddenInfo.FactoryId;
+                //    userTran2.StructureLayerNo = hiddenInfo.StructureLayerNo;
+                //    userTran2.ParentStructureId = hiddenInfo.ParentStructureId;
+                //    int searchType = 1;
+                //    if (hiddenInfo.StructureLayerNo == 3)
+                //    {
+                //        searchType = 2;
+                //    }
+                //    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                //    isNew = isNewTranslationByFactory(searchType, ref tranId);
+                //}
+
+                // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                if (hiddenInfo.StructureGroupId == (int)Const.MsStructure.GroupId.SpareLocation
+                    || hiddenInfo.StructureGroupId == (int)Const.MsStructure.GroupId.Location
+                    || hiddenInfo.StructureGroupId == (int)Const.MsStructure.GroupId.Job
+                    || hiddenInfo.StructureGroupId == (int)Const.MsStructure.GroupId.FailureCausePersonality)
+                {
+                    // 予備品ロケーション、場所階層、職種機種、原因性格の場合
+                    userTran2.FactoryId = hiddenInfo.FactoryId;
+                    userTran2.StructureLayerNo = hiddenInfo.StructureLayerNo;
+                    userTran2.ParentStructureId = hiddenInfo.ParentStructureId;
+                    //int searchType = 1;
+                    //if (hiddenInfo.StructureLayerNo == 3)
+                    //{
+                    //    searchType = 2;
+                    //}
+                    int searchType = 2;
+                    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                    isNew = isNewTranslationByFactory(searchType, ref tranId);
+                }
+                else
                 {
                     // 工場内に同じ翻訳が存在するか翻訳マスタを検索
                     isNew = isNewTranslation(ref tranId);
                 }
-                else
-                {
-                    userTran2.FactoryId = hiddenInfo.FactoryId;
-                    userTran2.StructureLayerNo = hiddenInfo.StructureLayerNo;
-                    userTran2.ParentStructureId = hiddenInfo.ParentStructureId;
-                    int searchType = 1;
-                    if (hiddenInfo.StructureLayerNo == 3)
-                    {
-                        searchType = 2;
-                    }
-                    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
-                    isNew = isNewTranslationByFactory(searchType, ref tranId);
-                }
+
             }
             else
             {
@@ -1129,52 +1155,53 @@ namespace CommonTMQUtil
                 }
                 else
                 {
-                    // 同じ翻訳が存在する場合
+                    // 同じ翻訳が存在する場合、翻訳ID順の先頭を採用する
+                    tranId = (int)registTranIds.First();
 
-                    // ユーザ言語以外のアイテム翻訳も同じ翻訳かチェックする
-                    foreach (int registTranId in registTranIds)
-                    {
-                        var chkTran = false;
-                        foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
-                        {
-                            // 翻訳マスタ検索
-                            var tranEntity = new ComDao.MsTranslationEntity().GetEntity(otherTran.LocationStructureId, registTranId, otherTran.LanguageId, db);
-                            if (tranEntity == null)
-                            {
-                                // 翻訳が存在しない場合
+                    //// ユーザ言語以外のアイテム翻訳も同じ翻訳かチェックする
+                    //foreach (int registTranId in registTranIds)
+                    //{
+                    //    var chkTran = false;
+                    //    foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
+                    //    {
+                    //        // 翻訳マスタ検索
+                    //        var tranEntity = new ComDao.MsTranslationEntity().GetEntity(otherTran.LocationStructureId, registTranId, otherTran.LanguageId, db);
+                    //        if (tranEntity == null)
+                    //        {
+                    //            // 翻訳が存在しない場合
 
-                                if (!string.IsNullOrEmpty(otherTran.TranslationText))
-                                {
-                                    // 対象のアイテム翻訳が入力されている場合、次の翻訳IDへ
-                                    chkTran = true;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                // 翻訳が存在する場合
+                    //            if (!string.IsNullOrEmpty(otherTran.TranslationText))
+                    //            {
+                    //                // 対象のアイテム翻訳が入力されている場合、次の翻訳IDへ
+                    //                chkTran = true;
+                    //                break;
+                    //            }
+                    //        }
+                    //        else
+                    //        {
+                    //            // 翻訳が存在する場合
 
-                                if (tranEntity.TranslationText != otherTran.TranslationText)
-                                {
-                                    // 対象のアイテム翻訳と翻訳が異なる場合、次の翻訳IDへ
-                                    chkTran = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!chkTran)
-                        {
-                            // 翻訳ID取得
-                            tranId = registTranId;
-                            break;
-                        }
-                    }
+                    //            if (tranEntity.TranslationText != otherTran.TranslationText)
+                    //            {
+                    //                // 対象のアイテム翻訳と翻訳が異なる場合、次の翻訳IDへ
+                    //                chkTran = true;
+                    //                break;
+                    //            }
+                    //        }
+                    //    }
+                    //    if (!chkTran)
+                    //    {
+                    //        // 翻訳ID取得
+                    //        tranId = registTranId;
+                    //        break;
+                    //    }
+                    //}
 
-                    if (tranId < 0)
-                    {
-                        // 工場内に同じ翻訳が存在しない場合、新規登録
-                        return true;
-                    }
+                    //if (tranId < 0)
+                    //{
+                    //    // 工場内に同じ翻訳が存在しない場合、新規登録
+                    //    return true;
+                    //}
                 }
 
                 return false;

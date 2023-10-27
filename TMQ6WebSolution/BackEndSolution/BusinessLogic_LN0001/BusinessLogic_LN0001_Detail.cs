@@ -88,7 +88,7 @@ namespace BusinessLogic_LN0001
 
             // 初期化処理呼出
             // 一覧画面の一覧より取得した情報で参照画面の項目に値を設定する
-            initFormByLongPlanId(param, getResultMappingInfoByGrpNo(ConductInfo.FormDetail.HeaderGroupNo).CtrlIdList, out bool isDisplayMaintainanceKind, out int factoryId, true);
+            initFormByLongPlanId(param, getResultMappingInfoByGrpNo(ConductInfo.FormDetail.HeaderGroupNo).CtrlIdList, out bool isDisplayMaintainanceKind, out int factoryId, true, ctrlId == ConductInfo.FormList.ControlId.List);
 
             if (type == DetailDispType.Init || type == DetailDispType.AfterRegist)
             {

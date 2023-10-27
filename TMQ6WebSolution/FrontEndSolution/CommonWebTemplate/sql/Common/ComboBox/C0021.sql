@@ -9,7 +9,7 @@ WITH factory AS(
         ,vi.location_structure_id AS translationFactoryId
         ,vi.structure_id AS structure_id
         ,v2.structure_id AS factory_structure_id
-        ,vi.translation_text  + ' / ' + v2.translation_text AS translation_text
+        ,coalesce(vi.translation_text,'')  + ' / ' + coalesce(v2.translation_text,'') AS translation_text
         ,vi.delete_flg AS deleteFlg
         -- 工場の表示順
         ,coalesce(order_common.display_order, 32768) AS factory_order
@@ -18,6 +18,7 @@ WITH factory AS(
     INNER JOIN v_structure_item_all v2
         ON vi.structure_id = v2.parent_structure_id
         AND v2.structure_layer_no = 1 --工場
+        AND v2.language_id = /*languageId*/'ja'
     --LEFT JOIN --予備品の共通工場は除く
         --ms_item_extension ie
         --ON v2.structure_item_id = ie.item_id

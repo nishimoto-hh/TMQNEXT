@@ -153,7 +153,7 @@ namespace BusinessLogic_MS0020
                 public int? DisplayOrder { get; set; }
                 /// <summary>Gets or sets 削除フラグ</summary>
                 /// <value>削除フラグ</value>
-                public int DeleteFlg { get; set; }
+                public bool DeleteFlg { get; set; }
 
             }
         }

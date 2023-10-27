@@ -2,6 +2,7 @@ SELECT
     manager.family_name AS manager                                                                  -- 課長
     , chief.family_name AS chief                                                                    -- 係長
     , personnel.family_name AS person                                                               -- 担当
+    , foreman.family_name AS foreman                                                                -- 職長
     , FORMAT(ma_request.issue_date, 'yyyy年MM月dd日') AS drafting                                   -- 起票（マスタのデータタイプが文字列なのでそのまま）
     , '''' + FORMAT(ma_request.desired_start_date, 'yyyy年MM月dd日') AS construction                -- 着工
     , ma_summary.location_structure_id                                                              -- 機能場所階層id(工程取得用)
@@ -27,6 +28,17 @@ SELECT
     , ma_request.request_content AS request_content                                                 -- 依頼内容
     , ma_summary.plan_implementation_content AS work_plan                                           -- 作業計画
     , ma_history.maintenance_opinion AS final_report                                                -- 完了報告
+    , [dbo].[get_v_structure_item](ma_summary.change_management_structure_id, temp.factoryId, temp.languageId) AS change_management_name               -- 変更管理
+    , [dbo].[get_v_structure_item](ma_summary.env_safety_management_structure_id, temp.factoryId, temp.languageId) AS env_safety_management_name       -- 環境安全管理区分
+    , [dbo].[get_v_structure_item](ma_request.urgency_structure_id, temp.factoryId, temp.languageId) AS urgency_name                                   -- 緊急度
+    , [dbo].[get_v_structure_item](ma_request.discovery_methods_structure_id, temp.factoryId, temp.languageId) AS discovery_methods_name               -- 発見方法
+    , [dbo].[get_v_structure_item](ma_request.request_department_clerk_id, temp.factoryId, temp.languageId) AS request_department_clerk_name           -- 依頼部課係
+    , [dbo].[get_v_structure_item](ma_request.maintenance_department_clerk_id, temp.factoryId, temp.languageId) AS maintenance_department_clerk_name   -- 保全部課係
+    , '' AS factory_name    -- 工場
+    , '' AS plant_name      -- プラント
+    , '' AS series_name     -- 系列
+    , '' AS facility_name   -- 設備
+
 FROM
     ma_request                                                          -- 保全依頼
     INNER JOIN #temp temp
@@ -43,3 +55,5 @@ FROM
         ON ma_request.request_department_chief_id = chief.user_id
     LEFT JOIN ms_user personnel                                         -- 担当
         ON ma_request.request_personnel_id = personnel.user_id
+    LEFT JOIN ms_user foreman                                           -- 職長
+        ON ma_request.request_department_foreman_id = foreman.user_id

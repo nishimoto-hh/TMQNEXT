@@ -88,7 +88,8 @@ factory_order AS(
 )
 SELECT
      vs.structure_id AS structureId
-    ,vs.factory_id AS factoryId
+    --,vs.factory_id AS factoryId
+    ,CASE WHEN vs.factory_id = 0 THEN vs.location_structure_id ELSE vs.factory_id END AS factoryId
     ,vs.structure_group_id AS structureGroupId
     ,vs.structure_layer_no AS structureLayerNo
     ,vs.parent_structure_id AS parentStructureId

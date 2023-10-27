@@ -1135,6 +1135,12 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            //URL直接起動時、参照データの権限チェック
+            if(!CheckAccessUserBelong(results[0].LocationStructureId, results[0].JobStructureId))
+            {
+                return false;
+            }
+
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
             Dao.searchResult conditionObj = new Dao.searchResult();

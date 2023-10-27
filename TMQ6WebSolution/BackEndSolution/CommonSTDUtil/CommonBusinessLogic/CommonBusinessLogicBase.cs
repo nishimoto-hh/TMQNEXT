@@ -5893,6 +5893,30 @@ namespace CommonSTDUtil.CommonBusinessLogic
         }
 
         /// <summary>
+        /// 所属場所階層を取得
+        /// </summary>
+        /// <returns></returns>
+        protected List<int> getBelongLocationIdList()
+        {
+            List<int> results = new();
+            //本務工場
+            int factoryId = this.BelongingInfo.LocationInfoList.Where(x => x.DutyFlg).Select(x => x.FactoryId).FirstOrDefault();
+            //本務工場配下の所属場所階層が設定されているか
+            int count = this.BelongingInfo.LocationInfoList.Where(x => !x.DutyFlg && x.FactoryId == factoryId).Count();
+            if (factoryId > 0 && count > 0)
+            {
+                //本務工場配下の所属場所階層が設定されている場合、本務フラグ=trueのデータを除外
+                results = this.BelongingInfo.LocationInfoList.Where(x => !x.DutyFlg).Select(x => x.StructureId).ToList();
+            }
+            else
+            {
+                //本務工場配下は全て参照可
+                results = this.BelongingInfo.LocationInfoList.Select(x => x.StructureId).ToList();
+            }
+            return results;
+        }
+
+        /// <summary>
         /// 選択された構成IDリストから配下の構成IDをすべて取得
         /// </summary>
         /// <param name="baseIdList">構成IDリスト</param>
@@ -6217,6 +6241,40 @@ namespace CommonSTDUtil.CommonBusinessLogic
             return true;
         }
         #endregion
+
+        /// <summary>
+        /// URL直接起動の場合、参照できるデータかチェック
+        /// </summary>
+        /// <param name="locationStructureId">場所階層ID</param>
+        /// <param name="jobStructureId">職種機種階層ID</param>
+        /// <returns>チェックOKの場合true、NGの場合false</returns>
+        protected bool CheckAccessUserBelong(int locationStructureId, int jobStructureId)
+        {
+            bool checkFlg = true;
+            //所属場所階層の配下の構成IDを取得
+            List<int> belongLocationIdList = GetLowerStructureIdList(getBelongLocationIdList());
+            if (!belongLocationIdList.Contains(locationStructureId))
+            {
+                //所属場所階層に参照データの場所階層IDが含まれていない場合、NG
+                checkFlg = false;
+            }
+
+            //所属職種の配下の構成IDを取得
+            List<int> belongJobIdList = GetLowerStructureIdList(this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList());
+            if (!belongJobIdList.Contains(jobStructureId))
+            {
+                //所属職種に参照データの職種機種階層IDが含まれていない場合、NG
+                checkFlg = false;
+            }
+            if (!checkFlg)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                //権限がありません。
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941090002 });
+            }
+
+            return checkFlg;
+        }
     }
 
     /// <summary>

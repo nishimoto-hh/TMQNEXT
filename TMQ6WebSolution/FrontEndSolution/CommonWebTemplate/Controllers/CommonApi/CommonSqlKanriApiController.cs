@@ -14,6 +14,7 @@ using CommonWebTemplate.Models.Common;
 using CommonWebTemplate.CommonUtil;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace CommonWebTemplate.Controllers.CommonApi
 {
@@ -42,8 +43,17 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 CommonProcData procData = new CommonProcData();
                 string prmFactoryId = factoryId;
 
-                //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
-                SetRequestInfo(ref procData);
+                ////ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                //SetRequestInfo(ref procData);
+
+                //ｱｸｾｽ許可ﾁｪｯｸ
+                BusinessLogicUtil blogic = new BusinessLogicUtil();
+                ActionResult actionResult = accessCheck(ref blogic, procData);
+                if (actionResult != null)
+                {
+                    //※ｱｸｾｽｴﾗｰ
+                    return actionResult;
+                }
 
                 if (string.IsNullOrEmpty(prmFactoryId) && procData.BelongingInfo != null)
                 {
@@ -83,6 +93,59 @@ namespace CommonWebTemplate.Controllers.CommonApi
 
             }
         }
+
+        /// <summary>
+        /// ｻｲﾄ内ｱｸｾｽ可能か検証する
+        ///  - ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得する
+        ///  - ﾘｸｴｽﾄﾊﾟﾗﾒｰﾀのﾃﾞｰﾀ検証を行う
+        /// </summary>
+        /// <param name="blogic">業務ﾛｼﾞｯｸｸﾗｽ</param>
+        /// <param name="procData">ﾘｸｴｽﾄﾊﾟﾗﾒｰﾀ</param>
+        /// <returns></returns>
+        /// <remarks>
+        /// ※ﾛｸﾞｲﾝ画面のｱｸｾｽ許可ﾁｪｯｸには使用しない
+        /// </remarks>
+        private ActionResult accessCheck(ref BusinessLogicUtil blogic, CommonProcData procData)
+        {
+            //ｾｯｼｮﾝﾀｲﾑｱｳﾄﾁｪｯｸ
+            if (!HttpContext.Session.IsAvailable)
+            {
+                //※ｾｯｼｮﾝﾀｲﾑｱｳﾄ
+
+                //エラー情報を返却
+                return BadRequest(new CommonProcReturn(CommonProcReturn.ProcStatus.TimeOut, string.Empty));
+            }
+
+            //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+            SetRequestInfo(ref procData);
+
+            // ユーザIDが空の場合、ログインエラー
+            if (string.IsNullOrEmpty(procData.LoginUserId))
+            {
+                //ブラウザの言語を取得
+                var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+                if (procData.LanguageId == null)
+                {
+                    procData.LanguageId = languageId;
+                }
+
+                //メッセージ取得
+                blogic.GetResourceName(procData, new List<string> { "941430005" }, out IDictionary<string, string> resources);
+                //ログインしてください。
+                string message = blogic.ConvertResourceName("941430005", resources);
+                CommonProcReturn returnInfo = new CommonProcReturn(CommonProcReturn.ProcStatus.LoginError.GetHashCode(), message);
+
+                //戻り値を設定
+                if (returnInfo != null)
+                {
+                    //エラー情報を返却
+                    return BadRequest(returnInfo);
+                }
+            }
+
+            return null;
+        }
+
 
     }
 }

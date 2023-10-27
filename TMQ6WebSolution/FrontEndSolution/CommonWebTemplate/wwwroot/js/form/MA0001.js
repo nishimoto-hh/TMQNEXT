@@ -2670,12 +2670,12 @@ function setDetailSearchConditionFromMP0001() {
 }
 
 /**
- * //【オーバーライド用関数】ツリービューリフレッシュ後処理
+ * //【オーバーライド用関数】ツリービュー読込後処理
  * @param {any} selector ツリービューのセレクタ
  * @param {any} isTreeMenu 左側メニューの場合true
  * @param {any} grpId 構成グループID
  */
-function afterRefreshTreeView(selector, isTreeMenu, grpId) {
+function afterLoadedTreeView(selector, isTreeMenu, grpId) {
     if (!isTreeMenu || grpId != structureGroupDef.Job) {
         return;
     }

@@ -456,33 +456,31 @@ namespace BusinessLogic_MP0001
                             param = new { StructureIdList = this.conditionSheetJobList, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
                             List<Dao.StructureGetInfo> structureJobInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
 
-                            // 場所階層ツリーが選択されていなければエラー
-                            if (structureJobInfoList == null)
+                            // 職種階層ツリーが選択されていれば職種名を取得
+                            if (structureJobInfoList != null)
                             {
-                                return ComConsts.RETURN_RESULT.NG;
-                            }
-
-                            // 親構成IDリスト
-                            List<int> jobParentIdList = structureJobInfoList.Select(x => x.ParentStructureId).ToList();
-                            // 最下層のリスト
-                            IList<StructureJobInfoEx> jobBottomLayerAll = new List<StructureJobInfoEx>();
-                            foreach (var data in structureJobInfoList)
-                            {
-                                // 構成IDが親構成IDに含まれていないレコードを見つける
-                                if (!parentIdList.Contains(data.StructureId))
+                                // 親構成IDリスト
+                                List<int> jobParentIdList = structureJobInfoList.Select(x => x.ParentStructureId).ToList();
+                                // 最下層のリスト
+                                IList<StructureJobInfoEx> jobBottomLayerAll = new List<StructureJobInfoEx>();
+                                foreach (var data in structureJobInfoList)
                                 {
-                                    StructureJobInfoEx temp = new();
-                                    temp.JobStructureId = data.StructureId;
-                                    jobBottomLayerAll.Add(temp);
+                                    // 構成IDが親構成IDに含まれていないレコードを見つける
+                                    if (!parentIdList.Contains(data.StructureId))
+                                    {
+                                        StructureJobInfoEx temp = new();
+                                        temp.JobStructureId = data.StructureId;
+                                        jobBottomLayerAll.Add(temp);
+                                    }
                                 }
-                            }
-                            // データクラスに地区及び職種の階層情報を設定する処理
-                            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureJobInfoEx>(ref jobBottomLayerAll, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
-                            foreach (var bottomLayer in jobBottomLayerAll.OrderBy(x => x.JobId))
-                            {
-                                if (string.IsNullOrEmpty(bottomLayer.JobName) == false && jobNameList.IndexOf(bottomLayer.JobName) < 0)
+                                // データクラスに地区及び職種の階層情報を設定する処理
+                                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureJobInfoEx>(ref jobBottomLayerAll, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
+                                foreach (var bottomLayer in jobBottomLayerAll.OrderBy(x => x.JobId))
                                 {
-                                    jobNameList.Add(bottomLayer.JobName);
+                                    if (string.IsNullOrEmpty(bottomLayer.JobName) == false && jobNameList.IndexOf(bottomLayer.JobName) < 0)
+                                    {
+                                        jobNameList.Add(bottomLayer.JobName);
+                                    }
                                 }
                             }
                             jobName = jobNameList.Count > 0 ? string.Join(",", jobNameList) : string.Empty;

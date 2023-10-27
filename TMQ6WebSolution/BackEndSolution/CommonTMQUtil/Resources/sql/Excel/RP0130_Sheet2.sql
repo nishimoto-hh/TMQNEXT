@@ -1,6 +1,7 @@
 SELECT
     manager.family_name AS manager                                                              -- 課長
     , chief.family_name AS chief                                                                -- 係長
+    , foreman.family_name AS foreman                                                                -- 職長
     , personnel.family_name AS person                                                           -- 担当
     , '''' + FORMAT(ma_request.issue_date, 'yyyy年MM月dd日') AS drafting                        -- 起票
     , '''' + FORMAT(ma_request.desired_start_date, 'yyyy年MM月dd日') AS construction            -- 着工
@@ -23,5 +24,7 @@ FROM
         ON ma_request.request_department_chief_id = chief.user_id
     LEFT JOIN ms_user personnel                                         -- 担当
         ON ma_request.request_personnel_id = personnel.user_id
+    LEFT JOIN ms_user foreman                                           -- 職長
+        ON ma_request.request_department_foreman_id = foreman.user_id
 
  

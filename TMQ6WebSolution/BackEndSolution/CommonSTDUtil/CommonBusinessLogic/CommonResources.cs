@@ -401,6 +401,10 @@
             /// </summary>
             public const string ID941040001 = "941040001";
             /// <summary>
+            /// 権限がありません。
+            /// </summary>
+            public const string ID941090002 = "941090002";
+            /// <summary>
             /// {0}は使用中のため削除できません。
             /// </summary>
             public const string ID941260002 = "941260002";

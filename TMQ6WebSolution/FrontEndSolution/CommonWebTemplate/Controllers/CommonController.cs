@@ -304,8 +304,13 @@ namespace CommonWebTemplate.Controllers.Common
 
                         }
 
+                        string downloadFileName = fileName;
                         //ﾌｧｲﾙ名からﾕｰｻﾞｰIDを除去
-                        string downloadFileName = fileName.TrimStart(procData.LoginUserId.ToCharArray());
+                        //string downloadFileName = fileName.TrimStart(procData.LoginUserId.ToCharArray());
+                        if (fileName.IndexOf(procData.LoginUserId) == 0)
+                        {
+                            downloadFileName = fileName.Remove(0, procData.LoginUserId.Length);
+                        }
                         //不要な「_」(アンダーバー)を除去
                         downloadFileName = downloadFileName.TrimStart("_".ToCharArray());
 

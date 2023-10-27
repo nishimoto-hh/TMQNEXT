@@ -1247,16 +1247,29 @@ namespace BusinessLogic_LN0001
         /// <param name="isMaintainanceKindFactory">out 長期計画の工場IDが点検種別ごと一覧表示工場の場合True</param>
         /// <param name="factoryId">out 長期計画の工場ID</param>
         /// <param name="isTree">省略可能 ツリービュー表示用の場合、True</param>
+        /// <param name="isInitDetail">詳細画面の初期化表示時(一覧画面→詳細画面)の場合のみTrue</param>
         /// <returns>エラーの場合False</returns>
-        private bool initFormByLongPlanId(ComDao.LnLongPlanEntity param, List<string> toCtrlIds, out bool isMaintainanceKindFactory, out int factoryId, bool isTree = false)
+        private bool initFormByLongPlanId(ComDao.LnLongPlanEntity param, List<string> toCtrlIds, out bool isMaintainanceKindFactory, out int factoryId, bool isTree = false, bool isInitDetail = false)
         {
             // SQLで値を取得
             var infoLongPlan = getLongPlanInfo(param, isTree);
+
             // 工場IDを設定
             factoryId = infoLongPlan.FactoryId ?? -1;
             // 保全情報一覧(点検種別)を表示するかを取得して設定
             isMaintainanceKindFactory = getIsMaintainanceKindFactoryByDb(infoLongPlan.FactoryId);
             infoLongPlan.IsDisplayMaintainanceKind = isMaintainanceKindFactory;
+
+            // 詳細画面の初期化時(一覧画面→詳細画面)
+            if (isInitDetail)
+            {
+                //URL直接起動時、参照データの権限チェック
+                if (!CheckAccessUserBelong((int)infoLongPlan.LocationStructureId, (int)infoLongPlan.JobStructureId))
+                {
+                    return false;
+                }
+            }
+
             // 画面に反映
             bool resut = initFormByParam(infoLongPlan, toCtrlIds);
             return resut;

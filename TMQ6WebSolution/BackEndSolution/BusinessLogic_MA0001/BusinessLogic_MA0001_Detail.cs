@@ -410,12 +410,6 @@ namespace BusinessLogic_MA0001
             //保全活動件名IDをクリアする
             TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateScheduleSummaryId, SqlName.SubDir, detail, this.db);
 
-            //TODO:工程表の削除
-            if (!deleteProcessReport())
-            {
-                return false;
-            }
-
             return true;
 
             //SQL文取得＆削除処理
@@ -535,16 +529,6 @@ namespace BusinessLogic_MA0001
         }
 
         /// <summary>
-        /// 工程表の削除
-        /// </summary>
-        /// <returns>エラーの場合False</returns>
-        private bool deleteProcessReport()
-        {
-            //TODO:工程表の削除実装
-            return true;
-        }
-
-        /// <summary>
         /// アイテム拡張マスタから拡張データを取得する
         /// </summary>
         /// <param name="seq">連番</param>
@@ -571,6 +555,148 @@ namespace BusinessLogic_MA0001
                 result = list.Where(x => x.FactoryId == factoryId).Select(x => x.ExData).FirstOrDefault();
             }
             return result;
+        }
+
+        /// <summary>
+        /// 指示検収表出力処理
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private bool outputFiles()
+        {
+            //長期計画の指示検収票出力処理とほぼ同じ
+
+            //保全活動件名ID
+            ComDao.MaSummaryEntity param = GetFormDataByCtrlId<ComDao.MaSummaryEntity>(ConductInfo.FormDetail.ControlId.DetailInfoIds[0], true);
+            // 長期計画IDより添付ファイルの情報を取得
+            List<string> fileInfos = TMQUtil.SqlExecuteClass.SelectList<string>(SqlName.Detail.GetOutputFileInfo, SqlName.SubDir, param, this.db);
+
+            if (fileInfos == null || fileInfos.Count == 0 || fileInfos.Any(x => !string.IsNullOrEmpty(x)) == false)
+            {
+                // 取得結果なし or 取得結果が全て空
+                // ファイル無しの場合、エラー
+                this.MsgId = GetResMessage(ComRes.ID.ID941060001);
+                return false;
+            }
+
+            //件名情報の取得
+            Dao.detailSummaryInfo result = getSummary(param);
+            // 工場ID
+            var factoryId = result.FactoryId;
+            // 件名(ファイル名に使用)
+            var subject = result.Subject;
+
+            // テンポラリフォルダのパスを取得
+            string tempRootPath = getTempFolderPath();
+            tempRootPath = addPath(tempRootPath, factoryId.ToString()); // 工場IDのフォルダを追加
+            // 一時的に作成するフォルダ(30桁ランダム)
+            string tempNewFolderName = TMQUtil.GetRandomName(30);
+            // 一時作成フォルダのパス
+            string tempNewFolderPath = addPath(tempRootPath, tempNewFolderName);
+
+            // テンポラリフォルダ作成
+            Directory.CreateDirectory(tempNewFolderPath);
+            foreach (string fileInfoChar in fileInfos)
+            {
+                // テンポラリフォルダに添付ファイルをコピーする
+                createTempFolder(fileInfoChar, tempNewFolderPath);
+            }
+
+            // 作成するZIPファイルのパス
+            string zipFilePath = tempNewFolderPath + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
+            // ダウンロードするZIPファイルの名前(とりあえず件名.zip)
+            string zipFileName = subject + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
+
+            // ファイルダウンロード
+            if (!SetDownloadZip(zipFilePath, tempNewFolderPath, zipFileName))
+            {
+                return false;
+            }
+
+            // ZIPファイルとテンポラリフォルダの削除
+            File.Delete(zipFilePath);
+            Directory.Delete(tempNewFolderPath, true);
+
+            return true;
+
+            Dao.detailSummaryInfo getSummary(ComDao.MaSummaryEntity param)
+            {
+                // 検索実行
+                Dao.detailSummaryInfo result = TMQUtil.SqlExecuteClass.SelectEntity<Dao.detailSummaryInfo>(SqlName.Detail.GetSummaryInfo, SqlName.SubDir, param, this.db);
+
+                IList<Dao.detailSummaryInfo> results = new List<Dao.detailSummaryInfo>();
+                results.Add(result);
+                // 階層情報を設定
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailSummaryInfo>(ref results, new List<StructureType> { StructureType.Location }, this.db, this.LanguageId, true);
+
+                return result;
+            }
+
+            // フォルダパスを作成する処理
+            string addPath(string source, string add)
+            {
+                return Path.Combine(source, add);
+            }
+
+            // テンポラリフォルダのパスを取得
+            string getTempFolderPath()
+            {
+                // 条件
+                TMQUtil.StructureItemEx.StructureItemExInfo cond = new();
+                cond.StructureGroupId = (int)Const.MsStructure.GroupId.TempFolderPath;
+                cond.Seq = 1;
+                // 取得
+                var result = TMQUtil.StructureItemEx.GetStructureItemExData(cond, this.db);
+                // 必ず1レコード
+                string tempPath = result[0].ExData;
+
+                return tempPath;
+
+            }
+
+            // ファイル情報に存在するファイルをテンポラリフォルダへコピーする処理
+            // fileInfoChar ファイル情報の文字列、fileName(A)|filePath(A)||fileName(B)|filePath(B)||…||
+            // tempFolder テンポラリフォルダのパス
+            void createTempFolder(string fileInfoChar, string tempFolder)
+            {
+                // ファイルごとの区切り(||)で分割しリストへ
+                List<string> fileInfoList = fileInfoChar.Split(Const.FileInfoSplit.File).ToList();
+                foreach (string fileInfo in fileInfoList)
+                {
+                    if (string.IsNullOrEmpty(fileInfo)) { break; } // 空(最後の行)なら終了
+                    // ファイルパスとファイル名の区切り(|)で分割
+                    List<string> file = fileInfo.Split(Const.FileInfoSplit.Path).ToList();
+                    // ファイルパス
+                    string filePath = file[1];
+                    // 添付ファイルの取得
+                    if (File.Exists(filePath))
+                    {
+                        // 区切りのファイル名は、画面に表示されるファイル名。ファイルパスのファイル名が実際のファイル名となる。同名ファイルがある場合、text.txtとtext(1).txtのように異なる場合がある
+                        string fileName = Path.GetFileName(filePath);
+                        // ある場合、テンポラリフォルダへコピー
+                        File.Copy(filePath, getCopyFilePath(tempFolder, fileName));
+                    }
+                }
+            }
+
+            // テンポラリフォルダにコピーする際のファイルパスを取得する処理
+            // 同名ファイルの場合エラーになるため、test(1).txtのように変更
+            // copyFolder コピー先フォルダのパス
+            // fileName コピー元ファイルの名前
+            // return コピーする際に使用するファイルパス
+            string getCopyFilePath(string copyFolder, string fileName)
+            {
+                int i = 1; // 付与する数字
+                string targetPath = addPath(copyFolder, fileName); // コピー先ファイルパス
+
+                // ファイルが存在する限り繰り返し→存在しなくなったら終了
+                while (File.Exists(targetPath))
+                {
+                    string newFileName = fileName.Replace(".", $"({i++})."); // text.txt → text(1).txt のように変換
+                    targetPath = addPath(copyFolder, newFileName); // 新しいコピー先ファイルパスへ設定
+                }
+                // このファイルパスは存在しないので、これを使用する
+                return targetPath;
+            }
         }
     }
 }

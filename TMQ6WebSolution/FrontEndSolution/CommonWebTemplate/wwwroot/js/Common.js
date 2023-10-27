@@ -6569,7 +6569,8 @@ function initForm(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conduc
 
     if (transPtn != transPtnDef.CmConduct) {
         //単票を表示している場合は、単票エリアを選択（単票から共通画面を起動し、戻ってきた場合を想定）
-        var edit = $('section.modal_form.in:visible article[name="edit_area"][data-formno="' + formNo + '"]');
+        //var edit = $('section.modal_form.in:visible article[name="edit_area"][data-formno="' + formNo + '"]');
+        var edit = $('section.modal_form.in:visible article[data-formno="' + formNo + '"]:not(".hide")');
         if (edit.length > 0) {
             P_Article = edit;
         }
@@ -16747,6 +16748,8 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
             // 階層ツリーモーダル画面の場合、モーダル画面表示
             showModalForm(modal);
         }
+        //【オーバーライド用関数】ツリービュー読込後処理
+        afterLoadedTreeView(selector, isTreeMenu, grpId);
 
     }).on('refresh.jstree', function (e, data) {
         //【オーバーライド用関数】ツリービューリフレッシュ後処理
@@ -16947,10 +16950,29 @@ function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList) {
             return (data.parent == '#');
         });
     } else {
-        resultList = $.grep(resultList, function (data, idx) {
+        //resultList = $.grep(resultList, function (data, idx) {
+        //    var factoryId = getTreeViewFacrotyId(data);
+        //    return (data.parent == '#' || factoryId <= 0 || factoryIdList.indexOf(factoryId) >= 0);
+        //});
+        var resultList2 = [];
+        $.each(resultList, function (idx, data) {
             var factoryId = getTreeViewFacrotyId(data);
-            return (data.parent == '#' || factoryId <= 0 || factoryIdList.indexOf(factoryId) >= 0);
+            if (data.parent == '#' || (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0)) {
+                // ルート要素または指定工場の要素の場合、結果リストに追加
+                resultList2.push(data);
+            } else if (factoryId == 0) {
+                // 共通工場の要素の場合、構成IDが同一の要素を検索
+                var structureId = getTreeViewStructureId(data);
+                var duplicatedData = $.grep(resultList, function (x, i) {
+                    return (structureId == getTreeViewStructureId(x));
+                });
+                if (duplicatedData.length == 1) {
+                    // 自分自身しか存在しない場合、結果リストに追加
+                    resultList2.push(data);
+                }
+            }
         });
+        resultList = resultList2;
     }
     return resultList;
 }

@@ -97,6 +97,8 @@ namespace BusinessLogic_MA0001
                 public const string GetFailureAnalyzeIndividualInfo = "GetFailureAnalyzeIndividualInfo";
                 /// <summary>SQL名：保全スケジュール詳細 保全活動件名ID更新</summary>
                 public const string UpdateScheduleSummaryId = "UpdateScheduleSummaryId";
+                /// <summary>指示検収票ボタン押下時の出力ファイル情報の取得SQL</summary>
+                public const string GetOutputFileInfo = "GetOutputFileInfo";
             }
 
             /// <summary>
@@ -954,12 +956,7 @@ namespace BusinessLogic_MA0001
             this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911110001 });
             return ComConsts.RETURN_RESULT.OK;
         }
-        #endregion
 
-        #region privateメソッド
-        #endregion
-
-        #region 見直し予定
         /// <summary>
         /// 出力処理
         /// </summary>
@@ -998,7 +995,17 @@ namespace BusinessLogic_MA0001
             switch (this.CtrlId)
             {
                 case ConductInfo.FormDetail.Button.AcceptanceSlipOutput:
-                    return executeDownload(ReportInfo.templateFilePath, ReportInfo.templateFileName);
+                    //指示検収票
+                    if (!outputFiles())
+                    {
+                        // エラーの場合
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    // 出力処理が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911120006 });
+                    return ComConsts.RETURN_RESULT.OK;
                     break;
                 case ConductInfo.FormDetail.Button.RequestSlipOutput:
                     //依頼票出力
@@ -1070,6 +1077,8 @@ namespace BusinessLogic_MA0001
 
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
+                    // 出力処理が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911120006 });
                     return ComConsts.RETURN_RESULT.OK;
                     break;
 
@@ -1146,6 +1155,8 @@ namespace BusinessLogic_MA0001
 
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
+                    // 出力処理が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911120006 });
                     return ComConsts.RETURN_RESULT.OK;
                     break;
                 case ConductInfo.FormDetail.Button.FailureAnalyzeOutput:
@@ -1218,6 +1229,8 @@ namespace BusinessLogic_MA0001
 
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
+                    // 出力処理が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911120006 });
                     return ComConsts.RETURN_RESULT.OK;
                     break;
                 default:
@@ -1233,7 +1246,6 @@ namespace BusinessLogic_MA0001
             return result;
 
         }
-
         #endregion
 
         #region privateメソッド
@@ -1268,51 +1280,6 @@ namespace BusinessLogic_MA0001
             }
             return new Key(keyParam1, keyParam2, keyParam3);
         }
-
-        #region ファイルダウンロード
-        /// <summary>
-        /// 編集画面　ファイルダウンロード処理
-        /// </summary>
-        /// <returns>エラーの場合False</returns>
-        private int executeDownload(string templateFilePath, string templateFileName)
-        {
-            int result = 0;
-            try
-            {
-                // ファイルをダウンロードさせる
-                var fileStream = new MemoryStream();
-
-                // 実行パス取得
-                string appPath = AppDomain.CurrentDomain.BaseDirectory;
-                string templateFolder = Path.Combine(appPath, CommonWebTemplate.AppCommonObject.Config.AppSettings.DownloadFileDir);
-                templateFolder = Path.Combine(templateFolder, templateFilePath);
-
-                var filePath = string.Format(templateFolder + "\\{0}", templateFileName);
-
-                using (FileStream file = new(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    file.CopyTo(fileStream);
-                }
-                // 画面の出力へ設定
-                this.OutputFileType = CommonConstants.REPORT.FILETYPE.EXCEL;
-                this.OutputFileName = templateFileName;
-                this.OutputStream = fileStream;
-            }
-            catch (Exception ex)
-            {
-                this.Status = CommonProcReturn.ProcStatus.Error;
-                // 「ダウンロード処理に失敗しました。」
-                this.MsgId = GetResMessage(new string[] { "941220002", "111160052" });
-                this.LogNo = string.Empty;
-
-                writeErrorLog(this.MsgId, ex);
-                return -1;
-            }
-
-            return result;
-
-        }
-        #endregion
 
         #endregion
 

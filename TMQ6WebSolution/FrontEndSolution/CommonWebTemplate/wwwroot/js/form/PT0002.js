@@ -45,6 +45,7 @@ const PT0002_FormList = {
     ButtonOutputIdIssue: "OutputIssue",         // 出力ボタン(出庫)
     ButtonOutputIdShed: "OutputShed",           // 出力ボタン(棚番移庫)
     ButtonOutputIdCategory: "OutputCategory",   // 出力ボタン(部門移庫)
+    ButtonOutputPurchaseDetails: "OutputPurchaseDetails",         // 購入明細書ボタン(出庫)
     ParentKeyValueParent: 2,                    // 出庫一覧親キー値
     ParentKeyValueChild: 11,                    // 出庫一覧子キー値
     WorkingDay: "COND_000_00_LST_0",            // 作業日
@@ -124,8 +125,8 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
         }
     }
 
-    if (btn.name == PT0002_FormList.ButtonOutputIdIssue) {
-        // 出庫一覧画面で「出力」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
+    if (btn.name == PT0002_FormList.ButtonOutputIdIssue || btn.name == PT0002_FormList.ButtonOutputPurchaseDetails) {
+        // 出庫一覧画面で「出力/購入明細書」ボタン押下時、一覧にチェックされた行が存在しない場合、遷移をキャンセル
         if (!isCheckedList(PT0002_FormList.ResultsIssueParents)) {
             return false;
         }

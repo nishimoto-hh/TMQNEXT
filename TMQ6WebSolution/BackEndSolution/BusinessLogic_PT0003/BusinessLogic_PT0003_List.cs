@@ -209,10 +209,10 @@ namespace BusinessLogic_PT0003
             condition.PartsLocationIdList = GetLowerStructureIdList(new List<int> { condition.StorageLocationId });
 
             //場所階層の条件を取得
-            setStructureIdList(true);
+            setLocationStructureIdList();
 
             //職種の条件を取得
-            setStructureIdList(false);
+            setJobStructureIdList();
 
             // SQLのアンコメントする条件を設定
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
@@ -235,29 +235,61 @@ namespace BusinessLogic_PT0003
             }
             return condition;
 
-            //場所階層、職種の条件を取得
-            void setStructureIdList(bool isLocation)
+            //場所階層の条件を取得
+            void setLocationStructureIdList()
             {
-                //isLocation=trueの場合、場所階層
-                var keyName = isLocation ? STRUCTURE_CONSTANTS.CONDITION_KEY.Location : STRUCTURE_CONSTANTS.CONDITION_KEY.Job;
+                //場所階層
+                var keyName = STRUCTURE_CONSTANTS.CONDITION_KEY.Location;
+                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
+                if (dic != null && dic.ContainsKey(keyName))
+                {
+                    List<int> locationIdList = dic[keyName] as List<int>;
+                    if ((locationIdList == null || locationIdList.Count == 0) &&
+                        (this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0))
+                    {
+                        // 場所階層の指定なしの場合、所属場所階層を渡す
+                        locationIdList = this.BelongingInfo.LocationInfoList.Select(x => x.StructureId).ToList();
+                    }
+                    // 選択された構成IDリストから配下の構成IDをすべて取得
+                    if (locationIdList.Count > 0)
+                    {
+                        //工場IDを抽出
+                        condition.FactoryIdList = GetPartsStructureIdList(locationIdList);
+                    }
+                }
+            }
+
+            //職種の条件を取得
+            void setJobStructureIdList()
+            {
+                //職種
+                var keyName =STRUCTURE_CONSTANTS.CONDITION_KEY.Job;
+                bool useBelongingInfo = false;
                 var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
                 if (dic != null && dic.ContainsKey(keyName))
                 {
                     // 選択された構成IDリストから配下の構成IDをすべて取得
-                    List<int> locationIdList = dic[keyName] as List<int>;
-                    if (locationIdList != null && locationIdList.Count > 0)
+                    List<int> jobIdList = dic[keyName] as List<int>;
+                    if ((jobIdList == null || jobIdList.Count == 0) &&
+                        (this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0))
                     {
+                        // 職種機種の指定なしの場合、所属職種機種を渡す
+                        jobIdList = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
+                        useBelongingInfo = true;
+                    }
+                    if (jobIdList.Count > 0)
+                    {
+                        jobIdList = GetLowerStructureIdList(jobIdList);
+                        if (!useBelongingInfo && this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0)
+                        {
+                            //職種機種の指定ありの場合
 
-                        if (isLocation)
-                        {
-                            //工場IDを抽出
-                            condition.FactoryIdList = GetPartsStructureIdList(locationIdList);
+                            //所属職種の配下の構成IDを取得
+                            List<int> belongJobIdList = GetLowerStructureIdList(this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList());
+                            //所属職種と一致するもののみ抽出
+                            jobIdList = jobIdList.Where(x => belongJobIdList.Contains(x)).ToList();
                         }
-                        else
-                        {
-                            //職種IDを抽出
-                            condition.JobIdList = GetLowerStructureIdList(locationIdList);
-                        }
+                        condition.JobIdList = jobIdList;
                     }
                 }
             }
