@@ -1891,8 +1891,8 @@ namespace CommonTMQUtil
                      encircleValue + labelData.PartsNo + encircleValue,                                                      // 予備品No.
                      encircleValue + labelData.PartsName + encircleValue,                                                    // 予備品名
                      encircleValue + labelData.Maker + encircleValue,                                                        // メーカー
-                     encircleValue + labelData.ModelType + encircleValue,                                                    // 型式
-                     encircleValue + labelData.StandardSize + encircleValue,                                                 // 規格・寸法
+                     encircleValue + labelData.ModelType + " " + labelData.StandardSize + encircleValue,                     // 型式/規格・寸法
+                     encircleValue + labelData.PartsServiceSpace + encircleValue,                                            // 使用場所
                      encircleValue + labelData.DepartmentCode + encircleValue,                                               // 部門コード
                      encircleValue + labelData.SubjectCode + encircleValue,                                                  // 勘定科目コード
                      encircleValue + labelData.ShedName + encircleValue,                                                     // 標準棚番 + 枝番

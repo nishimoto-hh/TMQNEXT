@@ -213,8 +213,8 @@ namespace BusinessLogic_PT0001
                   encircleValue + result.PartsNo + encircleValue,                                                      // 予備品No.
                   encircleValue + result.PartsName + encircleValue,                                                    // 予備品名
                   encircleValue + result.Maker + encircleValue,                                                        // メーカー
-                  encircleValue + result.ModelType + encircleValue,                                                    // 型式
-                  encircleValue + result.StandardSize + encircleValue,                                                 // 規格・寸法
+                  encircleValue + result.ModelType + " " + result.StandardSize + encircleValue,                        // 型式/規格・寸法
+                  encircleValue + result.PartsServiceSpace + encircleValue,                                            // 使用場所
                   encircleValue + result.DepartmentCode + encircleValue,                                               // 部門コード
                   encircleValue + result.SubjectCode + encircleValue,                                                  // 勘定科目コード
                   encircleValue + result.ShedName + encircleValue,                                                     // 標準棚番 + 枝番

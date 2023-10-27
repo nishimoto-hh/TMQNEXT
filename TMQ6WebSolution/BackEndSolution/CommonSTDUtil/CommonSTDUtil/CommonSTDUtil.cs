@@ -140,6 +140,8 @@ namespace CommonSTDUtil.CommonSTDUtil
             public const string CSV = ".csv";
             /// <summary>TSV</summary>
             public const string TSV = ".tsv";
+            /// <summary>TXT</summary>
+            public const string TXT = ".txt";
         }
 
 

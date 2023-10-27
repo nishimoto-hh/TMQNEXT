@@ -42,8 +42,9 @@ main AS(
         parts.parts_name,                                                                                             -- 予備品名
         parts.model_type,                                                                                             -- 型式
         parts.standard_size,                                                                                          -- 規格・寸法
-        @DepartmentCdEnter AS department_code,                                                                             -- 部門コード
-        @SubjectCdEnter AS subject_code,                                                                                   -- 勘定科目コード
+        parts.parts_service_space,                                                                                    -- 使用場所
+        @DepartmentCdEnter AS department_code,                                                                        -- 部門コード
+        @SubjectCdEnter AS subject_code,                                                                              -- 勘定科目コード
         parts.factory_id AS parts_factory_id,                                                                         -- 管理工場ID
         @PartsLocationDetailNoEnter AS parts_location_detail_no,                                                           -- 棚枝番
         COALESCE(parts.lead_time, 0) AS lead_time,                                                                    -- 発注点

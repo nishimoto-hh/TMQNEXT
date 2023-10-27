@@ -57,6 +57,7 @@ SELECT
     parts.parts_name,                                                                                        -- 予備品名
     parts.model_type,                                                                                        -- 型式
     parts.standard_size,                                                                                     -- 規格・寸法
+    parts.parts_service_space,                                                                               -- 使用場所
     label.department_code,                                                                                   -- 部門コード
     label.subject_code,                                                                                      -- 勘定科目コード
     location.structure_layer_no,                                                                             -- 標準棚番の階層番号

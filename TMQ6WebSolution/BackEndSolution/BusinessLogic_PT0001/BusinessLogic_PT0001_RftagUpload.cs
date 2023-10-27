@@ -48,7 +48,7 @@ namespace BusinessLogic_PT0001
             var file = this.InputStream[0];
             // ファイル拡張子チェック
             string extension = Path.GetExtension(file.FileName);
-            if (extension != ComUtil.FileExtension.CSV)
+            if (extension != ComUtil.FileExtension.TXT)
             {
                 // 取込画面を閉じない
                 setControlFlg();
@@ -87,7 +87,7 @@ namespace BusinessLogic_PT0001
             bool notRegistFlg = false;
             //取込対象データ有無
             bool existData = false;
-            foreach(Dao.rftagFileInfo data in dataList)
+            foreach (Dao.rftagFileInfo data in dataList)
             {
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.RFUpload.GetCountPartsNoByFactory, out string outSql);
                 //TODO:予備品Noが整数型に変更されるタイミングで下記修正
@@ -161,8 +161,8 @@ namespace BusinessLogic_PT0001
                 //空行はスキップ
                 return tmpErrorInfoList;
             }
-            //行データ
-            string rowData = row[0];
+            //行データ(改行コードを取り除く)
+            string rowData = row[0].Replace("\r", "");
 
             //レコード長チェック
             if (rowData.Length != ConductInfo.FormRFUpload.FileRowLength)
