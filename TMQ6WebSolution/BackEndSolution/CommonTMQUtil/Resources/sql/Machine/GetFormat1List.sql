@@ -1,17 +1,172 @@
+WITH structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1170,1200,1180,1030,1240,1220) 
+        AND language_id = @LanguageId
+) 
+
 SELECT mcp.management_standards_component_id,        -- 機器別管理基準部位ID
        mcp.machine_id,                               -- 機番ID
-	   ma.equipment_level_structure_id,              -- 機器レベル
+	   ma.equipment_level_structure_id,              -- 機器レベル	   
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = ma.equipment_level_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = ma.equipment_level_structure_id 
+		) AS equipment_level_name,
 	   ma.machine_no,                                -- 機器番号
 	   ma.machine_name,                              -- 機器名称
 	   ma.importance_structure_id,                   -- 機器重要度
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = ma.importance_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = ma.importance_structure_id 
+		) AS importance_name,-- 機器重要度
 	   mcp.inspection_site_structure_id,             -- 部位ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = mcp.inspection_site_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = mcp.inspection_site_structure_id
+		) AS inspection_site_name, -- 部位
 	   msc.inspection_site_importance_structure_id,  -- 部位重要度ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.inspection_site_importance_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.inspection_site_importance_structure_id
+		) AS inspection_site_importance_nam, -- 部位重要度
 	   msc.inspection_site_conservation_structure_id,-- 部位保全方式ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.inspection_site_conservation_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.inspection_site_conservation_structure_id
+		) AS inspection_site_conservation_n, -- 部位保全方式
 	   mcp.is_management_standard_conponent,         -- 機器別管理基準フラグ
 	   msc.management_standards_content_id,          -- 機器別管理基準内容ID
 	   msc.inspection_content_structure_id,          -- 点検内容ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.inspection_content_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.inspection_content_structure_id
+		) AS inspection_content_name, -- 点検内容
 	   msc.maintainance_division,                    -- 保全区分
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.maintainance_division
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.maintainance_division
+		) AS maintainance_division_name, -- 保全区分
 	   msc.maintainance_kind_structure_id,           -- 点検種別ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.maintainance_kind_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.maintainance_kind_structure_id
+		) AS maintainance_kind_name, -- 点検種別
 	   msc.budget_amount,                            -- 予算金額
 	   msc.preparation_period,                       -- 準備期間(日)
 	   msc.order_no,                                 -- 並び順
@@ -22,34 +177,111 @@ SELECT mcp.management_standards_component_id,        -- 機器別管理基準部
 	   ms.cycle_year,                                -- 周期(年)
 	   ms.cycle_month,                               -- 周期(月)
 	   ms.cycle_day,                                 -- 周期(日)
-	   CASE WHEN ex.extension_data = '1' THEN msc.inspection_content_structure_id  -- 1:定期検査であれば点検内容ID
+	   CASE WHEN ex.extension_data = '1' 
+	   THEN   -- 1:定期検査であれば点検内容ID	   
+			( 
+			SELECT
+				tra.translation_text 
+			FROM
+				v_structure_item_all AS tra 
+			WHERE
+				tra.language_id = @LanguageId
+				AND tra.location_structure_id = ( 
+					SELECT
+						MAX(st_f.factory_id) 
+					FROM
+						structure_factory AS st_f 
+					WHERE
+						st_f.structure_id = msc.inspection_content_structure_id
+						AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+				) 
+				AND tra.structure_id = msc.inspection_content_structure_id
+			) 
 			ELSE null
 	   END AS periodic_inspection,                   -- 定期検査・内容
 	   CASE WHEN ex.extension_data = '1' THEN ms.disp_cycle -- 1:定期検査であれば表示周期
 			ELSE null
 	   END AS periodic_cycle,                        -- 定期検査・周期
 
-	   CASE WHEN ex.extension_data = '2' THEN msc.inspection_content_structure_id  -- 2:定期修理であれば点検内容ID
+	   CASE WHEN ex.extension_data = '2' 
+	   THEN   -- 2:定期修理であれば点検内容ID
+			( 
+			SELECT
+				tra.translation_text 
+			FROM
+				v_structure_item_all AS tra 
+			WHERE
+				tra.language_id = @LanguageId
+				AND tra.location_structure_id = ( 
+					SELECT
+						MAX(st_f.factory_id) 
+					FROM
+						structure_factory AS st_f 
+					WHERE
+						st_f.structure_id = msc.inspection_content_structure_id
+						AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+				) 
+				AND tra.structure_id = msc.inspection_content_structure_id
+			) 
 			ELSE null
 	   END AS repair_inspection,                   -- 定期修理・内容
 	   CASE WHEN ex.extension_data = '2' THEN ms.disp_cycle -- 2:定期修理であれば表示周期
 			ELSE null
 	   END AS repair_cycle,                        -- 定期修理・周期
 
-	   CASE WHEN ex.extension_data = '3' THEN msc.inspection_content_structure_id  -- 3:日常点検であれば点検内容ID
+	   CASE WHEN ex.extension_data = '3' 
+	   THEN   -- 3:日常点検であれば点検内容ID	   
+			( 
+			SELECT
+				tra.translation_text 
+			FROM
+				v_structure_item_all AS tra 
+			WHERE
+				tra.language_id = @LanguageId
+				AND tra.location_structure_id = ( 
+					SELECT
+						MAX(st_f.factory_id) 
+					FROM
+						structure_factory AS st_f 
+					WHERE
+						st_f.structure_id = msc.inspection_content_structure_id
+						AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+				) 
+				AND tra.structure_id = msc.inspection_content_structure_id
+			) 
 			ELSE null
 	   END AS daily_inspection,                   -- 日常点検・内容
 	   CASE WHEN ex.extension_data = '3' THEN ms.disp_cycle -- 3:日常点検であれば表示周期
 			ELSE null
 	   END AS daily_cycle,                        -- 日常点検・周期
+	  -- CASE WHEN ex.extension_data = '1' THEN msc.inspection_content_structure_id  -- 1:定期検査であれば点検内容ID
+			--ELSE null
+	  -- END AS periodic_inspection,                   -- 定期検査・内容
+	  -- CASE WHEN ex.extension_data = '1' THEN ms.disp_cycle -- 1:定期検査であれば表示周期
+			--ELSE null
+	  -- END AS periodic_cycle,                        -- 定期検査・周期
+
+	  -- CASE WHEN ex.extension_data = '2' THEN msc.inspection_content_structure_id  -- 2:定期修理であれば点検内容ID
+			--ELSE null
+	  -- END AS repair_inspection,                   -- 定期修理・内容
+	  -- CASE WHEN ex.extension_data = '2' THEN ms.disp_cycle -- 2:定期修理であれば表示周期
+			--ELSE null
+	  -- END AS repair_cycle,                        -- 定期修理・周期
+
+	  -- CASE WHEN ex.extension_data = '3' THEN msc.inspection_content_structure_id  -- 3:日常点検であれば点検内容ID
+			--ELSE null
+	  -- END AS daily_inspection,                   -- 日常点検・内容
+	  -- CASE WHEN ex.extension_data = '3' THEN ms.disp_cycle -- 3:日常点検であれば表示周期
+			--ELSE null
+	  -- END AS daily_cycle,                        -- 日常点検・周期
 	   ms.disp_cycle,                                -- 表示周期
 	   ms.start_date,                                -- 開始日
 	   -- 3テーブルのうち最大更新日付を取得
 	   CASE WHEN mcp.update_datetime > msc.update_datetime and mcp.update_datetime > ms.update_datetime THEN mcp.update_datetime
 	        WHEN msc.update_datetime > mcp.update_datetime and msc.update_datetime > ms.update_datetime THEN msc.update_datetime
 			ELSE ms.update_datetime
-	   END update_datetime,                          -- 機番ID
-       dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
+	   END update_datetime                          -- 機番ID
+     --  dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
     ,(SELECT a.*
@@ -76,7 +308,7 @@ FROM mc_management_standards_component mcp -- 機器別管理基準部位
 	       ms_item_extension ex
 	  WHERE it.structure_item_id = ex.item_id
 	  AND it.structure_group_id = 1230
-	  AND ex.extension_data IN (1,2,3)-- 保全区分が定期検査or定期修理or日常点検のみ表示
+	  AND ex.extension_data IN ('1','2','3')-- 保全区分が定期検査or定期修理or日常点検のみ表示
 	 ) ex -- 構成マスタ
 WHERE mcp.management_standards_component_id = msc.management_standards_component_id
 AND msc.management_standards_content_id = ms.management_standards_content_id

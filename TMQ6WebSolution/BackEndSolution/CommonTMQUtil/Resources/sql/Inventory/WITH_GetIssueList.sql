@@ -213,19 +213,3 @@ WITH number_unit AS (
         , pps.factory_id
         , pps.job_structure_id
 )
-, structure_factory AS ( 
-    -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-        structure_id
-        , location_structure_id AS factory_id 
-    FROM
-        v_structure_item_all 
-    WHERE
-        structure_group_id IN ( 
-            1730
-            , 1740
-            , 1940
-            , 1960
-        ) 
-        AND language_id = @LanguageId
-) 

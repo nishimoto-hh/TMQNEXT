@@ -4,8 +4,8 @@
 WITH target AS (
 SELECT
     lplan.long_plan_id,
-    dbo.get_target_layer_id(lplan.location_structure_id, 1) AS factory_id,
-    dbo.get_target_layer_id(machine.location_structure_id, 1) AS machine_factory_id,
+    lplan.location_factory_structure_id AS factory_id,
+    machine.location_factory_structure_id AS machine_factory_id,
     machine.machine_id,
     com.management_standards_component_id,
     con.management_standards_content_id,
@@ -48,15 +48,4 @@ FROM
     ON  (
             schedule.management_standards_content_id = con.management_standards_content_id
         )
-)
-,structure_factory AS(
-     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-         structure_id
-        ,location_structure_id AS factory_id
-    FROM
-        v_structure_item_all
-    WHERE
-        structure_group_id IN(1180, 1200, 1030, 1220, 1060)
-    AND language_id = @LanguageId
 )

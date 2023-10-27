@@ -41,7 +41,7 @@ namespace BusinessLogic_PT0003
             var pageInfo = GetPageInfo(ConductInfo.FormList.EnterList.List, this.pageInfoList);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
             {
                 return false;
             }

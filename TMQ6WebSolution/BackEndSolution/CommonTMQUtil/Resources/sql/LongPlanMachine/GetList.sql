@@ -36,7 +36,7 @@ SELECT
                  SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.inspection_site_structure_id
                 AND st_f.factory_id IN(0, target.machine_factory_id)
@@ -55,7 +55,7 @@ SELECT
                  SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.inspection_site_importance_structure_id
                 AND st_f.factory_id IN(0, target.machine_factory_id)
@@ -74,7 +74,7 @@ SELECT
                  SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.inspection_site_conservation_structure_id
                 AND st_f.factory_id IN(0, target.machine_factory_id)
@@ -93,7 +93,7 @@ SELECT
                  SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.inspection_content_structure_id
                 AND st_f.factory_id IN(0, target.machine_factory_id)
@@ -112,7 +112,7 @@ SELECT
                  SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.budget_personality_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)

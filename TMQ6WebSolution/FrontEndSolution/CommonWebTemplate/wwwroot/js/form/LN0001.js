@@ -1,8 +1,6 @@
 ﻿/* ========================================================================
  *  機能名　    ：   【LN0001】件名別長期計画
  * ======================================================================== */
-// 納品用 - 変更管理処理実施フラグ
-const isExecuteHistory = false;
 
 /**
  * 自身の相対パスを取得
@@ -32,12 +30,12 @@ const ConductId_LN0001 = "LN0001";
 // 保全情報一覧の列情報
 const MaintList = {
     MachineNo: 1, MachineName: 2, MachineImportance: 3, MainInspection: 4, MainContent: 5, Budget: 6, ScheduleType: 7,
-    CycleYear: 8, CycleMonth: 9, CycleDay: 10, DispCycle: 11, StartDate: 12, ScheduleDate: 13, MainKind: 14
+    CycleYear: 8, CycleMonth: 9, CycleDay: 10, DispCycle: 11, StartDate: 12, ScheduleDate: 13, MainKind: 14, MainKindId: 64
 };
 // 保全情報一覧(点検種別毎)の列情報
 const MaintListKind = {
     MachineNo: 1, MachineName: 2, MachineImportance: 3, MainKind: 4, MainInspection: 5, MainContent: 6, Budget: 7, ScheduleType: 8,
-    CycleYear: 9, CycleMonth: 10, CycleDay: 11, DispCycle: 12, StartDate: 13, ScheduleDate: 14, MachineId: 56, ContentId: 53
+    CycleYear: 9, CycleMonth: 10, CycleDay: 11, DispCycle: 12, StartDate: 13, ScheduleDate: 14, MachineId: 56, ContentId: 53, MainKindId: 63
 };
 
 /**
@@ -130,6 +128,8 @@ const FormSelect = {
     , Hide: { Id: "BODY_060_00_LST_5" }
     , Location: { Id: "COND_000_00_LST_5" }
     , Job: { Id: "COND_010_00_LST_5" }
+    , DetailCondition: { Id: "COND_020_00_LST_5", UseSegment: 1 }
+    , Button: { Search: "Search" }
 };
 // 予算出力画面の定義
 const FormReport = {
@@ -226,15 +226,15 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         controlVisibleScheduleCond(FormList);
 
         // 変更管理ボタンの表示制御
-        if (isExecuteHistory) {
-            var hideBtns = [FormList.Button.Insert]; //新規ボタンを非表示にする
-            var flagValue = getHistoryManagementFlgValue(true); // フラグの値
-            if (flagValue == HistoryManagementDisplayFlag.Dual) {
-                // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
-                hideBtns = [];
-            }
-            setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), FormList.Button.HistoryManagement, hideBtns);
+        var hideBtns = [FormList.Button.Insert]; //新規ボタンを非表示にする
+        var flagValue = getHistoryManagementFlgValue(true); // フラグの値
+        if (flagValue == HistoryManagementDisplayFlag.Dual) {
+            // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
+            hideBtns = [];
         }
+        // 空のリストをセット
+        var hideLists = [];
+        setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), FormList.Button.HistoryManagement, hideBtns, hideLists);
 
         // 一覧画面の場合、新規ボタンにフォーカスをセット
         // 押下不能なら出力ボタン
@@ -248,14 +248,21 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         setPlanContentInitValueForUnSet();
 
         // 変更管理ボタンの表示制御
-        if (isExecuteHistory) {
-            var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
-            var hideLists = [];
-            setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), FormDetail.Button.HistoryManagement, hideBtns, hideLists);
-        }
+        var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
+        var hideLists = [];
+        setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), FormDetail.Button.HistoryManagement, hideBtns, hideLists);
 
         // 参照画面　件名添付
         setFocusButton(FormDetail.Button.AddSubject);
+    } else if (formNo == FormEdit.No) {
+        // 登録ボタンにフォーカス
+        setFocusButton(FormEdit.Button.Regist);
+    } else if (formNo == FormSelect.No) {
+        // 検索条件の使用区分を非表示
+        var useSegment = $(getCtrl(FormSelect.DetailCondition.Id, FormSelect.DetailCondition.UseSegment, 1, CtrlFlag.Combo)).closest('tr');
+        setHide(useSegment, true);
+        // 検索ボタンにフォーカス
+        setFocusButton(FormSelect.Button.Search);
     }
 
     if (isMaintListForm(formNo)) {
@@ -942,7 +949,7 @@ function setMaintListColumn(formNo) {
         changeRowControl(listInfo.Id, true);
 
         // 変更管理フラグ(詳細画面の場合のみ)
-        var isHistory = isExecuteHistory && isDetail && getIsHisotyManagement(false);
+        var isHistory = isDetail && getIsHisotyManagement(false);
         if (isHistory) {
             // 選択列と関連コントロールを非表示にする
             changeRowControl(listInfo.Id, false);
@@ -1081,7 +1088,7 @@ function setMaintKindListGrouping(formInfo) {
 
         // 点検種別
         // 点検種別を調整
-        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(listInfo.ColInfo.MainKind, prevKindId, index, list);
+        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(listInfo.ColInfo.MainKindId, prevKindId, index, list);
         prevKindId = newPrevKindId;
         changeCols = [listInfo.ColInfo.MainKind, listInfo.ColInfo.CycleYear, listInfo.ColInfo.CycleMonth, listInfo.ColInfo.CycleDay, listInfo.ColInfo.DispCycle, listInfo.ColInfo.StartDate, listInfo.ColInfo.ScheduleDate];
         setGroupToCols(index, changeCols, isTopMachine || isTopKind, isBottomMachine || isBottomKind);

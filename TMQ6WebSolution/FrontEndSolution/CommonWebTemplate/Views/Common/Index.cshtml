@@ -123,6 +123,8 @@
     ViewBag.YearMonthPickers = new List<string>();
     ViewBag.CboDatas = new System.Collections.Hashtable();
     ViewBag.MltSelDatas = new System.Collections.Hashtable();
+    //ViewBag.CboDatas = new List<string>();
+    //ViewBag.MltSelDatas = new List<string>();
     ViewBag.RadioDatas = new System.Collections.Hashtable();
     ViewBag.AutoCompDatas = new System.Collections.Hashtable();
     ViewBag.AutoCompDefDatas = new System.Collections.Hashtable(); //layout定義
@@ -285,7 +287,7 @@
 @section Scripts{
     <script>
         $(function () {
-            console.time('javascript');
+            @*console.time('javascript');*@
 
             @* ブラウザタブ識別番号取得 *@
             P_BrowserTabNo = getBrowserTabNo();
@@ -387,6 +389,7 @@
                 var cboData = (List<string>)ViewBag.CboDatas[key];
                 @:initComboBox("@ViewBag.AppRoutePath", "#@key", "@cboData[0]", "@Html.Raw(cboData[1])", "@cboData[2]", "@cboData[3]", -1);
             }
+            @*initComboBoxes("@ViewBag.AppRoutePath", @formNo, false);*@
 
             @* オートコンプリート初期化 *@
             @* 初期化はinitFormで行う*@
@@ -407,6 +410,7 @@
                 var msData = (List<string>)ViewBag.MltSelDatas[key];
                 @:initMultiSelectBox("@ViewBag.AppRoutePath", "#@key", "@msData[0]", "@Html.Raw(msData[1])", "@msData[2]", "@msData[3]");
             }
+            @*initMultiSelectBoxes("@ViewBag.AppRoutePath", @formNo, false);*@
 
             @* ラジオボタン初期化 *@
             @foreach(string key in ViewBag.RadioDatas.Keys)

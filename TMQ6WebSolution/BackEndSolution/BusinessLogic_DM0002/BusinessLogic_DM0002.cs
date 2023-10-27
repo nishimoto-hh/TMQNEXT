@@ -491,7 +491,7 @@ namespace BusinessLogic_DM0002
         /// <param name="keyId">キーID</param>
         /// <param name="documentTypeValNo">表示している文書種類コンボボックスの項目番号(VAL)</param>
         /// <returns>エラーの場合False</returns>
-        private bool getSubject(string sqlName, int functionTypeId, int keyId, int documentTypeValNo)
+        private bool getSubject(string sqlName, int functionTypeId, long keyId, int documentTypeValNo)
         {
             // 件名取得SQL文の取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string outSql);

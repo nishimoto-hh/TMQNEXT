@@ -49,6 +49,14 @@ CREATE TABLE #temp_rep(
     serial_no                   nvarchar(200),  -- 製造番号
     date_of_manufacture         nvarchar(200),  -- 製造年月
     equipment_note              nvarchar(800),  -- 機器メモ
+	district_name               nvarchar(800),  -- 地区名
+	factory_name                nvarchar(800),  -- 工場名
+    plant_name                  nvarchar(800),  -- プラント名
+    series_name                 nvarchar(800),  -- 系列名
+    stroke_name                 nvarchar(800),  -- 工程名
+    facility_name               nvarchar(800),  -- 設備名
+    job_name                    nvarchar(800),  -- 職種名
+	district_name2              nvarchar(800),  -- 地区名(機器)
 	factory_name2               nvarchar(800),  -- 工場名(機器)
     plant_name2                 nvarchar(800),  -- プラント名(機器)
     series_name2                nvarchar(800),  -- 系列名(機器)
@@ -87,7 +95,10 @@ CLOSE cur_key;
 DEALLOCATE cur_key;
 
 -- 帳票データを返却
-SELECT * FROM #temp_rep
+SELECT * 
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
+FROM #temp_rep
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep

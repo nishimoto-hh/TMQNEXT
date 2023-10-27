@@ -9,6 +9,10 @@ CREATE TABLE #temp_rep2(
 	child_no              nvarchar(800),
 	child_name            nvarchar(800),
 	job_structure_id      int,
+    job_name					nvarchar(800), -- 職種名
+    large_classfication_name    nvarchar(800),  -- 大分類
+    middle_classfication_name   nvarchar(800),  -- 中分類
+    small_classfication_name    nvarchar(800),  -- 小分類
 	importance_name       nvarchar(200),
 	conservation_name     nvarchar(200),
 	equipment_level       nvarchar(200),
@@ -16,6 +20,12 @@ CREATE TABLE #temp_rep2(
 	circulation_target    nvarchar(200),
     fixed_asset_no        nvarchar(200),
 	location_structure_id int,
+	district_name			 nvarchar(800), -- 地区名
+	factory_name             nvarchar(800), -- 工場名
+    plant_name               nvarchar(800), -- プラント名
+    series_name              nvarchar(800), -- 系列名
+    stroke_name              nvarchar(800), -- 工程名
+    facility_name            nvarchar(800), -- 設備名
 	manufacturer_name     nvarchar(200),
 	manufacturer_type     nvarchar(200),
 	model_no              nvarchar(200),
@@ -52,7 +62,10 @@ CLOSE cur_key2;
 DEALLOCATE cur_key2;
 
 -- 帳票データを返却
-SELECT * FROM #temp_rep2
+SELECT * 
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
+FROM #temp_rep2
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep2

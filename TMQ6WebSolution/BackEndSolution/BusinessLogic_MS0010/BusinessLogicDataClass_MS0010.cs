@@ -211,5 +211,51 @@ namespace BusinessLogic_MS0010
             /// <value>拡張データ</value>
             public int extensionData { get; set; }
         }
+
+        /// <summary>
+        /// 項目カスタマイズ登録用
+        /// </summary>
+        public class UserCustomizeClass
+        {
+            /// <summary>Gets or sets ユーザID</summary>
+            /// <value>ユーザID</value>
+            public int UserId { get; set; }
+            /// <summary>Gets or sets プログラムID</summary>
+            /// <value>プログラムID</value>
+            public string ProgramId { get; set; }
+            /// <summary>Gets or sets 画面NO</summary>
+            /// <value>画面NO</value>
+            public int FormNo { get; set; }
+            /// <summary>Gets or sets コントロールグループID</summary>
+            /// <value>コントロールグループID</value>
+            public string ControlGroupId { get; set; }
+            /// <summary>Gets or sets コントロール番号</summary>
+            /// <value>コントロール番号</value>
+            public string ControlNo { get; set; }
+            /// <summary>Gets or sets データ区分</summary>
+            /// <value>データ区分</value>
+            public int DataDivision { get; set; }
+            /// <summary>Gets or sets 表示フラグ</summary>
+            /// <value>表示フラグ</value>
+            public int DisplayFlg { get; set; }
+            /// <summary>Gets or sets 表示順</summary>
+            /// <value>表示順</value>
+            public int DisplayOrder { get; set; }
+            /// <summary>Gets or sets 削除フラグ</summary>
+            /// <value>削除フラグ</value>
+            public bool DeleteFlg { get; set; }
+            /// <summary>Gets or sets 登録日時</summary>
+            /// <value>登録日時</value>
+            public DateTime InsertDatetime { get; set; }
+            /// <summary>Gets or sets 登録者ID</summary>
+            /// <value>登録者ID</value>
+            public int InsertUserId { get; set; }
+            /// <summary>Gets or sets 更新日時</summary>
+            /// <value>更新日時</value>
+            public DateTime UpdateDatetime { get; set; }
+            /// <summary>Gets or sets 更新者ID</summary>
+            /// <value>更新者ID</value>
+            public int UpdateUserId { get; set; }
+        }
     }
 }

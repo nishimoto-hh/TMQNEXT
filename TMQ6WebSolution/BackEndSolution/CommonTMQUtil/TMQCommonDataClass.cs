@@ -33,9 +33,39 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>
             public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobKindStructureId { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? JobLargeClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? JobMiddleClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? JobSmallClassficationStructureId { get; set; }
             /// <summary>Gets or sets 件名メモ</summary>
             /// <value>件名メモ</value>
             public string SubjectNote { get; set; }
@@ -130,7 +160,6 @@ namespace CommonTMQUtil
             }
         }
 
-
         /// <summary>
         /// 添付情報
         /// </summary>
@@ -154,7 +183,7 @@ namespace CommonTMQUtil
             public int FunctionTypeId { get; set; }
             /// <summary>Gets or sets キーID</summary>
             /// <value>キーID</value>
-            public int KeyId { get; set; }
+            public long KeyId { get; set; }
             /// <summary>Gets or sets 添付種類ID</summary>
             /// <value>添付種類ID</value>
             public int AttachmentTypeStructureId { get; set; }
@@ -233,7 +262,7 @@ namespace CommonTMQUtil
             /// <param name="pKeyId">キーID</param>
             /// <param name="db">DB接続</param>
             /// <returns>エラーの場合False</returns>
-            public bool DeleteByKeyId(Const.Attachment.FunctionTypeId pFunctionTypeId, int pKeyId, ComDB db)
+            public bool DeleteByKeyId(Const.Attachment.FunctionTypeId pFunctionTypeId, long pKeyId, ComDB db)
             {
                 // DELETE文取得
                 string sql = getDeleteConditionSql(this.TableName, new List<string> { "function_type_id", "key_id" });
@@ -754,6 +783,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 予備品有無</summary>
             /// <value>予備品有無</value>
             public bool? PartsExistenceFlg { get; set; }
+            /// <summary>Gets or sets フォロー有無</summary>
+            /// <value>フォロー有無</value>
+            public bool? FollowFlg { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -1449,7 +1481,6 @@ namespace CommonTMQUtil
             }
         }
 
-
         /// <summary>
         /// 機番情報
         /// </summary>
@@ -1471,9 +1502,39 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>
             public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobKindStructureId { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? JobLargeClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? JobMiddleClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? JobSmallClassficationStructureId { get; set; }
             /// <summary>Gets or sets 機器番号</summary>
             /// <value>機器番号</value>
             public string MachineNo { get; set; }
@@ -1544,7 +1605,6 @@ namespace CommonTMQUtil
                 }
                 return db.GetEntityByDataClass<McMachineEntity>(getEntitySql);
             }
-
             /// <summary>
             /// 主キーを指定してDELETE実行
             /// </summary>
@@ -1562,6 +1622,7 @@ namespace CommonTMQUtil
                 return result > 0;
             }
         }
+
         /// <summary>
         /// 機器情報
         /// </summary>
@@ -2797,15 +2858,27 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 標準棚ID</summary>
             /// <value>標準棚ID</value>
             public long PartsLocationId { get; set; }
+            /// <summary>Gets or sets 標準棚_地区ID</summary>
+            /// <value>標準棚_地区ID</value>
+            public long? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 標準棚_工場ID</summary>
+            /// <value>標準棚_工場ID</value>
+            public long? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets 標準棚_倉庫ID</summary>
+            /// <value>標準棚_倉庫ID</value>
+            public long? LocationWarehouseStructureId { get; set; }
+            /// <summary>Gets or sets 標準棚_棚ID</summary>
+            /// <value>標準棚_棚ID</value>
+            public long? LocationRackStructureId { get; set; }
             /// <summary>Gets or sets 標準棚枝番</summary>
             /// <value>標準棚枝番</value>
             public string PartsLocationDetailNo { get; set; }
             /// <summary>Gets or sets 発注点</summary>
             /// <value>発注点</value>
-            public decimal LeadTime { get; set; }
+            public decimal? LeadTime { get; set; }
             /// <summary>Gets or sets 発注量</summary>
             /// <value>発注量</value>
-            public decimal OrderQuantity { get; set; }
+            public decimal? OrderQuantity { get; set; }
             /// <summary>Gets or sets 数量管理単位ID</summary>
             /// <value>数量管理単位ID</value>
             public long? UnitStructureId { get; set; }
@@ -2885,7 +2958,7 @@ namespace CommonTMQUtil
                 }
                 int result = db.Regist(deleteSql);
                 return result > 0;
-            }            
+            }
         }
 
         /// <summary>
@@ -4617,9 +4690,39 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>
             public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobKindStructureId { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? JobLargeClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? JobMiddleClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? JobSmallClassficationStructureId { get; set; }
             /// <summary>Gets or sets 機器番号</summary>
             /// <value>機器番号</value>
             public string MachineNo { get; set; }
@@ -4865,9 +4968,39 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>
             public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobKindStructureId { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? JobLargeClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? JobMiddleClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? JobSmallClassficationStructureId { get; set; }
             /// <summary>Gets or sets 件名メモ</summary>
             /// <value>件名メモ</value>
             public string SubjectNote { get; set; }

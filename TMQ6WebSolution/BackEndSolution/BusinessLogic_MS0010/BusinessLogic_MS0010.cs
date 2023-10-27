@@ -132,9 +132,22 @@ namespace BusinessLogic_MS0010
             public const string InsertLogin = "InsertLogin";
             /// <summary>SQL名：ログインマスタ削除SQL</summary>
             public const string DeleteLogin = "DeleteLogin";
+            /// <summary>SQL名：更新を行うユーザを承認者にしている件数を取得する</summary>
+            public const string GetApprovalCntByUserId = "GetApprovalCntByUserId";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"Master\User";
+
+            #region 項目カスタマイズ関連
+            /// <summary>SQL名：項目カスタマイズの初期値が必要な機能を取得</summary>
+            public const string GetUserCustomizeExData = "GetUserCustomizeExData";
+            /// <summary>SQL名：機能IDより、項目カスタマイズテーブルに登録するデータを取得するSQL</summary>
+            public const string GetUserCustomizeData = "GetUserCustomizeData";
+            /// <summary>SQL名：項目カスタマイズテーブルデータを登録するSQL</summary>
+            public const string InsertCustomizeData = "InsertCustomizeData";
+            /// <summary>SQL名：項目カスタマイズテーブルで初期表示する項目を更新するSQL</summary>
+            public const string UpdateCustomizeData = "UpdateCustomizeData";
+            #endregion
         }
 
         /// <summary>
@@ -147,7 +160,6 @@ namespace BusinessLogic_MS0010
             /// <summary>本務工場</summary>
             public const short Duty = 2;
         }
-
         #endregion
 
         #region コンストラクタ
@@ -895,6 +907,14 @@ namespace BusinessLogic_MS0010
                 }
             }
 
+            // 更新するユーザを承認者に設定している工場があるかチェック
+            if (checkApprovalUser(authLevel.extensionData, ref errorInfoDictionary))
+            {
+                // エラーの場合終了
+                SetJsonResult(errorInfoDictionary);
+                return true;
+            }
+
             // 正常
             return false;
         }
@@ -1036,6 +1056,52 @@ namespace BusinessLogic_MS0010
         }
 
         /// <summary>
+        /// 更新するユーザを承認者に設定している工場があるかチェック
+        /// </summary>
+        /// <param name="authLevel">権限レベルの拡張項目</param>
+        /// <param name="errorInfoDictionary">エラー情報リスト</param>
+        /// <returns>エラーがあればTrue</returns>
+        private bool checkApprovalUser(int authLevel, ref List<Dictionary<string, object>> errorInfoDictionary)
+        {
+            // 入力された内容を取得
+            Dao.userList registUserInfo = getRegistInfo<Dao.userList>(TargetGrpNo.UserInfo, DateTime.Now);
+
+            // 更新の場合(取得したユーザIDが付与されているかで判定)
+            if (registUserInfo.UserId > 0)
+            {
+                // 選択された権限レベルが「システム管理者」または「ゲスト」の場合
+                if (authLevel == (int)ExData.AuthLevel.SystemAdministrator ||
+                    authLevel == (int)ExData.AuthLevel.Guest)
+                {
+                    // 更新するユーザを承認者に設定している工場の件数を取得
+                    TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetApprovalCntByUserId, out string sql);
+                    int cnt = db.GetCount(sql, new { @UserId = registUserInfo.UserId });
+
+                    // 1件以上あればエラー
+                    if (cnt > 0)
+                    {
+                        var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, TargetCtrlId.UserInfo);
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                        var info = getResultMappingInfo(TargetCtrlId.UserInfo);  // エラー情報を画面に設定するためのマッピング情報リスト
+                        string errMsg = GetResMessage(ComRes.ID.ID141290009);    // 変更管理の承認者は一般ユーザか特権ユーザを指定してください。
+                        string val = info.getValName("auth_level");
+                        errorInfo.setError(errMsg, val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// 登録処理
         /// </summary>
         /// <returns>エラーの場合False</returns>
@@ -1064,6 +1130,12 @@ namespace BusinessLogic_MS0010
 
             // 機能権限マスタ登録
             if (!registAuth(now, authLebel, isNew, userId))
+            {
+                return false;
+            }
+
+            // 画面コントロールユーザーカスタマイズマスタ登録(項目カスタマイズ情報)
+            if (!registControlCustomize(isNew, userId))
             {
                 return false;
             }
@@ -1379,6 +1451,61 @@ namespace BusinessLogic_MS0010
                 // 登録SQL実行
                 TMQUtil.SqlExecuteClass.Regist(SqlName.InsertAuthority, SqlName.SubDir, registAuthInfo[0], this.db);
             }
+            return true;
+        }
+
+        /// <summary>
+        /// 項目カスタマイズテーブルに初期表示する項目を登録する
+        /// </summary>
+        /// <param name="isNew">新規登録の場合True</param>
+        /// <param name="userId">ユーザーID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registControlCustomize(bool isNew, int userId)
+        {
+            // 新規登録の場合のみ登録する(更新の場合は何もしない)
+            if (!isNew)
+            {
+                return true;
+            }
+
+            string sql = string.Empty;
+            // 項目カスタマイズの初期設定に必要な値を取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUserCustomizeExData, out sql);
+            IList<Dao.UserCustomizeClass> customizeData = db.GetListByDataClass<Dao.UserCustomizeClass>(sql);
+
+            // 取得した機能分登録する
+            foreach (Dao.UserCustomizeClass customize in customizeData)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUserCustomizeData, out sql);
+                // テーブルに登録するデータを取得
+                IList<Dao.UserCustomizeClass> results = db.GetListByDataClass<Dao.UserCustomizeClass>(sql, new { UserId = userId, ProgramId = customize.ProgramId, ControlGroupId = customize.ControlGroupId, FormNo = customize.FormNo });
+
+                // データを登録
+                foreach (Dao.UserCustomizeClass result in results)
+                {
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(SqlName.InsertCustomizeData, SqlName.SubDir, result, this.db))
+                    {
+                        return false;
+                    }
+                }
+
+                // 初期表示する項目をリストに格納
+                string[] strControlNoList = customize.ControlNo.Split(",");
+                List<int> controlNoList = new();
+                foreach (string controlNo in strControlNoList)
+                {
+                    controlNoList.Add(int.Parse(controlNo));
+                }
+
+                // 初期表示する項目のdisplay_flg = trueに更新する
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.UpdateCustomizeData, SqlName.SubDir, new { UserId = userId, ProgramId = customize.ProgramId, FormNo = customize.FormNo, ControlGroupId = customize.ControlGroupId, ControlNoList = controlNoList }, this.db))
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 

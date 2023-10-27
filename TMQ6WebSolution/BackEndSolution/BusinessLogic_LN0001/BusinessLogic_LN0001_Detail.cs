@@ -373,23 +373,8 @@ namespace BusinessLogic_LN0001
             TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteAll, SqlName.Detail.SubDir, update, this.db);
 
             // 添付情報削除
-            // 削除対象の添付情報のキーIDを取得
-            List<ComDao.AttachmentEntity> list = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentByLongPlanId, SqlName.Detail.SubDir, header, this.db);
-            if (list == null || list.Count == 0)
-            {
-                // 添付情報が存在しない場合は処理を行わない
-                return true;
-            }
-            // キーIDのみのリストにして重複を排除
-            var keyIdList = list.Select(x => x.KeyId).Distinct().ToList();
-            foreach (var keyId in keyIdList)
-            {
-                // キーIDで繰り返し削除
-                if (!new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, keyId, this.db))
-                {
-                    return false;
-                }
-            }
+            // キーIDで削除
+            new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, update.LongPlanId, this.db);
 
             return true;
         }
@@ -642,6 +627,8 @@ namespace BusinessLogic_LN0001
             string zipFilePath = tempNewFolderPath + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
             // ダウンロードするZIPファイルの名前(とりあえず件名.zip)
             string zipFileName = subject + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
+            // zipファイル名が有効か判定、無効なら日時に変更
+            zipFileName = getNewDownloadFilePath(tempRootPath, zipFileName);
 
             // ファイルダウンロード
             if (!SetDownloadZip(zipFilePath, tempNewFolderPath, zipFileName))
@@ -720,6 +707,32 @@ namespace BusinessLogic_LN0001
                 }
                 // このファイルパスは存在しないので、これを使用する
                 return targetPath;
+            }
+
+            // 件名をファイル名とすると、件名の内容によりエラーとなるので、その場合は日時をファイル名とする
+            // ファイルに使用できない文字(\/:?<>|)
+            // ファイルパスが256文字超(OSによる)
+            // tempRootPath 一時フォルダルートパス　ダウンロード時にここにファイルが作成される
+            // zipFileName zipファイル名
+            // return 実際に使用するzipファイル名 引数のzipファイル名でエラーとなるときに日時に置換
+            string getNewDownloadFilePath(string tempRootPath, string zipFileName)
+            {
+                string newFilePath = zipFileName;
+                // 実際にダウンロードされるファイルのパス
+                string downloadFilePath = Path.Combine(tempRootPath, zipFileName);
+                try
+                {
+                    // ファイルを作成し、削除
+                    System.IO.File.Create(downloadFilePath).Close();
+                    File.Delete(downloadFilePath);
+                }
+                catch (Exception ex)
+                {
+                    // 使用できないファイル名なら例外となるので、新たなファイル名を設定
+                    newFilePath = string.Format("{0:yyyyMMddHHmmssfff}{1}", DateTime.Now, CommonConstants.REPORT.EXTENSION.ZIP_FILE);
+                }
+
+                return newFilePath;
             }
         }
     }

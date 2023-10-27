@@ -850,6 +850,34 @@ function PT0007_initTabOriginal(tabNo, tableId) {
 }
 
 /**
+ * 移庫入力画面の登録前追加条件取得処理を行うかどうかの判定
+ *  @param appPath       ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId     ：機能ID
+ *  @param formNo        ：画面番号
+ *  @param btn           ：押下されたボタン要素
+ *  @returns {bool} Trueの場合はDM0002_addSearchConditionDictionaryForRegistの処理を行う、Falseの場合は他の画面の追加条件取得処理
+ */
+function IsExecPT0007_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
+    var result = conductId == PT0007_ConsuctId;
+    return result;
+}
+
+/**
+ *【オーバーライド用関数】登録前追加条件取得処理
+ *  @param appPath       ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId     ：機能ID
+ *  @param formNo        ：画面番号
+ *  @param btn           ：押下されたボタン要素
+ */
+function PT0007_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
+
+    // 予備品情報を取得
+    var targetElements = [];
+    targetElements.push($("#" + PT0007_FormList.PartsInfo.Id + getAddFormNo() + "_div").find("table")[0]);
+    return getListDataElements(targetElements, formNo, 0);
+}
+
+/**
  *  明細ﾃﾞｰﾀの入力検証を行う
  *  @return {bool} : ture(OK) false(NG)
  */

@@ -18,6 +18,8 @@ using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using STDDao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -113,7 +115,7 @@ namespace CommonTMQUtil
             public const string GetInputControlDefine = "GetInputControlDefine";
             #endregion
 
-       }
+        }
 
         /// <summary>
         /// カラム名
@@ -188,13 +190,16 @@ namespace CommonTMQUtil
             /// <summary>共通用シート番号</summary>
             public const string ComSheetNo = "com_sheet_no";
 
-            /// <summary>スケジュール</summary>
-            public const string Schedule = "schedule";
             /// <summary>予算実績</summary>
             public const string BudgetResult = "budget_result";
 
             /// <summary>キー項</summary>
             public const string KeyId = "key_id";
+
+            /// <summary>機能場所名称情報取得済フラグ（帳票用）</summary>
+            public const string OutputReportLocationNameGotFlg = "output_report_location_name_got_flg";
+            /// <summary>職種・機種名称情報取得済フラグ（帳票用）</summary>
+            public const string OutputReportJobNameGotFlg = "output_report_job_name_got_flg";
 
             /// <summary>
             /// 共通用カラムかどうか
@@ -203,8 +208,8 @@ namespace CommonTMQUtil
             /// <returns>true：共通用カラム/false：その他のカラム</returns>
             public static bool IsCommonColumn(string colName)
             {
-                string[] comNames = new string[] { 
-                    ComTitle, ComDate, ComTime, ComSheetTitle, ComVersion, ComDateTime, ComConductId, ComSheetNo 
+                string[] comNames = new string[] {
+                    ComTitle, ComDate, ComTime, ComSheetTitle, ComVersion, ComDateTime, ComConductId, ComSheetNo
                 };
                 return comNames.Contains(colName);
             }
@@ -653,6 +658,17 @@ namespace CommonTMQUtil
             /// <value>SQLの中でコメントアウトを解除したい箇所のリスト</value>
             public List<string> ListUnComment { get; set; }
         }
+
+        /// <summary>
+        /// RP0420・RP0430 変更履歴一覧 アンコメントキー
+        /// </summary>
+        public class HistoryUncommentKey
+        {
+            /// <summary>件数取得時のアンコメントキー</summary>
+            public static string UnCommentCount = "GetCount";
+            /// <summary>検索時のアンコメントキー</summary>
+            public static string UnCommentSelect = "GetData";
+        }
         #endregion
 
         #region エクセル入出力共通処理
@@ -1034,6 +1050,8 @@ namespace CommonTMQUtil
         /// <param name="condAccountReport">会計帳票出力条件クラス</param>
         /// <param name="summaryDataList">集計帳票集計データ</param>
         /// <param name="dicFixedValueForOutput">固定値出力用データ</param>
+        /// <param name="condHistoryManagementReport">RP0420・RP0430 変更履歴一覧 出力条件のデータクラス</param>
+        /// <param name="msgResources">メッセージリソース管理クラス</param>
         /// <returns>true:正常　false:エラー</returns>
         public static bool CommonOutputExcel(
         int factoryId,
@@ -1058,7 +1076,8 @@ namespace CommonTMQUtil
         CondAccountReport condAccountReport = null,
         Dictionary<int, IList<dynamic>> dicSummaryDataList = null,
         Dictionary<string, string> dicFixedValueForOutput = null,
-        HistoryCondition condHistoryManagementReport = null)
+        HistoryCondition condHistoryManagementReport = null,
+        ComUtil.MessageResources msgResources = null)
         {
 
             //==========
@@ -1162,6 +1181,35 @@ namespace CommonTMQUtil
                             continue;
                         }
                     }
+
+                    // tempテーブルに対象帳票シート定義の使用構成グループデータを設定する
+                    if(string.IsNullOrEmpty(sheetDefine.UseStructureGroupId) == false)
+                    {
+                        // 使用構成グループを取得
+                        TMQUtil.ListPerformanceUtil listPf = new(db, languageId);
+                        // temp情報作成
+                        listPf.GetAttachmentSql(new List<FunctionTypeId>());
+                        // 翻訳用一時テーブル登録
+                        // 翻訳する構成グループのリスト
+                        var structuregroupList = new List<GroupId>();
+                        foreach(string groupId in sheetDefine.UseStructureGroupId.Split(',')) 
+                        {
+                            int iGroupId = int.Parse(groupId);
+                            foreach (GroupId Value in Enum.GetValues(typeof(GroupId)))
+                            {
+                                int iVal = (int)Value;
+                                if (iVal == iGroupId)
+                                {
+                                    structuregroupList.Add(Value);
+                                    break;
+                                }
+                            }
+                        }
+                        listPf.GetCreateTranslation(); // テーブル作成
+                        listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                        listPf.RegistTempTable(); // 登録
+                    }
+
                     // 対象SQLファイルにてSQLを実行し、エクセルを作成する
                     string targetSql = sheetDefine.TargetSql;
                     IList<dynamic> dataList = null;
@@ -1189,7 +1237,12 @@ namespace CommonTMQUtil
                     else if (condHistoryManagementReport != null)
                     {
                         //変更履歴一覧を取得
-                        dataList = GetHistoryManagementReportData(targetSql, languageId, db, condHistoryManagementReport);
+                        dataList = GetHistoryManagementReportData(targetSql, languageId, db, condHistoryManagementReport, msgResources, out message);
+                        if (!string.IsNullOrEmpty(message))
+                        {
+                            //件数チェックでエラーの場合
+                            return false;
+                        }
                     }
                     else
                     {
@@ -1211,109 +1264,151 @@ namespace CommonTMQUtil
 
                         }
                     }
-
-                    // 最大ネスト数分、ループ
-                    for (int idx = 0; idx < ComReport.MaxLayerNest; idx++)
+                    // 出力最大データ数チェック
+                    if (!CheckDownloadExcelMaxRowCnt(dataList.Count, db))
                     {
-                        string addNum;
+                        // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                        message = GetResMessage(ComRes.ID.ID141120013, languageId, msgResources);
+                        return false;
+                    }
 
-                        // ２周目以降は項目名末尾に数値を付与する
-                        if (idx == 0)
+                    // 対象データ取得SQL内で既に機能場所階層情報、職種・機種情報をそれぞれ取得済であれば以下の取得処理を行わない制御とする
+                    // 取得済の場合、名称情報取得済フラグ（帳票用）、名称情報取得済フラグ（帳票用）が1で設定済
+                    Boolean bolLocationFlg = false;
+                    Boolean bolJobFlg = false;
+                    if (dataList.Count > 0)
+                    {
+                        // 先頭行のフラグで判定
+                        var rowDic = (IDictionary<string, object>)dataList[0];
+                        var val = rowDic[ColumnName.OutputReportLocationNameGotFlg];
+                        if (val != null && string.IsNullOrEmpty(val.ToString()) == false && val.ToString() == "1")
                         {
-                            addNum = "";
+                            bolLocationFlg = true;
                         }
-                        else
+                        
+                        val = rowDic[ColumnName.OutputReportJobNameGotFlg];
+                        if (val != null && string.IsNullOrEmpty(val.ToString()) == false && val.ToString() == "1")
                         {
-                            addNum = (idx + 1).ToString();
+                            bolJobFlg = true;
                         }
+                    }
 
-                        // 職種情報を設定する
-                        foreach (var data in dataList)
+                    // 機能場所階層情報、職種情報どちらも取得済であれば以下の処理をスキップする
+                    if (bolJobFlg == false || bolLocationFlg == false)
+                    { 
+                        // 最大ネスト数分、ループ
+                        for (int idx = 0; idx < ComReport.MaxLayerNest; idx++)
                         {
-                            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-                            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-                            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+                            string addNum;
 
-                            IList<StructureJobInfoForReport> jobInfoList = new List<StructureJobInfoForReport>();
-                            StructureJobInfoForReport jobInfo = new StructureJobInfoForReport();
-
-                            var rowDic = (IDictionary<string, object>)data;
-                            var val = rowDic[ColumnName.JobStructureId + addNum];
-                            if (val == null || string.IsNullOrEmpty(val.ToString()) == true)
-                            {
-                                continue;
-                            }
-                            jobInfo.JobStructureId = Convert.ToInt32(val);
-                            jobInfoList.Add(jobInfo);
-                            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureJobInfoForReport>(ref jobInfoList, typeLst, db, languageId);
-                            // 関連情報の設定
-                            if (jobInfoList == null)
-                            {
-                                continue;
-                            }
-                            // 職種名称
-                            rowDic[ColumnName.JobName + addNum] = jobInfoList[0].JobName;
-                            // 機種大分類名称
-                            rowDic[ColumnName.LargeClassficationName + addNum] = jobInfoList[0].LargeClassficationName;
-                            // 機種中分類名称
-                            rowDic[ColumnName.MiddleClassficationName + addNum] = jobInfoList[0].MiddleClassficationName;
-                            // 機種小分類名称
-                            rowDic[ColumnName.SmallClassficationName + addNum] = jobInfoList[0].SmallClassficationName;
-
+                            // ２周目以降は項目名末尾に数値を付与する
                             if (idx == 0)
                             {
-                                // 機種名称設定(RP0060)
-                                if (!string.IsNullOrEmpty(jobInfoList[0].LargeClassficationName))
-                                {
-                                    rowDic[ColumnName.ModelName] = jobInfoList[0].LargeClassficationName;
-                                }
-                                if (!string.IsNullOrEmpty(jobInfoList[0].MiddleClassficationName))
-                                {
-                                    rowDic[ColumnName.ModelName] = jobInfoList[0].MiddleClassficationName;
-                                }
-                                if (!string.IsNullOrEmpty(jobInfoList[0].SmallClassficationName))
-                                {
-                                    rowDic[ColumnName.ModelName] = jobInfoList[0].SmallClassficationName;
-                                }
+                                addNum = "";
                             }
-
-                        }
-                        // 機能場所階層情報を設定する
-                        foreach (var data in dataList)
-                        {
-                            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-                            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-                            IList<StructureLocationInfoForReport> locationInfoList = new List<StructureLocationInfoForReport>();
-                            StructureLocationInfoForReport locationInfo = new StructureLocationInfoForReport();
-
-                            var rowDic = (IDictionary<string, object>)data;
-                            var val = rowDic["location_structure_id" + addNum];
-                            if (val == null || string.IsNullOrEmpty(val.ToString()) == true)
+                            else
                             {
-                                continue;
+                                addNum = (idx + 1).ToString();
                             }
-                            locationInfo.LocationStructureId = Convert.ToInt32(val);
-                            locationInfoList.Add(locationInfo);
-                            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureLocationInfoForReport>(ref locationInfoList, typeLst, db, languageId);
-                            // 関連情報の設定
-                            if (locationInfoList == null)
+
+                            // 対象データ取得SQL内で既に職種情報、機種情報、機能場所階層情報を取得済であれば
+                            // 以下の処理を行わない制御とする
+                            if (bolJobFlg == false)
                             {
-                                continue;
+                                // 職種情報を設定する
+                                foreach (var data in dataList)
+                                {
+                                    // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+                                    List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+                                    typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+
+                                    IList<StructureJobInfoForReport> jobInfoList = new List<StructureJobInfoForReport>();
+                                    StructureJobInfoForReport jobInfo = new StructureJobInfoForReport();
+
+                                    var rowDic = (IDictionary<string, object>)data;
+                                    var val = rowDic[ColumnName.JobStructureId + addNum];
+                                    if (val == null || string.IsNullOrEmpty(val.ToString()) == true)
+                                    {
+                                        continue;
+                                    }
+                                    jobInfo.JobStructureId = Convert.ToInt32(val);
+                                    jobInfoList.Add(jobInfo);
+                                    TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureJobInfoForReport>(ref jobInfoList, typeLst, db, languageId);
+                                    // 関連情報の設定
+                                    if (jobInfoList == null)
+                                    {
+                                        continue;
+                                    }
+                                    // 職種名称
+                                    rowDic[ColumnName.JobName + addNum] = jobInfoList[0].JobName;
+                                    // 機種大分類名称
+                                    rowDic[ColumnName.LargeClassficationName + addNum] = jobInfoList[0].LargeClassficationName;
+                                    // 機種中分類名称
+                                    rowDic[ColumnName.MiddleClassficationName + addNum] = jobInfoList[0].MiddleClassficationName;
+                                    // 機種小分類名称
+                                    rowDic[ColumnName.SmallClassficationName + addNum] = jobInfoList[0].SmallClassficationName;
+
+                                    if (idx == 0)
+                                    {
+                                        // 機種名称設定(RP0060)
+                                        if (!string.IsNullOrEmpty(jobInfoList[0].LargeClassficationName))
+                                        {
+                                            rowDic[ColumnName.ModelName] = jobInfoList[0].LargeClassficationName;
+                                        }
+                                        if (!string.IsNullOrEmpty(jobInfoList[0].MiddleClassficationName))
+                                        {
+                                            rowDic[ColumnName.ModelName] = jobInfoList[0].MiddleClassficationName;
+                                        }
+                                        if (!string.IsNullOrEmpty(jobInfoList[0].SmallClassficationName))
+                                        {
+                                            rowDic[ColumnName.ModelName] = jobInfoList[0].SmallClassficationName;
+                                        }
+                                    }
+
+                                }
                             }
+                            // 対象データ取得SQL内で既に職種情報、機種情報、機能場所階層情報を取得済であれば
+                            // 以下の処理を行わない制御とする
+                            if (bolLocationFlg == false)
+                            {
+                                // 機能場所階層情報を設定する
+                                foreach (var data in dataList)
+                                {
+                                    List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+                                    typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+                                    IList<StructureLocationInfoForReport> locationInfoList = new List<StructureLocationInfoForReport>();
+                                    StructureLocationInfoForReport locationInfo = new StructureLocationInfoForReport();
 
-                            // 地区
-                            rowDic[ColumnName.DistrictName + addNum] = locationInfoList[0].DistrictName;
-                            // 工場
-                            rowDic[ColumnName.FactoryName + addNum] = locationInfoList[0].FactoryName;
-                            // プラント
-                            rowDic[ColumnName.PlantName + addNum] = locationInfoList[0].PlantName;
-                            // 系列
-                            rowDic[ColumnName.SeriesName + addNum] = locationInfoList[0].SeriesName;
-                            // 工程
-                            rowDic[ColumnName.StrokeName + addNum] = locationInfoList[0].StrokeName;
-                            // 設備
-                            rowDic[ColumnName.FacilityName + addNum] = locationInfoList[0].FacilityName;
+                                    var rowDic = (IDictionary<string, object>)data;
+                                    var val = rowDic["location_structure_id" + addNum];
+                                    if (val == null || string.IsNullOrEmpty(val.ToString()) == true)
+                                    {
+                                        continue;
+                                    }
+                                    locationInfo.LocationStructureId = Convert.ToInt32(val);
+                                    locationInfoList.Add(locationInfo);
+                                    TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureLocationInfoForReport>(ref locationInfoList, typeLst, db, languageId);
+                                    // 関連情報の設定
+                                    if (locationInfoList == null)
+                                    {
+                                        continue;
+                                    }
 
+                                    // 地区
+                                    rowDic[ColumnName.DistrictName + addNum] = locationInfoList[0].DistrictName;
+                                    // 工場
+                                    rowDic[ColumnName.FactoryName + addNum] = locationInfoList[0].FactoryName;
+                                    // プラント
+                                    rowDic[ColumnName.PlantName + addNum] = locationInfoList[0].PlantName;
+                                    // 系列
+                                    rowDic[ColumnName.SeriesName + addNum] = locationInfoList[0].SeriesName;
+                                    // 工程
+                                    rowDic[ColumnName.StrokeName + addNum] = locationInfoList[0].StrokeName;
+                                    // 設備
+                                    rowDic[ColumnName.FacilityName + addNum] = locationInfoList[0].FacilityName;
+                                }
+
+                            }
                         }
                     }
 
@@ -1669,6 +1764,7 @@ namespace CommonTMQUtil
                 sheetDefine.SheetName = sheetDefineBase.SheetName;
                 sheetDefine.SheetNameTranslationId = sheetDefineBase.SheetNameTranslationId;
                 sheetDefine.TargetSql = sheetDefineBase.TargetSql;
+                sheetDefine.UseStructureGroupId = sheetDefineBase.UseStructureGroupId;
 
             }
 
@@ -1839,13 +1935,14 @@ namespace CommonTMQUtil
             // 選択データ分ループ
             if (selectKeyDataList.Count > 0)
             {
-                foreach (var selectKey in selectKeyDataList)
+                // データを一括でINSERTするSQL文を作成
+                var insertSqlList = getMultiInsertSql(selectKeyDataList);
+                var param = new { LanguageId = languageId, FactoryId = factoryId};
+
+                foreach (var insertSqlInfo in insertSqlList)
                 {
                     // テンポラリデータ作成
-                    TMQUtil.SqlExecuteClass.Regist(ComReport.InsertTemp,
-                                                   ExcelPath,
-                                                   new { Key1 = selectKey.Key1, Key2 = selectKey.Key2, Key3 = selectKey.Key3, LanguageId = languageId, FactoryId = factoryId },
-                                                   db);
+                    db.Regist(insertSqlInfo, param);
                 }
             }
             else
@@ -1871,6 +1968,64 @@ namespace CommonTMQUtil
             // 帳票データ取得
             var dataList = db.GetList(selectSql);
             return dataList;
+
+            // キー値のリストからSQLを作成
+            // リストの行数分INSERT文を実行すると遅いため、1000行(上限)毎にまとめて実行する
+            // @Key1とパラメータで実行したいが、パラメータの上限数もあるので、値を直接SQLに含める
+            // キーの値は取得処理で数値のみと判定しているのでSQLインジェクションの問題はない
+            static List<string> getMultiInsertSql(List<CommonSTDUtil.CommonBusinessLogic.SelectKeyData> keyDataList)
+            {
+                List<string> outSqlList = new();    // 戻り値、実行SQLのリスト
+                const string insertSqlCommon = "INSERT INTO #temp (key1,key2,key3,languageId,factoryId) VALUES "; // 実行SQLの共通部、これに値を設定
+                const int valueMaxCounts = 1000;    // INSERT - VALUES は1000行までしか値を設定できない、1000を超える場合は複数回実行する
+
+                int valueCount = 0; // SQL文に設定したレコードの数
+                StringBuilder insertSql = getNewSql(); // 実行するSQL
+                // キーの件数文繰り返し
+                foreach (var keyData in keyDataList)
+                {
+                    // SQL文のレコードの数が上限より大きい場合、新しいSQLに切り替え
+                    if (valueCount >= valueMaxCounts)
+                    {
+                        // 今のSQLを戻り値へ追加
+                        outSqlList.Add(insertSql.ToString());
+                        // 初期化
+                        valueCount = 0;
+                        insertSql = getNewSql();
+                    }
+                    // 2レコード目以降なら、先頭にカンマを追加
+                    if (valueCount > 0)
+                    {
+                        insertSql.Append(',');
+                    }
+                    // 1レコード分のSQLを追加
+                    insertSql.Append('(').Append(getValueString(keyData.Key1)).Append(',').Append(getValueString(keyData.Key2)).Append(',').Append(getValueString(keyData.Key3)).Append(",@LanguageId,@FactoryId)");
+                    valueCount++;
+                }
+                outSqlList.Add(insertSql.ToString());
+
+                return outSqlList;
+
+                // SQL初期化
+                StringBuilder getNewSql()
+                {
+                    return new StringBuilder(insertSqlCommon);
+                }
+
+                // 値を取得
+                // キーの値がNullの場合、"NULL"を設定しないとSQLエラーになる
+                string getValueString(object value)
+                {
+                    const string rtnNull = "NULL";
+                    // Nullの場合、数値でない場合は"NULL"を返す
+                    if (value == null)
+                    {
+                        return rtnNull;
+                    }
+                    bool isLong = long.TryParse(value.ToString(), out long numValue);
+                    return isLong ? numValue.ToString() : rtnNull;
+                }
+            }
         }
         #endregion
 
@@ -2069,39 +2224,27 @@ namespace CommonTMQUtil
         /// <param name="languageId">言語ID</param>
         /// <param name="db">DB情報</param>
         /// <param name="condition">検索条件</param>
+        /// <param name="msgResources">メッセージリソース管理クラス</param>
+        /// <param name="message">メッセージ</param>
         /// <returns>取得データ</returns>
-        public static IList<dynamic> GetHistoryManagementReportData(string targetSql, string languageId, ComDB db, HistoryCondition condition)
+        public static IList<dynamic> GetHistoryManagementReportData(string targetSql, string languageId, ComDB db, HistoryCondition condition, ComUtil.MessageResources msgResources, out string message)
         {
+            // メッセージ
+            message = "";
+
+            condition.ListUnComment.Add(HistoryUncommentKey.UnCommentCount);
+            // 件数取得SQLの取得
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath, targetSql, out string countSql, condition.ListUnComment))
+            {
+                return null;
+            }
+            condition.ListUnComment.Remove(HistoryUncommentKey.UnCommentCount);
+            condition.ListUnComment.Add(HistoryUncommentKey.UnCommentSelect);
             // 検索SQLの取得
             if (!TMQUtil.GetFixedSqlStatement(ExcelPath, targetSql, out string selectSql, condition.ListUnComment))
             {
                 return null;
             }
-            //出力機能毎に変更項目が異なるので、ここでSQLを作成する
-            string colName = condition.ConductCode == ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001).ToString() ? "machine_id" : "long_plan_id";
-            //追加SQL
-            StringBuilder sql = new StringBuilder();
-            sql.AppendLine("SELECT");
-            sql.AppendLine("    hd." + colName);
-            sql.AppendLine("    , hd.history_management_id");
-            sql.AppendLine("    , hd.history_order");
-            sql.AppendLine("    , hd.row_num");
-            sql.AppendLine("    , hd.application_reason");
-            sql.AppendLine("    , hd.application_user_name");
-            sql.AppendLine("    , hd.application_date");
-            sql.AppendLine("    , hd.approval_user_name");
-            sql.AppendLine("    , hd.approval_date");
-            sql.AppendLine("    , hd.division_cd");
-            sql.AppendLine("    , hd.status");
-            sql.AppendLine("    , hd.division");
-            sql.AppendLine("    , rpc.col_order AS col_no");
-            sql.AppendLine("    , rpc.col_name AS col_name");
-            sql.AppendLine("    , hd.@ItemName AS col_value");
-            sql.AppendLine("FROM");
-            sql.AppendLine("    #temp_history_data AS hd");
-            sql.AppendLine("    CROSS JOIN report_col_info AS rpc");
-            sql.AppendLine("WHERE");
-            sql.AppendLine("    rpc.col_order = @ColOrder");
 
             //構成アイテムを取得するパラメータ設定
             TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
@@ -2112,40 +2255,100 @@ namespace CommonTMQUtil
 
             // 変更管理帳票出力対象項目定義を取得
             List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, db, Const.CommonFactoryId, true);
-            //機能IDで絞った構成ID（項目）のリスト
-            List<int> structureIdList = list.Where(x => x.Seq == 1 && x.ExData == condition.ConductCode).Select(x => x.StructureId).ToList();
-            //対象の構成IDで絞ったリスト
-            List<TMQUtil.StructureItemEx.StructureItemExInfo> targetList = list.Where(x => structureIdList.Contains(x.StructureId)).ToList();
-            //拡張データ2の表示順で並べる
-            List<int> orderIdList = targetList.Where(x => x.Seq == 2).OrderBy(x => int.Parse(x.ExData)).Select(x => x.StructureId).ToList();
 
-            StringBuilder addSql = new StringBuilder();
-            bool isFirst = true;
-            foreach (int structureId in orderIdList)
+            //出力機能毎に変更項目が異なるので、ここでSQLを作成する
+            //機器台帳or長期計画
+            createSql(condition.ConductCode, false);
+            //保全部位、保全項目
+            string outputItem = condition.ConductCode == ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001).ToString() ? ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001Content).ToString() : ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0002Content).ToString();
+            createSql(outputItem, true);
+
+            //件数取得SQL実行
+            var count = db.GetCount(countSql.ToString(), condition);
+            // 出力最大データ数チェック
+            if (!CheckDownloadExcelMaxRowCnt(count, db))
             {
-                if (!isFirst)
-                {
-                    //2項目目以降
-                    addSql.AppendLine("UNION");
-                }
-                //表示順
-                string colOrder = targetList.Where(x => x.StructureId == structureId && x.Seq == 2).Select(x => x.ExData).FirstOrDefault();
-                //項目物理名
-                string itemName = targetList.Where(x => x.StructureId == structureId && x.Seq == 3).Select(x => x.ExData).FirstOrDefault();
-                if (string.IsNullOrEmpty(colOrder) || string.IsNullOrEmpty(itemName))
-                {
-                    continue;
-                }
-
-                string text = sql.ToString().Replace("@ItemName", itemName).Replace("@ColOrder", colOrder);
-                addSql.AppendLine(text);
-                isFirst = false;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                message = GetResMessage(ComRes.ID.ID141120013, languageId, msgResources);
+                return null;
             }
-            selectSql = selectSql.Replace("@HistoryVertical", addSql.ToString());
 
             //SQL実行
             var results = db.GetListByDataClass<dynamic>(selectSql.ToString(), condition);
             return results;
+
+            void createSql(string outputItem, bool isContent)
+            {
+                string colName = condition.ConductCode == ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001).ToString() ? "machine_id" : "long_plan_id";
+                //追加SQL
+                StringBuilder sql = new StringBuilder();
+                sql.AppendLine("SELECT");
+                sql.AppendLine("    hd." + colName);
+                sql.AppendLine("    , hd.history_management_id");
+                sql.AppendLine("    , hd.history_order");
+                //sql.AppendLine("    , hd.row_num");
+                sql.AppendLine("    , hd.application_status_id");
+                sql.AppendLine("    , hd.application_division_id");
+                sql.AppendLine("    , hd.application_reason");
+                sql.AppendLine("    , hd.application_user_name");
+                sql.AppendLine("    , hd.application_date");
+                sql.AppendLine("    , hd.approval_user_name");
+                sql.AppendLine("    , hd.approval_date");
+                sql.AppendLine("    , hd.division_cd");
+                sql.AppendLine("    , hd.status");
+                sql.AppendLine("    , hd.division");
+                sql.AppendLine("    , hd.execution_division");
+                sql.AppendLine("    , rpc.col_order AS col_no");
+                sql.AppendLine("    , rpc.col_name AS col_name");
+                sql.AppendLine("    , hd.@ItemName AS col_value");
+                if (isContent)
+                {
+                    sql.AppendLine("    , hd.management_standards_content_id");
+                    sql.AppendLine("FROM");
+                    sql.AppendLine("    #temp_history_maintainance_data AS hd");
+                    sql.AppendLine("    CROSS JOIN #report_maintainance_col_info AS rpc");
+                }
+                else
+                {
+                    sql.AppendLine("FROM");
+                    sql.AppendLine("    #temp_history_data AS hd");
+                    sql.AppendLine("    CROSS JOIN #report_col_info AS rpc");
+                }
+                sql.AppendLine("WHERE");
+                sql.AppendLine("    rpc.col_order = @ColOrder");
+
+                //機能IDで絞った構成ID（項目）のリスト
+                List<int> structureIdList = list.Where(x => x.Seq == 1 && x.ExData == outputItem).Select(x => x.StructureId).ToList();
+                //対象の構成IDで絞ったリスト
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> targetList = list.Where(x => structureIdList.Contains(x.StructureId)).ToList();
+                //拡張データ2の表示順で並べる
+                List<int> orderIdList = targetList.Where(x => x.Seq == 2).OrderBy(x => int.Parse(x.ExData)).Select(x => x.StructureId).ToList();
+
+                StringBuilder addSql = new StringBuilder();
+                bool isFirst = true;
+                foreach (int structureId in orderIdList)
+                {
+                    if (!isFirst)
+                    {
+                        //2項目目以降
+                        addSql.AppendLine("UNION");
+                    }
+                    //表示順
+                    string colOrder = targetList.Where(x => x.StructureId == structureId && x.Seq == 2).Select(x => x.ExData).FirstOrDefault();
+                    //項目物理名
+                    string itemName = targetList.Where(x => x.StructureId == structureId && x.Seq == 3).Select(x => x.ExData).FirstOrDefault();
+                    if (string.IsNullOrEmpty(colOrder) || string.IsNullOrEmpty(itemName))
+                    {
+                        continue;
+                    }
+
+                    string text = sql.ToString().Replace("@ItemName", itemName).Replace("@ColOrder", colOrder);
+                    addSql.AppendLine(text);
+                    isFirst = false;
+                }
+                countSql = countSql.Replace(isContent ? "@HistoryMaintainanceVertical" : "@HistoryVertical", addSql.ToString());
+                selectSql = selectSql.Replace(isContent ? "@HistoryMaintainanceVertical" : "@HistoryVertical", addSql.ToString());
+            }
         }
 
         #region　予備品関連処理
@@ -2167,7 +2370,7 @@ namespace CommonTMQUtil
                 foreach (dynamic result in results)
                 {
                     // 棚番と枝番を結合する
-                    if (!string.IsNullOrEmpty((result.rack_name).ToString()) && !string.IsNullOrEmpty((result.parts_location_detail_no).ToString()))
+                    if (!string.IsNullOrEmpty((result.rack_name)) && !string.IsNullOrEmpty((result.parts_location_detail_no)))
                     {
                         // 結合文字列を取得
                         joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate((int)result.factory_id, languageId, db, ref factoryJoinDic);
@@ -2334,6 +2537,35 @@ namespace CommonTMQUtil
             return true;
         }
 
+
+        /// <summary>
+        /// Excel出力可能最大行数チェック
+        /// </summary>
+        /// <param name="dataCount">データ件数</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <returns>false:最大行数オーバー</returns>
+        public static bool CheckDownloadExcelMaxRowCnt(int dataCount, ComDB db)
+        {
+            // 構成アイテムを取得するパラメータ設定
+            StructureItemEx.StructureItemExInfo param = new StructureItemEx.StructureItemExInfo();
+            // 構成グループID
+            param.StructureGroupId = (int)GroupId.ExcelMaxCount; // Excel出力可能最大行数
+            param.Seq = 1;
+            // 構成アイテム、アイテム拡張マスタ情報取得
+            List<StructureItemEx.StructureItemExInfo> list = StructureItemEx.GetStructureItemExData(param, db);
+            if (list != null && list.Count > 0)
+            {
+                // 取得情報から拡張データを取得
+                var result = list.Select(x => x.ExData).FirstOrDefault();
+                if (dataCount > int.Parse(result))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// ファイル マッピング情報
         /// </summary>
@@ -2400,13 +2632,15 @@ namespace CommonTMQUtil
             // 項目定義を取得
             IList<Dao.InoutDefine> reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
                 baseSql,
-                new { FactoryId = factoryId, LanguageId = languageId,  ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
+                new { FactoryId = factoryId, LanguageId = languageId, ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
             if (reportId == ReportRP0270.ReportId)
             {
                 // 会計提出表の場合、帳票定義１つの為、シートNoは固定で取得
                 reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
                     baseSql,
-                    new { FactoryId = factoryId, ReportId = reportId, SheetNo = ReportRP0270.BaseSheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
+                    //new { FactoryId = factoryId, ReportId = reportId, SheetNo = ReportRP0270.BaseSheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
+                    new { FactoryId = factoryId, ReportId = reportId, SheetNo = ReportRP0270.BaseSheetNo, TemplateId = templateId, OutputPatternId = outputPattenId, LanguageId = languageId });
+
             }
             if (reportInfoList == null || reportInfoList.Count == 0)
             {
@@ -2512,7 +2746,7 @@ namespace CommonTMQUtil
 
                     // マッピング情報設定
                     info = new CommonExcelPrtInfo();
-                    info.SetSheetName(null); 
+                    info.SetSheetName(null);
                     info.SetSheetNo(sheetNo);
                     info.SetExlSetValueByAddress(address, val, format);
                     // マッピングリストに追加
@@ -3680,7 +3914,7 @@ namespace CommonTMQUtil
             string[] messageIdList = new string[1];
             messageIdList[0] = translationId.ToString();
             List<int> factoryIdList = null;
-            if(factoryId >= 0)
+            if (factoryId >= 0)
             {
                 factoryIdList = new List<int>() { factoryId };
             }
@@ -4232,7 +4466,7 @@ namespace CommonTMQUtil
                         //    }
                         //}
                         // アップロード共通チェック実行
-                        if(!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, db, tmpErrorInfo))
+                        if (!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, db, tmpErrorInfo))
                         {
                             continue;
                         }
@@ -4289,11 +4523,11 @@ namespace CommonTMQUtil
         /// <param name="tmpErrorInfo">エラー情報リスト</param>
         /// <returns>エラーの場合False</returns>
         public static bool ExecuteCommonUploadCheck(
-            ComBase.InputDefine reportInfo, 
-            string val, 
-            int dataDirection, 
-            string languageId, 
-            ComUtil.MessageResources msgResources, 
+            ComBase.InputDefine reportInfo,
+            string val,
+            int dataDirection,
+            string languageId,
+            ComUtil.MessageResources msgResources,
             ComDB db,
             List<ComBase.UploadErrorInfo> tmpErrorInfo)
         {
@@ -4323,8 +4557,10 @@ namespace CommonTMQUtil
                     // 桁数を超えている場合、エラーを設定を設定し、スキップ
                     if (val.Length > reportInfo.MaximumLength)
                     {
-                        // 「入力値が設定桁数を超えています。」
-                        error = GetResMessage(new string[] { ComRes.ID.ID941220008 }, languageId, msgResources);
+                        //// 「入力値が設定桁数を超えています。」
+                        //error = GetResMessage(new string[] { ComRes.ID.ID941220008 }, languageId, msgResources);
+                        // 「{0}文字以内で入力して下さい。」
+                        error = GetResMessage(new string[] { ComRes.ID.ID941060018, reportInfo.MaximumLength.ToString() }, languageId, msgResources);
                         tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
                         return false;
                     }
@@ -4353,8 +4589,11 @@ namespace CommonTMQUtil
         /// <param name="columnName">項目名</param>
         /// <param name="error">エラー内容</param>
         /// <param name="dataDirection">入力方式</param>
+        /// <param name="procDiv">送信時処理ID</param>
+        /// <param name="procDivName">送信時処理名称</param>
+        /// <param name="ctrlGrpId">コントロールグループID</param>
         /// <returns>エラー情報</returns>
-        public static ComBase.UploadErrorInfo setTmpErrorInfo(int rowNo, int columnNo, string columnName, string error, int dataDirection)
+        public static ComBase.UploadErrorInfo setTmpErrorInfo(int rowNo, int columnNo, string columnName, string error, int dataDirection, string procDiv = "", string procDivName = "", string ctrlGrpId = "")
         {
             // エラー情報を初期化
             ComBase.UploadErrorInfo errorInfo = new ComBase.UploadErrorInfo();
@@ -4365,6 +4604,9 @@ namespace CommonTMQUtil
             errorInfo.TranslationText = columnName;
             errorInfo.ErrorInfo = error;
             errorInfo.DataDirection = dataDirection;
+            errorInfo.ProcDiv = procDiv;
+            errorInfo.ProcDivName = procDivName;
+            errorInfo.CtrlGrpId = ctrlGrpId;
 
             return errorInfo;
         }
@@ -4387,17 +4629,45 @@ namespace CommonTMQUtil
                 if (count > 0)
                 {
                     //対象のインデックス番号を取得
-                    int index = errorInfoList.Select((e, index) => (e, index)).Where(x => x.e.TranslationText == tmp.TranslationText && x.e.ErrorInfo == tmp.ErrorInfo).Select(x => x.index).FirstOrDefault();
+                    int index = -1;
                     //行番号または列番号を追加
                     switch (tmp.DataDirection)
                     {
                         case ComReport.LongitudinalDirection:
+                            index = errorInfoList.Select((e, index) => (e, index)).Where(x =>
+                                x.e.TranslationText == tmp.TranslationText &&
+                                x.e.ErrorInfo == tmp.ErrorInfo &&
+                                x.e.ColumnNo[0] == tmp.ColumnNo[0]).Select(x => x.index).DefaultIfEmpty(-1).First();
                             // 縦方向連続の場合、行番号を追加
-                            errorInfoList[index].RowNo.Add(tmp.RowNo[0]);
+                            if (index >= 0)
+                            {
+                                if (!errorInfoList[index].RowNo.Contains(tmp.RowNo[0]))
+                                {
+                                    errorInfoList[index].RowNo.Add(tmp.RowNo[0]);
+                                }
+                            }
+                            else
+                            {
+                                errorInfoList.Add(tmp);
+                            }
                             break;
                         case ComReport.LateralDirection:
+                            index = errorInfoList.Select((e, index) => (e, index)).Where(x => 
+                                x.e.TranslationText == tmp.TranslationText && 
+                                x.e.ErrorInfo == tmp.ErrorInfo &&
+                                x.e.RowNo[0] == tmp.RowNo[0]).Select(x => x.index).DefaultIfEmpty(-1).First();
                             // 横方向連続の場合、列番号を追加
-                            errorInfoList[index].ColumnNo.Add(tmp.ColumnNo[0]);
+                            if (index >= 0)
+                            {
+                                if (!errorInfoList[index].ColumnNo.Contains(tmp.ColumnNo[0]))
+                                {
+                                    errorInfoList[index].ColumnNo.Add(tmp.ColumnNo[0]);
+                                }
+                            }
+                            else
+                            {
+                                errorInfoList.Add(tmp);
+                            }
                             break;
                         default:
                             break;

@@ -10,13 +10,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_HM0001
 {
@@ -36,6 +36,9 @@ namespace BusinessLogic_HM0001
         {
             // 検索条件を取得
             Dao.detailSearchCondition condition = getDetailSearchCondition(historyManagementId, machineId, isInit);
+
+            // 翻訳の一時テーブルを作成
+            createTranslationTempTbl();
 
             // 機番情報・機器情報
             if (!searchMachineAndEquipmentInfo(condition))
@@ -203,20 +206,14 @@ namespace BusinessLogic_HM0001
             }
 
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定(変更管理データ・トランザクションデータ どちらも設定する)
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, true);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
 
             // 申請状況の拡張項目を取得
             results[0].ApplicationStatusCode = getApplicationStatusCode(condition);
 
-            // 変更があった項目を取得(変更管理モードの場合)
-            if (condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history)
+            //トランザクションモードの場合、申請状況に「申請なし」を設定
+            if (condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction)
             {
-                // 変更があった項目を取得
-                TMQUtil.HistoryManagement.setValueChangedItem<Dao.searchResult>(results);
-            }
-            else
-            {
-                //トランザクションモードの場合、申請状況に「申請なし」を設定
                 TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
                 results[0].ApplicationStatusId = historyManagement.getApplicationStatus(TMQConst.MsStructure.StructureId.ApplicationStatus.None);
             }
@@ -260,8 +257,8 @@ namespace BusinessLogic_HM0001
             switch (condition.ProcessMode)
             {
                 case (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction: // トランザクションモード
-                    subDir = SqlName.SubDirMachine;
-                    sqlName = SqlName.Detail.GetManagementStandard;
+                    subDir = SqlName.SubDir;
+                    sqlName = SqlName.Detail.GetManagementStandardOriginal;
                     break;
 
                 case (int)TMQConst.MsStructure.StructureId.ProcessMode.history: // 変更管理モード
@@ -317,6 +314,18 @@ namespace BusinessLogic_HM0001
             // 機番情報・機器情報取得
             DateTime now = DateTime.Now;
             Dao.searchResult registInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now);
+
+            // 階層系の値が名称に設定されているため、IDに設定
+            registInfo.DistrictId = ComUtil.ConvertStringToInt(registInfo.DistrictName);                       // 地区
+            registInfo.FactoryId = ComUtil.ConvertStringToInt(registInfo.FactoryName);                         // 工場
+            registInfo.PlantId = ComUtil.ConvertStringToInt(registInfo.PlantName);                             // プラント
+            registInfo.SeriesId = ComUtil.ConvertStringToInt(registInfo.SeriesName);                           // 系列
+            registInfo.StrokeId = ComUtil.ConvertStringToInt(registInfo.StrokeName);                           // 工程
+            registInfo.FacilityId = ComUtil.ConvertStringToInt(registInfo.FacilityName);                       // 設備
+            registInfo.JobId = int.Parse(registInfo.JobName);                                                  // 職種
+            registInfo.LargeClassficationId = ComUtil.ConvertStringToInt(registInfo.LargeClassficationName);   // 機種大分類
+            registInfo.MiddleClassficationId = ComUtil.ConvertStringToInt(registInfo.MiddleClassficationName); // 機種中分類
+            registInfo.SmallClassficationId = ComUtil.ConvertStringToInt(registInfo.SmallClassficationName);   // 機種小分類
 
             // 排他チェック
             if (!checkExclusiveSingleForTable(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "mc_machine", "mc_equipment" }))
@@ -428,7 +437,7 @@ namespace BusinessLogic_HM0001
             }
 
             // 構成存在チェック
-            if (checkComposition(machineId, true))
+            if (!checkComposition(machineId, true))
             {
                 return true;
             }
@@ -504,11 +513,11 @@ namespace BusinessLogic_HM0001
                         this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141070001 });
                     }
 
-                    return true;
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
         #endregion
 
@@ -573,7 +582,7 @@ namespace BusinessLogic_HM0001
             registInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now);
 
             // 排他チェック
-            if (!checkExclusiveSingleForTable(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "hm_history_machine" }))
+            if (!checkExclusiveSingleForTable(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "hm_history_management" }))
             {
                 return false;
             }
@@ -815,6 +824,9 @@ namespace BusinessLogic_HM0001
         {
             DateTime now = DateTime.Now;
 
+            // 翻訳の一時テーブルを作成
+            createTranslationTempTbl();
+
             // 機番情報取得
             Dao.searchResult machineInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now, true);
 
@@ -863,21 +875,15 @@ namespace BusinessLogic_HM0001
             // 周期または開始日が変更されている
             if (dbresult != null)
             {
-                if (managementStandardsInfo.CycleYear != dbresult[0].CycleYear ||
-                    managementStandardsInfo.CycleMonth != dbresult[0].CycleMonth ||
-                    managementStandardsInfo.CycleDay != dbresult[0].CycleDay ||
-                    managementStandardsInfo.StartDate != dbresult[0].StartDate)
+                // 更新時確認チェック(周期・開始日変更チェック 点検種別毎時周期・開始日変更チェック)
+                if (this.Status < CommonProcReturn.ProcStatus.Confirm)
                 {
-                    // 更新時確認チェック(周期・開始日変更チェック 点検種別毎時周期・開始日変更チェック)
-                    if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                    if (isUpdate)
                     {
-                        if (isUpdate)
+                        // 確認項目存在チェック
+                        if (isConfirmRegistCycle(machineInfo, managementStandardsInfo))
                         {
-                            // 確認項目存在チェック
-                            if (isConfirmRegistCycle(machineInfo, managementStandardsInfo))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }
@@ -1181,9 +1187,10 @@ namespace BusinessLogic_HM0001
             {
                 // 機器に変更管理が紐付いている場合は更新
                 ComDao.HmHistoryManagementEntity historyManagementEntity = new() { HistoryManagementId = machineInfo.HistoryManagementId };
+                historyManagementEntity.ApplicationUserId = int.Parse(this.UserId);
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon(ref historyManagementEntity, now, int.Parse(this.UserId), int.Parse(this.UserId));
-                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>()))
+                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>() { "ApplicationUserId" }))
                 {
                     return false;
                 }
@@ -1251,8 +1258,9 @@ namespace BusinessLogic_HM0001
                 // 採番した機器別管理基準部位IDを登録情報に設定
                 managementStandardsInfo.ManagementStandardsComponentId = managementStandardsComponentId;
 
-                // 実行処理区分を設定
-                managementStandardsInfo.ExecutionDivision = isUpdate ? executionDiv.ComponentEdit : executionDiv.ComponentNew;
+                // 登録情報を設定
+                managementStandardsInfo.ExecutionDivision = isUpdate ? executionDiv.ComponentEdit : executionDiv.ComponentNew; // 実行処理区分
+                managementStandardsInfo.OrderNo = 0;                                                                           // 並び順
 
                 // 機器別管理基準内容変更管理 登録処理 + 採番した値を返す
                 if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<long>(out long managementStandardsContentId, SqlName.Detail.InsertManagementStandardsContentInfo, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty, new List<string>() { isUpdate ? "DefaultContent" : "NewContent" }))
@@ -1364,9 +1372,10 @@ namespace BusinessLogic_HM0001
             {
                 // 機器に変更管理が紐付いている場合は更新
                 ComDao.HmHistoryManagementEntity historyManagementEntity = new() { HistoryManagementId = machineInfo.HistoryManagementId };
+                historyManagementEntity.ApplicationUserId = userId;
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon(ref historyManagementEntity, now, userId, userId);
-                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>()))
+                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>() { "ApplicationUserId" }))
                 {
                     return false;
                 }
@@ -1377,16 +1386,15 @@ namespace BusinessLogic_HM0001
 
             foreach (var deleteRow in deleteList)
             {
-                // 選択されたレコードをデータクラスに変換ｎ
+                // 選択されたレコードをデータクラスに変換
                 Dao.managementStandardsResult deleteCondition = new();
+
                 // 変換できない場合はエラー
-                if (!SetExecuteConditionByDataClass<Dao.managementStandardsResult>(deleteRow, ConductInfo.FormDetail.ControlId.ManagementStandardsList, deleteCondition, now, this.UserId))
+                if (!ComUtil.SetConditionByDataClass(ConductInfo.FormDetail.ControlId.ManagementStandardsList, this.mapInfoList, deleteCondition, deleteRow, ComUtil.ConvertType.Execute, null))
                 {
+
                     return false;
                 }
-
-                // テーブル共通項目を設定
-                setExecuteConditionByDataClassCommon(ref deleteCondition, now, userId, userId);
 
                 // 既に行削除されている場合は何もしない
                 if (deleteCondition.ExecutionDivision == executionDiv.ComponentDelete)
@@ -1399,6 +1407,9 @@ namespace BusinessLogic_HM0001
                 {
                     return false;
                 }
+
+                // テーブル共通項目を設定
+                setExecuteConditionByDataClassCommon(ref deleteCondition, now, userId, userId);
 
                 // 「保全項目一覧の追加」「保全項目一覧の項目編集」の場合、申請しているレコードを削除
                 if (deleteCondition.ExecutionDivision == executionDiv.ComponentNew ||

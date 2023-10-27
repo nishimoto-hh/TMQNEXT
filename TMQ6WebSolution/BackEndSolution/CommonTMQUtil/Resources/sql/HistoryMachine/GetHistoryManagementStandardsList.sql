@@ -1,10 +1,40 @@
 WITH management_standards_transaction AS(
     SELECT
         mcp.management_standards_component_id,         -- 機器別管理基準部位ID
+        ma.location_factory_structure_id as factory_id,-- 工場ID
         mcp.machine_id,                                -- 機番ID
-        ma.equipment_level_structure_id,               -- 機器レベル
-        ma.machine_no,                                 -- 機器番号
-        ma.machine_name,                               -- 機器名称
+
+    -------下記3項目は保全項目の編集有無によらず変更可能なのでトランザクションデータと変更管理データで最新のものを取得
+        COALESCE((
+                SELECT
+                    machine.equipment_level_structure_id
+                FROM
+                    hm_mc_machine machine
+                WHERE
+                    machine.history_management_id = @HistoryManagementId
+            ), ma.equipment_level_structure_id) AS equipment_level_structure_id, -- 機器レベル
+        COALESCE((
+                SELECT
+                    machine.machine_no
+                FROM
+                    hm_mc_machine machine
+                WHERE
+                    machine.history_management_id = @HistoryManagementId
+            ), ma.machine_no) AS machine_no, -- 機器番号
+        COALESCE((
+                SELECT
+                    machine.machine_name
+                FROM
+                    hm_mc_machine machine
+                WHERE
+                    machine.history_management_id = @HistoryManagementId
+            ), ma.machine_name) AS machine_name, -- 機器名称
+
+        --ma.equipment_level_structure_id,               -- 機器レベル
+        --ma.machine_no,                                 -- 機器番号
+        --ma.machine_name,                               -- 機器名称
+
+
         eq.maintainance_kind_manage,                   -- 点検種別毎管理
         mcp.inspection_site_structure_id,              -- 部位ID
         msc.inspection_site_importance_structure_id,   -- 部位重要度ID
@@ -34,7 +64,17 @@ WITH management_standards_transaction AS(
         AND msc.update_datetime > ms.update_datetime THEN msc.update_datetime
             ELSE ms.update_datetime
         END update_datetime,                          -- 更新日付
-        dbo.get_file_download_info(1620, msc.management_standards_content_id) AS attachment_file,-- 添付ファイル
+        REPLACE((
+                SELECT
+                    dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
+                FROM
+                    #temp_attachment as att_temp
+                WHERE
+                    msc.management_standards_content_id = att_temp.key_id
+                AND att_temp.function_type_id = 1620
+                ORDER BY
+                    document_no FOR xml path('')
+            ), ' ', '') AS attachment_file,-- 添付ファイル
         (
             SELECT
                 MAX(ac.update_datetime)
@@ -92,6 +132,7 @@ AND mcp.machine_id = @MachineId
 management_standards_history AS(
     SELECT
         history.history_management_id,
+        history.factory_id,
         hcomponent.hm_management_standards_component_id,
         hcontent.hm_management_standards_content_id,
         hcontent.execution_division,
@@ -129,9 +170,18 @@ management_standards_history AS(
             WHEN hcontent.update_datetime > hcomponent.update_datetime
         AND hcontent.update_datetime > schedule.update_datetime THEN hcontent.update_datetime
             ELSE schedule.update_datetime
-        END update_datetime,
-        -- 更新日付
-        dbo.get_file_download_info(1620, hcontent.management_standards_content_id) AS attachment_file, -- 添付ファイル
+        END update_datetime, -- 更新日付
+        REPLACE((
+                SELECT
+                    dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
+                FROM
+                    #temp_attachment as att_temp
+                WHERE
+                    hcontent.management_standards_content_id = att_temp.key_id
+                AND att_temp.function_type_id = 1620
+                ORDER BY
+                    document_no FOR xml path('')
+            ), ' ', '') AS attachment_file,-- 添付ファイル
         (
             SELECT
                 MAX(ac.update_datetime)
@@ -182,6 +232,8 @@ management_standards_history AS(
                         MAX(update_datetime) AS update_datetime
                     FROM
                         hm_mc_maintainance_schedule
+                    WHERE
+                        history_management_id = @HistoryManagementId
                     GROUP BY
                         management_standards_content_id
                 ) b
@@ -200,6 +252,7 @@ management_standards_history AS(
                 )
     ) schedule -- 保全スケジュール
 ON  hcontent.management_standards_content_id = schedule.management_standards_content_id
+
     WHERE
         hcomponent.is_management_standard_conponent = 1
     AND history.history_management_id = @HistoryManagementId
@@ -207,12 +260,15 @@ ON  hcontent.management_standards_content_id = schedule.management_standards_con
 mamagement_data AS(
     SELECT
         msh.history_management_id,                                                                                                                           -- 変更管理ID
+        COALESCE(msh.factory_id, mst.factory_id) AS factory_id,                                                                                              -- 申請データ工場ID
         COALESCE(msh.hm_management_standards_component_id, 0) AS hm_management_standards_component_id,                                                       -- 機器別管理基準部位変更管理ID                       
         COALESCE(msh.hm_management_standards_content_id, 0) AS hm_management_standards_content_id,                                                           -- 機器別管理基準内容変更管理ID                     
         COALESCE(msh.hm_maintainance_schedule_id, 0) AS hm_maintainance_schedule_id,                                                                         -- 保全スケジュール変更管理ID                                             
         CASE
             WHEN msh.execution_division = 5 THEN '20'
             WHEN msh.execution_division = 6 THEN '30'
+            -- 保全項目の変更が無くても機器番号・機器名称・機器レベルが変更されているかもしれないので必要
+            WHEN hmachine_check.machine_id IS NOT NULL  THEN '20' 
             ELSE '0'                                                                                                                                
         END AS application_division_code,                                                                                                                    -- 申請区分
         mst.management_standards_component_id,                                                                                                               -- 機器別管理基準部位ID
@@ -229,17 +285,41 @@ mamagement_data AS(
         COALESCE(msh.inspection_content_structure_id, mst.inspection_content_structure_id) AS inspection_content_structure_id,                               -- 点検内容ID
         COALESCE(msh.maintainance_division, mst.maintainance_division) AS maintainance_division,                                                             -- 保全区分
         COALESCE(msh.maintainance_kind_structure_id, mst.maintainance_kind_structure_id) AS maintainance_kind_structure_id,                                  -- 点検種別ID
-        COALESCE(msh.budget_amount, mst.budget_amount) AS budget_amount,                                                                                     -- 予算金額
-        COALESCE(msh.preparation_period, mst.preparation_period) AS preparation_period,                                                                      -- 準備期間(日)
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_management_standards_content_id IS NOT NULL
+         THEN msh.budget_amount
+         ELSE COALESCE(msh.budget_amount, mst.budget_amount)
+        END AS budget_amount,                                                                                                                                -- 予算金額
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_management_standards_content_id IS NOT NULL
+         THEN msh.preparation_period
+         ELSE COALESCE(msh.preparation_period, mst.preparation_period)
+        END AS preparation_period,                                                                                                                           -- 準備期間(日)
         mst.order_no,                                                                                                                                        -- 並び順
         mst.long_plan_id,                                                                                                                                    -- 長期計画件名ID
         COALESCE(msh.schedule_type_structure_id, mst.schedule_type_structure_id) AS schedule_type_structure_id,                                              -- スケジュール管理区分
         mst.maintainance_schedule_id,                                                                                                                        -- 保全スケジュールID
         mst.is_cyclic,                                                                                                                                       -- 周期ありフラグ
-        COALESCE(msh.cycle_year, mst.cycle_year) AS cycle_year,                                                                                              -- 周期(年)
-        COALESCE(msh.cycle_month, mst.cycle_month) AS cycle_month,                                                                                           -- 周期(月)
-        COALESCE(msh.cycle_day, mst.cycle_day) AS cycle_day,                                                                                                 -- 周期(日)
-        COALESCE(msh.disp_cycle, mst.disp_cycle) AS disp_cycle,                                                                                              -- 表示周期
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.cycle_year
+         ELSE COALESCE(msh.cycle_year, mst.cycle_year)
+        END AS cycle_year,                                                                                                                                   -- 周期(年)
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.cycle_month
+         ELSE COALESCE(msh.cycle_month, mst.cycle_month)
+        END AS cycle_month,                                                                                                                                  -- 周期(月)
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.cycle_day
+         ELSE COALESCE(msh.cycle_day, mst.cycle_day)
+        END AS cycle_day,                                                                                                                                    -- 周期(日)
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.disp_cycle
+         ELSE COALESCE(msh.disp_cycle, mst.disp_cycle)
+        END AS disp_cycle,                                                                                                                                   -- 表示周期
         COALESCE(msh.start_date, mst.start_date) AS start_date,                                                                                              -- 開始日
         COALESCE(msh.execution_division, 0) AS execution_division,                                                                                           -- 実行処理区分
         mst.update_datetime,                                                                                                                                 -- 更新日付
@@ -247,9 +327,9 @@ mamagement_data AS(
         mst.max_update_datetime,                                                                                                                             --添付ファイルの最大更新日時
         CASE
             WHEN msh.execution_division = 5 THEN 
-            dbo.compare_newId_with_oldId(msh.equipment_level_structure_id, mst.equipment_level_structure_id, 'EquipmenLevel') +                                        -- 機器レベル
-            dbo.compare_newVal_with_oldVal(msh.machine_no, mst.machine_no, 'MachineNo') +                                                                              -- 機器番号
-            dbo.compare_newVal_with_oldVal(msh.machine_name, mst.machine_name, 'MachineName') +                                                                        -- 機器名称
+            dbo.compare_newId_with_oldId(msh.equipment_level_structure_id, machine_check.equipment_level_structure_id, 'EquipmentLevel') +                                        -- 機器レベル
+            dbo.compare_newVal_with_oldVal(msh.machine_no, machine_check.machine_no, 'MachineNo') +                                                                              -- 機器番号
+            dbo.compare_newVal_with_oldVal(msh.machine_name, machine_check.machine_name, 'MachineName') +                                                                        -- 機器名称
             dbo.compare_newId_with_oldId(msh.inspection_site_structure_id, mst.inspection_site_structure_id, 'InspectionSite') +                                       -- 保全部位
             dbo.compare_newId_with_oldId(msh.inspection_site_importance_structure_id, mst.inspection_site_importance_structure_id, 'InspectionSiteImportance') +       -- 部位重要度
             dbo.compare_newId_with_oldId(msh.inspection_site_conservation_structure_id, mst.inspection_site_conservation_structure_id, 'InspectionSiteConservation') + -- 保全方式
@@ -264,7 +344,16 @@ mamagement_data AS(
             dbo.compare_newVal_with_oldVal(msh.cycle_day, mst.cycle_day, 'CycleDay') +                                                                                 -- 周期(日)
             dbo.compare_newVal_with_oldVal(msh.disp_cycle, mst.disp_cycle, 'DispCycle') +                                                                              -- 表示周期
             dbo.compare_newVal_with_oldVal(msh.start_date, mst.start_date, 'StartDate')                                                                                -- 開始日
-            ELSE ''
+            WHEN msh.execution_division = 6 THEN
+            ''
+            ELSE
+             CASE
+                 WHEN hmachine_check.machine_id IS NOT NULL THEN
+                 dbo.compare_newId_with_oldId(hmachine_check.equipment_level_structure_id, machine_check.equipment_level_structure_id, 'EquipmentLevel') +                             -- 機器レベル
+                 dbo.compare_newVal_with_oldVal(hmachine_check.machine_no, machine_check.machine_no, 'MachineNo') +                                                                    -- 機器番号
+                 dbo.compare_newVal_with_oldVal(hmachine_check.machine_name, machine_check.machine_name, 'MachineName')                                                                -- 機器名称
+             ELSE ''
+            END
         END AS value_changed
     FROM
         management_standards_transaction mst
@@ -273,9 +362,17 @@ mamagement_data AS(
         ON  mst.management_standards_component_id = msh.management_standards_component_id
         AND mst.management_standards_content_id = msh.management_standards_content_id
         AND msh.execution_division IN(5, 6) -- 「保全項目一覧の項目編集」「保全項目一覧の削除」が対象
+        LEFT JOIN
+            mc_machine machine_check -- 機器レベル・機器番号・機器名称の比較用
+        ON  mst.machine_id = machine_check.machine_id
+        LEFT JOIN
+            hm_mc_machine hmachine_check -- 機器レベル・機器番号・機器名称の比較用
+        ON  mst.machine_id = hmachine_check.machine_id
+        AND hmachine_check.history_management_id = @HistoryManagementId
     UNION ALL
     SELECT
         msh.history_management_id,                     -- 変更管理ID
+        msh.factory_id,                                -- 申請データ工場ID
         msh.hm_management_standards_component_id,      -- 機器別管理基準部位変更杏里ID
         msh.hm_management_standards_content_id,        -- 機器別管理基準内容犯行管理ID 
         msh.hm_maintainance_schedule_id,               -- 保全スケジュール変更管理ID
@@ -317,7 +414,152 @@ mamagement_data AS(
         msh.execution_division = 4 -- 「保全項目一覧の追加」が対象
 )
 SELECT
-    *
+    md.*,
+    ---------------------------------- 以下は翻訳を取得 ----------------------------------
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.equipment_level_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.equipment_level_structure_id
+    ) AS equipment_level_name, -- 機器レベル
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.inspection_site_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.inspection_site_structure_id
+    ) AS inspection_site_name, -- 保全部位
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.inspection_site_importance_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.inspection_site_importance_structure_id
+    ) AS inspection_site_importance_name, -- 部位重要度
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.inspection_site_conservation_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.inspection_site_conservation_structure_id
+    ) AS inspection_site_conservation_name, -- 保全方式
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.maintainance_division
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.maintainance_division
+    ) AS maintainance_division_name, -- 保全区分
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.inspection_content_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.inspection_content_structure_id
+    ) AS inspection_content_name, -- 保全項目
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.maintainance_kind_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.maintainance_kind_structure_id
+    ) AS maintainance_kind_name, -- 点検種別
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = md.schedule_type_structure_id
+              AND st_f.factory_id IN(0, md.factory_id)
+           )
+      AND tra.structure_id = md.schedule_type_structure_id
+    ) AS schedule_type_name -- スケジュール管理
 FROM
     mamagement_data md
 /*@ComponentId

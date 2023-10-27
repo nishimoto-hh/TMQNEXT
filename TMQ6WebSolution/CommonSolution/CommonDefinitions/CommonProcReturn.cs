@@ -69,6 +69,11 @@ namespace CommonWebTemplate.Models.Common
         /// </summary>
         public string FILEDOWNLOADNAME { get; set; }
 
+        /// <summary>
+        /// ユーザー情報の更新
+        /// </summary>
+        public bool UpdateUserInfo { get; set; }
+
         #region === ｺﾝｽﾄﾗｸﾀ ===
         /// <summary>
         /// ｺﾝｽﾄﾗｸﾀ
@@ -76,6 +81,7 @@ namespace CommonWebTemplate.Models.Common
         public CommonProcReturn()
         {
             STATUS = ProcStatus.Valid;   //0:正常終了
+            UpdateUserInfo = false;
         }
         
         /// <summary>
@@ -86,6 +92,7 @@ namespace CommonWebTemplate.Models.Common
         {
             STATUS = ProcStatus.Valid;   //0:正常終了
             MESSAGE = msgId;
+            UpdateUserInfo = false;
         }
 
         /// <summary>
@@ -96,6 +103,7 @@ namespace CommonWebTemplate.Models.Common
         {
             STATUS = status;
             MESSAGE = msgId;
+            UpdateUserInfo = false;
         }
         #endregion
 

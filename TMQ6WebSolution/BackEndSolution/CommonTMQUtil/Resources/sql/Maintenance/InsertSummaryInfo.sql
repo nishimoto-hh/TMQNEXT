@@ -7,6 +7,12 @@ INSERT INTO ma_summary(
     ,[plan_implementation_content]
     ,[subject_note]
     ,[location_structure_id]
+    ,[location_district_structure_id]
+    ,[location_factory_structure_id]
+    ,[location_plant_structure_id]
+    ,[location_series_structure_id]
+    ,[location_stroke_structure_id]
+    ,[location_facility_structure_id]
     ,[job_structure_id]
     ,[mq_class_structure_id]
     ,[repair_cost_class_structure_id]
@@ -36,6 +42,12 @@ VALUES(
     ,@PlanImplementationContent
     ,@SubjectNote
     ,@LocationStructureId
+    ,@DistrictId
+    ,@FactoryId
+    ,@PlantId
+    ,@SeriesId
+    ,@StrokeId
+    ,@FacilityId
     ,@JobStructureId
     ,@MqClassStructureId
     ,@RepairCostClassStructureId

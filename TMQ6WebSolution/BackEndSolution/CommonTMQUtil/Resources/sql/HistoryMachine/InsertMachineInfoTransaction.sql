@@ -1,7 +1,17 @@
 INSERT INTO mc_machine(
     [machine_id]                    -- 機番ID
     ,[location_structure_id]        -- 機能場所階層ID
-    ,[job_structure_id]             -- 職種機種階層ID
+    ,[location_district_structure_id]         -- 地区ID
+    ,[location_factory_structure_id]         -- 工場ID
+    ,[location_plant_structure_id]           -- プラントID
+    ,[location_series_structure_id]          -- 系列ID
+    ,[location_stroke_structure_id]          -- 工程ID
+    ,[location_facility_structure_id]        -- 設備ID
+    ,[job_structure_id]                      -- 職種機種階層ID
+    ,[job_kind_structure_id]                 -- 職種ID
+    ,[job_large_classfication_structure_id]  -- 機種大分類ID
+    ,[job_middle_classfication_structure_id] -- 機種中分類ID
+    ,[job_small_classfication_structure_id]  -- 機種小分類ID
     ,[machine_no]                   -- 機器番号
     ,[machine_name]                 -- 機器名称
     ,[installation_location]        -- 設置場所
@@ -20,7 +30,17 @@ INSERT INTO mc_machine(
 SELECT
     machine_id                    -- 機番ID
     ,location_structure_id        -- 機能場所階層ID
-    ,job_structure_id             -- 職種機種階層ID
+    ,location_district_structure_id        -- 地区ID
+    ,location_factory_structure_id         -- 工場ID
+    ,location_plant_structure_id           -- プラントID
+    ,location_series_structure_id          -- 系列ID
+    ,location_stroke_structure_id          -- 工程ID
+    ,location_facility_structure_id        -- 設備ID
+    ,job_structure_id                      -- 職種機種階層ID
+    ,job_kind_structure_id                 -- 職種ID
+    ,job_large_classfication_structure_id  -- 機種大分類ID
+    ,job_middle_classfication_structure_id -- 機種中分類ID
+    ,job_small_classfication_structure_id  -- 機種小分類ID
     ,machine_no                   -- 機器番号
     ,machine_name                 -- 機器名称
     ,installation_location        -- 設置場所

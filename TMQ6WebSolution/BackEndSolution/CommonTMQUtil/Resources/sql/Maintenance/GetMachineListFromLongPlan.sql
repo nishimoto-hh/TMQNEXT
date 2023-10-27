@@ -1,5 +1,37 @@
+DROP TABLE IF EXISTS #temp_item_ex; 
+
+CREATE TABLE #temp_item_ex(structure_id INT, extension_data nvarchar(400)); 
+
+DROP TABLE IF EXISTS #content_id_list; 
+
+CREATE TABLE #content_id_list( 
+    maintainance_schedule_detail_id bigint
+    , management_standards_content_id bigint
+); 
+
+DROP TABLE IF EXISTS #detail_id_list; 
+
+CREATE TABLE #detail_id_list( 
+    management_standards_content_id bigint
+    , maintainance_schedule_detail_id nvarchar(MAX)
+); 
+
+--ä½¿ç”¨åŒºåˆ†
+INSERT 
+INTO #temp_item_ex
+SELECT
+    ms.structure_id
+    , mie.extension_data 
+FROM
+    ms_structure ms 
+    LEFT JOIN ms_item_extension mie 
+        ON ms.structure_item_id = mie.item_id 
+WHERE
+    ms.structure_group_id = 1210 
+    AND mie.sequence_no = 1; 
+
 WITH CONDITION AS(
-    -- ŒŸõğŒ
+    -- æ¤œç´¢æ¡ä»¶
     SELECT
         content.long_plan_id,
         detail.schedule_date
@@ -13,131 +45,75 @@ WITH CONDITION AS(
         ON  schedule.management_standards_content_id = content.management_standards_content_id
     WHERE
         detail.maintainance_schedule_detail_id = @MaintainanceScheduleDetailId
-),
-detail_id_list AS(
-    -- ‹@Ší•ÊŠÇ—Šî€“à—eID‚É•R•t‚­•Û‘SƒXƒPƒWƒ…[ƒ‹Ú×ID‚ğƒJƒ“ƒ}‹æØ‚è‚Åæ“¾
-    SELECT
-        content_a.management_standards_content_id,
-        trim(
-            ','
-            FROM
-                (
-                    SELECT
-                        cast(detail.maintainance_schedule_detail_id AS varchar) + ','
-                    FROM
-                        mc_management_standards_content content_b
-                        INNER JOIN
-                            mc_maintainance_schedule schedule
-                        ON  content_b.management_standards_content_id = schedule.management_standards_content_id
-                        INNER JOIN
-                            mc_maintainance_schedule_detail detail
-                        ON  schedule.maintainance_schedule_id = detail.maintainance_schedule_id
-                        INNER JOIN
-                            CONDITION
-                        ON  content_b.long_plan_id = CONDITION.long_plan_id
-                        AND FORMAT(detail.schedule_date, 'yyyyMM') = FORMAT(CONDITION.schedule_date, 'yyyyMM')
-                    WHERE
-                        content_b.management_standards_content_id = content_a.management_standards_content_id FOR XML PATH('')
-                )
-        ) AS maintainance_schedule_detail_id
-    FROM
-        mc_management_standards_content content_a
-    GROUP BY
-        content_a.management_standards_content_id
-),
-base AS(
-    -- ƒŠƒ“ƒN‘JˆÚŒ³‚Ìƒf[ƒ^
-    SELECT
-        machine.job_structure_id,
-        machine.machine_no,
-        machine.machine_name,
-        machine.equipment_level_structure_id,
-        machine.conservation_structure_id,
-        machine.importance_structure_id,
-        component.inspection_site_structure_id,
-        content.inspection_content_structure_id,
-        content.long_plan_id,
-        detail.schedule_date,
-        machine.machine_id,
-        equipment.equipment_id,
-        CASE
-            WHEN ie.extension_data = '1'
-            --‹@Šíg—p‹æ•ª‚ª”pŠü
-            THEN 1
-            ELSE 0
-        END AS gray_out_flg,
-        detail.summary_id,
-        detail_id_list.maintainance_schedule_detail_id
-    FROM
-        mc_maintainance_schedule_detail detail
-        INNER JOIN
-            mc_maintainance_schedule schedule
-        ON  detail.maintainance_schedule_id = schedule.maintainance_schedule_id
-        INNER JOIN
-            mc_management_standards_content content
-        ON  schedule.management_standards_content_id = content.management_standards_content_id
-        INNER JOIN
-            mc_management_standards_component component
-        ON  content.management_standards_component_id = component.management_standards_component_id
-        INNER JOIN
-            mc_machine machine
-        ON  component.machine_id = machine.machine_id
-        INNER JOIN
-            mc_equipment equipment
-        ON  machine.machine_id = equipment.machine_id
-        LEFT JOIN
-            ms_structure ms
-        ON  equipment.use_segment_structure_id = ms.structure_id
-        LEFT JOIN
-            ms_item_extension ie
-        ON  ms.structure_item_id = ie.item_id
-        AND ie.sequence_no = 1
-        LEFT JOIN
-            detail_id_list
-        ON  content.management_standards_content_id = detail_id_list.management_standards_content_id
-    WHERE
-        detail.maintainance_schedule_detail_id = @MaintainanceScheduleDetailId
 )
--- ƒŠƒ“ƒN‘JˆÚŒ³‚Ìƒf[ƒ^
+
+-- æ©Ÿå™¨åˆ¥ç®¡ç†åŸºæº–å†…å®¹IDã«ç´ä»˜ãä¿å…¨ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«è©³ç´°IDã‚’å–å¾—
+INSERT 
+INTO #content_id_list
 SELECT
-    base.job_structure_id,                -- Eí
-    base.machine_no,                      -- ‹@Ší”Ô†
-    base.machine_name,                    -- ‹@Ší–¼Ì
-    base.equipment_level_structure_id,    -- ‹@ŠíƒŒƒxƒ‹
-    base.conservation_structure_id,       -- •Û‘S•û®
-    base.importance_structure_id,         -- ‹@Šíd—v“x
-    base.inspection_site_structure_id,    -- •Û‘S•”ˆÊ
-    base.inspection_content_structure_id, -- •Û‘S“à—e
-    base.machine_id,                      -- ‹@”ÔID
-    base.equipment_id,                    -- ‹@ŠíID
-    base.gray_out_flg,                    -- ƒOƒŒ[ƒAƒEƒgƒtƒ‰ƒO
-    base.maintainance_schedule_detail_id  -- •Û‘SƒXƒPƒWƒ…[ƒ‹Ú×ID
+    detail.maintainance_schedule_detail_id
+    , content_b.management_standards_content_id 
 FROM
-    base
-WHERE
-    base.summary_id IS NULL
--- ƒŠƒ“ƒN‘JˆÚŒ³‚Ìƒf[ƒ^‚Æ“¯ˆê’·ŠúŒv‰æŒ–¼‚ÉŠÜ‚Ü‚ê‚é“¯”NŒ‚Ìƒf[ƒ^
-UNION
+    mc_management_standards_content content_b 
+    INNER JOIN mc_maintainance_schedule schedule 
+        ON content_b.management_standards_content_id = schedule.management_standards_content_id 
+    INNER JOIN mc_maintainance_schedule_detail detail 
+        ON schedule.maintainance_schedule_id = detail.maintainance_schedule_id 
+    INNER JOIN CONDITION 
+        ON content_b.long_plan_id = CONDITION.long_plan_id 
+        AND FORMAT(detail.schedule_date, 'yyyyMM') = FORMAT(CONDITION.schedule_date, 'yyyyMM'); 
+
+-- æ©Ÿå™¨åˆ¥ç®¡ç†åŸºæº–å†…å®¹IDã«ç´ä»˜ãä¿å…¨ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«è©³ç´°IDã‚’ã‚«ãƒ³ãƒåŒºåˆ‡ã‚Šã§å–å¾—
+INSERT 
+INTO #detail_id_list 
 SELECT
-    machine.job_structure_id,                      -- Eí
-    machine.machine_no,                            -- ‹@Ší”Ô†
-    machine.machine_name,                          -- ‹@Ší–¼Ì
-    machine.equipment_level_structure_id,          -- ‹@ŠíƒŒƒxƒ‹
-    machine.conservation_structure_id,             -- •Û‘S•û®
-    machine.importance_structure_id,               -- ‹@Šíd—v“x
-    component.inspection_site_structure_id,        -- •Û‘S•”ˆÊ
-    content.inspection_content_structure_id,       -- •Û‘S“à—e
-    machine.machine_id,                            -- ‹@”ÔID
-    equipment.equipment_id,                        -- ‹@ŠíID
+    content_a.management_standards_content_id
+    , trim( 
+        ',' 
+        FROM
+            ( 
+                SELECT
+                    CAST( 
+                        content_id_list.maintainance_schedule_detail_id AS VARCHAR
+                    ) + ',' 
+                FROM
+                    #content_id_list content_id_list 
+                WHERE
+                    content_id_list.management_standards_content_id = content_a.management_standards_content_id FOR XML 
+                    PATH ('')
+            )
+    ) AS maintainance_schedule_detail_id 
+FROM
+    mc_management_standards_content content_a 
+    INNER JOIN #content_id_list content_id_list 
+        ON content_a.management_standards_content_id = content_id_list.management_standards_content_id 
+GROUP BY
+    content_a.management_standards_content_id; 
+
+-- ãƒªãƒ³ã‚¯é·ç§»å…ƒã®ãƒ‡ãƒ¼ã‚¿ã¨åŒä¸€é•·æœŸè¨ˆç”»ä»¶åã«å«ã¾ã‚Œã‚‹åŒå¹´æœˆã®ãƒ‡ãƒ¼ã‚¿
+SELECT
+    machine.job_structure_id,                      -- è·ç¨®
+    machine.machine_no,                            -- æ©Ÿå™¨ç•ªå·
+    machine.machine_name,                          -- æ©Ÿå™¨åç§°
+    machine.equipment_level_structure_id,          -- æ©Ÿå™¨ãƒ¬ãƒ™ãƒ«
+    machine.conservation_structure_id,             -- ä¿å…¨æ–¹å¼
+    machine.importance_structure_id,               -- æ©Ÿå™¨é‡è¦åº¦
+    component.inspection_site_structure_id,        -- ä¿å…¨éƒ¨ä½
+    content.inspection_content_structure_id,       -- ä¿å…¨å†…å®¹
+    machine.machine_id,                            -- æ©Ÿç•ªID
+    equipment.equipment_id,                        -- æ©Ÿå™¨ID
     CASE
         WHEN ie.extension_data = '1'
-        --‹@Šíg—p‹æ•ª‚ª”pŠü
+        --æ©Ÿå™¨ä½¿ç”¨åŒºåˆ†ãŒå»ƒæ£„
         THEN 1
         ELSE 0
-    END AS gray_out_flg,                           -- ƒOƒŒ[ƒAƒEƒgƒtƒ‰ƒO
-    detail_id_list.maintainance_schedule_detail_id -- •Û‘SƒXƒPƒWƒ…[ƒ‹Ú×ID
+    END AS gray_out_flg,                           -- ã‚°ãƒ¬ãƒ¼ã‚¢ã‚¦ãƒˆãƒ•ãƒ©ã‚°
+    detail_id_list.maintainance_schedule_detail_id -- ä¿å…¨ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«è©³ç´°ID
 FROM
     mc_management_standards_content content
+    INNER JOIN
+        #detail_id_list detail_id_list
+    ON  content.management_standards_content_id = detail_id_list.management_standards_content_id 
     INNER JOIN
         mc_management_standards_component component
     ON  content.management_standards_component_id = component.management_standards_component_id
@@ -148,24 +124,13 @@ FROM
         mc_equipment equipment
     ON  machine.machine_id = equipment.machine_id
     LEFT JOIN
-        ms_structure ms
-    ON  equipment.use_segment_structure_id = ms.structure_id
-    LEFT JOIN
-        ms_item_extension ie
-    ON  ms.structure_item_id = ie.item_id
-    AND ie.sequence_no = 1
+        #temp_item_ex ie
+    ON  ie.structure_id = equipment.use_segment_structure_id
     INNER JOIN
-        mc_maintainance_schedule schedule
-    ON  content.management_standards_content_id = schedule.management_standards_content_id
+        #content_id_list content_id_list
+    ON  content.management_standards_content_id = content_id_list.management_standards_content_id
     INNER JOIN
         mc_maintainance_schedule_detail detail
-    ON  schedule.maintainance_schedule_id = detail.maintainance_schedule_id
-    INNER JOIN
-        base
-    ON  content.long_plan_id = base.long_plan_id
-    AND FORMAT(detail.schedule_date, 'yyyyMM') = FORMAT(base.schedule_date, 'yyyyMM')
-    LEFT JOIN
-        detail_id_list
-    ON  content.management_standards_content_id = detail_id_list.management_standards_content_id
+    ON  detail.maintainance_schedule_detail_id = content_id_list.maintainance_schedule_detail_id
 WHERE
     detail.summary_id IS NULL

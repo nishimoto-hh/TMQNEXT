@@ -39,6 +39,17 @@ CREATE TABLE #temp_rep(
 	inspection_content_name  nvarchar(800), -- 保全項目(共通詳細)
 	inspection_site_conservation_name  nvarchar(800), -- 部位保全方式(共通詳細)
 	disp_cycle               nvarchar(20),            -- 部位保全周期(共通詳細)
+	district_name			 nvarchar(800), -- 地区名
+	factory_name             nvarchar(800), -- 工場名
+    plant_name               nvarchar(800), -- プラント名
+    series_name              nvarchar(800), -- 系列名
+    stroke_name              nvarchar(800), -- 工程名
+    facility_name            nvarchar(800), -- 設備名
+    job_name                 nvarchar(800), -- 職種名
+    large_classfication_name     nvarchar(800),  -- 大分類
+    middle_classfication_name    nvarchar(800),  -- 中分類
+    small_classfication_name     nvarchar(800),  -- 小分類
+	district_name2			 nvarchar(800), -- 地区名
 	factory_name2            nvarchar(800), -- 工場名(機器)
     plant_name2              nvarchar(800), -- プラント名(機器)
     series_name2             nvarchar(800), -- 系列名(機器)
@@ -142,7 +153,10 @@ CLOSE cur_key;
 DEALLOCATE cur_key;
 
 -- 帳票データを返却
-SELECT * FROM #temp_rep
+SELECT * 
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
+FROM #temp_rep
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep

@@ -1,5 +1,10 @@
 UPDATE ma_history_inspection_content 
 SET
+/*@ExcelPort
+    [history_inspection_site_id] = @HistoryInspectionSiteId
+    , [inspection_content_structure_id] = @InspectionContentStructureId
+    , 
+@ExcelPort*/
     [follow_flg] = @FollowFlg
     , [follow_plan_date] = @FollowPlanDate
     , [follow_content] = @FollowContent

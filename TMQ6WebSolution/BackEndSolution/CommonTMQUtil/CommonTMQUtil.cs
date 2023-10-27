@@ -52,8 +52,20 @@ namespace CommonTMQUtil
             public const string GetNextSequence = "GetNextSequence";
             /// <summary>棚IDより翻訳を取得</summary>
             public const string GetPartsLocationTranslation = "GetPartsLocationTranslation";
+            /// <summary>SQL名：添付ファイル取得用一時テーブル作成</summary>
+            public const string CreateTableTempAttachment = "CreateTableTempAttachment";
+            /// <summary>SQL名：添付ファイル取得用一時テーブル登録</summary>
+            public const string InsertTempAttachment = "InsertTempAttachment";
+            /// <summary>SQL名：翻訳取得用一時テーブル作成</summary>
+            public const string CreateTableTempTranslation = "CreateTableTempTranslation";
+            /// <summary>SQL名：翻訳取得用一時テーブル登録</summary>
+            public const string InsertTempTranslation = "InsertTempTranslation";
+            /// <summary>SQL名：翻訳取得用一時テーブル登録(階層指定)</summary>
+            public const string InsertTempTranslationLayer = "InsertTempTranslationLayer";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
+            /// <summary>SQL格納先サブディレクトリ名</summary>
+            public const string SubDirPerformance = SqlName.SubDir + @"\ListPerformance";
         }
         /// <summary>
         /// SQLファイル名称(マスタ機能で使用)
@@ -135,8 +147,10 @@ namespace CommonTMQUtil
         /// <param name="selectSql">SELECT句のSQL文字列</param>
         /// <param name="whereSql">WHERE句のSQL文字列</param>
         /// <param name="withSql">省略可能 WITH句のSQL文字列</param>
+        /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
+        /// <param name="dispCount">表示件数</param>
         /// <returns>生成した検索に用いるSQL文</returns>
-        public static string GetSqlStatementSearch(bool isCount, string selectSql, string whereSql, string withSql = null)
+        public static string GetSqlStatementSearch(bool isCount, string selectSql, string whereSql, string withSql = null, bool isDetailConditionApplied = false, long dispCount = -1)
         {
             StringBuilder sbSql = new();
             // WITH句がある場合は結合
@@ -153,7 +167,15 @@ namespace CommonTMQUtil
             else
             {
                 // 一覧データ取得の場合
-                sbSql.Append("*");
+                //詳細検索条件が指定されていない場合のみ、表示件数を絞る
+                if (isDetailConditionApplied || dispCount == -1)
+                {
+                    sbSql.Append("*");
+                }
+                else
+                {
+                    sbSql.Append("TOP " + dispCount.ToString() + " *");
+                }
             }
             sbSql.AppendLine(" FROM (");
             sbSql.AppendLine(selectSql);
@@ -267,7 +289,7 @@ namespace CommonTMQUtil
             /// <param name="addText">SQL文末尾に追加する文言</param>
             /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
             /// <returns>SQL文</returns>
-            private static string getExecuteSql(string sqlName, string subDir, string addText, List<string> listUnComment = null)
+            public static string GetExecuteSql(string sqlName, string subDir, string addText, List<string> listUnComment = null)
             {
                 // SQL取得
                 TMQUtil.GetFixedSqlStatement(subDir, sqlName, out string sql, listUnComment);
@@ -290,7 +312,7 @@ namespace CommonTMQUtil
             public static T SelectEntity<T>(string sqlName, string subDir, object param, ComDB db, string addText = "", List<string> listUnComment = null)
             {
                 // SQL取得
-                string sqlText = getExecuteSql(sqlName, subDir, addText, listUnComment);
+                string sqlText = GetExecuteSql(sqlName, subDir, addText, listUnComment);
                 // 検索実行
                 T result = db.GetEntityByDataClass<T>(sqlText, param);
                 return result;
@@ -310,7 +332,7 @@ namespace CommonTMQUtil
             public static List<T> SelectList<T>(string sqlName, string subDir, object param, ComDB db, string addText = "", List<string> listUnComment = null)
             {
                 // SQL取得
-                string sqlText = getExecuteSql(sqlName, subDir, addText, listUnComment);
+                string sqlText = GetExecuteSql(sqlName, subDir, addText, listUnComment);
 
                 // 検索実行
                 IList<T> results = db.GetListByDataClass<T>(sqlText, param);
@@ -320,6 +342,26 @@ namespace CommonTMQUtil
                 }
                 return results.ToList();
             }
+
+            /// <summary>
+            /// SQL実行し、int値を取得
+            /// </summary>
+            /// <param name="sqlName">SQLファイル名(拡張子は含まない)</param>
+            /// <param name="subDir">SQLファイル格納ディレクトリ</param>
+            /// <param name="param">引数のクラス</param>
+            /// <param name="db">DB接続</param>
+            /// <param name="addText">SQLの末尾に追加する内容 省略可能</param>
+            /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+            /// <returns>取得したint値</returns>
+            public static int SelectIntValue(string sqlName, string subDir, object param, ComDB db, string addText = "", List<string> listUnComment = null)
+            {
+                // SQL取得
+                string sqlText = GetExecuteSql(sqlName, subDir, addText, listUnComment);
+                // 検索実行
+                int result = db.GetCount(sqlText, param);
+                return result;
+            }
+
             /// <summary>
             /// SQLを実行(INSERT、UPDATE、REGIST)
             /// </summary>
@@ -334,7 +376,7 @@ namespace CommonTMQUtil
             public static bool Regist(string sqlName, string subDir, object param, ComDB db, string addText = "", List<string> listUnComment = null)
             {
                 // SQL取得
-                string sqlText = getExecuteSql(sqlName, subDir, addText, listUnComment);
+                string sqlText = GetExecuteSql(sqlName, subDir, addText, listUnComment);
                 // SQL実行
                 int result = db.Regist(sqlText, param);
                 return result > 0;
@@ -355,7 +397,7 @@ namespace CommonTMQUtil
             public static bool RegistAndGetKeyValue<T>(out T returnKey, string sqlName, string subDir, object param, ComDB db, string addText = "", List<string> listUnComment = null)
             {
                 // SQL取得
-                string sqlText = getExecuteSql(sqlName, subDir, addText, listUnComment);
+                string sqlText = GetExecuteSql(sqlName, subDir, addText, listUnComment);
                 // SQL実行
                 returnKey = db.RegistAndGetKeyValue<T>(sqlText, out bool isError, param);
                 return !isError;
@@ -980,7 +1022,8 @@ namespace CommonTMQUtil
             /// <typeparam name="T">設定するデータクラスの型</typeparam>
             /// <param name="targetList">設定するデータクラスのリスト</param>
             /// <param name="typeList">処理対象の階層のリスト</param>
-            public static void setBottomLayerStructureIdToDataClass<T>(ref IList<T> targetList, List<StructureType> typeList)
+            /// <param name="isExcelPort">ExcelPort読み込み時の場合true</param>
+            public static void setBottomLayerStructureIdToDataClass<T>(ref IList<T> targetList, List<StructureType> typeList, bool isExcelPort = false)
             {
                 // 階層ID取得元のプロパティの情報を取得
                 PropertyInfo[] targetProps = typeof(T).GetProperties(); // 設定するデータクラスの情報を取得
@@ -1011,6 +1054,11 @@ namespace CommonTMQUtil
                             var prop = getPropertyByName(targetProps, propName);
                             if (prop == null)
                             {
+                                continue;
+                            }
+                            if (isExcelPort && propName.EndsWith("Name"))
+                            {
+                                //画面のツリー選択ラベルの場合はNameにIDが設定されているが、ExcelPortの場合はIDに設定されておりNameには翻訳が設定されているため除外
                                 continue;
                             }
 
@@ -2217,5 +2265,160 @@ namespace CommonTMQUtil
             }
         }
 
+        /// <summary>
+        /// 性能改善対応用
+        /// </summary>
+        public class ListPerformanceUtil
+        {
+            /// <summary>DB接続</summary>
+            private ComDB Db { get; set; }
+            /// <summary>一時テーブルのCreateTable文</summary>
+            private StringBuilder SqlCreateTemp { get; set; }
+            /// <summary>一時テーブルのINSERT文</summary>
+            private StringBuilder SqlInsertTemp { get; set; }
+            /// <summary>一時テーブルのINSERT文のパラメータ</summary>
+            private dynamic Param { get; set; }
+            /// <summary>言語ID</summary>
+            private string LanguageId { get; set; }
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            /// <param name="pDb">DB接続</param>
+            /// <param name="pLanguageId">言語ID</param>
+            public ListPerformanceUtil(ComDB pDb, string pLanguageId)
+            {
+                this.Db = pDb;
+                this.SqlCreateTemp = new();
+                this.SqlInsertTemp = new();
+                this.LanguageId = pLanguageId;
+                this.Param = new ExpandoObject() as IDictionary<string, object>;
+            }
+            /// <summary>
+            /// 添付ファイル取得用の一時テーブルSQL取得処理
+            /// </summary>
+            /// <param name="functionTypeIds">機能タイプID</param>
+            public void GetAttachmentSql(List<TMQConsts.Attachment.FunctionTypeId> functionTypeIds)
+            {
+                string create = SqlExecuteClass.GetExecuteSql(SqlName.CreateTableTempAttachment, SqlName.SubDirPerformance, string.Empty);
+                this.SqlCreateTemp.Append(create);
+                string insert = SqlExecuteClass.GetExecuteSql(SqlName.InsertTempAttachment, SqlName.SubDirPerformance, string.Empty);
+                this.SqlInsertTemp.Append(insert);
+                this.Param.FunctionTypeIdList = functionTypeIds;
+            }
+            /// <summary>
+            /// 翻訳取得用の一時テーブルSQL取得処理のキーワード置換
+            /// </summary>
+            /// <param name="createSql">CREATE文</param>
+            /// <param name="insertSql">INSERT文</param>
+            /// <param name="groupId">構成グループID</param>
+            private void getTranslationCommon(string createSql, string insertSql, TMQConsts.MsStructure.GroupId groupId)
+            {
+                const string replaceGroupId = "@ReplaceStructureGroupId";
+                string newCreateSql = createSql.Replace(replaceGroupId, ((int)groupId).ToString());
+                this.SqlCreateTemp.Append(newCreateSql);
+                string newInsertSql = insertSql.Replace(replaceGroupId, ((int)groupId).ToString());
+                this.SqlInsertTemp.Append(newInsertSql);
+            }
+
+            /// <summary>
+            /// 翻訳用一時テーブルを作成
+            /// </summary>
+            public void GetCreateTranslation()
+            {
+                string create = SqlExecuteClass.GetExecuteSql(SqlName.CreateTableTempTranslation, SqlName.SubDirPerformance, string.Empty);
+                this.SqlCreateTemp.Append(create);
+
+            }
+
+            /// <summary>
+            /// 翻訳用一時テーブルにデータを登録
+            /// </summary>
+            /// <param name="structureGroupIds">登録する構成グループIDのリスト</param>
+            /// <param name="isCreateIndex">インデックスを作成する(最後の登録)場合はTRUE</param>
+            public void GetInsertTranslationAll(List<TMQConsts.MsStructure.GroupId> structureGroupIds, bool isCreateIndex = false)
+            {
+                List<string> listUnComment = new List<string>() { "CreateIndex" };
+                string insert = SqlExecuteClass.GetExecuteSql(SqlName.InsertTempTranslation, SqlName.SubDirPerformance, string.Empty, isCreateIndex ? listUnComment : null);
+                this.SqlInsertTemp.Append(insert);
+
+                this.Param.LanguageId = this.LanguageId;
+                this.Param.StructureGroupIdList = structureGroupIds;
+            }
+
+            /// <summary>
+            /// 指定階層のみの翻訳用一時テーブルを登録
+            /// </summary>
+            /// <param name="structureGroupId">構成グループID</param>
+            /// <param name="layerNo">階層番号</param>
+            /// <param name="isCreateIndex">インデックスを作成する(最後の登録)場合はTRUE</param>
+            public void GetInsertLayerOnly(TMQConsts.MsStructure.GroupId structureGroupId, int layerNo, bool isCreateIndex = false)
+            {
+                const string groupIdName = "@StructureGroupId";
+                const string layerNoName = "@StructureLayerNo";
+                List<string> listUnComment = new List<string>() { "CreateIndex" };
+                string sql = SqlExecuteClass.GetExecuteSql(SqlName.InsertTempTranslationLayer, SqlName.SubDirPerformance, string.Empty, isCreateIndex ? listUnComment : null);
+                string newSql = sql.Replace(layerNoName, layerNo.ToString()).Replace(groupIdName, ((int)structureGroupId).ToString());
+                this.SqlInsertTemp.Append(newSql);
+                this.Param.LanguageId = this.LanguageId;
+            }
+
+            /// <summary>
+            /// 一時テーブル登録処理
+            /// </summary>
+            public void RegistTempTable()
+            {
+                // CREATEとINSERTを分けないと登録されない。パラメータの有無が影響している模様。
+                // CREATE文
+                this.Db.Regist(this.SqlCreateTemp.ToString());
+                // INSERT文
+                this.Db.Regist(this.SqlInsertTemp.ToString(), this.Param);
+            }
+
+            /// <summary>
+            /// 一時テーブル登録処理(機能側から指定)
+            /// </summary>
+            /// <param name="subDir">SQLのフォルダ</param>
+            /// <param name="createSqlName">CREATE文のファイル名</param>
+            /// <param name="insertSqlName">INSERT文のファイル名</param>
+            public void AddTempTable(string subDir, string createSqlName, string insertSqlName)
+            {
+                string create = SqlExecuteClass.GetExecuteSql(createSqlName, subDir, string.Empty);
+                this.SqlCreateTemp.Append(create);
+                string insert = SqlExecuteClass.GetExecuteSql(insertSqlName, subDir, string.Empty);
+                this.SqlInsertTemp.Append(insert);
+            }
+
+            /// <summary>
+            /// 一時テーブル登録処理(機能側からSQL文で指定)
+            /// </summary>
+            /// <param name="createSql"></param>
+            /// <param name="insertSql"></param>
+            public void AddTempTableBySql(string createSql, string insertSql)
+            {
+                this.SqlCreateTemp.Append(createSql);
+                this.SqlInsertTemp.Append(insertSql);
+            }
+        }
+
+        /// <summary>
+        /// 件数取得用SQL文の生成
+        /// </summary>
+        /// <param name="tableNameList">件数を取得するテーブル名</param>
+        /// <param name="whereParam">GetWhereClauseAndParam2()で設定されたWHERE句パラメータ</param>
+        /// <returns>生成した検索に用いるSQL文</returns>
+        public static string GetCountSql(string tableName, dynamic whereParam)
+        {
+            StringBuilder sbSql = new();
+            sbSql.AppendLine("SELECT COUNT(*)");
+            sbSql.AppendLine("FROM");
+            sbSql.AppendLine(tableName);
+            sbSql.AppendLine("WHERE");
+            //whereParamに設定しているwhere句（場所階層、職種機種のExists句）を追加
+            sbSql.AppendLine(whereParam.CountSqlWhere);
+            //whereParamに設定しているwhere句を削除
+            ((IDictionary<String, Object>)whereParam).Remove("CountSqlWhere");
+
+            return sbSql.ToString();
+        }
     }
 }

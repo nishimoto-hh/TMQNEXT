@@ -52,6 +52,7 @@ rec_down(structure_layer_no, structure_id, parent_structure_id, org_structure_id
             )
         AND b.delete_flg = 0
 ),
+/*@All
 rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT
         com.structure_layer_no,
@@ -75,7 +76,9 @@ rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) 
             )
         AND b.delete_flg = 0   
 ),
+@All*/
 rec(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
+/*@All
     SELECT
         up.structure_layer_no,
         up.structure_id,
@@ -84,6 +87,7 @@ rec(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     FROM
         rec_up AS up
     UNION
+@All*/
     SELECT
         down.structure_layer_no,
         down.structure_id,
@@ -101,7 +105,7 @@ INTO #temp_structure_all
 /*@Selected
 INTO #temp_structure_selected
 @Selected*/
-SELECT
+SELECT DISTINCT
      vs.structure_id
     ,vs.factory_id
     ,vs.structure_group_id

@@ -362,6 +362,26 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 //retObj.Add(authShoris);     //[2]:処理権限
                 //return Ok(retObj);
                 /* ========================================================================== */
+
+                if (returnInfo.UpdateUserInfo)
+                {
+                    // ユーザー権限情報の更新が必要な場合
+                    UserInfoDef userInfo = null;
+                    CommonProcReturn returnInfoW = blogic.GetUserAuthorizationInfo(procData, this.context, ref userInfo);
+                    if (returnInfoW.IsProcEnd())
+                    {
+                        IList<object> retObj2 = new List<object>();
+                        retObj2.Add(returnInfoW);                    //[0]:処理ステータス
+                        retObj2.Add(results);                        //[1]:結果データ
+                        return BadRequest(retObj2);
+                    }
+
+                    // セッションにユーザ管理情報を設定
+                    HttpContext.Session.SetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO, userInfo);
+
+                    blogic.MargeReturnInfo(ref returnInfo, returnInfoW);
+                }
+
                 IList<object> retObj = new List<object>();
                 retObj.Add(returnInfo);     //[0]:処理ステータス
                 retObj.Add(results);        //[1]:結果データ

@@ -20,7 +20,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = factory_job.factory_id
                     AND st_f.factory_id IN (0, factory_job.factory_id)
@@ -38,7 +38,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = factory_job.job_id
                     AND st_f.factory_id IN (0, factory_job.factory_id)

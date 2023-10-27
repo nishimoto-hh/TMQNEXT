@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32802.440
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BackEndSolution", "BackEndSolution", "{213B26FF-05B6-42A5-BD0F-E65346AA87CC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonSTDUtil", "BackEndSolution\CommonSTDUtil\CommonSTDUtil.csproj", "{3895673B-D812-4C73-9229-7E242BA9D4B7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonTMQUtil", "BackEndSolution\CommonTMQUtil\CommonTMQUtil.csproj", "{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dapper.OutsideSql", "BackEndSolution\Dapper.OutsideSql\Dapper.OutsideSql.csproj", "{E6D9772F-D666-4480-AD49-A72F3109588B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommonSolution", "CommonSolution", "{6482C75D-9A55-4BFD-83E5-7E22594E7347}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonDefinitions", "CommonSolution\CommonDefinitions\CommonDefinitions.csproj", "{736128A7-97E3-4BBE-901A-B609557CCCA4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TMQSendMailHistory", "TMQSendMailHistory\TMQSendMailHistory.csproj", "{920CAC33-E6D0-40E4-A2C4-F4D013D94E2B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3895673B-D812-4C73-9229-7E242BA9D4B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3895673B-D812-4C73-9229-7E242BA9D4B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3895673B-D812-4C73-9229-7E242BA9D4B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3895673B-D812-4C73-9229-7E242BA9D4B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6D9772F-D666-4480-AD49-A72F3109588B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6D9772F-D666-4480-AD49-A72F3109588B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6D9772F-D666-4480-AD49-A72F3109588B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6D9772F-D666-4480-AD49-A72F3109588B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{736128A7-97E3-4BBE-901A-B609557CCCA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{736128A7-97E3-4BBE-901A-B609557CCCA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{736128A7-97E3-4BBE-901A-B609557CCCA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{736128A7-97E3-4BBE-901A-B609557CCCA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{920CAC33-E6D0-40E4-A2C4-F4D013D94E2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{920CAC33-E6D0-40E4-A2C4-F4D013D94E2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{920CAC33-E6D0-40E4-A2C4-F4D013D94E2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{920CAC33-E6D0-40E4-A2C4-F4D013D94E2B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3895673B-D812-4C73-9229-7E242BA9D4B7} = {213B26FF-05B6-42A5-BD0F-E65346AA87CC}
+		{8EC4B3AC-559E-4B8E-85DA-EDE08BAACC55} = {213B26FF-05B6-42A5-BD0F-E65346AA87CC}
+		{E6D9772F-D666-4480-AD49-A72F3109588B} = {213B26FF-05B6-42A5-BD0F-E65346AA87CC}
+		{736128A7-97E3-4BBE-901A-B609557CCCA4} = {6482C75D-9A55-4BFD-83E5-7E22594E7347}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3FC6987E-C011-4DDC-B89D-75BD293C9400}
+	EndGlobalSection
+EndGlobal

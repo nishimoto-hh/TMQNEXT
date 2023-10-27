@@ -114,79 +114,6 @@ FROM
                 ms.structure_group_id = 2040
         ) ex
     ON  ms.structure_id = ex.structure_id
-),
-warehouse_to_district AS
--- 倉庫から地区までのIDを取得
-(
-    SELECT
-        ware_house.ware_house_id,
-        factory.factory_id,
-        district.district_id
-    FROM
-        (
-            SELECT
-                ware_house.structure_id AS ware_house_id,
-                ware_house.parent_structure_id
-            FROM
-                ms_structure ware_house
-            WHERE
-                ware_house.structure_group_id = 1040
-            AND ware_house.structure_layer_no = 2
-        ) ware_house
-        LEFT JOIN
-            (
-                SELECT
-                    factory.structure_id AS factory_id,
-                    factory.parent_structure_id
-                FROM
-                    ms_structure factory
-                WHERE
-                    factory.structure_group_id = 1000
-                AND factory.structure_layer_no = 1
-            ) factory
-        ON  ware_house.parent_structure_id = factory.factory_id
-        LEFT JOIN
-            (
-                SELECT
-                    district.structure_id AS district_id,
-                    district.parent_structure_id
-                FROM
-                    ms_structure district
-                WHERE
-                    district.structure_group_id = 1000
-                AND district.structure_layer_no = 0
-            ) district
-        ON  factory.parent_structure_id = district.district_id
-),
-rack_to_district AS(
-    SELECT
-        rack.structure_id AS rack_id,
-        warehouse_to_district.ware_house_id,
-        warehouse_to_district.factory_id,
-        warehouse_to_district.district_id
-    FROM
-        ms_structure rack
-        LEFT JOIN
-            warehouse_to_district
-        ON  rack.parent_structure_id = warehouse_to_district.ware_house_id
-    WHERE
-        rack.structure_group_id = 1040
-    AND rack.structure_layer_no = 3
-),
-structure_factory AS(
-    SELECT
-        structure_id,
-        location_structure_id AS factory_id
-    FROM
-        v_structure_item_all
-    WHERE
-        structure_group_id IN(1000, 1010, 1040, 1150, 1720, 1730, 1740, 1970)
-    AND language_id = (
-                        SELECT DISTINCT
-                            temp.LanguageId COLLATE Japanese_CI_AS
-                        FROM
-                            #temp temp
-                       )
 )
 SELECT
     parts.parts_no,                                                           -- 予備品No.
@@ -221,6 +148,8 @@ SELECT
     COALESCE(currency_digit.currency_digit, 0) AS currency_digit,          -- 小数点以下桁数(金額)
     COALESCE(round_division.extension_data, 1) AS unit_round_division,     -- 丸め処理区分(数量)
     COALESCE(round_division.extension_data, 1) AS currency_round_division, -- 丸め処理区分(金額)
+    '1' AS output_report_location_name_got_flg,                            -- 機能場所名称情報取得済フラグ（帳票用）
+    '1' AS output_report_job_name_got_flg,                                 -- 職種・機種名称情報取得済フラグ（帳票用）
     ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
         SELECT
@@ -233,7 +162,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.manufacturer_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -251,7 +180,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.factory_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -269,7 +198,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.job_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -287,7 +216,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.unit_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -305,7 +234,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.vender_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -323,7 +252,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.currency_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -341,15 +270,14 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.use_segment_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
             )
         AND tra.structure_id = parts.use_segment_structure_id
     ) AS use_segment_name, -- 使用区分
-    CASE
-        WHEN ms.structure_layer_no = 2 THEN( -- pt_partsの標準棚IDが倉庫IDの場合
+    (
             SELECT
                 tra.translation_text
             FROM
@@ -360,129 +288,67 @@ SELECT
                     SELECT
                         MAX(st_f.factory_id)
                     FROM
-                        structure_factory AS st_f
+                        #temp_structure_factory AS st_f
                     WHERE
-                        st_f.structure_id = warehouse_to_district.district_id
-                    AND st_f.factory_id IN(0, warehouse_to_district.factory_id)
-                )
-            AND tra.structure_id = warehouse_to_district.district_id
-        )
-        ELSE( -- pt_partsの標準棚IDが棚IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = rack_to_district.district_id
-                    AND st_f.factory_id IN(0, rack_to_district.factory_id)
-                )
-            AND tra.structure_id = rack_to_district.district_id
-        )
-    END AS district_name, -- 地区
-    CASE
-        WHEN ms.structure_layer_no = 2 THEN( -- pt_partsの標準棚IDが倉庫IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = warehouse_to_district.factory_id
-                    AND st_f.factory_id IN(0, warehouse_to_district.factory_id)
-                )
-            AND tra.structure_id = warehouse_to_district.factory_id
-        )
-        ELSE( -- pt_partsの標準棚IDが棚IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = rack_to_district.factory_id
-                    AND st_f.factory_id IN(0, rack_to_district.factory_id)
-                )
-            AND tra.structure_id = rack_to_district.factory_id
-        )
-    END AS defalut_favtory_name, -- 工場
-    CASE
-        WHEN ms.structure_layer_no = 2 THEN( -- pt_partsの標準棚IDが倉庫IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = warehouse_to_district.ware_house_id
-                    AND st_f.factory_id IN(0, warehouse_to_district.factory_id)
-                )
-            AND tra.structure_id = warehouse_to_district.ware_house_id
-        )
-        ELSE( -- pt_partsの標準棚IDが棚IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = rack_to_district.ware_house_id
-                    AND st_f.factory_id IN(0, rack_to_district.factory_id)
-                )
-            AND tra.structure_id = rack_to_district.ware_house_id
-        )
-    END AS warehouse_name, -- 倉庫
-    CASE
-        WHEN ms.structure_layer_no = 3 THEN( -- pt_partsの標準棚IDが棚IDの場合
-            SELECT
-                tra.translation_text
-            FROM
-                v_structure_item_all AS tra
-            WHERE
-                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
-            AND tra.location_structure_id = (
-                    SELECT
-                        MAX(st_f.factory_id)
-                    FROM
-                        structure_factory AS st_f
-                    WHERE
-                        st_f.structure_id = parts.parts_location_id
+                        st_f.structure_id = parts.location_district_structure_id
                     AND st_f.factory_id IN(0, parts.factory_id)
                 )
-            AND tra.structure_id = parts.parts_location_id
-        )
-        ELSE ''
-    END AS rack_name -- 棚番
+            AND tra.structure_id = parts.location_district_structure_id
+        ) AS district_name, -- 地区
+    (
+            SELECT
+                tra.translation_text
+            FROM
+                v_structure_item_all AS tra
+            WHERE
+                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
+            AND tra.location_structure_id = (
+                    SELECT
+                        MAX(st_f.factory_id)
+                    FROM
+                        #temp_structure_factory AS st_f
+                    WHERE
+                        st_f.structure_id = parts.location_factory_structure_id
+                    AND st_f.factory_id IN(0, parts.factory_id)
+                )
+            AND tra.structure_id = parts.location_factory_structure_id
+        ) AS defalut_favtory_name, -- 工場
+    (
+            SELECT
+                tra.translation_text
+            FROM
+                v_structure_item_all AS tra
+            WHERE
+                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
+            AND tra.location_structure_id = (
+                    SELECT
+                        MAX(st_f.factory_id)
+                    FROM
+                        #temp_structure_factory AS st_f
+                    WHERE
+                        st_f.structure_id = parts.location_warehouse_structure_id
+                    AND st_f.factory_id IN(0, parts.factory_id)
+                )
+            AND tra.structure_id = parts.location_warehouse_structure_id
+        ) AS warehouse_name, -- 倉庫
+    (
+            SELECT
+                tra.translation_text
+            FROM
+                v_structure_item_all AS tra
+            WHERE
+                tra.language_id = temp.LanguageId COLLATE Japanese_CI_AS
+            AND tra.location_structure_id = (
+                    SELECT
+                        MAX(st_f.factory_id)
+                    FROM
+                        #temp_structure_factory AS st_f
+                    WHERE
+                        st_f.structure_id = parts.location_rack_structure_id
+                    AND st_f.factory_id IN(0, parts.factory_id)
+                )
+            AND tra.structure_id = parts.location_rack_structure_id
+        ) rack_name -- 棚番
 FROM
     #temp temp
     INNER JOIN
@@ -509,12 +375,6 @@ FROM
     LEFT JOIN -- 構成マスタ
         ms_structure ms
     ON  parts.parts_location_id = ms.structure_id
-    LEFT JOIN -- 倉庫IDから地区IDまでのリスト(pt_partsの標準棚IDが倉庫IDの場合)
-        warehouse_to_district
-    ON  parts.parts_location_id = warehouse_to_district.ware_house_id
-    LEFT JOIN -- 棚IDから地区IDまでのリスト(pt_partsの標準棚IDが棚IDの場合)
-        rack_to_district
-    ON  parts.parts_location_id = rack_to_district.rack_id
 ORDER BY
     parts.parts_no,
     parts.parts_name

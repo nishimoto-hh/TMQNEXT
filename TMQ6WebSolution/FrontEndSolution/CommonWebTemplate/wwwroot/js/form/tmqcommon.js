@@ -407,7 +407,7 @@ function getValueByCtrl(target, flg) {
     if (!target) { return null; }
     if (flg == CtrlFlag.TextBox || flg == CtrlFlag.Search) {
         return target.value;
-    } else if (flg == CtrlFlag.Label) {
+    } else if (flg == CtrlFlag.Label || flg == CtrlFlag.Link) {
         return target.innerText;
     } else if (flg == CtrlFlag.Combo) {
         var val = target.value;
@@ -956,8 +956,8 @@ function setFocusButtonHistory(processMode) {
     if (ProcessMode.History == processMode) {
         //変更管理モード
 
-        //ボタン押下可能なボタンを設定（承認依頼、承認依頼引戻、承認）
-        var btnList = [HistoryFormDetailCommonButton.ChangeApplicationRequest, HistoryFormDetailCommonButton.PullBackRequest, HistoryFormDetailCommonButton.ChangeApplicationApproval];
+        //ボタン押下可能なボタンを設定（承認依頼、承認依頼引戻、承認、戻る）
+        var btnList = [HistoryFormDetailCommonButton.ChangeApplicationRequest, HistoryFormDetailCommonButton.PullBackRequest, HistoryFormDetailCommonButton.ChangeApplicationApproval, HistoryFormDetailCommonButton.Back];
         $.each(btnList, function (i, btn) {
             if (!isUnAvailableButton(btn)) {
                 //押下可能であれば設定
@@ -2543,7 +2543,7 @@ function setValueToConditionDataList(conditionDataList, formNo, listCtrlId, valN
  * @param {any} exparamNo 拡張項目番号
  */
 function setComboExValue(listCtrlId, ExtVal, ExtCtrlFlag, selected, isModal, exparamNo) {
-    var paramName = "EXPARAM" + (exparamNo ?  exparamNo : "1");
+    var paramName = "EXPARAM" + (exparamNo ? exparamNo : "1");
     var extValue = selected == null ? '' : selected[paramName];
     setValue(listCtrlId, ExtVal, 0, ExtCtrlFlag, extValue, isModal);
 }
@@ -3654,7 +3654,7 @@ function isChangeList(ctrlId, isSelectedOnly) {
 
     var table = P_listData['#' + ctrlId + getAddFormNo()];
     if (table) {
-           var trs = table.getRows();
+        var trs = table.getRows();
 
         if (trs != null && trs.length > 0) {
             // 検索結果一覧を参照し、変更されている（UPDTAG=1）かどうかをチェック
@@ -3740,7 +3740,7 @@ function commonChangeBackGroundColorHistory(tbl, applicationDivisionCodeVal, val
                         setTimeout(function () {
                             // 背景色変更処理
                             changeBackGroundColorTabulatorHistory(row, colName[1], columnNoList[colName[0]]);
-                        }, 0);
+                        }, 200);
                     }
                 }
             }, row);
@@ -3804,7 +3804,8 @@ const HistoryFormDetailCommonButton =
     PullBackRequest: "PullBackRequest",                     // 引戻
     ChangeApplicationApproval: "ChangeApplicationApproval", // 承認
     ChangeApplicationDenial: "ChangeApplicationDenial",     // 否認
-    BeforeChange: "BeforeChange"                            // 変更前
+    BeforeChange: "BeforeChange",                           // 変更前
+    Back: "Back"                                            // 戻る
 }
 /**
  * 変更管理 詳細画面ボタン非表示 制御
@@ -3845,7 +3846,7 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ②申請状況が「30：差戻中」かつ、申請の申請者(システム管理者含む)であるかつ、申請区分が「30：削除申請」以外の場合
     if (!isTransactionMode &&
         ((applicationStatusCode == ApplicationStatus.Making && isCertified && applicationDivisionCode != ApplicationDivision.Delete)
-        || (applicationStatusCode == ApplicationStatus.Return && isCertified && applicationDivisionCode != ApplicationDivision.Delete))) {
+            || (applicationStatusCode == ApplicationStatus.Return && isCertified && applicationDivisionCode != ApplicationDivision.Delete))) {
         setHideButton(HistoryFormDetailCommonButton.EditRequest, false);
     }
 
@@ -3867,6 +3868,9 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     if (!isTransactionMode && applicationDivisionCode != ApplicationDivision.New) {
         setHideButton(HistoryFormDetailCommonButton.BeforeChange, false);
     }
+
+    // 「戻る」ボタンを表示
+    setHideButton(HistoryFormDetailCommonButton.Back, false);
 }
 
 /**
@@ -3895,8 +3899,9 @@ function dispNoneElementHistory(button, isHide) {
  * @param {any} historyManagementBtnName 変更管理ボタンの名前
  * @param {any} hideBtns 変更管理の時に非表示にするボタンの名前のリスト
  * @param {any} hideLists 変更管理の時に入力コントロールを非表示にする一覧のIDのリスト
+ * @param {any} isNeedHideRowNo ROWNO列を非表示にする必要がある場合True
  */
-function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns, hideLists) {
+function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns, hideLists, isNeedHideRowNo) {
     var historyManagementBtn = getButtonCtrl(historyManagementBtnName);
     dispNoneElementHistory(historyManagementBtn, !isHistoryManagement);
 
@@ -3906,7 +3911,11 @@ function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementB
     });
 
     $.each(hideLists, function (i, listId) {
-        changeRowControl(listId, !isHistoryManagement)
+        if (isNeedHideRowNo) {
+            changeRowControlAndDispRowNo(listId, !isHistoryManagement);
+        } else {
+            changeRowControl(listId, !isHistoryManagement);
+        }
     });
 }
 

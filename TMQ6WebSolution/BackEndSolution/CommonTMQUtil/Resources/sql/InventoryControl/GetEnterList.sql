@@ -4,28 +4,45 @@
 SELECT DISTINCT
     FORMAT(plt.receiving_datetime, 'yyyy/MM/dd') AS receiving_datetime,             --入庫日
     plt.lot_no,                                                                     --ロットNo
-    lcn.translation_text AS parts_location_name,                                    --棚ID(名称)
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = pls.parts_location_id
+              AND st_f.factory_id IN (0, pps.factory_id)
+           )
+      AND tra.structure_id = pls.parts_location_id
+    ) AS parts_location_name,--棚ID(名称)
     pls.parts_location_detail_no,                                                   --棚枝番
     pps.parts_no,                                                                   --予備品No
-    pps.parts_name                                                                  --予備品名称
-        , ( 
-        SELECT
-            tra.translation_text --新旧区分
-        FROM
-            v_structure_item AS tra 
-        WHERE
-            tra.language_id = @LanguageId
-            AND tra.location_structure_id = ( 
-                SELECT
-                    MAX(st_f.factory_id) 
-                FROM
-                    structure_factory AS st_f 
-                WHERE
-                    st_f.structure_id = plt.old_new_structure_id
-                    AND st_f.factory_id = 0
-            ) 
-            AND tra.structure_id = plt.old_new_structure_id
-    ) AS old_new_structure_name,
+    pps.parts_name,                                                                 --予備品名称
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = plt.old_new_structure_id
+              AND st_f.factory_id IN (0, pps.factory_id)
+           )
+      AND tra.structure_id = plt.old_new_structure_id
+    ) AS old_new_structure_name,--新旧区分
     pps.standard_size AS dimensions,                                                --規格・寸法
     pih.inout_quantity,                                                             --受払数(画面：入庫数)
     plt.unit_price,                                                                 --入庫単価
@@ -56,7 +73,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.department_structure_id
                     AND st_f.factory_id IN (0, pps.factory_id)
@@ -74,7 +91,7 @@ SELECT DISTINCT
                 SELECT
                     MIN(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.department_structure_id
                     AND st_f.factory_id NOT IN (0, pps.factory_id)
@@ -92,7 +109,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.account_structure_id
                     AND st_f.factory_id IN (0, pps.factory_id)
@@ -110,7 +127,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.unit_structure_id
                     AND st_f.factory_id IN (0, pps.factory_id)
@@ -128,7 +145,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.currency_structure_id
                     AND st_f.factory_id IN (0, pps.factory_id)
@@ -165,8 +182,6 @@ FROM
         ON plt.department_structure_id = dpm.structure_id 
     LEFT JOIN account act 
         ON plt.account_structure_id = act.structure_id 
-    LEFT JOIN location lcn 
-        ON pls.parts_location_id = lcn.structure_id
     LEFT JOIN number_unit --数量管理単位
         ON  plt.unit_structure_id = number_unit.unit_id
     LEFT JOIN unit_round --丸め処理区分

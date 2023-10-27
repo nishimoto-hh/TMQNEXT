@@ -138,8 +138,6 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             // span要素に必須マークのクラスを付与する
             $(MaintenanceTarget).closest("tr").find("th").find("span").addClass('mark');
 
-            // メンテナンス対象のコンボボックスを未選択の状態にする
-            setValue(EP0001_DownLoadCondition.Id, EP0001_DownLoadCondition.MaintenanceTarget, 1, CtrlFlag.Combo, '')
         }
         // 追加条件区分が2の場合
         else if (addCondition == 2) {
@@ -162,6 +160,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             }
             // span要素に必須マークのクラスを付与する
             $(CompletionIndicatorCtrl).closest("tr").find("th").find("span").addClass('mark');
+
         }
         //Validator初期化
         initValidator("#" + P_formDetailId);
@@ -280,9 +279,12 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     // 追加条件区分が1もしくは2の場合
     if (addCondition == 1 || addCondition == 2) {
         // 選択されたRowNoの取得
-        var RowNo = $(element).parent().parent().find("div[tabulator-field=ROWNO]")[0].innerText;
-
-        conditionDataList.push(getListDataByCtrlIdList([EP0001_FormList.Id], 0, 0)[RowNo - 1]);
+        var rowNo = $(element).closest("div.tabulator-row").find("div[tabulator-field=ROWNO]")[0].innerText;
+        var tblId = "#" + $(element).closest("div.ctrlId").attr("id");
+        // フィルターを掛けている場合を考慮して以下で行番号を取得
+        rowNo = P_listData[tblId].getRowFromPosition(parseInt(rowNo, 10), true).getData().ROWNO;
+        // 検索条件へ追加
+        conditionDataList.push(getTempDataForTabulator(formNo, rowNo, tblId));
 
         return [true, conditionDataList];
     }

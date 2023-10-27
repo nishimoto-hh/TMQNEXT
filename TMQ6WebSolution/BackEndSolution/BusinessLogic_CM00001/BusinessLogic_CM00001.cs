@@ -1,16 +1,15 @@
 ﻿using CommonWebTemplate.Models.Common;
 using CommonSTDUtil.CommonBusinessLogic;
-using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommonExcelUtil;
-using System.IO;
-
+using ComConsts = CommonSTDUtil.CommonConstants;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using ComRes = CommonSTDUtil.CommonResources;
+using Dao = BusinessLogic_CM00001.BusinessLogicDataClass_CM00001;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using System.Collections.Generic;
+using System;
+using System.Linq;
 
 namespace BusinessLogic_CM00001
 {
@@ -21,85 +20,45 @@ namespace BusinessLogic_CM00001
 
         #region 定数
         /// <summary>
-        /// フォーム種類
+        /// 機能のコントロール情報
         /// </summary>
-        private static class FormType
+        private static class ConductInfo
         {
-            /// <summary>一覧</summary>
-            public const byte List = 0;
+            /// <summary>
+            /// トップ画面
+            /// </summary>
+            public static class FormTop
+            {
+                /// <summary>申請件数</summary>
+                public const string ApplicationCount = "ApplicationHistory";
+                /// <summary>申請件数</summary>
+                public const string ApprovalCount = "ApprovalHistory";
+            }
         }
-
-        /// <summary>
-        /// テーブル名称
-        /// </summary>
-        private static class TableName
-        {
-            /// <summary>テーブル名：[テーブル名]</summary>
-            public const string Table = "[テーブル名]";
-        }
-
         /// <summary>
         /// SQLファイル名称
         /// </summary>
         private static class SqlName
         {
-            // 機能内で不要なSQLは定義は不要です
-
-            /// <summary>SQL名：一覧取得</summary>
-            public const string GetList = "[テーブル名]_GetList";
-            /// <summary>SQL名：出力一覧取得</summary>
-            public const string GetListForReport = "[テーブル名]_GetListForReport";
-            /// <summary>SQL名：登録</summary>
-            public const string Insert = "[テーブル名]_Insert";
-            /// <summary>SQL名：更新</summary>
-            public const string Update = "[テーブル名]_Update";
-            /// <summary>SQL名：削除/summary>
-            public const string Delete = "[テーブル名]_Delete";
-
             /// <summary>SQL格納先サブディレクトリ名</summary>
-            public const string SubDir = "[サブディレクトリ名]\\[テーブル名]";
-        }
-
-        /// <summary>
-        /// テンプレート名称
-        /// </summary>
-        private static class TemplateName
-        {
-            /// <summary>テンプレート名：Excel出力</summary>
-            public const string Report = "template_[機能ID].xlsx";
-
-        }
-
-        /// <summary>
-        /// 処理対象コントロールID
-        /// </summary>
-        private static class TargetCtrlId
-        {
-            // 機能内で不要な処理対象は定義は不要です
+            public const string SubDir = "TOP";
 
             /// <summary>
-            /// 検索条件の画面項目定義テーブルのコントロールID
+            /// 変更管理情報表示用
             /// </summary>
-            public const string SearchCondition = "L_S_Condition";
-            /// <summary>
-            /// 検索結果の画面項目定義テーブルのコントロールID
-            /// </summary>
-            public const string SearchResult = "L_S_Result";
+            public static class History
+            {
+                /// <summary>SQL格納先サブディレクトリ名</summary>
+                public const string SubDir = SqlName.SubDir + @"\HistoryManagement";
 
-
-            /// <summary>帳票(EXCEL)</summary>
-            public const string ReportExcel = "Report1";
-            /// <summary>帳票(PDF)</summary>
-            public const string ReportPdf = "Report2";
-            /// <summary>帳票(CSV)</summary>
-            public const string ReportCsv = "Report3";
-
-            /// <summary>取込(EXCEL)</summary>
-            public const string UploadExcel = "Upload1";
-            /// <summary>取込(CSV)</summary>
-            public const string UploadCsv = "Upload2";
+                /// <summary>ユーザの所属工場の承認ユーザを取得</summary>
+                public const string GetApprovalUserByLogin = "GetApprovalUserByLogin";
+                /// <summary>ユーザの申請している変更管理の件数を取得</summary>
+                public const string GetApplicationCount = "GetApplicationCount";
+                /// <summary>ユーザの承認待ちの変更管理の件数を取得</summary>
+                public const string GetApprovalCount = "GetApprovalCount";
+            }
         }
-
         #endregion
 
         #region コンストラクタ
@@ -112,17 +71,14 @@ namespace BusinessLogic_CM00001
         #endregion
 
         #region オーバーライドメソッド
+        /// <summary>
+        /// 初期化処理
+        /// </summary>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int InitImpl()
         {
-            this.JsonResult = string.Empty;
-            var resultList = new List<Dictionary<string, object>>();
-
-            if (this.CtrlId.ToUpper().StartsWith("BACK"))
-            {
-                // 戻る処理
-                if (!searchList()) { return -1; }
-            }
-            return 0;
+            // 初期検索実行
+            return InitSearch();
         }
 
         /// <summary>
@@ -132,18 +88,17 @@ namespace BusinessLogic_CM00001
         protected override int SearchImpl()
         {
             this.JsonResult = string.Empty;
-            var resultList = new List<Dictionary<string, object>>();
 
-            switch (this.FormNo)
+            if (searchTop())
             {
-                case FormType.List:     // 一覧検索
-                    if (!searchList()) { return -1; }
-                    break;
-                default:
-                    return -1;
+                // 正常終了
+                this.Status = CommonProcReturn.ProcStatus.Valid;
+                return ComConsts.RETURN_RESULT.OK;
             }
 
-            return 0;
+            // 異常終了
+            this.Status = CommonProcReturn.ProcStatus.Error;
+            return ComConsts.RETURN_RESULT.NG;
         }
 
         /// <summary>
@@ -152,17 +107,8 @@ namespace BusinessLogic_CM00001
         /// <returns></returns>
         protected override int ExecuteImpl()
         {
-            if (this.CtrlId.ToUpper().StartsWith("REGIST"))
-            {
-                // 登録処理実行
-                return Regist();
-            }
-            else if (this.CtrlId.ToUpper().StartsWith("DELETE"))
-            {
-                // 削除処理実行
-                return Delete();
-            }
-            return -1;
+            // 到達不能
+            return ComConsts.RETURN_RESULT.NG;
         }
 
         /// <summary>
@@ -171,79 +117,8 @@ namespace BusinessLogic_CM00001
         /// <returns></returns>
         protected override int RegistImpl()
         {
-            int result = 0;
-            this.JsonResult = string.Empty;
-            DateTime now = DateTime.Now;
-            string ctrlId = TargetCtrlId.SearchResult;
-
-            // 入力チェック
-            if (!checkInput(ref this.resultInfoDictionary, this.LanguageId))
-            {
-                // エラー終了
-                this.Status = CommonProcReturn.ProcStatus.Error;
-                return -1;
-            }
-
-            // 排他ロック用マッピング情報取得
-            var lockValMaps = GetLockValMaps(ctrlId);
-            var lockKeyMaps = GetLockKeyMaps(ctrlId);
-
-            // 検索結果の画面項目定義の情報
-            var resultInfo = getResultMappingInfo(ctrlId);
-
-            // 指定コントロールIDの結果情報のみ抽出
-            var resultDic = this.resultInfoDictionary.Where(x => ctrlId.Equals(x["CTRLID"])).ToList();
-            foreach (var condition in resultDic)
-            {
-                dynamic conditionObj = new ExpandoObject();
-                if (TMPTBL_CONSTANTS.ROWSTATUS.New.ToString().Equals(condition["ROWSTATUS"].ToString()))
-                {
-                    // ROWSTATUS=Newの場合、新規登録
-                    SetExecuteCondition(condition, ctrlId, conditionObj, now, this.UserId, this.UserId);
-
-                    // サンプルコード 設定する条件が画面の値より計算した値の場合
-                    // 例として、KEY_NAMEにTestDateが設定された列の日付の値+3日のデータをSQLのパラメータTestDate2に渡す場合の処理
-
-                    // 画面項目定義拡張テーブルのKEY_NAMEに"TestDate"が設定されている項目のVALnを取得
-                    var valTestDate = resultInfo.getValName("TestDate");
-                    // 結果情報より、上記で指定した列の値を取得
-                    var testDate = condition[valTestDate];
-                    // 条件("TestDate2")に、値(TestDateの値+3日)を設定する　このとき、値の方はDBに合わせ適切に設定すること
-                    var testDate2 = DateTime.Parse((string)testDate).AddDays(3);
-                    setConditionObj(conditionObj, "TestDate2", testDate2);
-
-                    // 新規登録処理実行
-                    result = db.RegistByOutsideSql(SqlName.Insert, SqlName.SubDir, conditionObj);
-                }
-                else
-                {
-                    // 排他チェック
-                    if (!CheckExclusiveStatus(condition, lockValMaps, lockKeyMaps)) { return -1; }
-
-                    // ROWSTATUS=New以外の場合、更新
-                    SetExecuteCondition(condition, ctrlId, conditionObj, now, this.UserId);
-
-                    // 更新処理実行
-                    result = db.RegistByOutsideSql(SqlName.Update, SqlName.SubDir, conditionObj);
-                }
-
-                if (result < 0)
-                {
-                    // エラー終了
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「登録処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
-                    break;
-                }
-            }
-
-            if (result >= 0)
-            {
-                // 再検索処理
-                this.NeedsTotalCntCheck = false;
-                if (!searchList()) { return -1; }
-            }
-            return result;
+            // 到達不能
+            return ComConsts.RETURN_RESULT.NG;
         }
 
         /// <summary>
@@ -252,511 +127,121 @@ namespace BusinessLogic_CM00001
         /// <returns></returns>
         protected override int DeleteImpl()
         {
-            int result = 0;
-            this.JsonResult = string.Empty;
-
-            foreach (var condition in this.resultInfoDictionary)
-            {
-                // 画面の結果情報で繰り返し
-                if (!TargetCtrlId.SearchResult.Equals(condition["CTRLID"].ToString()))
-                {
-                    // 検索結果以外ならスキップ
-                    continue;
-                }
-
-                // TODO:削除対象の存在チェック等を行う
-
-                dynamic conditionObj = new ExpandoObject();
-
-                // 削除条件設定
-                var targetParamNames = new List<string> { "TestCd" }; // この項目の値のみを削除条件に設定する
-                SetDeleteCondition(condition, TargetCtrlId.SearchResult, conditionObj, targetParamNames);
-
-                // 削除処理実行
-                result = db.RegistByOutsideSql(SqlName.Delete, SqlName.SubDir, conditionObj);
-
-                if (result < 0)
-                {
-                    // エラー終了
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「削除処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911110001 });
-                    break;
-                }
-            }
-
-            if (result >= 0)
-            {
-                // 再検索処理
-                this.NeedsTotalCntCheck = false;
-                if (!searchList()) { return -1; }
-            }
-
-            return result;
+            // 到達不能
+            return ComConsts.RETURN_RESULT.NG;
         }
 
-        /// <summary>
-        /// 出力処理
-        /// </summary>
-        /// <returns></returns>
-        protected override int ReportImpl()
-        {
-            int result = 0;
-            this.JsonResult = string.Empty;
-
-            // 実装の際は、不要な帳票に対する分岐は削除して構いません
-
-            bool outputExcel = false;
-            bool outputPdf = false;
-
-            switch (this.CtrlId)
-            {
-                case TargetCtrlId.ReportExcel:
-                    outputExcel = true;
-                    break;
-                case TargetCtrlId.ReportPdf:
-                    outputExcel = true;
-                    outputPdf = true;
-                    break;
-                case TargetCtrlId.ReportCsv:
-                    break;
-                default:
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「コントロールIDが不正です。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060003, ComRes.ID.ID911100001 });
-
-                    // エラーログ出力
-                    writeErrorLog(this.MsgId);
-                    return -1;
-            }
-
-            // ファイル名
-            string baseFileName = string.Format("{0:yyyyMMddHHmmss}_{1}_{2}", DateTime.Now, this.ConductId, this.CtrlId);
-
-            // データ検索
-            var resultList = searchListForReport();
-            if (resultList == null || resultList.Count == 0)
-            {
-                // 警告メッセージで終了
-                this.Status = CommonProcReturn.ProcStatus.Warning;
-                // 「該当データがありません。」
-                this.MsgId = GetResMessage(ComRes.ID.ID941060001);
-                return result;
-            }
-
-            string msg = string.Empty;
-            if (outputExcel)
-            {
-                // Excel出力が必要な場合
-
-                // マッピング情報生成
-                // 以下はA列から順番にカラム名リストに一致するデータを行単位でマッピングする
-                List<CommonExcelPrtInfo> prtInfoList = CommonExcelUtil.CommonExcelUtil.CreateMappingList(resultList, "Sheet1", 2, "A");
-
-                // コマンド情報生成
-                // セルの結合や罫線を引く等のコマンド実行が必要な場合はここでセットする。不要な場合はnullでOK
-                List<CommonExcelCmdInfo> cmdInfoList = null;
-
-                // Excel出力実行
-                var excelStream = new MemoryStream();
-                if (!CommonExcelUtil.CommonExcelUtil.CreateExcelFile(TemplateName.Report, this.UserId, prtInfoList, cmdInfoList, ref excelStream, ref msg))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「Excel出力に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911040001 });
-
-                    // エラーログ出力
-                    writeErrorLog(this.MsgId);
-                    writeErrorLog(msg);
-
-                    return -1;
-                }
-
-                if (outputPdf)
-                {
-                    // PDF出力の場合
-
-                    // PDF出力実行
-                    var pdfStream = new MemoryStream();
-                    try
-                    {
-                        if (!CommonExcelUtil.CommonExcelUtil.CreatePdfFile(excelStream, ref pdfStream, ref msg))
-                        {
-                            pdfStream.Close();
-
-                            this.Status = CommonProcReturn.ProcStatus.Error;
-                            // 「PDF出力に失敗しました。」
-                            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911270004 });
-
-                            // エラーログ出力
-                            writeErrorLog(this.MsgId);
-                            writeErrorLog(msg);
-
-                            return -1;
-                        }
-                    }
-                    finally
-                    {
-                        // ExcelファイルのStreamは閉じる
-                        excelStream.Close();
-                    }
-                    this.OutputFileType = "3";  // PDF
-                    this.OutputFileName = baseFileName + ".pdf";
-                    this.OutputStream = pdfStream;
-                }
-                else
-                {
-                    // Excel出力の場合
-                    this.OutputFileType = "1";  // Excel
-                    this.OutputFileName = baseFileName + ".xlsx";
-                    this.OutputStream = excelStream;
-                }
-            }
-            else
-            {
-                // CSV出力の場合
-
-                // CSV出力実行
-                Stream csvStream = new MemoryStream();
-                if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFile(
-                    resultList, Encoding.GetEncoding("Shift-JIS"), out csvStream, out msg))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「CSV出力に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120007 });
-
-                    // エラーログ出力
-                    writeErrorLog(this.MsgId);
-                    writeErrorLog(msg);
-
-                    return -1;
-                }
-                this.OutputFileType = "2";  // CSV
-                this.OutputFileName = baseFileName + ".csv";
-                this.OutputStream = csvStream;
-            }
-
-            // ↓↓↓ 暫定処理 共通FW側が対応したら削除すること！ ↓↓↓
-            using (FileStream fs = new FileStream(this.OutputFileName, FileMode.Create))
-            {
-                this.OutputStream.CopyTo(fs);
-                fs.Flush();
-            }
-            // ↑↑↑ 暫定処理 共通FW側が対応したら削除すること！ ↑↑↑
-
-            // 正常終了
-            this.Status = CommonProcReturn.ProcStatus.Valid;
-
-            return result;
-
-        }
-
-        /// <summary>
-        /// 取込処理
-        /// </summary>
-        /// <returns></returns>
-        protected override int UploadImpl()
-        {
-            // 実装の際は、不要な帳票に対する分岐は削除して構いません
-
-            int result = 0;
-            string msg = string.Empty;
-            this.JsonResult = string.Empty;
-
-            List<string[,]> uploadList = new List<string[,]>();
-
-            List<Stream> excelList = new List<Stream>();
-            List<Stream> csvList = new List<Stream>();
-            foreach (var file in this.InputStream)
-            {
-                switch (Path.GetExtension(file.FileName))
-                {
-                    case ComUtil.FileExtension.Excel:   // Excelファイル
-                        excelList.Add(file.OpenReadStream());
-                        break;
-                    case ComUtil.FileExtension.CSV:    // CSVファイル
-                        csvList.Add(file.OpenReadStream());
-                        break;
-                    default:
-                        this.Status = CommonProcReturn.ProcStatus.Error;
-                        // 「ファイルの種類が不正です。」
-                        this.MsgId = GetResMessage(ComRes.ID.ID941280004);
-
-                        // エラーログ出力
-                        writeErrorLog(this.MsgId);
-                        return -1;
-                }
-            }
-
-            if (excelList.Count > 0)
-            {
-                // Excelファイル読込
-                if (!CommonExcelUtil.CommonExcelUtil.ReadExcelFiles(excelList, "", "", ref uploadList, ref msg))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「Excel取込に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911040002 });
-
-                    // エラーログ出力
-                    writeErrorLog(this.MsgId);
-                    writeErrorLog(msg);
-
-                    return -1;
-                }
-            }
-
-            if (csvList.Count > 0)
-            {
-                // CSVファイル読込
-                if (!ComUtil.ImportCsvFiles(
-                    csvList, true, Encoding.GetEncoding("Shift-JIS"), ref uploadList, ref msg))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    // 「CSV取込に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120008 });
-
-                    // エラーログ出力
-                    writeErrorLog(this.MsgId);
-                    writeErrorLog(msg);
-
-                    return -1;
-                }
-            }
-
-            // ↓↓↓ コントロールIDで取込対象を切り分ける場合 ↓↓↓
-            //switch (this.CtrlId)
-            //{
-            //    case TargetCtrlId.UploadExcel:
-            //        // Excelファイル読込
-            //        if (!CommonExcelUtil.CommonExcelUtil.ReadExcelFiles(excelList, "", "", ref uploadList, ref msg))
-            //        {
-            //            this.Status = CommonProcReturn.ProcStatus.Error;
-            //            // 「Excel取込に失敗しました。」
-            //            this.MsgId = GetResMessage(new string[] { "941220002", "911040002" });
-
-            //            // エラーログ出力
-            //            logger.Error(this.MsgId);
-            //            logger.Error(msg);
-
-            //            return -1;
-            //        }
-            //        break;
-            //    case TargetCtrlId.UploadCsv:
-            //        // CSVファイル読込
-            //        if (!ComUtil.ImportCsvFiles(
-            //            csvList, true, Encoding.GetEncoding("Shift-JIS"), ref uploadList, ref msg))
-            //        {
-            //            this.Status = CommonProcReturn.ProcStatus.Error;
-            //            // 「CSV取込に失敗しました。」
-            //            this.MsgId = GetResMessage(new string[] { "941220002", "911120008" });
-
-            //            // エラーログ出力
-            //            logger.Error(this.MsgId);
-            //            logger.Error(msg);
-
-            //            return -1;
-            //        }
-            //        break;
-            //    default:
-            //        this.Status = CommonProcReturn.ProcStatus.Error;
-            //        // 「コントロールIDが不正です。」
-            //        this.MsgId = GetResMessage(new string[] { "941060003", "911100001" });
-
-            //        // エラーログ出力
-            //        logger.Error(this.MsgId);
-            //        return -1;
-            //}
-            // ↑↑↑ コントロールIDで取込対象を切り分ける場合 ↑↑↑
-
-            // ↓↓↓ 表示用データを返却する場合 ↓↓↓
-            // 表示用データを返却する場合、コントロールID指定で変換する
-            var resultList = ConvertToUploadResultDictionary("[コントロールID]", uploadList);
-            // 取込結果の設定
-            SetJsonResult(resultList);
-            // ↑↑↑ 表示用データを返却する場合 ↑↑↑
-
-            // ↓↓↓ 登録処理を実行する場合 ↓↓↓
-            //// 登録処理を実行する場合、コントロール未指定で変換する
-            //this.resultInfoDictionary = ConvertToUploadResultDictionary("", uploadList);
-            //// トランザクション開始
-            //using (var transaction = this.db.Connection.BeginTransaction())
-            //{
-            //    try
-            //    {
-            //        // 登録処理実行
-            //        result = RegistImpl();
-
-            //        if (result > 0)
-            //        {
-            //            // コミット
-            //            transaction.Commit();
-            //        }
-            //        else
-            //        {
-            //            // ロールバック
-            //            transaction.Rollback();
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        if (transaction != null)
-            //        {
-            //            // ロールバック
-            //            transaction.Rollback();
-            //        }
-            //        this.Status = CommonProcReturn.ProcStatus.Error;
-            //        // 「取込処理に失敗しました。」
-            //        this.MsgId = GetResMessage(new string[] { "941220002", "911200004" });
-            //        this.LogNo = string.Empty;
-
-            //        logger.Error(this.MsgId, ex);
-            //        return -1;
-            //    }
-            //}
-            // ↑↑↑ 登録処理を実行する場合 ↑↑↑
-
-            // 正常終了
-            this.Status = CommonProcReturn.ProcStatus.Valid;
-
-            return result;
-        }
         #endregion
 
         #region privateメソッド
         /// <summary>
-        /// 一覧検索処理
+        /// TOP画面の表示
         /// </summary>
-        /// <param name="pageInfoList">ページ情報リスト</param>
-        /// <returns></returns>
-        private bool searchList()
+        /// <returns>エラーの場合False</returns>
+        private bool searchTop()
         {
-            // ページ情報取得
-            var pageInfo = GetPageInfo(TargetCtrlId.SearchResult, this.pageInfoList);
+            // 変更管理処理クラス
+            TMQUtil.HistoryManagement historyClass = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.None);
+            // 検索パラメータ
+            ComDao.MsUserEntity userParam = new() { UserId = int.Parse(this.UserId) };
 
-            // 検索条件設定
-            dynamic conditionObj = new ExpandoObject();
-            // 画面の検索条件と、画面項目定義拡張テーブルの検索条件の項目の値より、検索条件を設定
-            SetSearchCondition(this.searchConditionDictionary, TargetCtrlId.SearchCondition, conditionObj, pageInfo);
-
-            // 総件数を取得
-            conditionObj.IsCount = true;
-            // 総件数を取得
-            int cnt = db.GetCountByOutsideSql(SqlName.GetList, SqlName.SubDir, conditionObj);
-            if (cnt < 0) { return false; }
-
-            // 総件数のチェック
-            if (!CheckSearchTotalCount(cnt, pageInfo))
+            // ユーザがシステム管理者の場合、終了
+            if (isUserAdmin())
             {
+                // 申請中、承認待ち件数はいずれも表示しない
+                setDisplayCount(false, false);
+                return true;
+            }
+
+            // ユーザの所属工場に変更管理工場が無い場合、終了
+            if (isFactoryNoHistoryManagement(out List<string> approvalUserList))
+            {
+                // 申請中、承認待ち件数はいずれも表示しない
+                setDisplayCount(false, false);
+                return true;
+            }
+            // ユーザの所属工場に変更管理工場がある場合、申請中件数は必ず表示する
+
+            // ユーザが承認者であるか判定
+            bool isDisplayApproval = isUserEqualApproval(approvalUserList);
+
+            // 申請中件数と承認中件数の表示
+            setDisplayCount(true, isDisplayApproval);
+
+            return true;
+
+            // ユーザがシステム管理者かどうか判定
+            bool isUserAdmin()
+            {
+                // ユーザがシステム管理者かどうか判定
+                bool isAdmin = historyClass.isSystemAdministrator();
+
+                if (isAdmin)
+                {
+                    // システム管理者の場合、以降の処理を行わない
+                    return true;
+                }
                 return false;
             }
 
-            // 検索実行
-            conditionObj.IsCount = false;
-            var results = db.GetListByOutsideSql(SqlName.GetList, SqlName.SubDir, conditionObj);
-            if (results == null || results.Count == 0) { return false; }
-
-            // 検索結果の設定
-            if (SetSearchResultsByDataClass(pageInfo, results, cnt))
+            // ユーザの所属工場が変更管理工場かどうか判定し、工場の承認ユーザリストを取得
+            bool isFactoryNoHistoryManagement(out List<string> approvalUserList)
             {
-                // 正常終了
-                this.Status = CommonProcReturn.ProcStatus.Valid;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// 出力用一覧検索処理
-        /// </summary>
-        /// <returns></returns>
-        private List<object[]> searchListForReport()
-        {
-            var resultList = new List<object[]>();
-
-            dynamic conditionObj = new ExpandoObject();
-            SetSearchCondition(this.searchConditionDictionary, TargetCtrlId.SearchCondition, conditionObj, null);
-
-            // 検索実行
-            var results = db.GetListByOutsideSql(SqlName.GetListForReport, SqlName.SubDir, conditionObj);
-            if (results != null)
-            {
-                // 帳票出力列は画面項目定義に定義されていないので、以下のように直接指定すること
-
-                // 出力対象のカラム名のリストを生成(検索SQL側カラム名, ヘッダー文字列)
-                // ※カラム名とヘッダー文字列が同一の場合はヘッダー文字列指定不要
-                // ※ヘッダー文字列に空文字を設定した場合は空文字が設定される
-                var colNameList = new List<string[]>()
+                // ユーザが所属する工場の承認ユーザ(拡張項目4)を取得
+                approvalUserList = TMQUtil.SqlExecuteClass.SelectList<String>
+                    (SqlName.History.GetApprovalUserByLogin, SqlName.History.SubDir, userParam, this.db);
+                // 拡張項目のレコードが無い場合
+                if (approvalUserList == null || approvalUserList.Count == 0)
                 {
-                    { new string[] { "", "No." } }, // 通し番号列用
-                    { new string[] { "[検索結果カラム名1]", GetResMessage("ISxxxx1") } },
-                    { new string[] { "[検索結果カラム名2]", "" } },
-                    { new string[] { "[検索結果カラム名3]", GetResMessage("ISxxxx3") } },
+                    // 所属の工場に変更管理が無い場合、以降の処理を行わない
+                    return true;
+                }
 
-                    { new string[] { "[検索結果カラム名n]", GetResMessage("ISxxxxn") } }
-                };
-                resultList = ConvertToReportMappingList(results, colNameList, true, true);
-            }
-            return resultList;
-        }
-
-        /// <summary>
-        /// 入力チェック
-        /// </summary>
-        /// <param name="dictionary"></param>
-        /// <param name="languageId">言語コード</param>
-        /// <returns>エラーのある場合、false</returns>
-        private bool checkInput(ref List<Dictionary<string, object>> dictionary, string languageId)
-        {
-            // 結果返却用 エラーのある場合false、無い場合true
-            var returnVal = true;
-            // エラー情報セット用Dictionary
-            var errorInfoDictionary = new List<Dictionary<string, object>>();
-            // エラーメッセージ一時セット用変数
-            string errorMessage = null;
-
-            // 明細の各列に対して、入力チェックを行う場合の実装例
-
-            // 明細の項目の情報
-            var info = getResultMappingInfo(TargetCtrlId.SearchResult);
-            // 明細の各列を取得
-            var checkTargetList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, TargetCtrlId.SearchResult);
-            // 明細の件数分繰り返し、各列に対して入力チェックを行う
-            foreach (var condition in checkTargetList)
-            {
-                // 入力チェックの対象である、明細列を引数に、エラー情報設定用クラスを宣言
-                var errorInfo = new ErrorInfo(condition);
-                //もし、エラーチェックの対象が明細でなく、単一の項目である場合は、conditionでなく以下を引数に渡す
-                // ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, "コントロールID");
-
-                // 行単位でエラーのある場合、True
-                var isError = false;
-
-                //    // 例：コードの入力チェック
-                //    // KEY_NAMEにCodeが指定されている列のVALを取得
-                //    var val = info.getValName("Code");
-                //    // VALより画面の値を取得
-                //    var code = condition[val].ToString();
-
-                //    // マスタ存在チェック
-                //    var tempStatus = MasterUtil.CheckMaster(Constants.MASTER.CODE, code, ref errorMessage, db);
-                //    if (!tempStatus)
-                //    {
-                //        // 上記入力チェックがエラーの場合、エラー情報をセット
-                //        errorInfo.setError(errorMessage, val);
-                //        isError = true;
-                //    }
-
-                if (isError)
+                // ユーザが設定されているもののみを取得
+                approvalUserList = approvalUserList.Where(x => !string.IsNullOrEmpty(x)).ToList();
+                // 拡張項目の値が全て空の場合
+                if (approvalUserList == null || approvalUserList.Count == 0)
                 {
-                    // 行でエラーのあった場合、エラー情報を設定する
-                    errorInfoDictionary.Add(errorInfo.Result);
-                    returnVal = false;
+                    // 所属の工場に変更管理が無い場合、以降の処理を行わない
+                    return true;
+                }
+
+                return false;
+            }
+
+            // 工場の承認ユーザリストにログインユーザが含まれているか判定
+            bool isUserEqualApproval(List<string> approvalUserList)
+            {
+                // 承認ユーザリストにユーザと同じIDがあれば、承認ユーザである
+                bool isApprovalUser = approvalUserList.Any(x => x.Equals(this.UserId));
+                return isApprovalUser;
+            }
+
+            // 申請中件数と承認中件数をそれぞれ表示
+            void setDisplayCount(bool isDisplayApplication, bool isDisplayApproval)
+            {
+                // 申請中件数(初期値は非表示)
+                Dao.ApplicationCount application = Dao.ApplicationCount.GetNoDisplay();
+                if (isDisplayApplication)
+                {
+                    application = TMQUtil.SqlExecuteClass.SelectEntity<Dao.ApplicationCount>(SqlName.History.GetApplicationCount, SqlName.History.SubDir, userParam, this.db);
+                }
+                // 承認中件数(初期値は非表示)
+                Dao.AprovalCount approval = Dao.AprovalCount.GetNoDisplay();
+                if (isDisplayApproval)
+                {
+                    approval = TMQUtil.SqlExecuteClass.SelectEntity<Dao.AprovalCount>(SqlName.History.GetApprovalCount, SqlName.History.SubDir, userParam, this.db);
+                }
+                // 画面に設定
+                setForm(ConductInfo.FormTop.ApplicationCount, application);
+                setForm(ConductInfo.FormTop.ApprovalCount, approval);
+
+                void setForm<T>(string ctrlId, T result)
+                {
+                    var pageInfo = GetPageInfo(ctrlId, this.pageInfoList);
+                    SetSearchResultsByDataClass(pageInfo, new List<T> { result }, 1);
                 }
             }
-
-            // エラー情報を画面に反映
-            SetJsonResult(errorInfoDictionary);
-
-            return returnVal;
         }
         #endregion
     }

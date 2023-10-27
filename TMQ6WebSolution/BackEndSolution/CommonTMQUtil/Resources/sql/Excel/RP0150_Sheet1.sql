@@ -1,19 +1,162 @@
 SELECT
     ms.location_structure_id                            -- 機種階層id ※共通処理にて使用
-    , '' AS factory_name                                -- 工場 ※共通処理にて設定
-    , '' AS plant_name                                  -- プラント ※共通処理にて設定
-    , '' AS series_name                                 -- 系列 ※共通処理にて設定
-    , '' AS stroke_name                                 -- 工程 ※共通処理にて設定
-    , '' AS facility_name                               -- 設備 ※共通処理にて設定
+    --工場(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.location_factory_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.location_factory_structure_id
+    ) AS factory_name
+    --プラント(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.location_plant_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.location_plant_structure_id
+    ) AS plant_name
+    --系列(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.location_series_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.location_series_structure_id
+    ) AS series_name
+    --工程(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.location_stroke_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.location_stroke_structure_id
+    ) AS stroke_name
+    --設備(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.location_facility_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.location_facility_structure_id
+    ) AS facility_name
     , ms.job_structure_id                               -- 職種機種階層id ※共通処理にて使用
-    , '' AS job_name                                    -- 職種
+--    , '' AS job_name                                    -- 職種
+    --職種(翻訳)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = temp.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ms.job_structure_id
+                AND st_f.factory_id IN(0, temp.factoryId)
+            )
+        AND tra.structure_id = ms.job_structure_id
+    ) AS job_name
     , ms.subject                                        -- 件名
 --    , mh.work_failure_division_structure_id             -- 作業目的
 --    , vwkp.translation_text AS work_purpose_name        -- 作業目的名称
 --    , mh.maintenance_season_structure_id                -- 保全時期
 --    , vmts.translation_text AS work_purpose_name        -- 保全時期名称
-    , [dbo].[get_v_structure_item](mh.work_failure_division_structure_id, temp.factoryId, temp.languageId) AS work_purpose_name         -- 作業目的名称
-    , [dbo].[get_v_structure_item](mh.maintenance_season_structure_id, temp.factoryId, temp.languageId) AS maintenance_season_name      -- 保全時期名称
+--    , (
+--        SELECT
+--            tra.translation_text 
+--        FROM
+--            v_structure_item_all AS tra 
+--        WHERE
+--            tra.language_id = temp.languageId
+--            AND tra.location_structure_id = ( 
+--                SELECT
+--                    MAX(st_f.factory_id) 
+--                FROM
+--                    #temp_structure_factory AS st_f 
+--                WHERE
+--                    st_f.structure_id = mh.work_failure_division_structure_id
+--                    AND st_f.factory_id IN (0, temp.factoryId)
+--            )
+--            AND tra.structure_id = mh.work_failure_division_structure_id
+--      ) AS work_purpose_name                        -- 作業目的名称
+    , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mh.maintenance_season_structure_id
+                    AND st_f.factory_id IN (0, temp.factoryId)
+            )
+            AND tra.structure_id = mh.maintenance_season_structure_id
+      ) AS maintenance_season_name                        -- 保全時期名称
     , CASE
         WHEN ms.completion_date IS NOT NULL THEN '''' + FORMAT(ms.completion_date, 'yyyy/MM/dd') 
         ELSE ''
@@ -34,10 +177,80 @@ SELECT
 --    , vbdm.translation_text AS budget_management_name   -- 予算管理区分名称
 --    , ms.budget_personality_structure_id                -- 予算性格区分
 --    , vbdp.translation_text AS budget_personality_name  -- 予算性格区分名称
-    , [dbo].[get_v_structure_item](ms.sudden_division_structure_id, temp.factoryId, temp.languageId) AS sudden_division_name     -- 突発区分名称
-    , [dbo].[get_v_structure_item](ms.mq_class_structure_id, temp.factoryId, temp.languageId) AS mq_class_name            -- MQ分類名称
-    , [dbo].[get_v_structure_item](ms.budget_management_structure_id, temp.factoryId, temp.languageId) AS budget_management_name   -- 予算管理区分名称
-    , [dbo].[get_v_structure_item](ms.budget_personality_structure_id, temp.factoryId, temp.languageId) AS budget_personality_name  -- 予算性格区分名称
+    , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ms.sudden_division_structure_id
+                    AND st_f.factory_id IN (0, temp.factoryId)
+            )
+            AND tra.structure_id = ms.sudden_division_structure_id
+      ) AS sudden_division_name                        -- 突発区分名称
+    , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ms.mq_class_structure_id
+                    AND st_f.factory_id IN (0, temp.factoryId)
+            )
+            AND tra.structure_id = ms.mq_class_structure_id
+      ) AS mq_class_name                        -- MQ分類名称
+    , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ms.budget_management_structure_id
+                    AND st_f.factory_id IN (0, temp.factoryId)
+            )
+            AND tra.structure_id = ms.budget_management_structure_id
+      ) AS budget_management_name                        -- 予算管理区分名称
+    , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ms.budget_personality_structure_id
+                    AND st_f.factory_id IN (0, temp.factoryId)
+            )
+            AND tra.structure_id = ms.budget_personality_structure_id
+      ) AS budget_personality_name                              -- 予算性格区分名称
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM
     ma_summary ms                       -- 保全活動件名
     INNER JOIN #temp temp

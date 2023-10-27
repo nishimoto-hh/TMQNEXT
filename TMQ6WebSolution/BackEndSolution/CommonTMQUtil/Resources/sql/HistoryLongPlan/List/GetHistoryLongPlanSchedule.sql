@@ -1,7 +1,12 @@
 /*
 * スケジュールの内容を取得するSQL
 */
-
+WITH long_plan_ids AS (
+SELECT
+    *
+FROM
+    STRING_SPLIT(@LongPlanIdList, ',')
+)
 --トランザクション
 SELECT
     lp.long_plan_id AS key_id
@@ -9,11 +14,23 @@ SELECT
     , msd.complition
     , mscn.maintainance_kind_structure_id
     , ie.extension_data AS maintainance_kind_level
-    , dbo.get_translation_text_all( 
-        mscn.maintainance_kind_structure_id
-        , lp.location_structure_id
-        , 1240
-        , @LanguageId
+    , (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = mscn.maintainance_kind_structure_id
+                AND st_f.factory_id IN(0, lp.location_factory_structure_id)
+            )
+        AND tra.structure_id = mscn.maintainance_kind_structure_id
     ) AS maintainance_kind_char
     , msd.summary_id
     , msd.maintainance_schedule_detail_id AS new_maintainance_key 
@@ -41,7 +58,15 @@ FROM
             AND ie.sequence_no = 1
         ) 
 WHERE
-    msd.schedule_date IS NOT NULL 
+    EXISTS(
+        SELECT
+            *
+        FROM
+            long_plan_ids temp
+        WHERE
+            lp.long_plan_id = temp.value
+    )
+    AND msd.schedule_date IS NOT NULL 
     AND msd.schedule_date BETWEEN @ScheduleStart AND @ScheduleEnd 
     AND NOT EXISTS ( 
         SELECT
@@ -54,7 +79,7 @@ WHERE
     )                                           --削除した保全情報一覧の情報は除外する
     
     UNION 
-    
+
 --変更管理
 SELECT
     hm.key_id
@@ -62,14 +87,23 @@ SELECT
     , msd.complition
     , hmmsc.maintainance_kind_structure_id
     , ie.extension_data AS maintainance_kind_level
-    , dbo.get_translation_text_all( 
-        hmmsc.maintainance_kind_structure_id
-        , COALESCE( 
-            hmlp.location_structure_id
-            , lp.location_structure_id
-        ) 
-        , 1240
-        , @LanguageId
+    , (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = hmmsc.maintainance_kind_structure_id
+                AND st_f.factory_id IN(0, COALESCE(hmlp.location_structure_id, lp.location_structure_id))
+            )
+        AND tra.structure_id = hmmsc.maintainance_kind_structure_id
     ) AS maintainance_kind_char
     , msd.summary_id
     , msd.maintainance_schedule_detail_id AS new_maintainance_key 
@@ -103,6 +137,14 @@ FROM
             AND ie.sequence_no = 1
         ) 
 WHERE
-    msd.schedule_date IS NOT NULL 
+    EXISTS(
+        SELECT
+            *
+        FROM
+            long_plan_ids temp
+        WHERE
+            hm.key_id = temp.value
+    )
+    AND msd.schedule_date IS NOT NULL 
     AND msd.schedule_date BETWEEN @ScheduleStart AND @ScheduleEnd 
     AND hmmsc.execution_division != 5             --削除した保全情報一覧の情報は除外する

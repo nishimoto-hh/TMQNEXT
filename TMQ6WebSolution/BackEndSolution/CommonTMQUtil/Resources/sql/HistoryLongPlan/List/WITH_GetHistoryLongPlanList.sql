@@ -1,281 +1,10 @@
 /*
 * 一覧の項目の内容を取得するSQL
 */
-WITH org_eq_att AS(
-     -- 機器情報添付の取得に使用する機器IDを機器情報より取得(トランザクションテーブル)
-    SELECT DISTINCT
-         mscn.long_plan_id
-        ,mc.machine_id
-        ,eq.equipment_id
-        ,mscn.management_standards_content_id
-    FROM
-        mc_management_standards_content AS mscn
-        LEFT OUTER JOIN
-            mc_management_standards_component AS mscm
-        ON  (
-                mscn.management_standards_component_id = mscm.management_standards_component_id
-            )
-        LEFT OUTER JOIN
-            mc_machine AS mc
-        ON  (
-                mscm.machine_id = mc.machine_id
-            )
-        LEFT OUTER JOIN
-            mc_equipment AS eq
-        ON  (
-                mc.machine_id = eq.machine_id
-            )
-    WHERE
-        mscn.long_plan_id IS NOT NULL
-    AND mc.machine_id IS NOT NULL
-    AND eq.equipment_id IS NOT NULL
-)
-,
-hm_eq_att AS(
-     -- 機器情報添付の取得に使用する機器IDを機器情報より取得(変更管理テーブル)
-    SELECT DISTINCT
-         mscn.long_plan_id
-        ,mc.machine_id
-        ,eq.equipment_id
-        ,mscn.management_standards_content_id
-        ,mscn.execution_division
-    FROM
-        hm_mc_management_standards_content AS mscn
-        LEFT OUTER JOIN
-            mc_management_standards_component AS mscm
-        ON  (
-                mscn.management_standards_component_id = mscm.management_standards_component_id
-            )
-        LEFT OUTER JOIN
-            mc_machine AS mc
-        ON  (
-                mscm.machine_id = mc.machine_id
-            )
-        LEFT OUTER JOIN
-            mc_equipment AS eq
-        ON  (
-                mc.machine_id = eq.machine_id
-            )
-    WHERE
-        mscn.long_plan_id IS NOT NULL
-    AND mc.machine_id IS NOT NULL
-    AND eq.equipment_id IS NOT NULL
-)
-,
-eq_att AS ( 
-    -- 機器情報添付の取得に使用する機器IDを機器情報より取得
-    SELECT DISTINCT
-        long_plan_id
-        , machine_id
-        , equipment_id 
-    FROM
-        org_eq_att org 
-    WHERE
-        NOT EXISTS ( 
-            SELECT
-                * 
-            FROM
-                hm_eq_att hm 
-            WHERE
-                hm.execution_division = 5 --保全情報一覧の削除
-                AND hm.management_standards_content_id = org.management_standards_content_id
-        ) --削除した保全情報一覧の情報は除外する
-        
-        UNION 
-        
-    SELECT DISTINCT
-        long_plan_id
-        , machine_id
-        , equipment_id 
-    FROM
-        hm_eq_att hm 
-    WHERE
-        hm.execution_division != 5 --削除した保全情報一覧の情報は除外する
-)
-,
--- 排他処理で使用する項目(長期計画件名IDごとの最大の更新日時)(トランザクションテーブル)
-max_dt AS(
-     SELECT
-         lp.long_plan_id AS long_plan_id_dt
-        ,
-        -- 機器別管理基準内容
-        MAX(ms_con.update_datetime) AS mc_man_st_con_update_datetime
-        ,
-        -- スケジュール詳細
-        MAX(schedule_detail.update_datetime) AS sche_detail_update_datetime
-        ,
-        -- 添付情報(長期計画)
-        MAX(att.update_datetime) AS attachment_update_datetime
-    FROM
-        ln_long_plan AS lp
-        LEFT OUTER JOIN
-            mc_management_standards_content AS ms_con
-        ON  (
-                ms_con.long_plan_id = lp.long_plan_id
-            )
-        LEFT OUTER JOIN
-            mc_maintainance_schedule AS schedule
-        ON  (
-                schedule.management_standards_content_id = ms_con.management_standards_content_id
-            )
-        LEFT OUTER JOIN
-            mc_maintainance_schedule_detail AS schedule_detail
-        ON  (
-                schedule_detail.maintainance_schedule_id = schedule.maintainance_schedule_id
-            )
-        LEFT OUTER JOIN
-            attachment AS att
-        ON  (
-                att.key_id = lp.long_plan_id
-            AND att.function_type_id = 1640
-            )
-    GROUP BY
-         lp.long_plan_id
-)
-,structure_factory AS(
-     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-         structure_id
-        ,location_structure_id AS factory_id
-    FROM
-        v_structure_item_all
-    WHERE
-        structure_group_id IN(1330, 1280, 1300, 1060, 1290, 1410, 1310, 1320, 2090, 2100)
-    AND language_id = @LanguageId
-)
-,prepare_limit_days AS(
-     -- 準備対象列取得用、表示対象の日数を拡張項目より取得
-    SELECT
-        TOP 1 ex.extension_data AS limit_days
-    FROM
-        v_structure AS it
-        INNER JOIN
-            ms_item_extension AS ex
-        ON  (
-                it.structure_item_id = ex.item_id
-            AND ex.sequence_no = 9
-            )
-    WHERE
-        it.structure_group_id = 2080
-)
-,org_prepare_target AS(
- -- 準備対象列取得用、機器別管理基準内でスケジュールが未完了かつ準備期間に入っているものを取得(トランザクションテーブル)
-    SELECT
-        lp.long_plan_id,
-        msd.schedule_date,
-        COALESCE(preparation_period, 0) AS preparation_period,
-        msc.management_standards_content_id
-    FROM
-        ln_long_plan lp
-        INNER JOIN
-            mc_management_standards_content msc
-        ON  lp.long_plan_id = msc.long_plan_id
-        INNER JOIN
-            mc_maintainance_schedule ms
-        ON  msc.management_standards_content_id = ms.management_standards_content_id
-        INNER JOIN
-            mc_maintainance_schedule_detail msd
-        ON  ms.maintainance_schedule_id = msd.maintainance_schedule_id
-        AND COALESCE(msd.complition, 0) != 1
-    WHERE
-        msd.schedule_date >= DATEADD(dd,(
-                SELECT
-                    limit_days
-                FROM
-                    prepare_limit_days
-            ) * (- 1), GETDATE())
-)
-,hm_prepare_target AS(
- -- 準備対象列取得用、機器別管理基準内でスケジュールが未完了かつ準備期間に入っているものを取得(変更管理テーブル)
-    SELECT
-        lp.long_plan_id,
-        msd.schedule_date,
-        COALESCE(preparation_period, 0) AS preparation_period,
-        msc.management_standards_content_id,
-        msc.execution_division
-    FROM
-        ln_long_plan lp
-        INNER JOIN
-            hm_mc_management_standards_content msc
-        ON  lp.long_plan_id = msc.long_plan_id
-        INNER JOIN
-            mc_maintainance_schedule ms
-        ON  msc.management_standards_content_id = ms.management_standards_content_id
-        INNER JOIN
-            mc_maintainance_schedule_detail msd
-        ON  ms.maintainance_schedule_id = msd.maintainance_schedule_id
-        AND COALESCE(msd.complition, 0) != 1
-    WHERE
-        msd.schedule_date >= DATEADD(dd,(
-                SELECT
-                    limit_days
-                FROM
-                    prepare_limit_days
-            ) * (- 1), GETDATE())
-)
-,prepare_target AS ( 
-    -- 準備対象列取得用、機器別管理基準内でスケジュールが未完了かつ準備期間に入っているものを取得
-    SELECT
-        *
-        , row_number() over(partition BY long_plan_id ORDER BY schedule_date) AS row_num
-    FROM
-        ( 
-            SELECT
-                long_plan_id
-                , schedule_date
-                , preparation_period 
-            FROM
-                org_prepare_target org 
-            WHERE
-                NOT EXISTS ( 
-                    SELECT
-                        * 
-                    FROM
-                        hm_prepare_target hm 
-                    WHERE
-                        hm.execution_division = 5 --保全情報一覧の削除
-                        AND hm.management_standards_content_id = org.management_standards_content_id
-                )                               --削除した保全情報一覧の情報は除外する
-                UNION 
-            SELECT
-                long_plan_id
-                , schedule_date
-                , preparation_period 
-            FROM
-                hm_prepare_target hm
-            WHERE
-                hm.execution_division != 5     --削除した保全情報一覧の情報は除外する
-        ) union_data
-)
-,prepare_target_narrow AS(
--- 準備対象列取得用、直近1件に絞込、準備期間の日数を引き対象のもののみを表示、これを外部結合し、有無により準備対象列と判定する
-    SELECT
-        pt.long_plan_id
-    FROM
-        prepare_target AS pt
-    WHERE
-        pt.row_num = 1
-    AND GETDATE() >= DATEADD(dd,(pt.preparation_period) * (- 1), pt.schedule_date)
-)
-, factory_approval_user AS(
--- 工場の承認ユーザID
-    SELECT
-        ms.structure_id
-        ,ex.extension_data AS ex_data
-    FROM
-        ms_structure ms 
-        LEFT JOIN ms_item_extension ex 
-            ON ms.structure_item_id = ex.item_id 
-            AND ex.sequence_no = 4 
-    WHERE
-        ms.structure_group_id = 1000 
-        AND ms.structure_layer_no = 1 
-)
-,target AS(
+WITH target AS(
      -- 表示情報を取得するSQL、翻訳対応のためWITH句へ
     SELECT
         history.key_id AS long_plan_id
-        , history.factory_id
         , COALESCE(hmlp.subject, lp.subject) AS subject
         , CASE 
             WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
@@ -286,9 +15,57 @@ max_dt AS(
             hmlp.location_structure_id
             , lp.location_structure_id
         ) AS location_structure_id              --場所階層(変更管理テーブル)
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_district_structure_id 
+            ELSE COALESCE(hmlp.location_district_structure_id, lp.location_district_structure_id) 
+            END AS district_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_factory_structure_id 
+            ELSE COALESCE(hmlp.location_factory_structure_id, lp.location_factory_structure_id) 
+            END AS factory_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_plant_structure_id 
+            ELSE COALESCE(hmlp.location_plant_structure_id, lp.location_plant_structure_id) 
+            END AS plant_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_series_structure_id 
+            ELSE COALESCE(hmlp.location_series_structure_id, lp.location_series_structure_id) 
+            END AS series_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_stroke_structure_id 
+            ELSE COALESCE(hmlp.location_stroke_structure_id, lp.location_stroke_structure_id) 
+            END AS stroke_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.location_facility_structure_id 
+            ELSE COALESCE(hmlp.location_facility_structure_id, lp.location_facility_structure_id) 
+            END AS facility_id
         , COALESCE(hmlp.job_structure_id, lp.job_structure_id) AS job_structure_id --職種機種(変更管理テーブル)
-        , lp.location_structure_id AS old_location_structure_id --場所階層(トランザクションテーブル)
-        , lp.job_structure_id AS old_job_structure_id --職種機種(トランザクションテーブル)
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.job_kind_structure_id 
+            ELSE COALESCE(hmlp.job_kind_structure_id, lp.job_kind_structure_id) 
+            END AS job_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.job_large_classfication_structure_id 
+            ELSE COALESCE(hmlp.job_large_classfication_structure_id, lp.job_large_classfication_structure_id) 
+            END AS large_classfication_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.job_middle_classfication_structure_id 
+            ELSE COALESCE(hmlp.job_middle_classfication_structure_id, lp.job_middle_classfication_structure_id) 
+            END AS middle_classfication_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.job_small_classfication_structure_id 
+            ELSE COALESCE(hmlp.job_small_classfication_structure_id, lp.job_small_classfication_structure_id) 
+            END AS small_classfication_id
         , CASE 
             WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.maintenance_season_structure_id 
@@ -343,17 +120,24 @@ max_dt AS(
                     SELECT
                         dbo.get_file_download_info(1600, eq_att.machine_id) + dbo.get_file_download_info(1610, eq_att.equipment_id)
                     FROM
-                        eq_att 
+                        #eq_att AS eq_att 
                     WHERE
                         eq_att.long_plan_id = lp.long_plan_id 
                     ORDER BY
                         eq_att.long_plan_id FOR xml PATH ('')
                 )
         ) AS file_link_equip
-        , dbo.get_file_download_info( 
-            1640
-            , COALESCE(hmlp.long_plan_id, lp.long_plan_id)
-        ) AS file_link_subject
+        ,REPLACE((
+                SELECT
+                    dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
+                FROM
+                    #temp_attachment as att_temp
+                WHERE
+                    (hmlp.long_plan_id = att_temp.key_id OR lp.long_plan_id = att_temp.key_id)
+                AND att_temp.function_type_id = 1640
+                ORDER BY
+                    document_no FOR xml path('')
+            ), ' ', '') AS file_link_subject
         , CASE 
             WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
                 THEN hmlp.purpose_structure_id 
@@ -395,7 +179,7 @@ max_dt AS(
         -- スケジュールと同じ値(長計件名ID)
         ,history.key_id AS key_id
         -- 準備対象列
-        ,COALESCE((SELECT 1 FROM prepare_target_narrow AS pt WHERE pt.long_plan_id = history.key_id),0) AS preparation_flg
+        ,COALESCE((SELECT 1 FROM #prepare_target_narrow AS pt WHERE pt.long_plan_id = history.key_id),0) AS preparation_flg
         ,CASE
             WHEN hmmsc.content_change_flg IS NOT NULL THEN 1
             ELSE 0
@@ -434,6 +218,16 @@ max_dt AS(
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.work_class_structure_id ELSE lp.work_class_structure_id END), lp.work_class_structure_id, 'WorkClass') + -- 作業区分
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.treatment_structure_id ELSE lp.treatment_structure_id END), lp.treatment_structure_id, 'Treatment') + -- 処置区分
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.facility_structure_id ELSE lp.facility_structure_id END), lp.facility_structure_id, 'FacilityDivision') + -- 設備区分
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_district_structure_id ELSE lp.location_district_structure_id END), lp.location_district_structure_id, 'District') +                                -- 地区
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_factory_structure_id ELSE lp.location_factory_structure_id END), lp.location_factory_structure_id, 'Factory') +                                   -- 工場
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_plant_structure_id ELSE lp.location_plant_structure_id END), lp.location_plant_structure_id, 'Plant') +                                         -- プラント
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_series_structure_id ELSE lp.location_series_structure_id END), lp.location_series_structure_id, 'Series') +                                      -- 系列
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_stroke_structure_id ELSE lp.location_stroke_structure_id END), lp.location_stroke_structure_id, 'Stroke') +                                      -- 工程
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_facility_structure_id ELSE lp.location_facility_structure_id END), lp.location_facility_structure_id, 'Facility') +                                -- 設備
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.job_kind_structure_id ELSE lp.job_kind_structure_id END), lp.job_kind_structure_id, 'Job') +                                                       -- 職種
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.job_large_classfication_structure_id ELSE lp.job_large_classfication_structure_id END), lp.job_large_classfication_structure_id, 'Large') +                       -- 機種大分類
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.job_middle_classfication_structure_id ELSE lp.job_middle_classfication_structure_id END), lp.job_middle_classfication_structure_id, 'Middle') +                    -- 機種中分類
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.job_small_classfication_structure_id ELSE lp.job_small_classfication_structure_id END), lp.job_small_classfication_structure_id, 'Small') +                       -- 機種小分類
                        CASE
                           WHEN hmmsc.content_change_flg IS NOT NULL THEN 'Content_20|'
                           ELSE ''
@@ -473,7 +267,7 @@ max_dt AS(
                 lp.person_id = person.user_id
             )
         LEFT OUTER JOIN
-            max_dt
+            #max_dt AS max_dt
         ON  (
                 lp.long_plan_id = max_dt.long_plan_id_dt
             )
@@ -492,7 +286,7 @@ max_dt AS(
         ON  division_ms.structure_item_id = division_ex.item_id
         AND division_ex.sequence_no = 1
         LEFT JOIN
-            factory_approval_user fau
+            #factory_approval_user fau
         ON  history.factory_id = fau.structure_id
         LEFT JOIN
             ms_user approval_user

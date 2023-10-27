@@ -15,6 +15,7 @@ using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_PT0009.BusinessLogicDataClass_PT0009;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 /// <summary>
 /// 会計帳票出力
@@ -246,6 +247,12 @@ namespace BusinessLogic_PT0009
                     {
                         continue;
                     }
+
+                    // 翻訳の一時テーブルを作成
+                    TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                    listPf.GetCreateTranslation(); // テーブル作成
+                    listPf.GetInsertTranslationAll(new List<GroupId>(), true); // 各グループ
+                    listPf.RegistTempTable(); // 登録
 
                     IList<dynamic> dataList = TMQUtil.GetAccountReportData(sheetDefine.TargetSql, db, condAccountReport);
                     if (dataList.Count > 0)

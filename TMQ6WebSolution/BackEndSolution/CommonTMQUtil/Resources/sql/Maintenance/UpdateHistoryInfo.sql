@@ -56,6 +56,7 @@ SET
     , [effect_quality_structure_id] = @EffectQualityStructureId
     , [failure_site] = @FailureSite
     , [parts_existence_flg] = @PartsExistenceFlg
+    , [follow_flg] = @FollowFlg
     , [update_serialid] = update_serialid + 1
     , [update_datetime] = @UpdateDatetime
     , [update_user_id] = @UpdateUserId 

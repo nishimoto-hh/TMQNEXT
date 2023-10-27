@@ -49,7 +49,9 @@ const PT0006_FormList = {
         Unit: 4,                                // 単位
         ReferenceQuantity: 5,                   // 参照用出庫数
         WorkNo: 7,                              // 作業No
-        FormType: 8　　　　　　　　　　　　　　 // 画面タイプ
+        FormType: 8,　　　　　　　　　　　　　  // 画面タイプ
+        Digit: 9,                               // 小数点以下桁数
+        RoundDivision: 10                       // 丸め処理区分
     },
     Btn: "CBODY_030_00_BTN_6",                  // 出庫引当ボタングループ
     ResultsInventory: {
@@ -79,7 +81,7 @@ const BtnName = {
     PrepareIssue: "PrepareIssue", // 出庫引当
     Cancel: "Cancel",             // 取消
     Regist: "Regist",             // 登録
-    Back:"Back"                   // 戻る
+    Back: "Back"                   // 戻る
 };
 
 /*==94:初期化処理==*/
@@ -109,8 +111,7 @@ function PT0006_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
     var cancelBtn = getButtonCtrl(BtnName.Cancel);
 
     // 新規の場合
-    if (formType == PartsTransFlg.New)
-    {
+    if (formType == PartsTransFlg.New) {
         // 取消ボタン非活性
         changeInputControl(cancelBtn, false);
 
@@ -122,18 +123,22 @@ function PT0006_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         changeInputControl(registBtn, false);
     }
     // 編集の場合
-    else
-    {
+    else {
         // 入力項目、登録、出庫引当ボタンの非活性
         ChangeDisabled();
     }
 
     // 参照の場合
-    if (formType == PartsTransFlg.Reference)
-    {
+    if (formType == PartsTransFlg.Reference) {
         // 取消ボタン非活性
         changeInputControl(cancelBtn, false);
     }
+
+    // 出庫数からフォーカスアウトした場合
+    var quantity = getCtrl(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, 1, CtrlFlag.TextBox, false, false);
+    $(quantity).blur(function () {
+        PT0006roundQuantity();
+    });
 }
 
 /**
@@ -154,7 +159,7 @@ function PT0006_setPageStatusEx(status, pageRowCount, conductPtn, formNo) {
     // 出庫情報入力エリア取得
     var input = getCtrl(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, PT0006_FormList.InputArea.FirstRowNo, CtrlFlag.Input, false, false);
     var unitArea = $(input).closest("div").find(".unit");
-    
+
     // 単位なので直接値セット
     $(unitArea)[0].innerText = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.Unit, PT0006_FormList.InputArea.FirstRowNo, CtrlFlag.Label, false, false);
 
@@ -173,8 +178,7 @@ function PT0006_postBuiltTabulator(tbl, id) {
     }
 
     // 部門在庫一覧
-    if (id == "#" + PT0006_FormList.Department.Id + getAddFormNo())
-    {
+    if (id == "#" + PT0006_FormList.Department.Id + getAddFormNo()) {
         // 予備品一覧条件追加
         endSelectDepartmentList(tbl);
     }
@@ -195,8 +199,7 @@ function PT0006_postBuiltTabulator(tbl, id) {
             var cancelBtn = getButtonCtrl(BtnName.Cancel);
             changeInputControl(cancelBtn, false);
         }
-        else
-        {
+        else {
             // 出庫情報の作業No取得
             var workNo = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.WorkNo, PT0006_FormList.InputArea.FirstRowNo, CtrlFlag.Label, false, false);
 
@@ -211,8 +214,7 @@ function PT0006_postBuiltTabulator(tbl, id) {
                 var inventryWorkNo = tr.getData()['VAL' + PT0006_FormList.ResultsInventory.WorkNo];
 
                 // 作業Noが同一であれば背景色水色
-                if (workNo == inventryWorkNo)
-                {
+                if (workNo == inventryWorkNo) {
                     // 背景色水色
                     setHikiate(ele, true);
                 }
@@ -257,12 +259,10 @@ function PT0006_prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn,
     var conditionDataList = [];
 
     // 遷移元が部門在庫情報の場合
-    if (ctrlId == PT0006_FormList.Department.Id)
-    {
+    if (ctrlId == PT0006_FormList.Department.Id) {
         // 部門在庫一覧取得
         var table = P_listData['#' + ctrlId + getAddFormNo()];
-        if (table)
-        {
+        if (table) {
             var trs = table.getRows();
             $(trs).each(function (i, tr) {
                 var ele = tr.getElement();
@@ -274,14 +274,12 @@ function PT0006_prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn,
                     selectConditionList(element);
 
                     // 部門在庫情報が1件より多い場合
-                    if (i != 0)
-                    {
+                    if (i != 0) {
                         // 在庫一覧非表示、登録ボタン非活性
                         hideBtnAndList();
                     }
                 }
-                else
-                {
+                else {
                     setHikiate(ele, false);
                 }
             });
@@ -382,8 +380,7 @@ function PT0006_afterSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, co
  * 部門在庫一覧検索後処理
  * @param {any} tbl 部門在庫一覧情報
  */
-function endSelectDepartmentList(tbl)
-{
+function endSelectDepartmentList(tbl) {
     // 対象コントール内の全行取得
     var trsDpt = tbl.getRows();
     $(trsDpt).each(function (i, tr) {
@@ -404,8 +401,7 @@ function endSelectDepartmentList(tbl)
  * 在庫一覧検索後処理
  * @param {any} tbl 在庫一覧情報
  */
-function GoodsIssueReservation(tbl)
-{
+function GoodsIssueReservation(tbl) {
     // 出庫日取得
     var inputval = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueDateTime, PT0006_FormList.InputArea.FirstRowNo, CtrlFlag.TextBox, false, false);
     // 日付に変換
@@ -492,8 +488,7 @@ function GoodsIssueReservation(tbl)
                     // 出庫数に値をセット
                     setValue(PT0006_FormList.ResultsInventory.Id, PT0006_FormList.ResultsInventory.IssueQuantity, i, CtrlFlag.Label, carryOver.toFixed(2) + outNumUnit);
                 }
-                else
-                {
+                else {
                     setValue(PT0006_FormList.ResultsInventory.Id, PT0006_FormList.ResultsInventory.IssueQuantity, i, CtrlFlag.Label, carryOver + outNumUnit);
                 }
 
@@ -517,8 +512,7 @@ function GoodsIssueReservation(tbl)
  * 在庫一覧の条件を追加
  * @param {any} element 行の要素
  */
-function selectConditionList(element)
-{
+function selectConditionList(element) {
     var conditionData = {};
     conditionData['CTRLID'] = 'SelectCondition';
     conditionData['StockQuantity'] = getSiblingsValue(element, PT0006_FormList.Department.StockQuantity, CtrlFlag.Label);                     // 選択した部門の在庫数
@@ -570,7 +564,7 @@ function ChangeDisabled() {
     // 登録ボタン非活性
     var registBtn = getButtonCtrl(BtnName.Regist);
     changeInputControl(registBtn, false);
-    
+
 }
 
 /**
@@ -611,5 +605,62 @@ function lowerThanDateOnly(date1, date2) {
         }
     } else {
         return year1 < year2;
+    }
+}
+
+
+/**
+ *【オーバーライド用関数】ページデータ取得後
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo,) {
+
+    // 出庫引当後にエラーになっているかどうか
+    var isError = $(P_Article).parent().parent().find('.message_div').find('.error');
+
+    // エラーになっている場合
+    if (isError.length > 0) {
+        // 画面タイプ取得
+        var formType = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.FormType, PT0006_FormList.InputArea.FirstRowNo, CtrlFlag.Label, false, false);
+
+        // 新規の場合
+        if (formType == PartsTransFlg.New) {
+            // 取消ボタン非活性
+            var cancelBtn = getButtonCtrl(BtnName.Cancel);
+            changeInputControl(cancelBtn, false);
+
+            // 登録ボタン非活性
+            var registBtn = getButtonCtrl(BtnName.Regist);
+            changeInputControl(registBtn, false);
+        }
+    }
+}
+
+/*
+ * 出庫数 丸め処理
+ * */
+function PT0006roundQuantity() {
+    var quantityVal = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, 1, CtrlFlag.TextBox, false, false).replace(/[^-0-9.]/g, '');
+    if (!isNaN(quantityVal) && quantityVal != '') {
+        // 小数点以下桁数を取得
+        var unitDidit = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.Digit, 1, CtrlFlag.Label, false, false);
+
+        // 丸め処理区分を取得
+        var roundDivision = getValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.RoundDivision, 1, CtrlFlag.Label, false, false);
+
+        // 出庫数の丸め処理
+        var quantityDisp = roundDigit(quantityVal, unitDidit, roundDivision);
+        // 画面項目に設定する
+        setValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, 1, CtrlFlag.TextBox, quantityDisp, false, false);
+    }
+    else {
+        // 空にする
+        setValue(PT0006_FormList.InputArea.Id, PT0006_FormList.InputArea.IssueQuantity, 1, CtrlFlag.TextBox, '', false, false);
     }
 }

@@ -258,6 +258,8 @@
                 var param1 = parameters != null && parameters.Length > 0 ? parameters[0] : "";
                 var param2 = parameters != null && parameters.Length > 1 ? parameters[1] : "";
                 var param3 = parameters != null && parameters.Length > 2 ? parameters[2] : "";
+                var option = (string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO;
+                var nullchk = Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0";
                 var isFacroty = false;
                 if (STRUCTURE_CONSTANTS.SQLIDs.Contains(sqlId))
                 {
@@ -274,14 +276,16 @@
                     }
                 }
                 @:<select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" title="@Model.TOOLTIP"
-                          if (isFacroty) { @: data-factoryctrl="@isFacroty"
-                          } @:></select>
+                @*<select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" data-sqlid="@sqlId" data-param="@relationParam" data-option="@option" data-nullcheck="@nullchk" title="@Model.TOOLTIP"*@
+                if (isFacroty) { @: data-factoryctrl="@isFacroty"
+                } @:></select>
                 var cboData = new List<string>();
                 cboData.Add(sqlId);
                 cboData.Add(relationParam);
                 cboData.Add((string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO);
                 cboData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
                 ViewBag.CboDatas.Add(id, cboData);
+                @*ViewBag.CboDatas.Add(id);*@
             @:</div>
             break;
         case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox: // リストボックス
@@ -305,6 +309,14 @@
                 listData.Add((string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO);
                 listData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
                 ViewBag.CboDatas.Add(id, listData);
+
+                @*sqlId = Model.RELATIONID;
+                    relationParam = Model.RELATIONPARAM;
+                    option = (string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO;
+                    nullchk = Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0";
+                    var multiple = listboxFormat[1] == LISTITEM_DEFINE_CONSTANTS.LISTBOXKBN.Single.ToString() ? string.Empty : "multiple";
+                    <select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" data-sqlid="@sqlId" data-param="@relationParam" data-option="@option" data-nullcheck="@nullchk" title="@Model.TOOLTIP" size="@listboxFormat[0]" @multiple></select>
+                    ViewBag.CboDatas.Add(id);*@
             @:</div>
             break;
         case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Date: // 日付(ブラウザ標準)
@@ -379,6 +391,11 @@
                 msData.Add((Model.OPTIONINFO == null || "1" != Model.OPTIONINFO) ? "0" : "1");
                 msData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
                 ViewBag.MltSelDatas.Add(id, msData);
+                //sqlId = Model.RELATIONID;
+                //relationParam = Model.RELATIONPARAM;
+                //option = (Model.OPTIONINFO == null || "1" != Model.OPTIONINFO) ? "0" : "1";
+                //nullchk = Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0";
+                //ViewBag.MltSelDatas.Add(id);
                 var ctrlName_check = ctrlName + "[]";
                 //C_OPTIONINFO=1の場合、「0:全て」を表示
                 var classCtrlOption = (Model.OPTIONINFO == null || "1" != Model.OPTIONINFO) ? "ctrloption hide" : "ctrloption";
@@ -392,6 +409,7 @@
                         @:<div class="multisel-drop disabled">
                         }
                         @:<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" title="@Model.TOOLTIP">
+                        @*<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-sqlid="@sqlId" data-param="@relationParam" data-option="@option" data-nullcheck="@nullchk" title="@Model.TOOLTIP">*@
                             @:<li class="@classCtrlOption">
                                 @*C_OPTIONINFO=1の場合、「全て」を表示*@
                                 @:<label>
@@ -662,80 +680,80 @@
                 string type = !isFilter ? "text" : "search";
                 @:<input type="@type" id="@id" name="@ctrlName" value="@val" data-type="codeTrans" data-colname="@Model.ITEMNAME" data-maxlength="@maxLen" data-autocompdiv="@autoCompDiv" maxlength="@maxLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
                 var codeTrans = new List<string>();
-            codeTrans.Add(Model.RELATIONID);
-            codeTrans.Add(Model.RELATIONPARAM);
-            ViewBag.CodeTransDatas.Add(id, codeTrans);
+                codeTrans.Add(Model.RELATIONID);
+                codeTrans.Add(Model.RELATIONPARAM);
+                ViewBag.CodeTransDatas.Add(id, codeTrans);
 
-            //string optionInfo = Model.OPTIONINFO;
-            bool btnDisp = false;           //ﾃﾞﾌｫﾙﾄ：「選」ﾎﾞﾀﾝ非表示
-            bool transDisp = true;          //ﾃﾞﾌｫﾙﾄ：「翻訳」表示
-            bool hideCode = false;          //ﾃﾞﾌｫﾙﾄ：「コード」hidden要素出力
-            var childNo = "";               //子画面NO
-            if (isAutoComp) //ｵｰﾄｺﾝﾌﾟﾘｰﾄON
-            {
-                //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
-                var autoComp = new List<string>();
-                autoComp.Add(Model.RELATIONID);
-                autoComp.Add(Model.RELATIONPARAM);
-                autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
-                autoComp.Add(Model.OPTIONINFO);
-                ViewBag.AutoCompDefDatas.Add(id, autoComp);
-                // 翻訳のみ表示の場合、コードのhidden要素出力
-                if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompTransOnly)
+                //string optionInfo = Model.OPTIONINFO;
+                bool btnDisp = false;           //ﾃﾞﾌｫﾙﾄ：「選」ﾎﾞﾀﾝ非表示
+                bool transDisp = true;          //ﾃﾞﾌｫﾙﾄ：「翻訳」表示
+                bool hideCode = false;          //ﾃﾞﾌｫﾙﾄ：「コード」hidden要素出力
+                var childNo = "";               //子画面NO
+                if (isAutoComp) //ｵｰﾄｺﾝﾌﾟﾘｰﾄON
                 {
-                    hideCode = true;
-                    transDisp = false;
-                }
-                else if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompCodeOnly)
-                {
-                    transDisp = false;
-                }
-            }
-
-            if (!string.IsNullOrEmpty(optionInfo) && !isAutoComp)
-            {
-                //※設定ありの場合
-
-                //[0]:表示設定、[1]:子画面番号
-                //string[] aInfo = optionInfo.Split(',');
-                string[] aInfo = optionInfo.Split('|');
-                if (aInfo.Length >= 1)
-                {
-                    //表示設定
-                    //1：選ボタン表示、翻訳非表示
-                    //2：選ボタン・翻訳両方表示
-                    //3：選ボタン・翻訳両方非表示
-                    //4：虫眼鏡アイコンリンク・翻訳両方表示、コード非表示※コードを内部で使用する場合
-                    if (aInfo[0].Equals("1"))
+                    //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
+                    var autoComp = new List<string>();
+                    autoComp.Add(Model.RELATIONID);
+                    autoComp.Add(Model.RELATIONPARAM);
+                    autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
+                    autoComp.Add(Model.OPTIONINFO);
+                    ViewBag.AutoCompDefDatas.Add(id, autoComp);
+                    // 翻訳のみ表示の場合、コードのhidden要素出力
+                    if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompTransOnly)
                     {
-                        btnDisp = true;     // 選ボタン表示
-                        transDisp = false;  // 翻訳非表示
+                        hideCode = true;
+                        transDisp = false;
                     }
-                    else if (aInfo[0].Equals("2"))
+                    else if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompCodeOnly)
                     {
-                        btnDisp = true;     // 選ボタン表示
-                        transDisp = true;  // 翻訳表示
-                    }
-                    else if (aInfo[0].Equals("3"))
-                    {
-                        btnDisp = false;     // 選ボタン非表示
-                        transDisp = false;  // 翻訳非表示
-                    }
-                    else if (aInfo[0].Equals("4"))
-                    {
-                        btnDisp = true;     // 選ボタン表示
-                        transDisp = true;  // 翻訳表示
-                    }
-
-                    //子画面NO
-                    if (btnDisp && aInfo.Length >= 2)
-                    {
-                        childNo = aInfo[1];
+                        transDisp = false;
                     }
                 }
-            }
-            if (btnDisp)
-            {
+
+                if (!string.IsNullOrEmpty(optionInfo) && !isAutoComp)
+                {
+                    //※設定ありの場合
+
+                    //[0]:表示設定、[1]:子画面番号
+                    //string[] aInfo = optionInfo.Split(',');
+                    string[] aInfo = optionInfo.Split('|');
+                    if (aInfo.Length >= 1)
+                    {
+                        //表示設定
+                        //1：選ボタン表示、翻訳非表示
+                        //2：選ボタン・翻訳両方表示
+                        //3：選ボタン・翻訳両方非表示
+                        //4：虫眼鏡アイコンリンク・翻訳両方表示、コード非表示※コードを内部で使用する場合
+                        if (aInfo[0].Equals("1"))
+                        {
+                            btnDisp = true;     // 選ボタン表示
+                            transDisp = false;  // 翻訳非表示
+                        }
+                        else if (aInfo[0].Equals("2"))
+                        {
+                            btnDisp = true;     // 選ボタン表示
+                            transDisp = true;  // 翻訳表示
+                        }
+                        else if (aInfo[0].Equals("3"))
+                        {
+                            btnDisp = false;     // 選ボタン非表示
+                            transDisp = false;  // 翻訳非表示
+                        }
+                        else if (aInfo[0].Equals("4"))
+                        {
+                            btnDisp = true;     // 選ボタン表示
+                            transDisp = true;  // 翻訳表示
+                        }
+
+                        //子画面NO
+                        if (btnDisp && aInfo.Length >= 2)
+                        {
+                            childNo = aInfo[1];
+                        }
+                    }
+                }
+                if (btnDisp)
+                {
 
                     @*-- (stt)template2.0標準 --*@
                     @*// 選ボタン

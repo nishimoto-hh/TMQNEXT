@@ -1933,6 +1933,13 @@ namespace CommonSTDUtil.CommonSTDUtil
                     exceptCommonFactory = false;
                 }
 
+                // 原因性格の場合
+                if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Cause))
+                {
+                    // 構成マスタによる絞込は行わない
+                    structureIdList = new();
+                }
+
                 if (structureIdList != null && structureIdList.Count > 0)
                 {
                     // 構成ID指定の場合は工場IDを指定しない
@@ -3111,6 +3118,25 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
             // Nullでない場合、文字列に変換
             return ((decimal)value).ToString();
+        }
+
+        /// <summary>
+        /// 文字列をIntに変換、変換不能な場合はNull
+        /// </summary>
+        /// <param name="value">変換する文字列</param>
+        /// <returns>Intの値、変換不能な場合はNull</returns>
+        public static int? ConvertStringToInt(string value)
+        {
+            if (int.TryParse(value, out int i))
+            {
+                // 変換可能な場合
+                return (int?)i;
+            }
+            else
+            {
+                // 変換不能な場合
+                return null;
+            }
         }
 
         /// <summary>

@@ -228,7 +228,7 @@ namespace BusinessLogic_PT0007
             List<Dao.getInventoryDate> inventoryCondition = getInventoryDateCondition();
 
             // 入力チェック
-            if (isErrorRegistCommon(partsInfo, ConductInfo.LocationControlId.LocationTransferInfoToWarehouse, locationInfo.RelocationDate, inventoryCondition))
+            if (isErrorRegistCommon(partsInfo, ConductInfo.LocationControlId.LocationTransferInfoToWarehouse, locationInfo.RelocationDate, inventoryCondition, locationInfo.LotControlId))
             {
                 return false;
             }
@@ -410,6 +410,17 @@ namespace BusinessLogic_PT0007
                     return true;
                 }
 
+                // 移庫数が0以下の場合はエラー
+                if (locationInfo.TransferCount <= 0)
+                {
+                    // 「移庫数は0以下で登録できません。」
+                    errMsg = GetResMessage(new string[] { ComRes.ID.ID141060007, ComRes.ID.ID111020027 });
+                    val = infoQuantity.getValName("StockQuantity");
+                    errorInfoQuantity.setError(errMsg, val); // エラー情報をセット
+                    errorInfoDictionary.Add(errorInfoQuantity.Result); // エラー情報を追加
+                    return true;
+                }
+
                 // 移庫数が10桁より多い場合エラー
                 if (locationInfo.TransferCount > 9999999999.99m)
                 {
@@ -448,7 +459,7 @@ namespace BusinessLogic_PT0007
                 if (!string.IsNullOrEmpty(locationInfo.PartsLocationDetailNo))
                 {
                     var enc = Encoding.GetEncoding("Shift_JIS");
-                    if (enc.GetByteCount(locationInfo.PartsLocationDetailNo) != locationInfo.PartsLocationDetailNo.Length)
+                    if (enc.GetByteCount(locationInfo.PartsLocationDetailNo) != locationInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(locationInfo.PartsLocationDetailNo))
                     {
                         errMsg = GetResMessage(new string[] { ComRes.ID.ID141260002 }); // 半角英数字で入力してください。
                         val = infoDetailNo.getValName("DetailNo");

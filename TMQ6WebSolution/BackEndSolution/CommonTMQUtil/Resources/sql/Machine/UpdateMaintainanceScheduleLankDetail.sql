@@ -45,7 +45,7 @@ same AS(
             FROM
                 move
             WHERE
-                base.long_plan_id = move.long_plan_id
+                (base.long_plan_id = move.long_plan_id OR base.long_plan_id IS NULL AND move.long_plan_id IS NULL)
             AND base.machine_id = move.machine_id
             AND base.kind_order = move.kind_order
         )

@@ -5,87 +5,61 @@ WITH department AS (
     --拡張データ、翻訳を取得(部門)
     SELECT
         structure_id
-        ,ie.extension_data 
-        ,translation_text
+        , ie.extension_data
     FROM
-        v_structure_item_all si 
+        ms_structure ms 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1760
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1760 
             AND ie.sequence_no = 1
-    WHERE si.language_id = @LanguageId
 )
 ,account AS ( 
     --拡張データ、翻訳を取得(勘定科目)
     SELECT
         structure_id
-        ,ie.extension_data 
-        ,translation_text
+        , ie.extension_data
     FROM
-        v_structure_item_all si 
+        ms_structure ms 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1770
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1770 
             AND ie.sequence_no = 1
-    WHERE si.language_id = @LanguageId
-)
-, location AS ( 
-    --拡張データ、翻訳を取得(棚)
-    SELECT
-        structure_id
-        , translation_text 
-    FROM
-        v_structure_item_all si 
-    WHERE
-        structure_group_id = 1040 
-    AND
-        structure_layer_no = 3
-    AND
-        si.language_id = @LanguageId
 )
 , inout_division AS ( 
     --ビューより受払区分を取得
     SELECT
         structure_id
         , ie.extension_data
-        , translation_text 
     FROM
-        v_structure_item_all AS si 
+        ms_structure AS ms 
         INNER JOIN ms_item_extension AS ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1950 
-    WHERE
-        language_id = @LanguageId
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1950
 ) 
 , work_division AS ( 
     --ビューより作業区分を取得
     SELECT
         structure_id
         , ie.extension_data
-        , translation_text 
     FROM
-        v_structure_item_all AS si 
+        ms_structure AS ms 
         INNER JOIN ms_item_extension AS ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1960 
-    WHERE
-        language_id = @LanguageId
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1960 
 ) 
 , number_unit AS(
     --数量管理単位
     SELECT
         structure_id AS unit_id,
-        translation_text AS unit_name,
         ex.extension_data AS unit_digit
     FROM
-        v_structure_item_all unit
+        ms_structure unit
         LEFT JOIN
             ms_item_extension ex
         ON  unit.structure_item_id = ex.item_id
         AND ex.sequence_no = 2
     WHERE
         unit.structure_group_id = 1730
-    AND unit.language_id = @LanguageId
 )
 , unit_round AS(
     --丸め処理区分
@@ -110,37 +84,75 @@ WITH department AS (
     --金額管理単位
     SELECT
         structure_id AS currency_id
-        , translation_text AS currency_name
         , ex.extension_data AS currency_digit
     FROM
-        v_structure_item_all unit 
+        ms_structure unit 
         LEFT JOIN ms_item_extension ex 
             ON unit.structure_item_id = ex.item_id 
             AND ex.sequence_no = 2 
     WHERE
         unit.structure_group_id = 1740 
-        AND unit.language_id = @LanguageId
-),
-structure_factory AS(
-    -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-        structure_id,
-        location_structure_id AS factory_id
-    FROM
-        v_structure_item_all
-    WHERE
-        structure_group_id IN(1760, 1770)
-    AND language_id = @LanguageId
 )
 SELECT DISTINCT
     FORMAT(plt.receiving_datetime, 'yyyy/MM/dd') AS receiving_datetime,              --入庫日
     plt.lot_no,                                                                      --ロットNo(画面：入庫No)
-    lcn.translation_text AS parts_location_name,                                     --棚ID
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pls.parts_location_id
+                AND st_f.factory_id IN(0, ppt.factory_id)
+            )
+        AND tra.structure_id = pls.parts_location_id
+    ) AS  parts_location_name, --棚ID
     pls.parts_location_detail_no,                                                    --棚枝番
     FORMAT(plt.unit_price, '#,###') AS unit_price,                                   --入庫単価
-    currency_unit.currency_name,                                                     --(金額単位名称)
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.currency_structure_id
+                    AND st_f.factory_id IN (0, ppt.factory_id)
+            ) 
+            AND tra.structure_id = plt.currency_structure_id
+    ) AS currency_name,                                                              --金額単位名称  
     pih.inout_quantity,                                                              --出庫数
-    number_unit.unit_name,                                                           --(数量単位名称)
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.unit_structure_id
+                    AND st_f.factory_id IN (0, ppt.factory_id)
+            ) 
+            AND tra.structure_id = plt.unit_structure_id
+    ) AS unit_name,                                                                  --数量単位名称
     FORMAT(pih.inout_quantity * plt.unit_price, '#,###') AS amount_money,            --受払数*入庫単価(画面：出庫金額)
     dpm.extension_data AS department_cd,                                             --部門CD
     COALESCE(
@@ -155,7 +167,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = plt.department_structure_id
                 AND st_f.factory_id IN(0, ppt.factory_id)
@@ -173,7 +185,7 @@ SELECT DISTINCT
                 SELECT
                     MIN(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = plt.department_structure_id
                 AND st_f.factory_id NOT IN(0, ppt.factory_id)
@@ -193,7 +205,7 @@ SELECT DISTINCT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = plt.account_structure_id
                 AND st_f.factory_id IN(0, ppt.factory_id)
@@ -241,8 +253,6 @@ FROM
         ON plt.department_structure_id = dpm.structure_id 
     LEFT JOIN account act 
         ON plt.account_structure_id = act.structure_id 
-    LEFT JOIN location lcn 
-        ON pls.parts_location_id = lcn.structure_id 
     LEFT JOIN number_unit --数量管理単位
         ON  plt.unit_structure_id = number_unit.unit_id
     LEFT JOIN unit_round --丸め処理区分

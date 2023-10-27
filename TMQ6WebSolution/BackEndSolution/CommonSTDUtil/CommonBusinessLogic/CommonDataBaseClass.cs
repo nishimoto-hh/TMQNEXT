@@ -233,6 +233,8 @@ namespace CommonSTDUtil
             public string ProcDiv { get; set; }
             /// <value>処理区分名</value>
             public string ProcDivName { get; set; }
+            /// <value>コントロールグループID</value>
+            public string CtrlGrpId { get; set; }
         }
 
         /// <summary>

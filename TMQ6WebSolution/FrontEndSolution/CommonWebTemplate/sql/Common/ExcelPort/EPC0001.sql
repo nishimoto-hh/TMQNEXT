@@ -6,10 +6,16 @@
 SELECT DISTINCT
      item.structure_id AS id
     --,coalesce(item.factory_id, 0) AS factory_id
+    /*IF param3 == null || param3 == '' */
     ,CASE
         WHEN item.factory_id = 0 THEN item.location_structure_id    -- 構成マスタの工場IDが0の場合は翻訳マスタの場所階層ID(工場ID)を返す
         ELSE coalesce(item.factory_id, 0)                           -- 上記以外は構成マスタの工場ID
      END AS factory_id
+     /*END*/
+    /*IF param3 != null && param3 != '' */
+    , 0 AS factory_id
+    /*END*/
+    ,item.factory_id AS factory_id_0
     ,item.parent_structure_id AS parent_id
     ,item.translation_text AS name
     ,item_ex1.extension_data AS exparam1
@@ -34,7 +40,7 @@ SELECT DISTINCT
     ,item_ex20.extension_data AS exparam20
     ,coalesce(order_common.display_order, order_factory.display_order, item.structure_id) AS display_order
 
-FROM v_structure_item_all AS item
+FROM v_structure_item AS item
 
 -- 場所階層と職種機種の場合、対象構成マスタ情報一時テーブルと結合する
 /*IF param1 == 1000 || param1 == 1010*/
@@ -161,4 +167,5 @@ AND
 -- 表示順は親構成ID、工場共通表示順、工場別表示順、構成IDの順
 ORDER BY 
  item.parent_structure_id
+,item.factory_id
 ,coalesce(order_common.display_order, order_factory.display_order, item.structure_id)

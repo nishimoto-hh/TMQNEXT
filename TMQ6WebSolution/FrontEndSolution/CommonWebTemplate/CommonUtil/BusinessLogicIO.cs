@@ -1630,7 +1630,8 @@ namespace CommonWebTemplate.CommonUtil
                     // -実行ステータス
                     returnInfo.STATUS = this.outParam.Status;   //ステータス
                     returnInfo.MESSAGE = this.outParam.MsgId;   //メッセージ
-                    returnInfo.LOGNO = this.outParam.LogNo;     //ログ問合せ番号                   
+                    returnInfo.LOGNO = this.outParam.LogNo;     //ログ問合せ番号
+                    returnInfo.UpdateUserInfo = this.outParam.UpdateUserInfo;   //ユーザ情報更新有無
 
                     // -実行結果を取得
                     //short kbn = -1;

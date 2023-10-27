@@ -7,7 +7,7 @@ SELECT
     parts.standard_size,                                                                                         -- 規格・寸法
     parts.factory_id,                                                                                            -- 管理工場
     parts.factory_id AS parts_factory_id,                                                                        -- 管理工場(ツリーの絞り込み用)
-    dbo.get_target_layer_id(parts.parts_location_id, 1) AS default_factory_id,                                   -- 棚番から取得した工場ID
+    parts.location_factory_structure_id AS default_factory_id,                                                   -- 棚番から取得した工場ID
     parts.job_structure_id,                                                                                      -- 職種
     parts.parts_service_space,                                                                                   -- 使用場所
     parts.parts_location_id,                                                                                     -- 標準棚番ID
@@ -51,8 +51,28 @@ SELECT
     COALESCE(tag_count.t_count, 0) AS rf_count,                                                                  -- RFIDタグ件数
     COALESCE(tag_count.t_count, 0) AS rf_count_hide,                                                             -- RFIDタグ件数(詳細検索用)
     matter_unit.translation_text AS matter,                                                                      -- RFIDタグ件数 単位
-    dbo.get_file_download_info(1750, parts.parts_id) AS file_link_document,                                      -- ダウンロードリンク(文書)
-    dbo.get_file_download_info(1700, parts.parts_id) AS file_link_image,                                         -- ダウンロードリンク(画像)
+        REPLACE((
+                SELECT
+                    dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
+                FROM
+                    #temp_attachment as att_temp
+                WHERE
+                    parts.parts_id = att_temp.key_id
+                AND att_temp.function_type_id = 1750
+                ORDER BY
+                    document_no FOR xml path('')
+            ), ' ', '') AS file_link_document,-- ダウンロードリンク(文書)
+        REPLACE((
+                SELECT
+                    dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
+                FROM
+                    #temp_attachment as att_temp
+                WHERE
+                    parts.parts_id = att_temp.key_id
+                AND att_temp.function_type_id = 1700
+                ORDER BY
+                    document_no FOR xml path('')
+            ), ' ', '') AS file_link_image,-- ダウンロードリンク(画像)
 
     ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
@@ -66,7 +86,7 @@ SELECT
               SELECT
                   MAX(st_f.factory_id)
               FROM
-                  structure_factory AS st_f
+                  #temp_structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.manufacturer_structure_id
               AND st_f.factory_id IN(0, parts.factory_id)
@@ -84,7 +104,7 @@ SELECT
               SELECT
                   MAX(st_f.factory_id)
               FROM
-                  structure_factory AS st_f
+                  #temp_structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.factory_id
               AND st_f.factory_id IN(0, parts.factory_id)
@@ -102,7 +122,7 @@ SELECT
               SELECT
                   MAX(st_f.factory_id)
               FROM
-                  structure_factory AS st_f
+                  #temp_structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.unit_structure_id
               AND st_f.factory_id IN(0, parts.factory_id)
@@ -120,7 +140,7 @@ SELECT
               SELECT
                   MAX(st_f.factory_id)
               FROM
-                  structure_factory AS st_f
+                  #temp_structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.currency_structure_id
               AND st_f.factory_id IN(0, parts.factory_id)
@@ -138,13 +158,103 @@ SELECT
               SELECT
                   MAX(st_f.factory_id)
               FROM
-                  structure_factory AS st_f
+                  #temp_structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.vender_structure_id
               AND st_f.factory_id IN(0, parts.factory_id)
            )
       AND tra.structure_id = parts.vender_structure_id
-    ) AS vender_name                                                                                               -- 標準仕入先
+    ) AS vender_name,                                                                                              -- 標準仕入先
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.location_district_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.location_district_structure_id
+    ) AS district_name,                                                                                       -- 標準棚_地区名
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.location_factory_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.location_factory_structure_id
+    ) AS factory_name,                                                                                        -- 標準棚_工場名
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.location_warehouse_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.location_warehouse_structure_id
+    ) AS warehouse_name,                                                                                       -- 標準棚_倉庫名
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.location_rack_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.location_rack_structure_id
+    ) AS rack_name,                                                                                           -- 標準棚_地区名
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  #temp_structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.job_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.job_structure_id
+    ) AS job_name                                                                                             -- 職種
 FROM
     pt_parts AS parts
     LEFT JOIN

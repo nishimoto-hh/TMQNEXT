@@ -17,6 +17,24 @@ SELECT
     machine.machine_no,
     machine.machine_name,
     machine.importance_structure_id,
+    (
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = machine.importance_structure_id
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
+            )
+        AND tra.structure_id = machine.importance_structure_id
+    ) AS importance_name,
     machine.attachment_update_datetime,
     machine.machine_id AS key_id -- スケジュールと同じ値
 FROM

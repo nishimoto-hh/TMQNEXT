@@ -689,7 +689,7 @@ namespace BusinessLogic_PT0007
         /// <param name="relocationDate">移庫日</param>
         /// <param name="inventoryConditionList">棚卸確定日取得の条件</param>
         /// <returns>エラーの場合True</returns>
-        private bool isErrorRegistCommon(Dao.partsInfo partsInfo, string ctrlId, DateTime relocationDate, List<Dao.getInventoryDate> inventoryConditionList)
+        private bool isErrorRegistCommon(Dao.partsInfo partsInfo, string ctrlId, DateTime relocationDate, List<Dao.getInventoryDate> inventoryConditionList, long lotCntrlId)
         {
             // エラー情報セット用Dictionary
             var errorInfoDictionary = new List<Dictionary<string, object>>();
@@ -751,6 +751,18 @@ namespace BusinessLogic_PT0007
                         errorInfoDictionary.Add(errorInfo.Result); // エラー情報を追加
                         return true;
                     }
+                }
+
+                // 移庫する情報を取得
+                ComDao.PtLotEntity lotInfo = new ComDao.PtLotEntity().GetEntity(lotCntrlId, this.db);
+                // 移庫日 < 入庫日の場合はエラーとする
+                if (relocationDate < lotInfo.ReceivingDatetime)
+                {
+                    string errMsg = GetResMessage(new string[] { ComRes.ID.ID141020005 }); // 「移庫日が入庫日以前のデータは移庫できません。」
+                    string val = info.getValName("RelocationDate");
+                    errorInfo.setError(errMsg, val); // エラー情報をセット
+                    errorInfoDictionary.Add(errorInfo.Result); // エラー情報を追加
+                    return true;
                 }
 
                 return false;

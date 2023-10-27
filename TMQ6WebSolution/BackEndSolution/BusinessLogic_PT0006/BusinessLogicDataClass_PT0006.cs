@@ -228,6 +228,14 @@ namespace BusinessLogic_PT0006
             /// <summary>Gets or sets 画面タイプ</summary>
             /// <value>画面タイプ</value>
             public int FormType { get; set; }
+
+            /// <summary>Gets or sets 小数点以下桁数</summary>
+            /// <value>小数点以下桁数</value>
+            public int Digit { get; set; }
+
+            /// <summary>Gets or sets 丸め処理区分</summary>
+            /// <value>丸め処理区分</value>
+            public int RoundDivision { get; set; }
         }
 
         /// <summary>
@@ -332,6 +340,16 @@ namespace BusinessLogic_PT0006
                 this.StockQuantityDisplay = TMQUtil.CombineNumberAndUnit(this.Unit, this.UnitName, false);             // 在庫数 + 単位
                 this.IssueQuantity = TMQUtil.CombineNumberAndUnit(this.IssueQuantity, this.UnitName, false);           // 出庫数 + 単位
             }
+        }
+
+        /// <summary>
+        /// 丸め処理区分取得用
+        /// </summary>
+        public class RoundDigit
+        {
+            /// <summary>Gets or sets 丸め処理区分</summary>
+            /// <value>丸め処理区分</value>
+            public int UnitRoundDivision { get; set; }
         }
     }
 }

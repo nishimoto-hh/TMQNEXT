@@ -10,12 +10,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_PT0004.BusinessLogicDataClass_PT0004;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_PT0004
 {
@@ -66,6 +67,8 @@ namespace BusinessLogic_PT0004
             public const string DeleteTempLocationList = "DeleteTempLocationList";
             /// <summary>職種IDを保存する一時テーブルのデータ削除用SQL</summary>
             public const string DeleteTempJobList = "DeleteTempJobList";
+            /// <summary>一覧検索時、件数を取得するSQL</summary>
+            public const string GetCountInventoryFirmList = "GetCountInventoryFirmList";
         }
 
         /// <summary>
@@ -314,7 +317,7 @@ namespace BusinessLogic_PT0004
             getCommonFactoryIdToTemp();
 
             // 再検索かどうか判定
-            if(isResearch)
+            if (isResearch)
             {
                 // 非表示の一覧に退避している工場IDを取得
                 if (!getHideFactoryIdList())
@@ -333,8 +336,34 @@ namespace BusinessLogic_PT0004
             whereParam.TargetMonth = getSearchCondition();
             whereParam.LanguageId = this.LanguageId;
 
+            // 総件数を取得
+            // 件数を取得するSQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCountInventoryFirmList, out string countSql);
+            // 総件数を取得
+            int cnt = db.GetCount(countSql, whereParam);
+            // 総件数のチェック
+            if (!CheckSearchTotalCount(cnt, pageInfo))
+            {
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
+                return false;
+            }
+
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Location,
+                GroupId.Job
+            };
+
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
+
             // 一覧検索SQL文の取得
-            string execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
+            string execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
 
             // 並び替え条件を追加(工場IDの昇順、職種IDの昇順)
             var selectSql = new StringBuilder(execSql);
@@ -344,8 +373,8 @@ namespace BusinessLogic_PT0004
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
-                // データが無い場合はエラーにしないのでrueを返す
-                return true;
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
+                return false;
             }
 
             // 非表示の工場IDリストに一時テーブルの値を設定する
@@ -355,7 +384,7 @@ namespace BusinessLogic_PT0004
             setJobIdList();
 
             // 検索結果の設定
-            if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
+            if (!SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
             {
                 return false;
             }
@@ -398,7 +427,7 @@ namespace BusinessLogic_PT0004
 
                 // 検索結果の設定
                 IList<Dao.flgList> flgList = new List<Dao.flgList> { flg };
-                if (!SetSearchResultsByDataClass<Dao.flgList>(pageInfo, flgList, flgList.Count))
+                if (!SetSearchResultsByDataClass<Dao.flgList>(pageInfo, flgList, flgList.Count, isDetailConditionApplied))
                 {
                     return false;
                 }
@@ -441,6 +470,9 @@ namespace BusinessLogic_PT0004
         /// </summary>
         private void setFactoryIdList()
         {
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.FactoryIdList, this.pageInfoList);
+
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetTempLocationList, out string locationSql);
 
@@ -448,6 +480,7 @@ namespace BusinessLogic_PT0004
             IList<int> results = db.GetListByDataClass<int>(locationSql);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, false);
                 return;
             }
 
@@ -459,10 +492,8 @@ namespace BusinessLogic_PT0004
                 factoryIdList.Add(condition);
             }
 
-            // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.FactoryIdList, this.pageInfoList);
             // 検索結果の設定
-            SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, factoryIdList, factoryIdList.Count);
+            SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, factoryIdList, factoryIdList.Count);
         }
 
         /// <summary>
@@ -470,6 +501,9 @@ namespace BusinessLogic_PT0004
         /// </summary>
         private void setJobIdList()
         {
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.JobIdList, this.pageInfoList);
+
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetTempJobList, out string jobSql);
 
@@ -477,6 +511,7 @@ namespace BusinessLogic_PT0004
             IList<int> results = db.GetListByDataClass<int>(jobSql);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, false);
                 return;
             }
 
@@ -488,10 +523,8 @@ namespace BusinessLogic_PT0004
                 jobIdList.Add(condition);
             }
 
-            // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.JobIdList, this.pageInfoList);
             // 検索結果の設定
-            SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, jobIdList, jobIdList.Count);
+            SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, jobIdList, jobIdList.Count);
         }
 
         /// <summary>

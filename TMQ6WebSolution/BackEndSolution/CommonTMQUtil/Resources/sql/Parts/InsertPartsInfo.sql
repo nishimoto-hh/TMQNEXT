@@ -14,6 +14,10 @@ INSERT INTO pt_parts(
     [lead_time],                          --発注点
     [order_quantity],                     --発注量
     [parts_location_id],                  --標準棚番ID
+    [location_district_structure_id],     --標準棚_地区ID
+    [location_factory_structure_id],      --標準棚_工場ID
+    [location_warehouse_structure_id],    --標準棚_倉庫ID
+    [location_rack_structure_id],         --標準棚_棚ID
     [unit_structure_id],                  --数量管理単位ID
     [vender_structure_id],                --標準仕入先
     [currency_structure_id],              --金額管理単位ID
@@ -37,11 +41,15 @@ VALUES(
     @PartsServiceSpace,                   --使用場所
     @PartsFactoryId,                      --管理工場
     @JobStructureId,                      --職種
-    @UseSegmentStructureId,             　--使用区分
+    @UseSegmentStructureId,               --使用区分
     @PartsLocationDetailNo,               --標準棚枝番
     @LeadTimeExceptUnit,                  --発注点
     @OrderQuantityExceptUnit,             --発注量
     @PartsLocationId,                     --標準棚番ID
+    @LocationDistrictStructureId,         --標準棚_地区ID
+    @LocationFactoryStructureId,          --標準棚_工場ID
+    @LocationWarehouseStructureId,        --標準棚_倉庫ID
+    @LocationRackStructureId,             --標準棚_棚ID
     @UnitStructureId,                     --数量管理単位
     @VenderStructureId,                   --標準仕入先
     @CurrencyStructureId,                 --金額管理単位

@@ -1,3 +1,14 @@
+WITH structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1180,1220) 
+        AND language_id = @LanguageId
+) 
+
 SELECT row_number() over(order by mcp.inspection_site_structure_id,msc.inspection_content_structure_id ) as row_no,
 	   msc.management_standards_content_id AS key_id,  -- 機器別管理基準部位ID(スケジュール紐づけキー)
        lp.subject,                                   -- 件名
@@ -8,11 +19,47 @@ SELECT row_number() over(order by mcp.inspection_site_structure_id,msc.inspectio
 	   ma.machine_name,                              -- 機器名称
 	   eq.maintainance_kind_manage,                  -- 点検種別毎管理
 	   mcp.inspection_site_structure_id,             -- 部位ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = mcp.inspection_site_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = mcp.inspection_site_structure_id
+		) AS inspection_site_name, -- 部位
 	   msc.inspection_site_importance_structure_id,  -- 部位重要度ID
 	   msc.inspection_site_conservation_structure_id,-- 部位保全方式ID
 	   mcp.is_management_standard_conponent,         -- 機器別管理基準フラグ
 	   msc.management_standards_content_id,          -- 機器別管理基準内容ID
 	   msc.inspection_content_structure_id,          -- 点検内容ID
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.inspection_content_structure_id
+					AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+			) 
+			AND tra.structure_id = msc.inspection_content_structure_id
+		) AS inspection_content_name, -- 点検内容
 	   msc.maintainance_division,                    -- 保全区分
 	   msc.maintainance_kind_structure_id,           -- 点検種別ID
 	   msc.budget_amount,                            -- 予算金額
@@ -31,8 +78,8 @@ SELECT row_number() over(order by mcp.inspection_site_structure_id,msc.inspectio
 	   CASE WHEN mcp.update_datetime > msc.update_datetime AND mcp.update_datetime > ms.update_datetime THEN mcp.update_datetime
 	        WHEN msc.update_datetime > mcp.update_datetime AND msc.update_datetime > ms.update_datetime THEN msc.update_datetime
 			ELSE ms.update_datetime
-	   END update_datetime,                          -- 更新日付
-       dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
+	   END update_datetime                          -- 更新日付
+       --dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
     ,(SELECT a.*

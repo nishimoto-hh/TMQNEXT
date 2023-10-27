@@ -3,6 +3,7 @@ using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -18,6 +19,7 @@ using Const = CommonTMQUtil.CommonTMQConstants;
 using Dao = BusinessLogic_MS1001.BusinessLogicDataClass_MS1001;
 using Master = CommonTMQUtil.CommonTMQUtil.ComMaster;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_MS1001
 {
@@ -41,6 +43,94 @@ namespace BusinessLogic_MS1001
         /// アイテム一覧タイプ
         /// </summary>
         private static int itemListType = (int)TMQUtil.ComMaster.ItemListType.Factory;
+
+        /// <summary>
+        /// 処理対象コントロールID
+        /// </summary>
+        private static class TargetCtrlId
+        {
+            /// <summary>ExcelPortアップロード</summary>
+            public const string ExcelPortUpload = "LIST_000_1";
+        }
+
+        /// <summary>
+        /// ExcelPortシート情報
+        /// </summary>
+        public static class ExcelPortMasterListInfo
+        {
+            /// <summary>
+            /// /データ開始行
+            /// </summary>
+            public const int StartRowNo = 4;
+            /// <summary>
+            /// 送信時処理列番号
+            /// </summary>
+            public const int ProccesColumnNo = 4;
+            /// <summary>
+            /// プラントID
+            /// </summary>
+            public const int PlantNo = 24;
+            /// <summary>
+            /// プラント名
+            /// </summary>
+            public const int PlantName = 25;
+            /// <summary>
+            /// 工場番号
+            /// </summary>
+            public const int PlantParentNumber = 26;
+            /// <summary>
+            /// 系列ID
+            /// </summary>
+            public const int SeriesNo = 36;
+            /// <summary>
+            /// 系列名
+            /// </summary>
+            public const int SeriesName = 37;
+            /// <summary>
+            /// プラント番号
+            /// </summary>
+            public const int SeriesParentNumber = 38;
+            /// <summary>
+            /// 工程ID
+            /// </summary>
+            public const int StrokeNo = 48;
+            /// <summary>
+            /// 工程名
+            /// </summary>
+            public const int StrokeName = 49;
+            /// <summary>
+            /// 系列番号
+            /// </summary>
+            public const int StrokeParentNumber = 50;
+            /// <summary>
+            /// 設備ID
+            /// </summary>
+            public const int FacilityNo = 60;
+            /// <summary>
+            /// 設備名
+            /// </summary>
+            public const int FacilityName = 61;
+            /// <summary>
+            /// 工程番号
+            /// </summary>
+            public const int FacilityParentNumber = 62;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード用リスト
+        /// </summary>
+        public class ExcelPortStructureList
+        {
+            /// <summary>
+            /// 構成ID
+            /// </summary>
+            public long? StructureId { get; set; }
+            /// <summary>
+            /// 親構成ID
+            /// </summary>
+            /// <value>
+            public int? ParentId;
+        }
 
         /// <summary>
         /// SQLファイル名称
@@ -282,6 +372,10 @@ namespace BusinessLogic_MS1001
                 }
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // ユーザ情報の更新が必要
+            this.UpdateUserInfo = true;
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「登録処理に成功しました。」
@@ -355,6 +449,9 @@ namespace BusinessLogic_MS1001
                 }
             }
 
+            // ユーザ情報の更新が必要
+            this.UpdateUserInfo = true;
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「削除処理に成功しました。」
@@ -362,6 +459,1566 @@ namespace BusinessLogic_MS1001
 
             return ComConsts.RETURN_RESULT.OK;
         }
+
+        #region ExcelPort
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            else if (!string.IsNullOrEmpty(resultMsg))
+            {
+                // 正常終了時、詳細メッセージがセットされている場合、警告メッセージ
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+            }
+
+            // 検索条件を作成
+            TMQUtil.CommonExcelPortMasterCondition searchCondition = getSearchCondition();
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(Master.ConductInfo.FormList.ControlId.HiddenId, this.pageInfoList);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, CommonColumnName.LocationId, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+            {
+                // 「ダウンロード処理に失敗しました。」
+                resultMsg = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 検索処理
+            if (!getDataList(ref excelPort, searchCondition, out IList<Dictionary<string, object>> dataList))
+            {
+                // 「ダウンロード処理に失敗しました。」
+                resultMsg = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 出力最大データ数チェック
+            if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                resultMsg = GetResMessage(ComRes.ID.ID141120013);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 個別シート出力処理
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg, ref resultMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// 検索条件を作成
+        /// </summary>
+        /// <returns>検索条件</returns>
+        private TMQUtil.CommonExcelPortMasterCondition getSearchCondition()
+        {
+            // 検索条件初期化
+            TMQUtil.CommonExcelPortMasterCondition condition = new();
+
+            // 親画面(EP0001)の定義情報を追加
+            AddMappingListOtherPgmId(TMQUtil.ConductIdEP0001);
+            string fromCtrlId = Master.ConductInfo.FormExcelPortDownCondition.ControlId.Condition;
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
+            // 条件画面で選択された値を取得
+            SetDataClassFromDictionary(targetDic, fromCtrlId, condition, new List<string> { "MaintenanceTarget", "FactoryId" });
+
+            // 条件を設定
+            condition.LanguageId = this.LanguageId;                                         // 言語ID
+            condition.StructureGroupId = structureGroupId;                                  // 構成グループID
+            condition.MasterTransLationId = Master.MasterNameTranslation[structureGroupId]; // マスタ名称の翻訳ID
+            condition.LayerIdList = new()
+            {
+                (int)TMQConst.MsStructure.StructureLayerNo.Location.Plant,
+                (int)TMQConst.MsStructure.StructureLayerNo.Location.Series,
+                (int)TMQConst.MsStructure.StructureLayerNo.Location.Stroke,
+                (int)TMQConst.MsStructure.StructureLayerNo.Location.Facility
+            }; // 階層番号
+
+            // メンテナンス対象コンボボックスで選択されたアイテムを取得
+            TMQUtil.StructureItemEx.StructureItemExInfo param = new()
+            {
+                StructureGroupId = Master.MaintainanceTargetExInfo.StructureGroupId, //構成グループID
+                Seq = Master.MaintainanceTargetExInfo.Seq,                           // 連番
+            };
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> exdataList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
+
+            // 拡張項目を設定(1：マスタアイテム、2：標準アイテム未使用設定、3：マスタ並び順設定)
+            condition.MaintenanceTargetNo = exdataList.Where(x => x.StructureId == condition.MaintenanceTarget).Select(x => x.ExData).FirstOrDefault();
+
+            return condition;
+        }
+
+        /// <summary>
+        /// 検索処理
+        /// </summary>
+        /// <param name="excelPort">ExcelPortクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="dataList">検索結果</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getDataList(ref TMQUtil.ComExcelPort excelPort, TMQUtil.CommonExcelPortMasterCondition searchCondition, out IList<Dictionary<string, object>> dataList)
+        {
+            dataList = null;
+
+            // 一時テーブル作成
+            TMQUtil.createTempTblExcelPort(structureGroupId, this.db, this.LanguageId);
+
+            // メンテナンス対象コンボボックスで選択されたアイテムに応じて検索
+            switch (searchCondition.MaintenanceTargetNo)
+            {
+                case Master.MaintainanceTargetExInfo.ExData.MasterItem: // マスタアイテム
+
+                    // 一覧検索実行
+                    IList<TMQUtil.CommonExcelPortMasterStructureList> masterReaults = getMasterResults(searchCondition);
+                    if (masterReaults == null)
+                    {
+                        return false;
+                    }
+
+                    // Dicitionalyに変換
+                    dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterStructureList>(masterReaults);
+                    break;
+
+                case Master.MaintainanceTargetExInfo.ExData.Oerder: // マスタ並び順設定
+
+                    // SQLを取得
+                    TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortStructureItemOrderList, out string ordersSql);
+
+                    // 一覧検索実行
+                    searchCondition.ProcessId = TMQConst.SendProcessId.Update; // 送信時処理を設定
+                    IList<TMQUtil.CommonExcelPortMasterOrderList> orderResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterOrderList>(ordersSql, searchCondition);
+                    if (orderResults == null)
+                    {
+                        return false;
+                    }
+
+                    // Dicitionalyに変換
+                    dataList = ComUtil.ConvertClassToDictionary<TMQUtil.CommonExcelPortMasterOrderList>(orderResults);
+
+                    // 出力対象のシート番号を「並び順」用に変更
+                    excelPort.DownloadCondition.HideSheetNo = Master.OrdeerSheetNo;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// マスタアイテム検索処理
+        /// </summary>
+        /// <param name="searchCondition">検索条件</param>
+        /// <returns>検索結果</returns>
+        private List<TMQUtil.CommonExcelPortMasterStructureList> getMasterResults(TMQUtil.CommonExcelPortMasterCondition searchCondition)
+        {
+            // 地区情報を取得
+            if (!getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, int?> dicDistrict))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 工場情報を取得
+            if (!getFactoryResults(dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, int?> dicFactory))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 工場IDリストを設定
+            searchCondition.FactoryIdList = factoryIdList;
+
+            // プラント情報を取得
+            if (!getPlantResults(dicFactory, out IList<TMQUtil.CommonExcelPortMasterStructureList> plantResults, out Dictionary<long?, int?> dicPlant))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 系列情報を取得
+            if (!getSeriesResults(dicPlant, out IList<TMQUtil.CommonExcelPortMasterStructureList> seriesResults, out Dictionary<long?, int?> dicSeries))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 工程情報を取得
+            if (!getStrokeResults(dicSeries, out IList<TMQUtil.CommonExcelPortMasterStructureList> strokeResults, out Dictionary<long?, int?> dicStroke))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 設備情報取得
+            if (!getFacilityResults(dicStroke, out IList<TMQUtil.CommonExcelPortMasterStructureList> facilityResults))
+            {
+                return new List<TMQUtil.CommonExcelPortMasterStructureList>();
+            }
+
+            // 取得した「地区」「工場」「プラント」「系列」「工程」「設備」のうち、最大のデータ件数を出力データのレコード数とする
+            int[] dataCnts = new int[]
+            { districtResults.Count,
+              factoryResults.Count,
+              plantResults.Count,
+              seriesResults.Count,
+              strokeResults.Count,
+              facilityResults.Count
+            };
+            int recordNum = dataCnts.Max();
+
+            // 取得データを1レコード単位にまとめる
+            List<TMQUtil.CommonExcelPortMasterStructureList> results = new();
+            for (int i = 0; i < recordNum; i++)
+            {
+                TMQUtil.CommonExcelPortMasterStructureList record = new();
+
+                // 地区情報
+                if (districtResults.Count != 0)
+                {
+                    record.StructureGroupId = districtResults[0].StructureGroupId; // 構成グループID
+                    record.DistrictNumber = districtResults[0].DistrictNumber;     // 地区番号
+                    record.DistrictId = districtResults[0].DistrictId;             // 地区ID(構成ID)
+                    record.DistrictName = districtResults[0].DistrictName;         // 地区名
+                    districtResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // 工場情報
+                if (factoryResults.Count != 0)
+                {
+                    record.FactoryNumber = factoryResults[0].FactoryNumber;             // 工場番号
+                    record.FactoryId = factoryResults[0].FactoryId;                     // 工場ID(構成ID)
+                    record.FactoryName = factoryResults[0].FactoryName;                 // 工場名
+                    record.FactoryParentId = factoryResults[0].FactoryParentId;         // 工場の親構成ID
+                    record.FactoryParentNumber = factoryResults[0].FactoryParentNumber; // 地区番号
+                    factoryResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // プラント情報
+                if (plantResults.Count != 0)
+                {
+                    record.PlantItemId = plantResults[0].PlantItemId;                       // プラントアイテムID
+                    record.PlantId = plantResults[0].PlantId;                               // プラントID(構成ID)
+                    record.PlantItemTranslationId = plantResults[0].PlantItemTranslationId; // 翻訳ID(プラント)
+                    record.PlantNumber = plantResults[0].PlantNumber;                       // プラント番号
+                    record.PlantName = plantResults[0].PlantName;                           // プラント名
+                    record.PlantNameBefore = plantResults[0].PlantNameBefore;               // プラント名(変更前)
+                    record.PlantParentId = plantResults[0].PlantParentId;                   // プラントの親構成ID
+                    record.PlantParentNumber = plantResults[0].PlantParentNumber;           // 工場番号
+                    record.PlantParentNumberBefore = plantResults[0].PlantParentNumber;     // 工場番号
+                    plantResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // 系列情報
+                if (seriesResults.Count != 0)
+                {
+                    record.SeriesItemId = seriesResults[0].SeriesItemId;                       // 系列アイテムID
+                    record.SeriesId = seriesResults[0].SeriesId;                               // 系列ID(構成ID)
+                    record.SeriesItemTranslationId = seriesResults[0].SeriesItemTranslationId; // 翻訳ID(系列)
+                    record.SeriesNumber = seriesResults[0].SeriesNumber;                       // 系列番号
+                    record.SeriesName = seriesResults[0].SeriesName;                           // 系列名
+                    record.SeriesNameBefore = seriesResults[0].SeriesNameBefore;               // 系列名(変更前)
+                    record.SeriesParentId = seriesResults[0].SeriesParentId;                   // 系列の親構成ID
+                    record.SeriesParentNumber = seriesResults[0].SeriesParentNumber;           // プラント番号
+                    record.SeriesParentNumberBefore = seriesResults[0].SeriesParentNumber;     // プラント番号
+                    seriesResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // 工程情報
+                if (strokeResults.Count != 0)
+                {
+                    record.StrokeItemId = strokeResults[0].StrokeItemId;                       // 工程アイテムID
+                    record.StrokeId = strokeResults[0].StrokeId;                               // 工程ID(構成ID)
+                    record.StrokeItemTranslationId = strokeResults[0].StrokeItemTranslationId; // 翻訳ID(工程)
+                    record.StrokeNumber = strokeResults[0].StrokeNumber;                       // 工程番号
+                    record.StrokeName = strokeResults[0].StrokeName;                           // 工程名
+                    record.StrokeNameBefore = strokeResults[0].StrokeNameBefore;               // 工程名(変更前)
+                    record.StrokeParentId = strokeResults[0].StrokeParentId;                   // 工程の親構成ID
+                    record.StrokeParentNumber = strokeResults[0].StrokeParentNumber;           // プラント番号
+                    record.StrokeParentNumberBefore = strokeResults[0].StrokeParentNumber;     // プラント番号
+                    strokeResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // 設備情報
+                if (facilityResults.Count != 0)
+                {
+                    record.FacilityItemId = facilityResults[0].FacilityItemId;                       // 設備アイテムID
+                    record.FacilityId = facilityResults[0].FacilityId;                               // 設備ID(構成ID)
+                    record.FacilityItemTranslationId = facilityResults[0].FacilityItemTranslationId; // 翻訳ID(設備)
+                    record.FacilityNumber = facilityResults[0].FacilityNumber;                       // 設備番号
+                    record.FacilityName = facilityResults[0].FacilityName;                           // 設備名
+                    record.FacilityNameBefore = facilityResults[0].FacilityNameBefore;               // 設備名(変更前)
+                    record.FacilityParentId = facilityResults[0].FacilityParentId;                   // 設備の親構成ID
+                    record.FacilityParentNumber = facilityResults[0].FacilityParentNumber;           // 工程番号
+                    record.FacilityParentNumberBefore = facilityResults[0].FacilityParentNumber;     // 工程番号
+                    facilityResults.RemoveAt(0); // 先頭のデータを削除
+                }
+
+                // 出力データ行に追加
+                results.Add(record);
+            }
+
+            return results;
+
+            // 地区情報を取得
+            bool getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, int?> dicDistrict)
+            {
+                districtResults = null;
+                dicDistrict = new();
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterDistrictList, out string districtSql);
+
+                // SQL実行
+                districtResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(districtSql, searchCondition);
+                if (districtResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // 取得した地区情報より、「地区の構成ID」「地区番号」のディクショナリを作成
+                foreach (TMQUtil.CommonExcelPortMasterStructureList districtResult in districtResults)
+                {
+                    dicDistrict.Add(districtResult.DistrictId, districtResult.DistrictNumber);
+                }
+
+                return true;
+            }
+
+            // 工場情報を取得
+            bool getFactoryResults(Dictionary<long?, int?> dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, int?> dicFactory)
+            {
+                factoryResults = null;
+                factoryIdList = new();
+                dicFactory = new();
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterFactoryList, out string factorySql);
+
+                // SQL実行
+                factoryResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(factorySql, searchCondition);
+                if (factoryResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // 工場の親IDを設定
+                foreach (TMQUtil.CommonExcelPortMasterStructureList factoryResult in factoryResults)
+                {
+                    factoryResult.FactoryParentNumber = (int)dicDistrict[factoryResult.FactoryParentId];
+                    dicFactory.Add(factoryResult.FactoryId, factoryResult.FactoryNumber);
+                    factoryIdList.Add((long)factoryResult.FactoryId);
+                }
+
+                return true;
+            }
+
+            // プラント情報を取得
+            bool getPlantResults(Dictionary<long?, int?> dicFactory, out IList<TMQUtil.CommonExcelPortMasterStructureList> plantResults, out Dictionary<long?, int?> dicPlant)
+            {
+                plantResults = null;
+                dicPlant = new();
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterPlantList, out string plantSql);
+
+                // SQL実行
+                plantResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(plantSql, searchCondition);
+                if (plantResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // プラントの親IDを設定
+                foreach (TMQUtil.CommonExcelPortMasterStructureList plantResult in plantResults)
+                {
+                    plantResult.PlantParentNumber = (int)dicFactory[plantResult.PlantParentId];
+                    dicPlant.Add(plantResult.PlantId, plantResult.PlantNumber);
+                }
+
+                return true;
+            }
+
+            // 系列情報を取得
+            bool getSeriesResults(Dictionary<long?, int?> dicPlant, out IList<TMQUtil.CommonExcelPortMasterStructureList> seriesResults, out Dictionary<long?, int?> dicSeries)
+            {
+                seriesResults = null;
+                dicSeries = new();
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterSeriesList, out string seriesSql);
+
+                // SQL実行
+                seriesResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(seriesSql, searchCondition);
+                if (seriesResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // 系列の親IDを設定
+                foreach (TMQUtil.CommonExcelPortMasterStructureList seriesResult in seriesResults)
+                {
+                    seriesResult.SeriesParentNumber = (int)dicPlant[seriesResult.SeriesParentId];
+                    dicSeries.Add(seriesResult.SeriesId, seriesResult.SeriesNumber);
+                }
+
+                return true;
+            }
+
+            // 工程情報を取得
+            bool getStrokeResults(Dictionary<long?, int?> dicSeries, out IList<TMQUtil.CommonExcelPortMasterStructureList> strokeResults, out Dictionary<long?, int?> dicStroke)
+            {
+                strokeResults = null;
+                dicStroke = new();
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterStrokeList, out string strokeSql);
+
+                // SQL実行
+                strokeResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(strokeSql, searchCondition);
+                if (strokeResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // 工程の親IDを設定
+                foreach (TMQUtil.CommonExcelPortMasterStructureList strokeResult in strokeResults)
+                {
+                    strokeResult.StrokeParentNumber = (int)dicSeries[strokeResult.StrokeParentId];
+                    dicStroke.Add(strokeResult.StrokeId, strokeResult.StrokeNumber);
+                }
+
+                return true;
+            }
+
+            // 設備情報を取得
+            bool getFacilityResults(Dictionary<long?, int?> dicStroke, out IList<TMQUtil.CommonExcelPortMasterStructureList> facilityResults)
+            {
+                facilityResults = null;
+
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(Master.SqlName.ExcelPortDir, Master.SqlName.GetExcelPortMasterFacilityList, out string facilitySql);
+
+                // SQL実行
+                facilityResults = db.GetListByDataClass<TMQUtil.CommonExcelPortMasterStructureList>(facilitySql, searchCondition);
+                if (facilityResults == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return false;
+                }
+
+                // 設備の親IDを設定
+                foreach (TMQUtil.CommonExcelPortMasterStructureList facilityResult in facilityResults)
+                {
+                    facilityResult.FacilityParentNumber = (int)dicStroke[facilityResult.FacilityParentId];
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected override int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // シート番号を判定
+            int sheetNo = int.Parse(this.IndividualDictionary["TargetSheetNo"].ToString());
+            if (sheetNo == Master.OrdeerSheetNo)
+            {
+                // 並び順データの取得
+                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
+                    out List<TMQUtil.CommonExcelPortMasterOrderList> resultOrderList, out resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 並び順データ登録処理
+                if (!TMQUtil.registItemOrderExcelPort(structureGroupId, resultOrderList, DateTime.Now, this.db, this.UserId))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                return ComConsts.RETURN_RESULT.OK;
+            }
+
+            // ExcelPortアップロードデータの取得(地区)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.District.ControlGroupId,
+                out List<TMQUtil.CommonExcelPortMasterStructureList> resultDistrictList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // ExcelPortアップロードデータの取得(工場)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Factory.ControlGroupId,
+                out List<TMQUtil.CommonExcelPortMasterStructureList> resultFactoryList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // ExcelPortアップロードデータの取得(プラント)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId,
+                out List<TMQUtil.CommonExcelPortMasterStructureList> resultPlantList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // ExcelPortアップロードデータの取得(系列)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId,
+                out List<TMQUtil.CommonExcelPortMasterStructureList> resultSeriesList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // ExcelPortアップロードデータの取得(工程)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId,
+               out List<TMQUtil.CommonExcelPortMasterStructureList> resultStrokeList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // ExcelPortアップロードデータの取得(設備)
+            excelPort.GetUploadDataList(file, this.IndividualDictionary, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId,
+                out List<TMQUtil.CommonExcelPortMasterStructureList> resultFacilityList, out resultMsg, ref fileType, ref fileName, ref ms);
+
+            // 各階層のリストを作成する
+            // 地区
+            Dictionary<int?, long?> districtDic = new();
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultDistrictList)
+            {
+                // 地区リスト
+                if (result.DistrictNumber != null)
+                {
+                    districtDic.Add(result.DistrictNumber, result.DistrictId);
+                }
+            }
+
+            // 工場
+            Dictionary<int?, long?> factoryDic = new();
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultFactoryList)
+            {
+                // 工場リスト
+                if (result.FactoryNumber != null)
+                {
+                    factoryDic.Add(result.FactoryNumber, result.FactoryId);
+                }
+            }
+
+            // エラー情報リスト
+            List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+
+            // プラント
+            Dictionary<int?, ExcelPortStructureList> plantDic = new();
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultPlantList)
+            {
+                // プラントIDが入力されていない場合はエラー
+                if (result.PlantNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    continue;
+                }
+
+                // 工場IDが入力されていない場合はエラー
+                if (result.PlantParentNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    continue;
+                }
+
+                // プラントリスト
+                if (result.PlantNumber != null)
+                {
+                    ExcelPortStructureList list = new();
+                    list.StructureId = result.PlantId;
+                    list.ParentId = result.PlantParentNumber;
+                    plantDic.Add(result.PlantNumber, list);
+                }
+            }
+
+            // 系列
+            Dictionary<int?, ExcelPortStructureList> seriesDic = new();
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultSeriesList)
+            {
+                // 系列IDが入力されていない場合はエラー
+                if (result.SeriesNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    continue;
+                }
+
+                // プラントIDが入力されていない場合はエラー
+                if (result.SeriesParentNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    continue;
+                }
+
+                // 系列リスト
+                if (result.SeriesNumber != null)
+                {
+                    ExcelPortStructureList list = new();
+                    list.StructureId = result.SeriesId;
+                    list.ParentId = result.SeriesParentNumber;
+                    seriesDic.Add(result.SeriesNumber, list);
+                }
+            }
+
+            // 工程
+            Dictionary<int?, ExcelPortStructureList> strokeDic = new();
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultStrokeList)
+            {
+                // 工程IDが入力されていない場合はエラー
+                if (result.StrokeNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    continue;
+                }
+
+                // 系列IDが入力されていない場合はエラー
+                if (result.StrokeParentNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    continue;
+                }
+
+                // 工程リスト
+                if (result.StrokeNumber != null)
+                {
+                    ExcelPortStructureList list = new();
+                    list.StructureId = result.StrokeId;
+                    list.ParentId = result.StrokeParentNumber;
+                    strokeDic.Add(result.StrokeNumber, list);
+                }
+            }
+
+            // 設備
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultFacilityList)
+            {
+                // 設備IDが入力されていない場合はエラー
+                if (result.FacilityNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    continue;
+                }
+
+                // 工程IDが入力されていない場合はエラー
+                if (result.FacilityParentNumber == null)
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    continue;
+                }
+            }
+
+            // 各階層のID列が不正の場合はエラー
+            if (errorInfoList.Count > 0)
+            {
+                excelPort.ErrorInfoList = new();
+
+                // エラー情報シートへ設定
+                excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // プラント 入力チェック&登録処理
+            if (!executeCheckAndRegistPlantExcelPort(ref resultPlantList, ref errorInfoList, factoryDic, ref plantDic))
+            {
+                if (errorInfoList.Count > 0)
+                {
+                    // エラー情報シートへ設定
+                    excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 系列 入力チェック&登録処理
+            if (!executeCheckAndRegistSeriesExcelPort(ref resultSeriesList, ref errorInfoList, factoryDic, plantDic, ref seriesDic))
+            {
+                if (errorInfoList.Count > 0)
+                {
+                    // エラー情報シートへ設定
+                    excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 工程 入力チェック&登録処理
+            if (!executeCheckAndRegistStrokeExcelPort(ref resultStrokeList, ref errorInfoList, factoryDic, plantDic, seriesDic, ref strokeDic))
+            {
+                if (errorInfoList.Count > 0)
+                {
+                    // エラー情報シートへ設定
+                    excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 設備入力チェック& 登録処理
+            if (!executeCheckAndRegistFacilityExcelPort(ref resultFacilityList, ref errorInfoList, factoryDic, plantDic, seriesDic, strokeDic))
+            {
+                if (errorInfoList.Count > 0)
+                {
+                    // エラー情報シートへ設定
+                    excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ユーザ情報の更新が必要
+            this.UpdateUserInfo = true;
+
+            resultMsg = string.Empty;
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// プラント 入力チェック&登録処理
+        /// </summary>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeCheckAndRegistPlantExcelPort(ref List<TMQUtil.CommonExcelPortMasterStructureList> resultPlantList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, ref Dictionary<int?, ExcelPortStructureList> plantDic)
+        {
+            DateTime now = DateTime.Now;
+
+            // 全体エラー存在フラグ
+            bool errFlg = false;
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultPlantList)
+            {
+                // プラント
+                if ((!string.IsNullOrEmpty(result.PlantName) || result.PlantParentNumber != null) && result.PlantNumber == null)
+                {
+                    // プラントIDが未入力かつ、プラント名・工場IDのどちらかが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantNo, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.PlantNumber != null && string.IsNullOrEmpty(result.PlantName))
+                {
+                    // プラントIDが入力されていてプラント名が未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.PlantNumber != null && result.PlantParentNumber == null)
+                {
+                    // プラントIDが入力されていて工場IDが未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.PlantParentNumber != null && !factoryDic.ContainsKey(result.PlantParentNumber))
+                {
+                    // 存在しない工場IDが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.PlantName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+
+                // アイテムの重複チェック
+                if (result.PlantName != result.PlantNameBefore)
+                {
+                    long factoryId = (long)factoryDic[result.PlantParentNumber];
+                    int cnt = 0;
+                    TMQUtil.GetCountDb(new
+                    {
+                        @LocationStructureId = factoryId,
+                        @LanguageId = this.LanguageId,
+                        @TranslationText = result.PlantName,
+                        @StructureGroupId = structureGroupId,
+                        @FactoryId = factoryId,
+                        @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.Location.Plant,
+                        @ParentStructureId = factoryId
+                    }, Master.SqlName.GetCountLayersTranslationByFactory, ref cnt, db, Master.SqlName.ComLayersDir);
+
+                    if (cnt > 0)
+                    {
+                        // アイテム翻訳は既に登録されています
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260001, "111010005" }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                        errFlg = true;
+                        rowErrFlg = true;
+                        continue;
+                    }
+                }
+
+                // 登録処理
+                if (!executeExcelPortRegistPlant(result, factoryDic, ref plantDic, now))
+                {
+                    return false;
+                }
+            }
+
+            // 全件問題無ければ正常終了
+            if (errFlg)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 系列 入力チェック&登録処理
+        /// </summary>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeCheckAndRegistSeriesExcelPort(ref List<TMQUtil.CommonExcelPortMasterStructureList> resultSeriesList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> plantDic, ref Dictionary<int?, ExcelPortStructureList> seriesDic)
+        {
+            DateTime now = DateTime.Now;
+
+            // 全体エラー存在フラグ
+            bool errFlg = false;
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultSeriesList)
+            {
+                // 系列
+                if ((!string.IsNullOrEmpty(result.SeriesName) || result.SeriesParentNumber != null) && result.SeriesNumber == null)
+                {
+                    // 系列IDが未入力かつ、系列名・プラントIDのどちらかが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesNo, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.SeriesNumber != null && string.IsNullOrEmpty(result.SeriesName))
+                {
+                    // 系列IDが入力されていて系列名が未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.SeriesNumber != null && result.SeriesParentNumber == null)
+                {
+                    // 系列IDが入力されていてプラントIDが未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.SeriesParentNumber != null && !plantDic.ContainsKey(result.SeriesParentNumber))
+                {
+                    // 存在しないプラントIDが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.SeriesName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+
+                // アイテムの重複チェック
+                if (result.SeriesName != result.SeriesNameBefore)
+                {
+                    int plantId = (int)plantDic[result.SeriesParentNumber].ParentId;
+                    long factoryId = (long)factoryDic[plantId];
+                    int cnt = 0;
+                    TMQUtil.GetCountDb(new
+                    {
+                        @LocationStructureId = factoryId,
+                        @LanguageId = this.LanguageId,
+                        @TranslationText = result.SeriesName,
+                        @StructureGroupId = structureGroupId,
+                        @FactoryId = factoryId,
+                        @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.Location.Series,
+                        @ParentStructureId = plantDic[result.SeriesParentNumber].StructureId
+                    }, Master.SqlName.GetCountLayersTranslationByFactory, ref cnt, db, Master.SqlName.ComLayersDir);
+
+                    if (cnt > 0)
+                    {
+                        // アイテム翻訳は既に登録されています
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260001, "111010005" }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                        errFlg = true;
+                        rowErrFlg = true;
+                        continue;
+                    }
+                }
+
+                // 登録処理
+                if (!executeExcelPortRegistSeries(result, plantDic, factoryDic, ref seriesDic, now))
+                {
+                    return false;
+                }
+            }
+            // 全件問題無ければ正常終了
+            if (errFlg)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 工程 入力チェック&登録処理
+        /// </summary>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeCheckAndRegistStrokeExcelPort(ref List<TMQUtil.CommonExcelPortMasterStructureList> resultStrokeList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> plantDic, Dictionary<int?, ExcelPortStructureList> seriesDic, ref Dictionary<int?, ExcelPortStructureList> strokeDic)
+        {
+            DateTime now = DateTime.Now;
+
+            // 全体エラー存在フラグ
+            bool errFlg = false;
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultStrokeList)
+            {
+
+                // 工程
+                if ((!string.IsNullOrEmpty(result.StrokeName) || result.StrokeParentNumber != null) && result.StrokeNumber == null)
+                {
+                    // 工程IDが未入力かつ、工程名・系列IDのどちらかが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeNo, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.StrokeNumber != null && string.IsNullOrEmpty(result.StrokeName))
+                {
+                    // 工程IDが入力されていて工程名が未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.StrokeNumber != null && result.StrokeParentNumber == null)
+                {
+                    // 工程IDが入力されていて系列IDが未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.StrokeParentNumber != null && !seriesDic.ContainsKey(result.StrokeParentNumber))
+                {
+                    // 存在しない系列IDが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.StrokeName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+
+                // アイテムの重複チェック
+                if (result.StrokeName != result.StrokeNameBefore)
+                {
+                    int seriesId = (int)seriesDic[result.StrokeParentNumber].ParentId;
+                    int plantId = (int)plantDic[seriesId].ParentId;
+                    long factoryId = (long)factoryDic[plantId];
+                    int cnt = 0;
+                    TMQUtil.GetCountDb(new
+                    {
+                        @LocationStructureId = factoryId,
+                        @LanguageId = this.LanguageId,
+                        @TranslationText = result.StrokeName,
+                        @StructureGroupId = structureGroupId,
+                        @FactoryId = factoryId,
+                        @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.Location.Stroke,
+                        @ParentStructureId = seriesDic[result.StrokeParentNumber].StructureId
+                    }, Master.SqlName.GetCountLayersTranslationByFactory, ref cnt, db, Master.SqlName.ComLayersDir);
+
+                    if (cnt > 0)
+                    {
+                        // アイテム翻訳は既に登録されています
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260001, "111010005" }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                        errFlg = true;
+                        rowErrFlg = true;
+                        continue;
+                    }
+                }
+
+                // 登録処理
+                if (!executeExcelPortRegistStroke(result, seriesDic, factoryDic, plantDic, ref strokeDic, now))
+                {
+                    return false;
+                }
+            }
+
+            // 全件問題無ければ正常終了
+            if (errFlg)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 設備 入力チェック&登録処理
+        /// </summary>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeCheckAndRegistFacilityExcelPort(ref List<TMQUtil.CommonExcelPortMasterStructureList> resultFacilityList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> plantDic, Dictionary<int?, ExcelPortStructureList> seriesDic, Dictionary<int?, ExcelPortStructureList> strokeDic)
+        {
+            DateTime now = DateTime.Now;
+
+            // 全体エラー存在フラグ
+            bool errFlg = false;
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultFacilityList)
+            {
+                // 設備
+                if ((!string.IsNullOrEmpty(result.FacilityName) || result.FacilityParentNumber != null) && result.FacilityNumber == null)
+                {
+                    // 設備IDが未入力かつ、設備名・工程IDのどちらかが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityNo, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.FacilityNumber != null && string.IsNullOrEmpty(result.FacilityName))
+                {
+                    // 設備IDが入力されていて設備名が未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.FacilityNumber != null && result.FacilityParentNumber == null)
+                {
+                    // 設備IDが入力されていて工程IDが未入力の場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (result.FacilityParentNumber != null && !strokeDic.ContainsKey(result.FacilityParentNumber))
+                {
+                    // 存在しない工程IDが入力されている場合
+                    // 必須項目です。入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.FacilityName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+
+                // アイテムの重複チェック
+                if (result.FacilityName != result.FacilityNameBefore)
+                {
+                    int strokeId = (int)strokeDic[result.FacilityParentNumber].ParentId;
+                    int seriesId = (int)seriesDic[strokeId].ParentId;
+                    int plantId = (int)plantDic[seriesId].ParentId;
+                    long factoryId = (long)factoryDic[plantId];
+                    int cnt = 0;
+                    TMQUtil.GetCountDb(new
+                    {
+                        @LocationStructureId = factoryId,
+                        @LanguageId = this.LanguageId,
+                        @TranslationText = result.FacilityName,
+                        @StructureGroupId = structureGroupId,
+                        @FactoryId = factoryId,
+                        @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.Location.Facility,
+                        @ParentStructureId = strokeDic[result.FacilityParentNumber].StructureId
+                    }, Master.SqlName.GetCountLayersTranslationByFactory, ref cnt, db, Master.SqlName.ComLayersDir);
+
+                    if (cnt > 0)
+                    {
+                        // アイテム翻訳は既に登録されています
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260001, "111010005" }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                        errFlg = true;
+                        rowErrFlg = true;
+                        continue;
+                    }
+                }
+
+                // 登録処理
+                if (!executeExcelPortRegistFacility(result, seriesDic, factoryDic, plantDic, strokeDic, now))
+                {
+                    return false;
+                }
+            }
+
+            // 全件問題無ければ正常終了
+            if (errFlg)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// プラント登録処理
+        /// </summary>
+        /// <param name="factoryDic">工場IDディクショナリ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeExcelPortRegistPlant(TMQUtil.CommonExcelPortMasterStructureList plant, Dictionary<int?, long?> factoryDic, ref Dictionary<int?, ExcelPortStructureList> plantDic, DateTime now)
+        {
+
+            // プラント登録処理
+
+            // 所属情報が変更されている場合は削除
+            bool isNew = false;
+            if (plant.PlantParentNumber != null &&
+                plant.PlantParentNumberBefore != null &&
+                plant.PlantParentNumber != plant.PlantParentNumberBefore)
+            {
+                if (!TMQUtil.SqlExecuteClass.Regist(Master.SqlName.UpdateMsStructureInfoAddDeleteFlg, Master.SqlName.SubDir, new { StructureId = plant.PlantId, UpdateDatetime = now, UpdateUserId = this.UserId }, db))
+                {
+                    return false;
+                }
+                isNew = true;
+            }
+
+            // 翻訳マスタ登録処理
+            if (!TMQUtil.registTranslationStructureExcelPort(structureGroupId,                                          // 構成グループID
+                                                             now,                                                       // 現在日時
+                                                             this.LanguageId,                                           // 言語ID
+                                                             this.db,                                                   // DBクラス
+                                                             this.UserId,                                               // ユーザーID
+                                                             plant.PlantName,                                           // 翻訳名
+                                                             plant.PlantNameBefore,                                     // 変更前翻訳名
+                                                             plant.PlantItemTranslationId,                              // 翻訳ID
+                                                             (int)factoryDic[plant.PlantParentNumber],                  // 工場ID
+                                                             plant.PlantId,                                             // 構成ID
+                                                             (int)TMQConst.MsStructure.StructureLayerNo.Location.Plant, // 階層番号
+                                                             (int)factoryDic[plant.PlantParentNumber],                  // 親構成ID
+                                                             out int transId,                                           // 翻訳ID
+                                                             isNew))
+            {
+                return false;
+            }
+
+            // アイテムマスタ登録
+            if (!TMQUtil.registItemStructureExcelPort(plant.PlantId,                  // 構成ID
+                                            structureGroupId,                         // 構成グループID
+                                            (int)factoryDic[plant.PlantParentNumber], // 工場ID
+                                            plant.PlantName,                          // 翻訳名
+                                            plant.PlantNameBefore,                    // 変更前翻訳名
+                                            plant.PlantItemTranslationId,             // 翻訳ID
+                                            plant.PlantItemId,                        // アイテムID
+                                            transId,                                  // 翻訳ID
+                                            now,                                      // 現在日時
+                                            this.LanguageId,                          // 言語ID
+                                            this.db,                                  // DBクラス
+                                            this.UserId,                              // ユーザーID
+                                            out int itemId,                           // アイテムID
+                                            isNew))
+            {
+                return false;
+            }
+
+            // 構成マスタ登録
+            if (!TMQUtil.registStructureExcelPort(structureGroupId,                                         // 構成グループID
+                                                 plant.PlantId,                                             // 構成ID
+                                                 (int)factoryDic[plant.PlantParentNumber],                  // 工場ID
+                                                 itemId,                                                    // アイテムID
+                                                 (int)factoryDic[plant.PlantParentNumber],                  // 親構成ID
+                                                 (int)TMQConst.MsStructure.StructureLayerNo.Location.Plant, // 階層番号
+                                                 now,                                                       // 現在日時
+                                                 this.db,                                                   // DBクラス
+                                                 this.UserId,                                               // ユーザーID
+                                                 isNew,
+                                                 out int structureId))
+            {
+                return false;
+            }
+
+            // プラントディクショナリに登録した情報を追加
+            plantDic[plant.PlantNumber].StructureId = structureId;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 系列登録処理
+        /// </summary>
+        /// <param name="plantDic">プラントIDディクショナリ</param>
+        /// <param name="now">現在日時</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeExcelPortRegistSeries(TMQUtil.CommonExcelPortMasterStructureList series, Dictionary<int?, ExcelPortStructureList> plantDic, Dictionary<int?, long?> factoryDic, ref Dictionary<int?, ExcelPortStructureList> seriesDic, DateTime now)
+        {
+            bool parentChanged = false;
+
+            if (series.SeriesId != null)
+            {
+                // DBより自分自身の親構成IDを取得
+                ComDao.MsStructureEntity ms = new ComDao.MsStructureEntity().GetEntity((int)series.SeriesId, this.db);
+                // 自分の親構成IDを比較(異なる場合は自分の親アイテムの所属が変わった)
+                parentChanged = ms.ParentStructureId != plantDic[series.SeriesParentNumber].StructureId;
+            }
+
+            // 所属情報が変更されている場合は削除
+            bool isNew = false;
+            if ((series.SeriesParentNumber != null &&
+                series.SeriesParentNumberBefore != null &&
+                series.SeriesParentNumber != series.SeriesParentNumberBefore) ||
+                parentChanged)
+            {
+                if (!TMQUtil.SqlExecuteClass.Regist(Master.SqlName.UpdateMsStructureInfoAddDeleteFlg, Master.SqlName.SubDir, new { StructureId = series.SeriesId, UpdateDatetime = now, UpdateUserId = this.UserId }, db))
+                {
+                    return false;
+                }
+                isNew = true;
+            }
+
+            int factoryId = (int)factoryDic[(int)plantDic[series.SeriesParentNumber].ParentId];
+            // 翻訳マスタ登録処理
+            if (!TMQUtil.registTranslationStructureExcelPort(structureGroupId,                                           // 構成グループID
+                                                             now,                                                        // 現在日時
+                                                             this.LanguageId,                                            // 言語ID
+                                                             this.db,                                                    // DBクラス
+                                                             this.UserId,                                                // ユーザーID
+                                                             series.SeriesName,                                          // 翻訳名
+                                                             series.SeriesNameBefore,                                    // 変更前翻訳名
+                                                             series.SeriesItemTranslationId,                             // 翻訳ID
+                                                             factoryId,                                                  // 工場ID
+                                                             series.SeriesId,                                            // 構成ID
+                                                             (int)TMQConst.MsStructure.StructureLayerNo.Location.Series, // 階層番号
+                                                             (int)plantDic[series.SeriesParentNumber].StructureId,       // 親構成ID
+                                                             out int transId,                                            // 翻訳ID
+                                                             isNew))
+            {
+                return false;
+            }
+
+            // アイテムマスタ登録
+            if (!TMQUtil.registItemStructureExcelPort(series.SeriesId,                // 構成ID
+                                            structureGroupId,                         // 構成グループID
+                                            factoryId,                                // 工場ID
+                                            series.SeriesName,                        // 翻訳名
+                                            series.SeriesNameBefore,                  // 変更前翻訳名
+                                            series.SeriesItemTranslationId,           // 翻訳ID
+                                            series.SeriesItemId,                      // アイテムID
+                                            transId,                                  // 翻訳ID
+                                            now,                                      // 現在日時
+                                            this.LanguageId,                          // 言語ID
+                                            this.db,                                  // DBクラス
+                                            this.UserId,                              // ユーザーID
+                                            out int itemId,                           // アイテムID
+                                            isNew))
+            {
+                return false;
+            }
+
+            // 構成マスタ登録
+            if (!TMQUtil.registStructureExcelPort(structureGroupId,                                          // 構成グループID
+                                                 series.SeriesId,                                            // 構成ID
+                                                 factoryId,                                                  // 工場ID
+                                                 itemId,                                                     // アイテムID
+                                                 (int)plantDic[series.SeriesParentNumber].StructureId,       // 親構成ID
+                                                 (int)TMQConst.MsStructure.StructureLayerNo.Location.Series, // 階層番号
+                                                 now,                                                        // 現在日時
+                                                 this.db,                                                    // DBクラス
+                                                 this.UserId,                                                // ユーザーID
+                                                 isNew,
+                                                 out int structureId))
+            {
+                return false;
+            }
+
+            // 系列ディクショナリに登録した情報を追加
+            seriesDic[series.SeriesNumber].StructureId = structureId;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 工程登録処理
+        /// </summary>
+        /// <param name="seriesDic">系列IDディクショナリ</param>
+        /// <param name="factoryDic">工場IDディクショナリ</param>
+        /// <param name="plantDic">プラントIDディクショナリ</param>
+        /// <param name="now">現在日時</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeExcelPortRegistStroke(TMQUtil.CommonExcelPortMasterStructureList stroke, Dictionary<int?, ExcelPortStructureList> seriesDic, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> plantDic, ref Dictionary<int?, ExcelPortStructureList> strokeDic, DateTime now)
+        {
+            bool parentChanged = false;
+
+            if (stroke.StrokeId != null)
+            {
+                // DBより自分自身の親構成IDを取得
+                ComDao.MsStructureEntity ms = new ComDao.MsStructureEntity().GetEntity((int)stroke.StrokeId, this.db);
+                // 自分の親構成IDを比較(異なる場合は自分の親アイテムの所属が変わった)
+                parentChanged = ms.ParentStructureId != seriesDic[stroke.StrokeParentNumber].StructureId;
+            }
+
+            // 所属情報が変更されている場合は削除
+            bool isNew = false;
+            if ((stroke.StrokeParentNumber != null &&
+                stroke.StrokeParentNumberBefore != null &&
+                stroke.StrokeParentNumber != stroke.StrokeParentNumberBefore) ||
+                parentChanged)
+            {
+                if (!TMQUtil.SqlExecuteClass.Regist(Master.SqlName.UpdateMsStructureInfoAddDeleteFlg, Master.SqlName.SubDir, new { StructureId = stroke.StrokeId, UpdateDatetime = now, UpdateUserId = this.UserId }, db))
+                {
+                    return false;
+                }
+                isNew = true;
+            }
+
+            int seriesId = (int)seriesDic[stroke.StrokeParentNumber].ParentId;
+            int plantId = (int)plantDic[seriesId].ParentId;
+            int factoryId = (int)factoryDic[plantId];
+            // 翻訳マスタ登録処理
+            if (!TMQUtil.registTranslationStructureExcelPort(structureGroupId,                                          // 構成グループID
+                                                             now,                                                       // 現在日時
+                                                             this.LanguageId,                                           // 言語ID
+                                                             this.db,                                                   // DBクラス
+                                                             this.UserId,                                               // ユーザーID
+                                                             stroke.StrokeName,                                         // 翻訳名
+                                                             stroke.StrokeNameBefore,                                   // 変更前翻訳名
+                                                             stroke.StrokeItemTranslationId,                            // 翻訳ID
+                                                             factoryId,                                                 // 工場ID
+                                                             stroke.StrokeId,                                           // 構成ID
+                                                             (int)TMQConst.MsStructure.StructureLayerNo.Location.Stroke, // 階層番号
+                                                             (int)seriesDic[stroke.StrokeParentNumber].StructureId,        // 親構成ID
+                                                             out int transId,                       // 翻訳ID
+                                                             isNew))
+            {
+                return false;
+            }
+
+            // アイテムマスタ登録
+            if (!TMQUtil.registItemStructureExcelPort(stroke.StrokeId,                // 構成ID
+                                            structureGroupId,                         // 構成グループID
+                                            factoryId,                                // 工場ID
+                                            stroke.StrokeName,                        // 翻訳名
+                                            stroke.StrokeNameBefore,                  // 変更前翻訳名
+                                            stroke.StrokeItemTranslationId,           // 翻訳ID
+                                            stroke.StrokeItemId,                      // アイテムID
+                                            transId,                                  // 翻訳ID
+                                            now,                                      // 現在日時
+                                            this.LanguageId,                          // 言語ID
+                                            this.db,                                  // DBクラス
+                                            this.UserId,                              // ユーザーID
+                                            out int itemId,                           // アイテムID
+                                            isNew))
+            {
+                return false;
+            }
+
+            // 構成マスタ登録
+            if (!TMQUtil.registStructureExcelPort(structureGroupId,                                          // 構成グループID
+                                                 stroke.StrokeId,                                            // 構成ID
+                                                 factoryId,                                                  // 工場ID
+                                                 itemId,                                                     // アイテムID
+                                                 (int)seriesDic[stroke.StrokeParentNumber].StructureId,         // 親構成ID
+                                                 (int)TMQConst.MsStructure.StructureLayerNo.Location.Stroke, // 階層番号
+                                                 now,                                                        // 現在日時
+                                                 this.db,                                                    // DBクラス
+                                                 this.UserId,                                                // ユーザーID
+                                                 isNew,
+                                                 out int structureId))
+            {
+                return false;
+            }
+
+            // 工程ディクショナリに登録した情報を追加
+            strokeDic[stroke.StrokeNumber].StructureId = structureId;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 設備登録処理
+        /// </summary>
+        /// <param name="seriesDic">系列IDディクショナリ</param>
+        /// <param name="factoryDic">工場IDディクショナリ</param>
+        /// <param name="plantDic">プラントIDディクショナリ</param>
+        /// <param name="strokeDic">工程IDディクショナリ</param>
+        /// <param name="now">現在日時</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool executeExcelPortRegistFacility(TMQUtil.CommonExcelPortMasterStructureList facility, Dictionary<int?, ExcelPortStructureList> seriesDic, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> plantDic, Dictionary<int?, ExcelPortStructureList> strokeDic, DateTime now)
+        {
+            bool parentChanged = false;
+
+            if (facility.FacilityId != null)
+            {
+                // DBより自分自身の親構成IDを取得
+                ComDao.MsStructureEntity ms = new ComDao.MsStructureEntity().GetEntity((int)facility.FacilityId, this.db);
+                // 自分の親構成IDを比較(異なる場合は自分の親アイテムの所属が変わった)
+                parentChanged = ms.ParentStructureId != strokeDic[facility.FacilityParentNumber].StructureId;
+            }
+
+            // 所属情報が変更されている場合は削除
+            bool isNew = false;
+            if ((facility.FacilityParentNumber != null &&
+                facility.FacilityParentNumberBefore != null &&
+                facility.FacilityParentNumber != facility.FacilityParentNumberBefore) ||
+                parentChanged)
+            {
+                if (!TMQUtil.SqlExecuteClass.Regist(Master.SqlName.UpdateMsStructureInfoAddDeleteFlg, Master.SqlName.SubDir, new { StructureId = facility.FacilityId, UpdateDatetime = now, UpdateUserId = this.UserId }, db))
+                {
+                    return false;
+                }
+                isNew = true;
+            }
+
+            int strokeId = (int)strokeDic[facility.FacilityParentNumber].ParentId;
+            int seriesId = (int)seriesDic[strokeId].ParentId;
+            int plantId = (int)plantDic[seriesId].ParentId;
+            int factoryId = (int)factoryDic[plantId];
+            // 翻訳マスタ登録処理
+            if (!TMQUtil.registTranslationStructureExcelPort(structureGroupId,                                             // 構成グループID
+                                                             now,                                                          // 現在日時
+                                                             this.LanguageId,                                              // 言語ID
+                                                             this.db,                                                      // DBクラス
+                                                             this.UserId,                                                  // ユーザーID
+                                                             facility.FacilityName,                                        // 翻訳名
+                                                             facility.FacilityNameBefore,                                  // 変更前翻訳名
+                                                             facility.FacilityItemTranslationId,                           // 翻訳ID
+                                                             factoryId,                                                    // 工場ID
+                                                             facility.FacilityId,                                          // 構成ID
+                                                             (int)TMQConst.MsStructure.StructureLayerNo.Location.Facility, // 階層番号
+                                                             (int)strokeDic[facility.FacilityParentNumber].StructureId,    // 親構成ID
+                                                             out int transId,                          // 翻訳ID
+                                                             isNew))
+            {
+                return false;
+            }
+
+            // アイテムマスタ登録
+            if (!TMQUtil.registItemStructureExcelPort(facility.FacilityId,            // 構成ID
+                                            structureGroupId,                         // 構成グループID
+                                            factoryId,                                // 工場ID
+                                            facility.FacilityName,                    // 翻訳名
+                                            facility.FacilityNameBefore,              // 変更前翻訳名
+                                            facility.FacilityItemTranslationId,       // 翻訳ID
+                                            facility.FacilityItemId,                  // アイテムID
+                                            transId,                                  // 翻訳ID
+                                            now,                                      // 現在日時
+                                            this.LanguageId,                          // 言語ID
+                                            this.db,                                  // DBクラス
+                                            this.UserId,                              // ユーザーID
+                                            out int itemId,                           // アイテムID
+                                            isNew))
+            {
+                return false;
+            }
+
+            // 構成マスタ登録
+            if (!TMQUtil.registStructureExcelPort(structureGroupId,                                            // 構成グループID
+                                                 facility.FacilityId,                                          // 構成ID
+                                                 factoryId,                                                    // 工場ID
+                                                 itemId,                                                       // アイテムID
+                                                 (int)strokeDic[facility.FacilityParentNumber].StructureId,    // 親構成ID
+                                                 (int)TMQConst.MsStructure.StructureLayerNo.Location.Facility, // 階層番号
+                                                 now,                                                          // 現在日時
+                                                 this.db,                                                      // DBクラス
+                                                 this.UserId,                                                  // ユーザーID
+                                                 isNew,
+                                                 out int structureId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion
         #endregion
 
         #region privateメソッド

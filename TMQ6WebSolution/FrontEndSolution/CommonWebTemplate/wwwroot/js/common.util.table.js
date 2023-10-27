@@ -7,8 +7,14 @@
  *  
  *  @return ：画面番号
  */
-function getFormNo() {
-    var formNo = $(P_Article).data("formno");
+function getFormNo(element) {
+    let article;
+    if (element) {
+        article = $(element).closest('article');
+    } else {
+        article = P_Article;
+    }
+    var formNo = $(article).data("formno");
     return formNo;
 }
 
@@ -314,20 +320,26 @@ function getConditionData(formNo, listsCondition, isDispVal) {
 /**
  *  詳細検索条件ﾃﾞｰﾀを取得する
  *
- *  @param {string} ：機能ID
- *  @param {number} ：画面番号
- *  @param {number} ：値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
- *  @param {boolean}：フォーム初期化時フラグ(true：フォーム初期化時/false：初期化以外)
- *  @param {boolean}：チェック状態取得フラグ(true：取得する/false：取得しない)
+ *  @param {string} conductId   ：機能ID
+ *  @param {number} formNo      ：画面番号
+ *  @param {number} isDispVal   ：値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
+ *  @param {boolean} isInitForm ：フォーム初期化時フラグ(true：フォーム初期化時/false：初期化以外)
+ *  @param {boolean} getCheckedSts：チェック状態取得フラグ(true：取得する/false：取得しない)
+ *  @param {string} ctrlId      ：一覧コントロールID
  *
  *  @return {List<Dictionary<string, object>>} : 条件ﾃﾞｰﾀ(VAL1～)
  */
-function getDetailConditionData(conductId, formNo, isDispVal, isInitForm, getCheckedSts) {
+function getDetailConditionData(conductId, formNo, isDispVal, isInitForm, getCheckedSts, ctrlId) {
     var conditionDataList = [];
     if (isDispVal == null) isDispVal = 0;   //初期化
 
     var menuDiv = $('#detail_search');
-    var condTables = $(menuDiv).find("table.detailsearch[data-conductid='" + conductId + "'][data-formno='" + formNo + "']");
+    var condTables;
+    if (!ctrlId) {
+        condTables = $(menuDiv).find("table.detailsearch[data-conductid='" + conductId + "'][data-formno='" + formNo + "']");
+    } else {
+        condTables = $(menuDiv).find("table.detailsearch[data-conductid='" + conductId + "'][data-parentid='" + ctrlId + "'][data-formno='" + formNo + "']");
+    }
     menuDiv = null;
     if (condTables == null || condTables.length == 0) { return conditionDataList; }
 
@@ -405,6 +417,77 @@ function getDetailConditionData(conductId, formNo, isDispVal, isInitForm, getChe
     condTables = null;
 
     return conditionDataList;
+}
+
+/**
+ * 一覧の読込件数上限のデフォルト値を取得
+ * @param {string} relationId
+ * @param {string} selector
+ */
+function getSelectCntMaxDefault(relationId, selector) {
+    if (!relationId) {
+        relationId = $(selector).closest('[data-relation-id]').data('relation-id');
+    }
+    // 詳細検索条件データ取得
+    var detailCondition = getDetailConditionData(getConductId(), getFormNo(), 0, true, false, relationId);
+    if (detailCondition != null && detailCondition.length > 0) {
+        // 詳細検索条件が指定されている場合
+        return selectCntMaxDef.All; // すべて
+    } else {
+        return selectCntMaxDef.Default; // デフォルト値
+    }
+}
+
+/**
+ * 一覧の読込件数上限のデフォルト値を取得
+ * @param {string} ctrlId   :一覧のコントロールID
+ * @param {any} selector
+ */
+function getSelectCntMax(ctrlId) {
+    // 読込件数コンボの選択値
+    var select = getSelectCntCombo(ctrlId);
+    var selectedOption = $(select).find('option:selected');
+    var selectCnt = $(selectedOption).attr('exparam1');
+    return selectCnt;
+}
+
+/**
+ *  一覧の読込件数コンボの取得
+ * @param {string} ctrlId   ：一覧のコントロールID
+ * @return {Element} 一覧の読込件数コンボ要素
+ */
+function getSelectCntCombo(ctrlId) {
+    var div = $(P_Article).find('div[data-relation-id="' + ctrlId + '"]');
+    return $(div).find('select');
+}
+
+/**
+ * 一覧の読込件数コントロールの活性状態の設定
+ * @param {string} ctrlId       ：一覧のコントロールID
+ * @param {boolean} disabled    ：読込件数
+ */
+function setSelectCntControlStatus(ctrlId, disabled) {
+    var div = $(P_Article).find('div[data-relation-id="' + ctrlId + '"]');
+    var select = $(div).find('select');
+    $(select).prop("disabled", disabled);
+//    var btn = $(div).find('input[name="SearchDispCount"]');
+//    $(btn).prop("disabled", disabled);
+}
+
+/**
+ *  一覧の読込総件数ラベルの設定
+ * @param {string} ctrlId       ：一覧のコントロールID
+ * @param {Array.<object>} data ：検索結果
+ */
+function setSelectAllCntLabel(ctrlId, data) {
+    var div = $(P_Article).find('div[data-relation-id="' + ctrlId + '"]');
+    var label = $(div).find('td[data-name="VAL3"]');
+    if (label != null && label.length > 0) {
+        // 先頭データのVAL1に詳細条件未指定時の総件数が格納されている
+        // 詳細条件指定時は検索結果件数-1、未指定時は先頭データの総件数
+        var totalCnt = data[0].IsDetailConditionApplied ? data.length - 1 : data[0].VAL1;
+        $(label).text('/' + totalCnt);
+    }
 }
 
 /**

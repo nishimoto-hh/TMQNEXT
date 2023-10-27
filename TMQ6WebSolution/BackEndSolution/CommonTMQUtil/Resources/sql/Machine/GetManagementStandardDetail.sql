@@ -27,8 +27,8 @@ SELECT mcp.management_standards_component_id,        -- 機器別管理基準部
 	   CASE WHEN mcp.update_datetime > msc.update_datetime and mcp.update_datetime > ms.update_datetime THEN mcp.update_datetime
 	        WHEN msc.update_datetime > mcp.update_datetime and msc.update_datetime > ms.update_datetime THEN msc.update_datetime
 			ELSE ms.update_datetime
-	   END update_datetime,                          -- 機番ID
-       dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
+	   END update_datetime                           -- 機番ID
+       --dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
     ,(SELECT a.*

@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
+
 namespace CommonSTDUtil.CommonBusinessLogic
 {
     public abstract partial class CommonBusinessLogicBase : MarshalByRefObject
@@ -344,6 +348,138 @@ namespace CommonSTDUtil.CommonBusinessLogic
             }
 
             return target;
+        }
+
+        /// <summary>
+        /// 一覧性能改善対応関連 高速化処理
+        /// </summary>
+        public static class AccessorUtil
+        {
+            /// <summary>
+            /// SetSearchResultsByDataClassForListで使用　一時テーブルレイアウトへの変換処理の実装を強制するインタフェース
+            /// </summary>
+            public interface IListAccessor
+            {
+                /// <summary>
+                /// 一時テーブルレイアウト作成処理(性能改善対応)
+                /// </summary>
+                /// <param name="mapDic">マッピング情報のディクショナリ</param>
+                /// <returns>一時テーブルレイアウト</returns>
+                /// <remarks>クラスのプロパティを全て引数に呼び出す</remarks>
+                public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic);
+
+                /// <summary>
+                /// 指定されたプロパティを一時テーブルレイアウトに設定する
+                /// </summary>
+                /// <param name="paramObj">一時テーブルレイアウト</param>
+                /// <param name="propValue">プロパティの値</param>
+                /// <param name="name">nameof(プロパティ)で取得したプロパティ名</param>
+                /// <param name="mapDic">マッピング情報のディクショナリ</param>
+                protected static void SetParamKeyAndValue(ref dynamic paramObj, object propValue, string name, Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+                {
+                    // クラスの全プロパティに対してこの処理を実施
+                    // 全プロパティは以下のpropNamesの値をイミディエイトウィンドウで参照して正規表現やEXCELを利用して取得
+                    // この処理を全プロパティに対して呼び出す
+                    // var props = typeof(クラス名).GetProperties();
+                    // var propNames = props.Select(x=>x.Name).toList();
+
+                    // 大文字にしてディクショナリからマッピング情報を取得
+                    string nameUpper = name.ToUpper();
+                    if (!mapDic.ContainsKey(nameUpper))
+                    {
+                        return;
+                    }
+                    var mapInfo = mapDic[nameUpper];
+                    if (mapInfo == null)
+                    {
+                        return;
+                    }
+                    // 値を設定
+                    SetKeyAndValueToTempTableLayout(ref paramObj, mapInfo, propValue);
+                }
+            }
+
+            /// <summary>
+            /// 一覧性能改善対応　デリゲートを用いたアクセッサによりプロパティの値を高速で取得
+            /// </summary>
+            /// <remarks>参考：https://docs.sakai-sc.co.jp/article/programing/csharp-reflection-performance.html</remarks>
+            public interface IAccessor
+            {
+                object? GetValue(object target);
+                void SetValue(object target, object? value);
+            }
+            /// <summary>
+            /// 一覧性能改善対応　デリゲートを用いたアクセッサによりプロパティの値を高速で取得
+            /// </summary>
+            /// <remarks>参考：https://docs.sakai-sc.co.jp/article/programing/csharp-reflection-performance.html</remarks>
+            internal sealed class Accessor<TTarget, TProperty> : IAccessor
+            {
+                private readonly Func<TTarget, TProperty>? Getter;
+                private readonly Action<TTarget, TProperty>? Setter;
+
+                public Accessor(Func<TTarget, TProperty>? getter, Action<TTarget, TProperty>? setter)
+                {
+                    this.Getter = getter;
+                    this.Setter = setter;
+                }
+
+                public object? GetValue(object target)
+                {
+                    if (this.Getter == null) return null;
+                    return this.Getter((TTarget)target);
+                }
+
+                public void SetValue(object target, object? value)
+                {
+                    if (this.Setter != null && value != null)
+                    {
+                        this.Setter((TTarget)target, _changeType(value));
+                    }
+                }
+
+                private static TProperty _changeType(object value)
+                {
+
+                    var typeOfProperty = typeof(TProperty);
+
+                    if (typeOfProperty.IsGenericType && typeOfProperty.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                    {
+                        typeOfProperty = Nullable.GetUnderlyingType(typeOfProperty);
+                    }
+                    return (TProperty)Convert.ChangeType(value, typeOfProperty!);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 一覧性能改善対応　デリゲートを用いたアクセッサによりプロパティの値を高速で取得
+    /// </summary>
+    /// <remarks>参考：https://docs.sakai-sc.co.jp/article/programing/csharp-reflection-performance.html</remarks>
+    public static class DynamicPropertyAccessPropertyExtension
+    {
+
+        public static IAccessor GetAccessor(this PropertyInfo property)
+        {
+
+            Type getterDelegateType = typeof(Func<,>).MakeGenericType(property.DeclaringType!, property.PropertyType);
+            var getMethod = property.GetGetMethod();
+            Delegate? getter = getMethod switch
+            {
+                null => null,
+                _ => Delegate.CreateDelegate(getterDelegateType, getMethod)
+            };
+
+            Type setterDelegateType = typeof(Action<,>).MakeGenericType(property.DeclaringType!, property.PropertyType);
+            var setMethod = property.GetSetMethod();
+            Delegate? setter = setMethod switch
+            {
+                null => null,
+                _ => Delegate.CreateDelegate(setterDelegateType, setMethod)
+            };
+
+            Type accessorType = typeof(Accessor<,>).MakeGenericType(property.DeclaringType!, property.PropertyType);
+            return (IAccessor)Activator.CreateInstance(accessorType, getter, setter)!;
         }
     }
 }

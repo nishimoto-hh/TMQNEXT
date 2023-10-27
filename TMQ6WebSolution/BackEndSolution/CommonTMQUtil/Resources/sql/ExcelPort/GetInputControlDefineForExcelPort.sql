@@ -39,8 +39,7 @@ FROM
     LEFT JOIN ms_output_report_item_define oid 
         ON igd.report_id = oid.report_id 
         AND igd.sheet_no = oid.sheet_no
-        AND icd.control_type = oid.control_type 
-        AND icd.control_id = oid.control_id 
+        AND icd.control_no = oid.item_id
     LEFT JOIN cm_control_define cd 
         ON icd.control_type = cd.control_type 
         AND icd.control_id = cd.control_id 

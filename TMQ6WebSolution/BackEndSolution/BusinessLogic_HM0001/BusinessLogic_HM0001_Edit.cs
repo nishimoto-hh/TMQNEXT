@@ -276,6 +276,18 @@ namespace BusinessLogic_HM0001
             // 機番情報・機器情報取得
             Dao.searchResult registInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormEdit.GroupNoMachine, ConductInfo.FormEdit.GroupNoEquipment }, now);
 
+            // 階層系の値が名称に設定されているため、IDに設定
+            registInfo.DistrictId = ComUtil.ConvertStringToInt(registInfo.DistrictName);                       // 地区
+            registInfo.FactoryId = ComUtil.ConvertStringToInt(registInfo.FactoryName);                         // 工場
+            registInfo.PlantId = ComUtil.ConvertStringToInt(registInfo.PlantName);                             // プラント
+            registInfo.SeriesId = ComUtil.ConvertStringToInt(registInfo.SeriesName);                           // 系列
+            registInfo.StrokeId = ComUtil.ConvertStringToInt(registInfo.StrokeName);                           // 工程
+            registInfo.FacilityId = ComUtil.ConvertStringToInt(registInfo.FacilityName);                       // 設備
+            registInfo.JobId = int.Parse(registInfo.JobName);                                                  // 職種
+            registInfo.LargeClassficationId = ComUtil.ConvertStringToInt(registInfo.LargeClassficationName);   // 機種大分類
+            registInfo.MiddleClassficationId = ComUtil.ConvertStringToInt(registInfo.MiddleClassficationName); // 機種中分類
+            registInfo.SmallClassficationId = ComUtil.ConvertStringToInt(registInfo.SmallClassficationName);   // 機種小分類
+
             // 入力チェック
             if (isErrorRegistForSingleFormEdit(registInfo))
             {
@@ -454,7 +466,7 @@ namespace BusinessLogic_HM0001
                     // エラー情報格納クラス
                     ErrorInfo errorInfo = new ErrorInfo(ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormEdit.ControlId.Machine));
                     isError = true;
-                    string errMsg = GetResMessage(new string[] { ComRes.ID.ID141070001 }); // 「 構成機器が登録されている機器の為、削除できません。」
+                    string errMsg = GetResMessage(new string[] { ComRes.ID.ID141100001 }); // 「 構成機器が登録されている機器の為、機器レベルを変更できません。」
                     string val = info.getValName("equipment_level_structure_id"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
                     errorInfo.setError(errMsg, val);
                     errorInfoDictionary.Add(errorInfo.Result);

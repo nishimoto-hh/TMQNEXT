@@ -29,8 +29,6 @@ WITH base AS(
                 man_com.machine_id = machine.machine_id         -- 機番ID
             )
             
---    WHERE man_con.long_plan_id = @LongPlanId                        -- 長計件名ID
---    WHERE man_con.long_plan_id in (1,2,135)                       -- 長計件名ID
 /*@UnComp
     AND EXISTS(
             SELECT
@@ -178,10 +176,6 @@ schedule AS(
                         WHERE
                             -- 保全活動件名ID
                             schedule_detail.summary_id = summary.summary_id
----------------------------------------------------------------------
---                        AND summary.long_plan_id = @LongPlanId
---                        AND summary.long_plan_id in (1,2,135)
----------------------------------------------------------------------
                     )
                 GROUP BY
                     schedule_detail.maintainance_schedule_id    -- 保全スケジュールID

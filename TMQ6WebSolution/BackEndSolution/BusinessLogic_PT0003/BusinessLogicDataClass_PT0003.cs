@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using IListAccessor = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil.IListAccessor;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using BusinessLogicBase = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase;
 
 namespace BusinessLogic_PT0003
 {
@@ -77,7 +81,7 @@ namespace BusinessLogic_PT0003
         /// <summary>
         /// 棚卸一覧のデータクラス
         /// </summary>
-        public class searchInventoryResult : ComDao.CommonTableItem
+        public class searchInventoryResult : ComDao.CommonTableItem, IListAccessor
         {
             /// <summary>Gets or sets 棚番ID</summary>
             /// <value>棚番ID</value>
@@ -205,6 +209,67 @@ namespace BusinessLogic_PT0003
             /// <value>取込後フラグ</value>
             public bool UploadFlg { get; set; }
 
+            /// <summary>
+            /// 一時テーブルレイアウト作成処理(性能改善対応)
+            /// </summary>
+            /// <param name="mapDic">マッピング情報のディクショナリ</param>
+            /// <returns>一時テーブルレイアウト</returns>
+            public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+            {
+                dynamic paramObj;
+
+                paramObj = new ExpandoObject() as IDictionary<string, object>;
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationId, nameof(this.PartsLocationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNo, nameof(this.PartsLocationDetailNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDisp, nameof(this.PartsLocationDisp), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsNo, nameof(this.PartsNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsName, nameof(this.PartsName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldNewStructureId, nameof(this.OldNewStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldNewNm, nameof(this.OldNewNm), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentStructureId, nameof(this.DepartmentStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentNm, nameof(this.DepartmentNm), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCd, nameof(this.DepartmentCd), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AccountStructureId, nameof(this.AccountStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectNm, nameof(this.SubjectNm), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCd, nameof(this.SubjectCd), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StockQuantityFlg, nameof(this.StockQuantityFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryDiffFlg, nameof(this.InventoryDiffFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StockQuantityDisplay, nameof(this.StockQuantityDisplay), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StockQuantity, nameof(this.StockQuantity), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PreparationDatetime, nameof(this.PreparationDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryDatetime, nameof(this.InventoryDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DifferenceDatetime, nameof(this.DifferenceDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryQuantity, nameof(this.InventoryQuantity), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InoutQuantity, nameof(this.InoutQuantity), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryDiff, nameof(this.InventoryDiff), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FixedDatetime, nameof(this.FixedDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerStructureId, nameof(this.ManufacturerStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerName, nameof(this.ManufacturerName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.Materials, nameof(this.Materials), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelType, nameof(this.ModelType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsId, nameof(this.PartsId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitStructureId, nameof(this.UnitStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.Unit, nameof(this.Unit), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.CurrencyStructureId, nameof(this.CurrencyStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryId, nameof(this.FactoryId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryId, nameof(this.InventoryId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitDigit, nameof(this.UnitDigit), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitRoundDivision, nameof(this.UnitRoundDivision), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.RftagId, nameof(this.RftagId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.WorkUserName, nameof(this.WorkUserName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ErrorFlg, nameof(this.ErrorFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InventoryIds, nameof(this.InventoryIds), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UploadFlg, nameof(this.UploadFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateSerialid, nameof(this.UpdateSerialid), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertDatetime, nameof(this.InsertDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertUserId, nameof(this.InsertUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateDatetime, nameof(this.UpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+
+                return paramObj;
+            }
         }
 
         /// <summary>

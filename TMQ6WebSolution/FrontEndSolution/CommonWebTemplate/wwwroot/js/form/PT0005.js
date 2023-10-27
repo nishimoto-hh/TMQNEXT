@@ -134,6 +134,16 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         PT0005_changeDisabled();
     }
 
+    // 「棚番」に設定されている値を取得
+    var partsLocationId = getValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.TextBox, false, false);
+    // 設定されている値が「-1」の場合(入庫する予備品データに標準棚が設定されていない場合はバックエンド側で「-1」を設定するようにしている)
+    if (partsLocationId == "-1") {
+        // 「棚番」を空にする
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.TextBox, "", false, false);
+        // 非表示の「棚番」を空にする
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationId, 1, CtrlFlag.Label, "", false, false);
+    }
+
     // 結合文字列を棚枝番入力コントロールのヘッダーにセット
     var joinStr = getValue(PT0005_FormList.InputArea5.Id, PT0005_FormList.InputArea5.JoinStr, 1, CtrlFlag.Label, false, false);
     setValue(PT0005_FormList.InputArea4.Id, PT0005_FormList.InputArea4.PartsLocationDetailNo, 1, CtrlFlag.Label, joinStr, false, true);

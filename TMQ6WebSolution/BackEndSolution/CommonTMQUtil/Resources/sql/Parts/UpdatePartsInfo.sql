@@ -15,6 +15,10 @@ SET
     [lead_time] = @LeadTimeExceptUnit,                              --発注点
     [order_quantity] = @OrderQuantityExceptUnit,                    --発注量
     [parts_location_id] = @PartsLocationId,                         --標準棚番ID
+    [location_district_structure_id] = @LocationDistrictStructureId, --標準棚_地区ID
+    [location_factory_structure_id] = @LocationFactoryStructureId,  --標準棚_工場ID
+    [location_warehouse_structure_id] = @LocationWarehouseStructureId, --標準棚_倉庫ID
+    [location_rack_structure_id] = @LocationRackStructureId,        --標準棚_棚ID
     [unit_structure_id] = @UnitStructureId,                         --数量管理単位ID
     [vender_structure_id] = @VenderStructureId,                     --標準仕入先
     [currency_structure_id] = @CurrencyStructureId,                 --金額管理単位ID

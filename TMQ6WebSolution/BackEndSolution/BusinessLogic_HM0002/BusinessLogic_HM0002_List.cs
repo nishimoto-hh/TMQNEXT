@@ -53,87 +53,115 @@ namespace BusinessLogic_HM0002
                 listUnComment.Add("DispOnlyMySubject");
             }
 
-            // 一覧のページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
             // 年度開始月
             int monthStartNendo = getYearStartMonth();
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, monthStartNendo);
 
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetHistoryList, out string baseSql);
-            // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetHistoryList, out string withSql, listUnComment);
-            // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+            // 一覧データを取得して設定
+            if (!setListData(out List<string> keyIdList))
             {
                 return false;
             }
-            // 検索条件を設定
-            whereParam.LanguageId = this.LanguageId; // 言語ID
-            whereParam.UserId = this.UserId;         // ログインユーザーID
-
-            //// SQL、WHERE句、WITH句より件数取得SQLを作成
-            //string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
-            //// 総件数を取得
-            //int cnt = db.GetCount(executeSql, whereParam);
-            //// 総件数のチェック
-            //if (!CheckSearchTotalCount(cnt, pageInfo))
-            //{
-            //    SetSearchResultsByDataClass<Dao.ListSearchResult>(pageInfo, null, cnt, isDetailConditionApplied);
-            //    return false;
-            //}
-
-            // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
-            var selectSql = new StringBuilder(executeSql);
-            selectSql.AppendLine("ORDER BY subject");
-            // 一覧検索実行
-            IList<Dao.ListSearchResult> results = db.GetListByDataClass<Dao.ListSearchResult>(selectSql.ToString(), whereParam);
-            if (results == null || results.Count == 0)
-            {
-                return false;
-            }
-
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定(変更管理データ・トランザクションデータ どちらも設定する)
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId);
-
-            // 変更があった項目を取得
-            TMQUtil.HistoryManagement.setValueChangedItem<Dao.ListSearchResult>(results);
-
-            // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.ListSearchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
-            {
-                // 正常終了
-                this.Status = CommonProcReturn.ProcStatus.Valid;
-            }
-            List<string> keyIdList = results.Select(x => x.KeyId).Distinct().ToList(); // スケジュール一覧との紐付用(詳細条件検索により絞り込まれる場合を想定)
 
             // スケジュール関連
-            // 画面の条件を取得
-            var scheduleCond = GetFormDataByCtrlId<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, false);
-            Dao.Schedule.SearchCondition cond = new(scheduleCond, monthStartNendo, this.LanguageId);
-            cond.FactoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
-
-            // 個別実装用データへスケジュールのレイアウトデータ(scheduleLayout)をセット
-            TMQUtil.ScheduleListUtil.SetLayout(ref this.IndividualDictionary, cond, false, getNendoText(), monthStartNendo);
-
-            // スケジュール一覧表示用データの取得
-            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetHistoryListSchedule, out string sqlSchedule);
-            IList<TMQDao.ScheduleList.Get> scheduleList = db.GetListByDataClass<TMQDao.ScheduleList.Get>(sqlSchedule, cond);
-            scheduleList = scheduleList.Where(x => keyIdList.Contains(x.KeyId)).ToList(); // 一覧と紐づくものだけを表示
-
-            // 取得したデータを画面表示用に変換、マークなど取得
-            TMQUtil.ScheduleListConverterNoRank listSchedule = new();
-            List<TMQDao.ScheduleList.Display> scheduleDisplayList = listSchedule.Execute(scheduleList, cond, monthStartNendo, true, this.db, getScheduleLinkInfo());
-
-            // 画面設定用データに変換
-            Dictionary<string, Dictionary<string, string>> setScheduleData = TMQUtil.ScheduleListUtil.ConvertDictionaryAddData(scheduleDisplayList, cond);
-
-            // 画面に設定
-            SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List);
+            setSchedule(keyIdList, monthStartNendo);
 
             return true;
+
+            // 一覧データの取得と設定(スケジュール以外)
+            // return bool 後続の処理を行わない場合True
+            // out List<string> keyIdList 取得したスケジュール一覧と紐づけるIDのリスト
+            bool setListData(out List<string> keyIdList)
+            {
+                keyIdList = new();
+
+                // 一覧のページ情報取得
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetHistoryList, out string baseSql);
+                // WITH句は別に取得
+                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetHistoryList, out string withSql, listUnComment);
+                // 場所分類＆職種機種＆詳細検索条件取得
+                if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+                {
+                    return false;
+                }
+                // 一時テーブル設定
+                setTempTableForGetList();
+                // 検索条件を設定
+                whereParam.LanguageId = this.LanguageId; // 言語ID
+                whereParam.UserId = this.UserId;         // ログインユーザーID
+
+                // 総件数を取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetCountHistoryManagementList, out string cntSql, listUnComment);
+                cntSql += whereParam.CountSqlWhere;
+                int cnt = db.GetCount(cntSql, whereParam);
+                // 総件数のチェック
+                if (!CheckSearchTotalCount(cnt, pageInfo))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Warning;
+                    // 「該当データがありません。」
+                    this.MsgId = GetResMessage(CommonResources.ID.ID941060001);
+                    SetSearchResultsByDataClass<Dao.ListSearchResult>(pageInfo, null, cnt, isDetailConditionApplied);
+                    return false;
+                }
+
+                // 一覧検索SQL文の取得
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+                var selectSql = new StringBuilder(executeSql);
+                selectSql.AppendLine("ORDER BY subject");
+                // 一覧検索実行
+                IList<Dao.ListSearchResult> results = db.GetListByDataClass<Dao.ListSearchResult>(selectSql.ToString(), whereParam);
+                if (results == null || results.Count == 0)
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Warning;
+                    // 「該当データがありません。」
+                    this.MsgId = GetResMessage(CommonResources.ID.ID941060001);
+                    SetSearchResultsByDataClass<Dao.ListSearchResult>(pageInfo, null, 0, isDetailConditionApplied);
+                    return false;
+                }
+
+                // 検索結果の設定
+                if (SetSearchResultsByDataClassForList<Dao.ListSearchResult>(pageInfo, results, cnt, isDetailConditionApplied))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+                keyIdList = results.Select(x => x.KeyId).Distinct().ToList(); // スケジュール一覧との紐付用(詳細条件検索により絞り込まれる場合を想定)
+                return true;
+            }
+
+            // スケジュールを取得して星取表を設定する
+            // List<string> keyIdList 取得したスケジュール一覧と紐づけるIDのリスト
+            void setSchedule(List<string> keyIdList, int monthStartNendo)
+            {
+                // 画面の条件を取得
+                var scheduleCond = GetFormDataByCtrlId<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, false);
+                Dao.Schedule.SearchCondition cond = new(scheduleCond, monthStartNendo, this.LanguageId);
+                cond.FactoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
+
+                // 個別実装用データへスケジュールのレイアウトデータ(scheduleLayout)をセット
+                TMQUtil.ScheduleListUtil.SetLayout(ref this.IndividualDictionary, cond, false, getNendoText(), monthStartNendo);
+
+                // 検索条件に画面に表示する長計件名IDを設定(多数だとSQLエラーになるのでカンマ区切り)
+                cond.LongPlanIdList = string.Join(",", keyIdList);
+
+                // スケジュール一覧表示用データの取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetHistoryListSchedule, out string sqlSchedule);
+                IList<TMQDao.ScheduleList.Get> scheduleList = db.GetListByDataClass<TMQDao.ScheduleList.Get>(sqlSchedule, cond);
+
+                // 取得したデータを画面表示用に変換、マークなど取得
+                TMQUtil.ScheduleListConverterNoRank listSchedule = new();
+                List<TMQDao.ScheduleList.Display> scheduleDisplayList = listSchedule.Execute(scheduleList, cond, monthStartNendo, true, this.db, getScheduleLinkInfo());
+
+                // 画面設定用データに変換
+                Dictionary<string, Dictionary<string, string>> setScheduleData = TMQUtil.ScheduleListUtil.ConvertDictionaryAddData(scheduleDisplayList, cond);
+
+                // 画面に設定
+                SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List);
+            }
         }
 
         /// <summary>
@@ -158,9 +186,12 @@ namespace BusinessLogic_HM0002
             // 初期検索か判定
             if (isInit)
             {
-                // 初期値を設定
-                searchCondition.DispOnlyMySubject = IsDispOnlyMySubject; // 自分の申請のみ表示
-                outDispOnlyMySubject = IsDispOnlyMySubject;
+                // トップ画面から遷移した場合、遷移元のリンクに応じた「自分の件名のみ表示」のチェック状態を使用する
+                TMQUtil.HistoryManagement.IsDispOnlyMySubjectFromTop(ref this.searchConditionDictionary, out bool isTop, out bool isDispOnlyMySubject);
+                // チェック状態を設定
+                // トップ画面からの場合、戻り値に応じて設定。そうでない場合、チェック状態を設定
+                outDispOnlyMySubject = isTop ? (isDispOnlyMySubject ? IsDispOnlyMySubject : 0) : IsDispOnlyMySubject;
+                searchCondition.DispOnlyMySubject = outDispOnlyMySubject;
             }
             else
             {
@@ -264,10 +295,7 @@ namespace BusinessLogic_HM0002
             }
 
             // 一覧の再検索
-            if (!searchList(false))
-            {
-                return false;
-            }
+            searchList(false);
 
             return true;
         }
@@ -279,7 +307,7 @@ namespace BusinessLogic_HM0002
         /// <returns>エラーの場合False</returns>
         private bool approvalHistory(ComDao.HmHistoryManagementEntity condition)
         {
-            //変更管理詳細の情報を取得
+            //変更管理の情報を取得
             List<ComDao.HmMcManagementStandardsContentEntity> list = TMQUtil.SqlExecuteClass.SelectList<ComDao.HmMcManagementStandardsContentEntity>(SqlName.List.GetHistoryManagementDetail, SqlName.List.SubDir, condition, this.db);
             if (list == null || list.Count == 0)
             {
@@ -364,35 +392,16 @@ namespace BusinessLogic_HM0002
                     return false;
                 }
 
-                // 機器別管理基準内容更新
-                // 更新条件をヘッダの隠し項目の長計件名IDより取得
-                var headerDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.Hide);
                 ComDao.LnLongPlanEntity update = new();
-                SetExecuteConditionByDataClass<ComDao.LnLongPlanEntity>(headerDic, ConductInfo.FormDetail.ControlId.Hide, update, now, this.UserId);
-                // 更新処理(更新レコードが無い場合も処理継続)
-                TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteAll, SqlName.Detail.SubDirLongPlan, update, this.db);
+                update.LongPlanId = detail.LongPlanId ?? -1;
+                setExecuteConditionByDataClassCommon<ComDao.LnLongPlanEntity>(ref update, now, userId, userId);
 
                 // 長期計画が紐づいた保全活動件名を更新（長計件名IDをNULLに更新）
                 TMQUtil.SqlExecuteClass.Regist(SqlName.List.UpdateSummary, SqlName.List.SubDir, update, this.db);
 
                 // 添付情報削除
-                // 削除対象の添付情報のキーIDを取得
-                List<ComDao.AttachmentEntity> attachmentList = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentByLongPlanId, SqlName.Detail.SubDirLongPlan, detail, this.db);
-                if (attachmentList == null || attachmentList.Count == 0)
-                {
-                    // 添付情報が存在しない場合は処理を行わない
-                    return true;
-                }
-                // キーIDのみのリストにして重複を排除
-                var keyIdList = attachmentList.Select(x => x.KeyId).Distinct().ToList();
-                foreach (var keyId in keyIdList)
-                {
-                    // キーIDで繰り返し削除
-                    if (!new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, keyId, this.db))
-                    {
-                        return false;
-                    }
-                }
+                // キーIDで削除
+                new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, update.LongPlanId, this.db);
 
                 return true;
             }

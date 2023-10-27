@@ -16,6 +16,12 @@ CREATE TABLE #temp_rep(
 	location_structure_id           int,            -- 機能場所階層ID
     job_structure_id2               int,            -- 職種機種階層ID(機器)
 	location_structure_id2          int,            -- 機能場所階層ID(機器)
+	factory_name                    nvarchar(800), -- 工場名
+    plant_name                      nvarchar(800), -- プラント名
+    series_name                     nvarchar(800), -- 系列名
+    stroke_name                     nvarchar(800), -- 工程名
+    facility_name                   nvarchar(800), -- 設備名
+    job_name                        nvarchar(800), -- 職種名
 	subject                         nvarchar(800),  -- 件名
 	phenomenon_name                 nvarchar(800),  -- 現象
 	call_count_name                 nvarchar(800),  -- 呼出
@@ -91,6 +97,8 @@ CREATE TABLE #temp_rep(
     large_classfication_name2       nvarchar(800),  -- 大分類(機器)
     middle_classfication_name2      nvarchar(800),  -- 中分類(機器)
     small_classfication_name2       nvarchar(800),  -- 小分類(機器)
+    output_report_location_name_got_flg nvarchar(1),  -- 機能場所名称情報取得済フラグ（帳票用）
+    output_report_job_name_got_flg      nvarchar(1),  -- 職種・機種名称情報取得済フラグ（帳票用）
 	seq                             int,            -- 一時テーブル連番
     idx                             int             -- ソート用インデックス
 )
@@ -123,6 +131,120 @@ BEGIN
 	    sm.location_structure_id,
         mc.job_structure_id AS job_structure_id2,
         mc.location_structure_id AS location_structure_id2,
+	    --工場(翻訳)
+	    (
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.location_factory_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.location_factory_structure_id
+	    ) AS factory_name
+	    --プラント(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.location_plant_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.location_plant_structure_id
+	    ) AS plant_name
+	    --系列(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.location_series_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.location_series_structure_id
+	    ) AS series_name
+	    --工程(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.location_stroke_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.location_stroke_structure_id
+	    ) AS stroke_name
+	    --設備(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.location_facility_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.location_facility_structure_id
+	    ) AS facility_name
+	    --職種(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = sm.job_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = sm.job_structure_id
+	    ) AS job_name,
 	    sm.subject,    -- 件名
 	   	'' AS phenomenon_name,                    -- 現象
 		-- CASE WHEN ISNULL(call_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS call_count_name,
@@ -139,15 +261,66 @@ BEGIN
         END AS stop_count_name, 
 	    stop_time,
         '' AS work_purpose_name,                     -- 目的区分
-	    [dbo].[get_v_structure_item](sudden_division_structure_id, @w_key3, @w_key2) AS sudden_division_name,   -- 突発区分
-	    [dbo].[get_v_structure_item](mq_class_structure_id, @w_key3, @w_key2) AS mq_class_name,                 -- MQ分類
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = sudden_division_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = sudden_division_structure_id
+        ) AS sudden_division_name,                        -- 突発区分
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mq_class_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = mq_class_structure_id
+        ) AS mq_class_name,                        -- MQ分類
 	    occurrence_date,
         expected_construction_date,
         completion_date,
         total_budget_cost,
         expenditure,
         loss_absence,
-        [dbo].[get_v_structure_item](hs.maintenance_season_structure_id, @w_key3, @w_key2) AS maintenance_season_name,          -- 時期
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = hs.maintenance_season_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = hs.maintenance_season_structure_id
+        ) AS maintenance_season_name,                        -- 時期
         (SELECT TOP 1 display_name FROM ms_user WHERE user_id = construction_personnel_id) AS construction_personnel_name,      -- 担当者
     	-- hs.total_working_time,           -- 作業時間
         FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
@@ -158,25 +331,246 @@ BEGIN
 	    sm.plan_implementation_content,  -- 作業内容結果
 	   	subject_note,
         maintenance_count,
-        [dbo].[get_v_structure_item](discovery_methods_structure_id, @w_key3, @w_key2) AS discovery_methods_name,    -- 発見方法
-        [dbo].[get_v_structure_item](actual_result_structure_id, @w_key3, @w_key2) AS actual_result_name,            -- 実績結果
-        [dbo].[get_v_structure_item](budget_management_structure_id, @w_key3, @w_key2) AS budget_management_name,    -- 予算管理区分
-		[dbo].[get_v_structure_item](budget_personality_structure_id, @w_key3, @w_key2) AS budget_personality_name,  -- 予算性格区分
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = discovery_methods_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = discovery_methods_structure_id
+        ) AS discovery_methods_name,                        -- 発見方法
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = actual_result_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = actual_result_structure_id
+        ) AS actual_result_name,                        -- 実績結果
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = budget_management_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = budget_management_structure_id
+        ) AS budget_management_name,                        -- 予算管理区分
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = budget_personality_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = budget_personality_structure_id
+        ) AS budget_personality_name,                        -- 予算性格区分
 		machine_no,
         machine_name,
-        [dbo].[get_v_structure_item](mc.equipment_level_structure_id, @w_key3, @w_key2) AS equipment_level,          -- 機器レベル
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mc.equipment_level_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = mc.equipment_level_structure_id
+        ) AS equipment_level,                        -- 機器レベル
         installation_location,
         number_of_installation,
         FORMAT(date_of_installation, 'yyyy/MM') AS date_of_installation,
-        [dbo].[get_v_structure_item](importance_structure_id, @w_key3, @w_key2) AS importance_name,            -- 重要度
-        [dbo].[get_v_structure_item](conservation_structure_id, @w_key3, @w_key2) AS conservation_name,        -- 保全方式
-        [dbo].[get_applicable_laws](mc.machine_id, 1, @w_key3, @w_key2) AS applicable_laws_name1,   -- 適用法規１
-        [dbo].[get_applicable_laws](mc.machine_id, 2, @w_key3, @w_key2) AS applicable_laws_name2,   -- 適用法規２
-        [dbo].[get_applicable_laws](mc.machine_id, 3, @w_key3, @w_key2) AS applicable_laws_name3,   -- 適用法規３
-        [dbo].[get_applicable_laws](mc.machine_id, 4, @w_key3, @w_key2) AS applicable_laws_name4,   -- 適用法規４
-        [dbo].[get_applicable_laws](mc.machine_id, 5, @w_key3, @w_key2) AS applicable_laws_name5,   -- 適用法規５
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = importance_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = importance_structure_id
+        ) AS importance_name,                        -- 重要度
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = conservation_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = conservation_structure_id
+        ) AS conservation_name,                        -- 保全方式
+	      (
+	        SELECT
+	            tra.translation_text 
+	        FROM
+	            v_structure_item_all AS tra 
+	        WHERE
+	            tra.language_id = @w_key2
+	            AND tra.location_structure_id = ( 
+	                SELECT
+	                    MAX(st_f.factory_id) 
+	                FROM
+	                    #temp_structure_factory AS st_f 
+	                WHERE
+	                    st_f.structure_id = app1.applicable_laws_structure_id
+	                    AND st_f.factory_id IN (0, @w_key3)
+	            )
+	            AND tra.structure_id = app1.applicable_laws_structure_id
+	      ) AS applicable_laws_name1                        -- 適用法規１
+	    , (
+	        SELECT
+	            tra.translation_text 
+	        FROM
+	            v_structure_item_all AS tra 
+	        WHERE
+	            tra.language_id = @w_key2
+	            AND tra.location_structure_id = ( 
+	                SELECT
+	                    MAX(st_f.factory_id) 
+	                FROM
+	                    #temp_structure_factory AS st_f 
+	                WHERE
+	                    st_f.structure_id = app2.applicable_laws_structure_id
+	                    AND st_f.factory_id IN (0, @w_key3)
+	            )
+	            AND tra.structure_id = app2.applicable_laws_structure_id
+	      ) AS applicable_laws_name2                        -- 適用法規２
+	    , (
+	        SELECT
+	            tra.translation_text 
+	        FROM
+	            v_structure_item_all AS tra 
+	        WHERE
+	            tra.language_id = @w_key2
+	            AND tra.location_structure_id = ( 
+	                SELECT
+	                    MAX(st_f.factory_id) 
+	                FROM
+	                    #temp_structure_factory AS st_f 
+	                WHERE
+	                    st_f.structure_id = app3.applicable_laws_structure_id
+	                    AND st_f.factory_id IN (0, @w_key3)
+	            )
+	            AND tra.structure_id = app3.applicable_laws_structure_id
+	      ) AS applicable_laws_name3                        -- 適用法規３
+	    , (
+	        SELECT
+	            tra.translation_text 
+	        FROM
+	            v_structure_item_all AS tra 
+	        WHERE
+	            tra.language_id = @w_key2
+	            AND tra.location_structure_id = ( 
+	                SELECT
+	                    MAX(st_f.factory_id) 
+	                FROM
+	                    #temp_structure_factory AS st_f 
+	                WHERE
+	                    st_f.structure_id = app4.applicable_laws_structure_id
+	                    AND st_f.factory_id IN (0, @w_key3)
+	            )
+	            AND tra.structure_id = app4.applicable_laws_structure_id
+	      ) AS applicable_laws_name4                        -- 適用法規４
+	    , (
+	        SELECT
+	            tra.translation_text 
+	        FROM
+	            v_structure_item_all AS tra 
+	        WHERE
+	            tra.language_id = @w_key2
+	            AND tra.location_structure_id = ( 
+	                SELECT
+	                    MAX(st_f.factory_id) 
+	                FROM
+	                    #temp_structure_factory AS st_f 
+	                WHERE
+	                    st_f.structure_id = app5.applicable_laws_structure_id
+	                    AND st_f.factory_id IN (0, @w_key3)
+	            )
+	            AND tra.structure_id = app5.applicable_laws_structure_id
+      ) AS applicable_laws_name5,                       -- 適用法規５
         mc.machine_note,                                   -- 機番メモ
-        [dbo].[get_v_structure_item](use_segment_structure_id, @w_key3, @w_key2) AS use_segment_name,        -- 使用区分
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = use_segment_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = use_segment_structure_id
+        ) AS use_segment_name,                        -- 使用区分
         --(CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN '非対象' ELSE '対象' END) AS circulation_target,                                           -- 循環対象
         (
             CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN 
@@ -186,35 +580,267 @@ BEGIN
             END
         ) AS circulation_target,                                           -- 循環対象
         fixed_asset_no,                  -- 固定資産番号
-		[dbo].[get_v_structure_item](manufacturer_structure_id, @w_key3, @w_key2) AS manufacturer_name,      -- メーカー
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = manufacturer_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = manufacturer_structure_id
+        ) AS manufacturer_name,                        -- メーカー
 		manufacturer_type,               -- メーカー型式
         model_no,                        -- 型式コード
         serial_no,                       -- 製造番号
         FORMAT(date_of_manufacture, 'yyyy/MM') AS date_of_manufacture,                                     -- 製造年月
         equipment_note,                  -- 機器メモ
-        [dbo].[get_v_structure_item](inspection_content_structure_id, @w_key3, @w_key2) AS work_item_name, -- 作業項目
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = inspection_content_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = inspection_content_structure_id
+        ) AS work_item_name,                        -- 作業項目
         '' AS treatment_measure_note,         -- 作業内容・結果
         '' as failure_cause_addition_note,    -- 故障原因
         '' as failure_cause_personality_note, -- 原因性格
 	    '' as treatment_measure_name,         -- 処置対策
-        CASE ISNULL(follow_flg, 0)
+        CASE ISNULL(hic.follow_flg, 0)
             WHEN 1 THEN '○'
             ELSE ''
         END AS follow_flg,                                                    -- フォロー要否
         FORMAT(follow_completion_date, 'yyyy/MM') AS follow_completion_date,  -- フォロー年月
         follow_content,                                                       -- フォロー内容
-	    [dbo].[get_v_structure_item](his.inspection_site_structure_id, @w_key3, @w_key2) AS maintenance_site ,           -- 作業部位
-        [dbo].[get_v_structure_item](hic.inspection_content_structure_id, @w_key3, @w_key2) AS inspection_content_name,  -- 作業項目(保全項目)
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = his.inspection_site_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = his.inspection_site_structure_id
+        ) AS maintenance_site,                        -- 作業部位
+        (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @w_key2
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = hic.inspection_content_structure_id
+                    AND st_f.factory_id IN (0, @w_key3)
+            )
+            AND tra.structure_id = hic.inspection_content_structure_id
+        ) AS inspection_content_name,                        -- 作業項目(保全項目)
         '' AS maintenance_content,        -- 作業項目(保全履歴内容)
-        '' AS factory_name2,              -- 工場名(機器)
-        '' AS plant_name2,                -- プラント名(機器)
-        '' AS series_name2,               -- 系列名(機器)
-        '' AS stroke_name2,               -- 工程名(機器)
-        '' AS facility_name2,             -- 設備名(機器)
-        '' AS job_name2,                  -- 職種名(機器)
-        '' AS large_classfication_name2,  -- 大分類(機器)
-        '' AS middle_classfication_name2, -- 中分類(機器)
-        '' AS small_classfication_name2   -- 小分類(機器)
+        --工場(翻訳)
+	    (
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.location_factory_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.location_factory_structure_id
+	    ) AS factory_name2
+	    --プラント(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.location_plant_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.location_plant_structure_id
+	    ) AS plant_name2
+	    --系列(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.location_series_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.location_series_structure_id
+	    ) AS series_name2
+	    --工程(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.location_stroke_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.location_stroke_structure_id
+	    ) AS stroke_name2
+	    --設備(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.location_facility_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.location_facility_structure_id
+	    ) AS facility_name2
+	    --職種(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.job_kind_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.job_kind_structure_id
+	    ) AS job_name2
+	    -- 機種大分類(翻訳)
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.job_large_classfication_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.job_large_classfication_structure_id
+	    ) AS large_classfication_name2
+	    -- 機種中分類
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.job_middle_classfication_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.job_middle_classfication_structure_id
+	    ) AS middle_classfication_name2
+	    -- 機種小分類
+	    ,(
+	        SELECT
+	            tra.translation_text
+	        FROM
+	            v_structure_item_all AS tra
+	        WHERE
+	            tra.language_id = @w_key2
+	        AND tra.location_structure_id = (
+	                SELECT
+	                    MAX(st_f.factory_id)
+	                FROM
+	                    #temp_structure_factory AS st_f
+	                WHERE
+	                    st_f.structure_id = mc.job_small_classfication_structure_id
+	                AND st_f.factory_id IN(0, @w_key3)
+	            )
+	        AND tra.structure_id = mc.job_small_classfication_structure_id
+	    ) AS small_classfication_name2
+        , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+        , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
     FROM
         ma_summary sm
         LEFT JOIN ma_plan mp
@@ -226,7 +852,102 @@ BEGIN
 	    LEFT JOIN mc_machine mc
 	    ON hsm.machine_id = mc.machine_id
 	    LEFT JOIN mc_equipment eq
-	    ON mc.machine_id = eq.machine_id,
+	    ON mc.machine_id = eq.machine_id
+	        LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 1
+	            ) app1                      -- 適用法規１
+	        ON mc.machine_id = app1.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 2
+	            ) app2                      -- 適用法規２
+	        ON mc.machine_id = app2.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 3
+	            ) app3                      -- 適用法規３
+	        ON mc.machine_id = app3.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 4
+	            ) app4                      -- 適用法規４
+	        ON mc.machine_id = app4.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 5
+	            ) app5                      -- 適用法規５
+	        ON mc.machine_id = app5.machine_id,
 	    ma_history_inspection_site his,
 	    ma_history_inspection_content hic
         WHERE
@@ -244,8 +965,139 @@ BEGIN
 	        sm.location_structure_id,
             mc.job_structure_id AS job_structure_id2,
             mc.location_structure_id AS location_structure_id2,
+            --工場(翻訳)
+		    (
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.location_factory_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.location_factory_structure_id
+		    ) AS factory_name
+		    --プラント(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.location_plant_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.location_plant_structure_id
+		    ) AS plant_name
+		    --系列(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.location_series_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.location_series_structure_id
+		    ) AS series_name
+		    --工程(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.location_stroke_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.location_stroke_structure_id
+		    ) AS stroke_name
+		    --設備(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.location_facility_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.location_facility_structure_id
+		    ) AS facility_name
+		    --職種(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = sm.job_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = sm.job_structure_id
+		    ) AS job_name,
             sm.subject,    -- 件名
-	        [dbo].[get_v_structure_item](phenomenon_structure_id, @w_key3, @w_key2) AS phenomenon_name,             -- 現象
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = phenomenon_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = phenomenon_structure_id
+            ) AS phenomenon_name,                        -- 現象
 	        -- CASE WHEN ISNULL(call_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS call_count_name,
 	        -- CASE WHEN ISNULL(stop_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS stop_count_name, 
 	        CASE WHEN ISNULL(call_count, 0) >= 1 THEN 
@@ -260,15 +1112,66 @@ BEGIN
             END AS stop_count_name, 
 	        stop_time,
 	        '' AS work_purpose_name,                    -- 目的区分
-	        [dbo].[get_v_structure_item](sudden_division_structure_id, @w_key3, @w_key2) AS sudden_division_name,   -- 突発区分
-	        [dbo].[get_v_structure_item](mq_class_structure_id, @w_key3, @w_key2) AS mq_class_name,                 -- MQ分類
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = sudden_division_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = sudden_division_structure_id
+            ) AS sudden_division_name,                        -- 突発区分
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = mq_class_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = mq_class_structure_id
+            ) AS mq_class_name,                        -- MQ分類
 	        occurrence_date,
             expected_construction_date,
             completion_date,
             total_budget_cost,
             expenditure,
             loss_absence,
-            [dbo].[get_v_structure_item](hs.maintenance_season_structure_id, @w_key3, @w_key2) AS maintenance_season_name,      -- 時期
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = hs.maintenance_season_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = hs.maintenance_season_structure_id
+            ) AS maintenance_season_name,                        -- 時期
             (SELECT TOP 1 display_name FROM ms_user WHERE user_id = construction_personnel_id) AS construction_personnel_name,  -- 担当者
     	    -- hs.total_working_time,           -- 作業時間
             FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
@@ -279,25 +1182,246 @@ BEGIN
 	        sm.plan_implementation_content, -- 作業内容結果
 	   	    subject_note,
             maintenance_count,
-            [dbo].[get_v_structure_item](discovery_methods_structure_id, @w_key3, @w_key2) AS discovery_methods_name,    -- 発見方法
-            [dbo].[get_v_structure_item](actual_result_structure_id, @w_key3, @w_key2) AS actual_result_name,            -- 実績結果
-            [dbo].[get_v_structure_item](budget_management_structure_id, @w_key3, @w_key2) AS budget_management_name,    -- 予算管理区分
-			[dbo].[get_v_structure_item](budget_personality_structure_id, @w_key3, @w_key2) AS budget_personality_name,  -- 予算性格区分
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = discovery_methods_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = discovery_methods_structure_id
+            ) AS discovery_methods_name,                        -- 発見方法
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = actual_result_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = actual_result_structure_id
+            ) AS actual_result_name,                        -- 実績結果
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = budget_management_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = budget_management_structure_id
+            ) AS budget_management_name,                        -- 予算管理区分
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = budget_personality_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = budget_personality_structure_id
+            ) AS budget_personality_name,                        -- 予算性格区分
 			machine_no,
             machine_name,
-            [dbo].[get_v_structure_item](mc.equipment_level_structure_id, @w_key3, @w_key2) AS equipment_level,          -- 機器レベル
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = mc.equipment_level_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = mc.equipment_level_structure_id
+            ) AS equipment_level,                        -- 機器レベル
 	        installation_location,
             number_of_installation,
             FORMAT(date_of_installation, 'yyyy/MM') AS date_of_installation,
-            [dbo].[get_v_structure_item](importance_structure_id, @w_key3, @w_key2) AS importance_name,            -- 重要度
-            [dbo].[get_v_structure_item](conservation_structure_id, @w_key3, @w_key2) AS conservation_name,        -- 保全方式
-            [dbo].[get_applicable_laws](mc.machine_id, 1, @w_key3, @w_key2) AS applicable_laws_name1,   -- 適用法規１
-            [dbo].[get_applicable_laws](mc.machine_id, 2, @w_key3, @w_key2) AS applicable_laws_name2,   -- 適用法規２
-            [dbo].[get_applicable_laws](mc.machine_id, 3, @w_key3, @w_key2) AS applicable_laws_name3,   -- 適用法規３
-            [dbo].[get_applicable_laws](mc.machine_id, 4, @w_key3, @w_key2) AS applicable_laws_name4,   -- 適用法規４
-            [dbo].[get_applicable_laws](mc.machine_id, 5, @w_key3, @w_key2) AS applicable_laws_name5,   -- 適用法規５
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = importance_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = importance_structure_id
+            ) AS importance_name,                        -- 重要度
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = conservation_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = conservation_structure_id
+            ) AS conservation_name,                        -- 保全方式
+            (
+		        SELECT
+		            tra.translation_text 
+		        FROM
+		            v_structure_item_all AS tra 
+		        WHERE
+		            tra.language_id = @w_key2
+		            AND tra.location_structure_id = ( 
+		                SELECT
+		                    MAX(st_f.factory_id) 
+		                FROM
+		                    #temp_structure_factory AS st_f 
+		                WHERE
+		                    st_f.structure_id = app1.applicable_laws_structure_id
+		                    AND st_f.factory_id IN (0, @w_key3)
+		            )
+		            AND tra.structure_id = app1.applicable_laws_structure_id
+		      ) AS applicable_laws_name1                        -- 適用法規１
+		    , (
+		        SELECT
+		            tra.translation_text 
+		        FROM
+		            v_structure_item_all AS tra 
+		        WHERE
+		            tra.language_id = @w_key2
+		            AND tra.location_structure_id = ( 
+		                SELECT
+		                    MAX(st_f.factory_id) 
+		                FROM
+		                    #temp_structure_factory AS st_f 
+		                WHERE
+		                    st_f.structure_id = app2.applicable_laws_structure_id
+		                    AND st_f.factory_id IN (0, @w_key3)
+		            )
+		            AND tra.structure_id = app2.applicable_laws_structure_id
+		      ) AS applicable_laws_name2                        -- 適用法規２
+		    , (
+		        SELECT
+		            tra.translation_text 
+		        FROM
+		            v_structure_item_all AS tra 
+		        WHERE
+		            tra.language_id = @w_key2
+		            AND tra.location_structure_id = ( 
+		                SELECT
+		                    MAX(st_f.factory_id) 
+		                FROM
+		                    #temp_structure_factory AS st_f 
+		                WHERE
+		                    st_f.structure_id = app3.applicable_laws_structure_id
+		                    AND st_f.factory_id IN (0, @w_key3)
+		            )
+		            AND tra.structure_id = app3.applicable_laws_structure_id
+		      ) AS applicable_laws_name3                        -- 適用法規３
+		    , (
+		        SELECT
+		            tra.translation_text 
+		        FROM
+		            v_structure_item_all AS tra 
+		        WHERE
+		            tra.language_id = @w_key2
+		            AND tra.location_structure_id = ( 
+		                SELECT
+		                    MAX(st_f.factory_id) 
+		                FROM
+		                    #temp_structure_factory AS st_f 
+		                WHERE
+		                    st_f.structure_id = app4.applicable_laws_structure_id
+		                    AND st_f.factory_id IN (0, @w_key3)
+		            )
+		            AND tra.structure_id = app4.applicable_laws_structure_id
+		      ) AS applicable_laws_name4                        -- 適用法規４
+		    , (
+		        SELECT
+		            tra.translation_text 
+		        FROM
+		            v_structure_item_all AS tra 
+		        WHERE
+		            tra.language_id = @w_key2
+		            AND tra.location_structure_id = ( 
+		                SELECT
+		                    MAX(st_f.factory_id) 
+		                FROM
+		                    #temp_structure_factory AS st_f 
+		                WHERE
+		                    st_f.structure_id = app5.applicable_laws_structure_id
+		                    AND st_f.factory_id IN (0, @w_key3)
+		            )
+		            AND tra.structure_id = app5.applicable_laws_structure_id
+	      ) AS applicable_laws_name5,                       -- 適用法規５
             mc.machine_note,                                   -- 機番メモ
-            [dbo].[get_v_structure_item](use_segment_structure_id, @w_key3, @w_key2) AS use_segment_name,        -- 使用区分
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = use_segment_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = use_segment_structure_id
+            ) AS use_segment_name,                         -- 使用区分
 			-- (CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN '非対象' ELSE '対象' END) AS circulation_target,                                           -- 循環対象
             (
                 CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN 
@@ -307,17 +1431,102 @@ BEGIN
                 END
             ) AS circulation_target,                                           -- 循環対象
             fixed_asset_no,                  -- 固定資産番号
-			[dbo].[get_v_structure_item](manufacturer_structure_id, @w_key3, @w_key2) AS manufacturer_name,      -- メーカー
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = manufacturer_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = manufacturer_structure_id
+            ) AS manufacturer_name,                        -- メーカー
 			manufacturer_type,               -- メーカー型式
             model_no,                        -- 型式コード
             serial_no,                       -- 製造番号
             FORMAT(date_of_manufacture, 'yyyy/MM') AS date_of_manufacture,                                     -- 製造年月
             equipment_note,                  -- 機器メモ
-            [dbo].[get_v_structure_item](inspection_content_structure_id, @w_key3, @w_key2) AS work_item_name, -- 作業項目
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = inspection_content_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = inspection_content_structure_id
+            ) AS work_item_name,                        -- 作業項目
             treatment_measure_note,　　　-- 作業内容・結果
-	        [dbo].[get_v_structure_item](hf.failure_cause_structure_id, @w_key3, @w_key2) AS failure_cause_addition_note,                 -- 故障原因
-            [dbo].[get_v_structure_item](hf.failure_cause_personality_structure_id, @w_key3, @w_key2) AS failure_cause_personality_note,  -- 原因性格
-	        [dbo].[get_v_structure_item](hf.treatment_measure_structure_id, @w_key3, @w_key2) AS treatment_measure_name,                  -- 処置・対策
+	        (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = hf.failure_cause_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = hf.failure_cause_structure_id
+            ) AS failure_cause_addition_note,                        -- 故障原因
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = hf.failure_cause_personality_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = hf.failure_cause_personality_structure_id
+            ) AS failure_cause_personality_note,                        -- 原因性格
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = hf.treatment_measure_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = hf.treatment_measure_structure_id
+            ) AS treatment_measure_name,                        -- 処置・対策
             CASE ISNULL(hf.follow_flg, 0)
                 WHEN 1 THEN '○'
                 ELSE ''
@@ -325,17 +1534,198 @@ BEGIN
             FORMAT(hf.follow_completion_date, 'yyyy/MM') AS follow_completion_date,  -- フォロー年月
             hf.follow_content,                                                       -- フォロー内容
             hf.maintenance_site,
-	        [dbo].[get_v_structure_item](hic.inspection_content_structure_id, @w_key3, @w_key2) AS inspection_content_name, -- 作業項目(保全項目)
+            (
+             SELECT
+                 tra.translation_text 
+             FROM
+                 v_structure_item_all AS tra 
+             WHERE
+                 tra.language_id = @w_key2
+                 AND tra.location_structure_id = ( 
+                     SELECT
+                         MAX(st_f.factory_id) 
+                     FROM
+                         #temp_structure_factory AS st_f 
+                     WHERE
+                         st_f.structure_id = hic.inspection_content_structure_id
+                         AND st_f.factory_id IN (0, @w_key3)
+                 )
+                 AND tra.structure_id = hic.inspection_content_structure_id
+            ) AS inspection_content_name,                        -- 作業項目(保全項目)
 	        hf.maintenance_content,           -- 作業項目(保全履歴内容)
-            '' AS factory_name2,              -- 工場名(機器)
-            '' AS plant_name2,                -- プラント名(機器)
-            '' AS series_name2,               -- 系列名(機器)
-            '' AS stroke_name2,               -- 工程名(機器)
-            '' AS facility_name2,             -- 設備名(機器)
-            '' AS job_name2,                  -- 職種名(機器)
-            '' AS large_classfication_name2,  -- 大分類(機器)
-            '' AS middle_classfication_name2, -- 中分類(機器)
-            '' AS small_classfication_name2   -- 小分類(機器)
+	        --工場(翻訳)
+		    (
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.location_factory_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.location_factory_structure_id
+		    ) AS factory_name2
+		    --プラント(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.location_plant_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.location_plant_structure_id
+		    ) AS plant_name2
+		    --系列(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.location_series_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.location_series_structure_id
+		    ) AS series_name2
+		    --工程(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.location_stroke_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.location_stroke_structure_id
+		    ) AS stroke_name2
+		    --設備(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.location_facility_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.location_facility_structure_id
+		    ) AS facility_name2
+		    --職種(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.job_kind_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.job_kind_structure_id
+		    ) AS job_name2
+		    -- 機種大分類(翻訳)
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.job_large_classfication_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.job_large_classfication_structure_id
+		    ) AS large_classfication_name2
+		    -- 機種中分類
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.job_middle_classfication_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.job_middle_classfication_structure_id
+		    ) AS middle_classfication_name2
+		    -- 機種小分類
+		    ,(
+		        SELECT
+		            tra.translation_text
+		        FROM
+		            v_structure_item_all AS tra
+		        WHERE
+		            tra.language_id = @w_key2
+		        AND tra.location_structure_id = (
+		                SELECT
+		                    MAX(st_f.factory_id)
+		                FROM
+		                    #temp_structure_factory AS st_f
+		                WHERE
+		                    st_f.structure_id = mc.job_small_classfication_structure_id
+		                AND st_f.factory_id IN(0, @w_key3)
+		            )
+		        AND tra.structure_id = mc.job_small_classfication_structure_id
+		    ) AS small_classfication_name2
+		    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+		    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
         FROM
             ma_summary sm
         LEFT JOIN ma_plan mp
@@ -352,7 +1742,102 @@ BEGIN
 	    LEFT JOIN mc_machine mc
 	    ON hsm.machine_id = mc.machine_id
 	    LEFT JOIN mc_equipment eq
-	    ON mc.machine_id = eq.machine_id,
+	    ON mc.machine_id = eq.machine_id
+        LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 1
+	            ) app1                      -- 適用法規１
+	        ON mc.machine_id = app1.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 2
+	            ) app2                      -- 適用法規２
+	        ON mc.machine_id = app2.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 3
+	            ) app3                      -- 適用法規３
+	        ON mc.machine_id = app3.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 4
+	            ) app4                      -- 適用法規４
+	        ON mc.machine_id = app4.machine_id
+	    LEFT JOIN (
+	            SELECT
+	                app.machine_id
+	                , app.applicable_laws_structure_id
+	                , app.rnk
+	            FROM
+	                (
+	                SELECT
+	                    machine_id
+	                    , applicable_laws_id
+	                    , applicable_laws_structure_id
+	                    , DENSE_RANK() OVER( PARTITION BY machine_id  ORDER BY applicable_laws_id ) AS rnk
+	                FROM
+	                    mc_applicable_laws
+	                ) app
+	            WHERE
+	                app.rnk = 5
+	            ) app5                      -- 適用法規５
+	        ON mc.machine_id = app5.machine_id,
 	    ma_history_failure hf
         WHERE
             sm.summary_id = hs.summary_id

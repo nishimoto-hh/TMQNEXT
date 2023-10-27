@@ -1,0 +1,39 @@
+{
+  "LoggerWrapperSettings": {
+    "DefaultLoggerName": "logger",
+    "LoggerSettings": [
+      {
+        "Name": "logger",
+        "Target": "File",
+        "MinLevel": "Trace",
+        "ContentsDateFormat": "",
+
+        "DirPath": "C:\\TMQ\\MailSendHistoryLog\\",
+        "FileName": "SendMailHistory",
+        "FileExtension": "log",
+        "ArchiveAboveSize": "1048576",
+        "FileNameDateFormat": ""
+        //"MaxArchiveFiles": "10"
+      },
+      {
+        "Name": "loggerLogin",
+        "Target": "File",
+        "MinLevel": "Info",
+        "ContentsDateFormat": "",
+
+        "DirPath": "",
+        "FileName": "",
+        "FileExtension": "",
+        "ArchiveAboveSize": "1048576",
+        "FileNameDateFormat": ""
+        //"MaxArchiveFiles": "10"
+      },
+      {
+        "Name": "loggerConsole",
+        "Target": "Console",
+        "MinLevel": "Debug",
+        "ContentsDateFormat": ""
+      }
+    ]
+  }
+}

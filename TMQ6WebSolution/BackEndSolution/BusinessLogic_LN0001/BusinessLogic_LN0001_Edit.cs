@@ -115,8 +115,7 @@ namespace BusinessLogic_LN0001
             // 階層情報を設定
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.ListSearchResult>(ref registStructureInfo, new List<StructureType> { StructureType.Location, StructureType.Job });
             // 職種と地区の値を登録するデータクラスに設定
-            registInfo.JobStructureId = registStructureInfo[0].JobStructureId;
-            registInfo.LocationStructureId = registStructureInfo[0].LocationStructureId;
+            setLayerInfo(ref registInfo, registStructureInfo[0]);
             // 登録
             if (!registDb(registInfo, out long newLongPlanId))
             {
@@ -135,6 +134,27 @@ namespace BusinessLogic_LN0001
             List<string> toCtrlIdList = getResultMappingInfoByGrpNo(ConductInfo.FormEdit.HeaderGroupNo).CtrlIdList;
             initFormByLongPlanId(param, toCtrlIdList, out bool isMaintainanceKindFactory, out int factoryId, true);
             return true;
+
+            // 画面のツリーの階層情報を登録用データクラスにセット
+            void setLayerInfo(ref ComDao.LnLongPlanEntity target, Dao.ListSearchResult source)
+            {
+                // 場所階層
+                target.LocationStructureId = source.LocationStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.LocationDistrictStructureId = ComUtil.ConvertStringToInt(source.DistrictName);
+                target.LocationFactoryStructureId = ComUtil.ConvertStringToInt(source.FactoryName);
+                target.LocationPlantStructureId = ComUtil.ConvertStringToInt(source.PlantName);
+                target.LocationSeriesStructureId = ComUtil.ConvertStringToInt(source.SeriesName);
+                target.LocationStrokeStructureId = ComUtil.ConvertStringToInt(source.StrokeName);
+                target.LocationFacilityStructureId = ComUtil.ConvertStringToInt(source.FacilityName);
+                // 職種機種階層
+                target.JobStructureId = source.JobStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.JobKindStructureId = ComUtil.ConvertStringToInt(source.JobName);
+                target.JobLargeClassficationStructureId = ComUtil.ConvertStringToInt(source.LargeClassficationName);
+                target.JobMiddleClassficationStructureId = ComUtil.ConvertStringToInt(source.MiddleClassficationName);
+                target.JobSmallClassficationStructureId = ComUtil.ConvertStringToInt(source.SmallClassficationName);
+            }
         }
 
         /// <summary>

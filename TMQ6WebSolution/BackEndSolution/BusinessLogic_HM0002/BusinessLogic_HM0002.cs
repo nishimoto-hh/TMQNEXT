@@ -20,6 +20,8 @@ using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using SchedulePlanContent = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.SchedulePlanContent;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace BusinessLogic_HM0002
 {
@@ -32,6 +34,12 @@ namespace BusinessLogic_HM0002
         #region 定数
         /// <summary>GetDetailWithのアンコメント用文字列</summary>
         private const string UnCommentWordOfGetDetailWith = "UnComp";
+        /// <summary>GetListのアンコメント用文字列</summary>
+        private const string UnCommentWordOfGetList = "UnExcelPort";
+        /// <summary>変更管理ID キー文字列</summary>
+        private const string HistoryManagementId = "HistoryManagementId";
+        /// <summary>長期計画ID キー文字列</summary>
+        private const string LongPlanId = "LongPlanId";
 
         /// <summary>
         /// SQLファイル名称
@@ -73,6 +81,8 @@ namespace BusinessLogic_HM0002
                 /// <summary>LN0001件名別長期計画のSQL格納先サブディレクトリ名</summary>
                 public const string SubDirLongPlan = SqlName.SubDirLongPlan + @"\List";
 
+                /// <summary>件数取得SQL</summary>
+                public const string GetCountHistoryManagementList = "GetCountHistoryManagementList";
                 /// <summary>一覧情報取得SQL</summary>
                 public const string GetHistoryList = "GetHistoryLongPlanList";
                 /// <summary>一覧スケジュール情報取得SQL</summary>
@@ -88,6 +98,11 @@ namespace BusinessLogic_HM0002
 
                 /// <summary>一覧情報取得SQL(LN0001件名別長期計画)</summary>
                 public const string GetList = "GetLongPlanList";
+
+                /// <summary>一覧情報取得の一時テーブル作成SQL</summary>
+                public const string CreateTempTable = "CreateTableTempGetLongPlanList";
+                /// <summary>一覧情報取得の一時テーブル登録SQL</summary>
+                public const string InsertTempTable = "InsertTempGetLongPlanList";
             }
 
             /// <summary>
@@ -641,6 +656,10 @@ namespace BusinessLogic_HM0002
                 {
                     return ComRes.ID.ID111120233; // 承認依頼引戻
                 }
+                else if (this.CtrlId == ConductInfo.FormDetail.ButtonId.ChangeApplicationApproval)
+                {
+                    return ComRes.ID.ID111120228; // 承認
+                }
 
                 return ComRes.ID.ID911200003;
             }
@@ -724,6 +743,34 @@ namespace BusinessLogic_HM0002
 
                 return ComRes.ID.ID911110001;
             }
+        }
+        /// <summary>
+        /// 出力処理
+        /// </summary>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ReportImpl()
+        {
+            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
+            // ファイルダウンロードの場合
+            if (compareId.IsDownload())
+            {
+                // ダウンロード情報取得
+                var info = TMQUtil.GetFileDownloadInfo(this.searchConditionDictionary, this.db, out bool isError);
+                if (isError)
+                {
+                    // エラーの場合は終了
+                    OutputFileDownloadError();
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+                // ファイルをダウンロード
+                if (!OutputDownloadFile(info.FileName, info.FilePath))
+                {
+                    // エラーの場合は終了
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+                return ComConsts.RETURN_RESULT.OK;
+            }
+            return ComConsts.RETURN_RESULT.OK;
         }
         #endregion
 
@@ -825,6 +872,9 @@ namespace BusinessLogic_HM0002
             // 個別実装用データへスケジュールのレイアウトデータ(scheduleLayout)をセット
             TMQUtil.ScheduleListUtil.SetLayout(ref this.IndividualDictionary, cond, false, getNendoText(), monthStartNendo);
 
+            // 一時テーブル設定
+            setTempTable();
+
             // 画面表示データの取得
             List<TMQDao.ScheduleList.Display> scheduleDisplayList;
             if (schedulePlanContent == SchedulePlanContent.Maintainance)
@@ -860,6 +910,14 @@ namespace BusinessLogic_HM0002
                 }
                 var scheduleDisplayList = listSchedule.Execute(scheduleList, cond, monthStartNendo, isLink, this.db, getScheduleLinkInfo());
                 return scheduleDisplayList;
+            }
+
+            void setTempTable()
+            {
+                TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                listPf.GetCreateTranslation();
+                listPf.GetInsertTranslationAll(new List<GroupId> { GroupId.MaintainanceKind }, true);
+                listPf.RegistTempTable();
             }
         }
 
@@ -908,7 +966,7 @@ namespace BusinessLogic_HM0002
             // 画面情報取得元、再表示の場合はSearchConditionDictionaryでなくResultInfoDictionary
             var targetDicList = !isReSearch ? this.searchConditionDictionary : this.resultInfoDictionary;
             var targetDic = ComUtil.GetDictionaryByCtrlId(targetDicList, fromCtrlId);
-            SetDataClassFromDictionary(targetDic, fromCtrlId, param, new List<string> { "HistoryManagementId", "LongPlanId" });
+            SetDataClassFromDictionary(targetDic, fromCtrlId, param, new List<string> { HistoryManagementId, LongPlanId });
             param.LanguageId = this.LanguageId;    // 言語ID
             param.UserId = int.Parse(this.UserId); // ログインユーザID
 
@@ -983,6 +1041,50 @@ namespace BusinessLogic_HM0002
         }
         #region 一覧・参照画面関連
         /// <summary>
+        /// 一覧取得SQLに必要な、一時テーブル登録処理
+        /// </summary>
+        private void setTempTableForGetList(long? longPlanId = null)
+        {
+            // 一覧の場合、長計件名IDがNull。詳細の場合、Nullでない。
+            bool isList = longPlanId == null;
+
+            // 一時テーブル関連処理
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment, FunctionTypeId.LongPlan });
+            // 使用する構成グループ(点検種別はスケジュールで使用)
+            var structuregroupList = new List<GroupId>
+                    {
+                        GroupId.Location, GroupId.Job, GroupId.Season, GroupId.BudgetPersonality, GroupId.Purpose, GroupId.WorkItem, GroupId.BudgetManagement,
+                        GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind, GroupId.ApplicationStatus, GroupId.ApplicationDivision
+                    };
+            if (!isList)
+            {
+                // 詳細の場合、翻訳を追加
+                structuregroupList.AddRange(new List<GroupId> { GroupId.Importance, GroupId.SiteMaster, GroupId.InspectionDetails, GroupId.ScheduleType });
+            }
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+
+            // 機能個別
+            // Create文
+            string createSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.CreateTempTable, SqlName.List.SubDir, string.Empty);
+            // Insert文は一覧と詳細で異なる
+            List<string> listUnComment = new();
+            listUnComment.Add(isList ? "ForList" : "ForDetail");
+            // Insert文
+            string insertSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.InsertTempTable, SqlName.List.SubDir, string.Empty, listUnComment);
+            if (!isList)
+            {
+                // 詳細の場合、長計件名IDをSQLに設定
+                insertSql = insertSql.Replace("@LongPlanId", longPlanId.ToString());
+            }
+            // 設定
+            listPf.AddTempTableBySql(createSql, insertSql);
+
+            listPf.RegistTempTable(); // 登録
+        }
+
+        /// <summary>
         /// 指定された長期計画の一覧の情報を取得する
         /// </summary>
         /// <param name="param">取得する長期計画の条件</param>
@@ -990,6 +1092,9 @@ namespace BusinessLogic_HM0002
         /// <returns>取得した長期計画の情報(一覧画面の1レコード)</returns>
         private Dao.ListSearchResult getLongPlanInfo(Dao.detailSearchCondition param, bool isTree = false)
         {
+            // 一時テーブル関連処理
+            setTempTableForGetList(param.LongPlanId);
+
             // 表示するデータタイプに応じたSQLを取得
             StringBuilder execSql = new();
             // 処理モードを判定
@@ -998,8 +1103,8 @@ namespace BusinessLogic_HM0002
                 case (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction: // トランザクションモード
 
                     // SQL取得
-                    TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string withTraSql);
-                    TMQUtil.GetFixedSqlStatement(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string traSql);
+                    TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string withTraSql, new List<string> { UnCommentWordOfGetList });
+                    TMQUtil.GetFixedSqlStatement(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string traSql, new List<string> { UnCommentWordOfGetList });
                     execSql.AppendLine(withTraSql);
                     execSql.AppendLine(addSqlWhereLongPlanId(traSql));
                     break;
@@ -1024,13 +1129,7 @@ namespace BusinessLogic_HM0002
             // 取得した結果に対して、地区と職種の情報を設定する(変更管理データ・トランザクションデータ どちらも設定する)
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, isTree);
 
-            // 変更があった項目を取得(変更管理モードの場合)
-            if (param.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history)
-            {
-                // 変更があった項目を取得
-                TMQUtil.HistoryManagement.setValueChangedItem<Dao.ListSearchResult>(results);
-            }
-            else
+            if (param.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction)
             {
                 //トランザクションモードの場合、申請状況に「申請なし」を設定
                 TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0002);

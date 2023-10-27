@@ -912,3 +912,18 @@ function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) 
     // 何もしない場合はそのまま返す
     return listData;
 }
+
+/**
+ *【オーバーライド用関数】ページデータ取得後
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
+
+
+}

@@ -6,6 +6,9 @@ using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using ComRes = CommonSTDUtil.CommonResources;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace CommonTMQUtil
 {
@@ -19,6 +22,12 @@ namespace CommonTMQUtil
         /// ExcelPortダウンロード画面の機能ID
         /// </summary>
         public const string ConductIdEP0001 = "EP0001";
+
+        /// <summary>
+        /// アイテム翻訳の桁数
+        /// </summary>
+        public const int ItemTranslasionMaxLength = 400;
+
         /// <summary>
         /// マスタメンテナンス共通
         /// </summary>
@@ -80,14 +89,20 @@ namespace CommonTMQUtil
                 { 1090, 111290002 }  // 変更管理
             };
 
+            #region ExcelPort シート番号
             /// <summary>
             /// ExcelPortマスタメンテナンス 「標準アイテム未使用」のシート番号
             /// </summary>
             public const int UnuseSheetNo = 13;
             /// <summary>
+            /// ExcelPortマスタメンテナンス 「標準アイテム未使用」シートの工場の列番号
+            /// </summary>
+            public const int UnuseFactoryColNo = 8;
+            /// <summary>
             /// ExcelPortマスタメンテナンス 「並び順」のシート番号
             /// </summary>
             public const int OrdeerSheetNo = 14;
+            #endregion
 
             /// <summary>
             /// ExcelPortマスタメンテナンス対象機能用 データ取得クラス
@@ -233,6 +248,8 @@ namespace CommonTMQUtil
                 public const string GetExcelPortStructureItemOrderList = "GetExcelPortStructureItemOrderList";
                 /// <summary>SQL名：ExcelPort標準アイテム未使用取得</summary>
                 public const string GetExcelPortItemUnUseList = "GetExcelPortItemUnUseList";
+                /// <summary>SQL名：ExcelPort標準アイテム未使用削除(構成グループで削除)</summary>
+                public const string DeleteExcelPortItemUnUseList = "DeleteExcelPortItemUnUseList";
 
                 /// <summary>SQL格納先サブディレクトリ名</summary>
                 public const string SubDir = @"Master";
@@ -663,18 +680,24 @@ namespace CommonTMQUtil
         /// </summary>
         public class CommonExcelPortMasterList : ComDao.MsStructureEntity
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
             /// <summary>Gets or sets 送信時処理ID</summary>
             /// <value>送信時処理ID</value>
-            public int ProcessId { get; set; }
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets 初期表示時の工場ID(入力チェック時に使用)</summary>
             /// <value>初期表示時の工場ID(入力チェック時に使用)</value>
             public int? FactoryIdBefore { get; set; }
+            /// <summary>Gets or sets アイテムID</summary>
+            /// <value>アイテムID</value>
+            public int TranslationId { get; set; }
             /// <summary>Gets or sets 工場名</summary>
             /// <value>工場名</value>
             public string FactoryName { get; set; }
             /// <summary>Gets or sets 翻訳ID</summary>
             /// <value>翻訳ID</value>
-            public int TranslationId { get; set; }
+            public int ItemId { get; set; }
             /// <summary>Gets or sets アイテム翻訳</summary>
             /// <value>アイテム翻訳</value>
             public string TranslationText { get; set; }
@@ -688,15 +711,42 @@ namespace CommonTMQUtil
             /// <value>拡張項目2</value>
             public string ExData2 { get; set; }
             /// <summary>Gets or sets 拡張項目3</summary>
-            /// <value>拡張項目2</value>
+            /// <value>拡張項目3</value>
             public string ExData3 { get; set; }
+            /// <summary>Gets or sets 拡張項目4</summary>
+            /// <value>拡張項目4</value>
+            public string ExData4 { get; set; }
+            /// <summary>Gets or sets 拡張項目5</summary>
+            /// <value>拡張項目5</value>
+            public string ExData5 { get; set; }
+            /// <summary>Gets or sets 拡張項目6</summary>
+            /// <value>拡張項目6</value>
+            public string ExData6 { get; set; }
+            /// <summary>Gets or sets 拡張項目7</summary>
+            /// <value>拡張項目7</value>
+            public string ExData7 { get; set; }
+            /// <summary>Gets or sets 拡張項目8</summary>
+            /// <value>拡張項目8</value>
+            public string ExData8 { get; set; }
+            /// <summary>Gets or sets 拡張項目9</summary>
+            /// <value>拡張項目9</value>
+            public string ExData9 { get; set; }
+            /// <summary>Gets or sets 拡張項目10</summary>
+            /// <value>拡張項目10</value>
+            public string ExData10 { get; set; }
         }
 
         /// <summary>
         /// ExcelPortマスタ用場場所階層系共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterStructureList
+        public class CommonExcelPortMasterStructureList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets 構成グループID</summary>
             /// <value>構成グループID</value>
             public int? StructureGroupId { get; set; }
@@ -727,6 +777,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets プラントID(構成ID)</summary>
             /// <value>プラントID(構成ID)</value>
             public long? PlantId { get; set; }
+            /// <summary>Gets or sets プラントアイテムID</summary>
+            /// <value>プラントアイテムID</value>
+            public int? PlantItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(プラント)</summary>
             /// <value>翻訳ID(プラント)</value>
             public int? PlantItemTranslationId { get; set; }
@@ -736,15 +789,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets プラント名</summary>
             /// <value>プラント名</value>
             public string PlantName { get; set; }
+            /// <summary>Gets or sets プラント名(変更前)</summary>
+            /// <value>プラント名(変更前)</value>
+            public string PlantNameBefore { get; set; }
             /// <summary>Gets or sets プラントの親構成ID</summary>
             /// <value>プラントの親構成ID</value>
             public int? PlantParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
             public int? PlantParentNumber { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? PlantParentNumberBefore { get; set; }
             /// <summary>Gets or sets 系列ID(構成ID)</summary>
             /// <value>系列ID(構成ID)</value>
             public long? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列アイテムID</summary>
+            /// <value>系列アイテムID</value>
+            public int? SeriesItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(系列)</summary>
             /// <value>翻訳ID(系列)</value>
             public int? SeriesItemTranslationId { get; set; }
@@ -754,15 +816,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 系列名</summary>
             /// <value>系列名</value>
             public string SeriesName { get; set; }
+            /// <summary>Gets or sets 系列名(変更前)</summary>
+            /// <value>系列名(変更前)</value>
+            public string SeriesNameBefore { get; set; }
             /// <summary>Gets or sets 系列の親構成ID</summary>
             /// <value>系列の親構成ID</value>
             public int? SeriesParentId { get; set; }
             /// <summary>Gets or sets プラント番号</summary>
             /// <value>プラント番号</value>
             public int? SeriesParentNumber { get; set; }
+            /// <summary>Gets or sets プラント番号</summary>
+            /// <value>プラント番号</value>
+            public int? SeriesParentNumberBefore { get; set; }
             /// <summary>Gets or sets 工程ID(構成ID)</summary>
             /// <value>工程ID(構成ID)</value>
             public long? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程アイテムID</summary>
+            /// <value>工程アイテムID</value>
+            public int? StrokeItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(工程)</summary>
             /// <value>翻訳ID(工程)</value>
             public int? StrokeItemTranslationId { get; set; }
@@ -772,15 +843,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 工程名</summary>
             /// <value>工程名</value>
             public string StrokeName { get; set; }
+            /// <summary>Gets or sets 工程名(変更前)</summary>
+            /// <value>工程名(変更前)</value>
+            public string StrokeNameBefore { get; set; }
             /// <summary>Gets or sets 工程の親構成ID</summary>
             /// <value>工程の親構成ID</value>
             public int? StrokeParentId { get; set; }
             /// <summary>Gets or sets 系列番号</summary>
             /// <value>系列番号</value>
             public int? StrokeParentNumber { get; set; }
+            /// <summary>Gets or sets 系列番号</summary>
+            /// <value>系列番号</value>
+            public int? StrokeParentNumberBefore { get; set; }
             /// <summary>Gets or sets 設備ID(構成ID)</summary>
             /// <value>設備ID(構成ID)</value>
             public long? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備アイテムID</summary>
+            /// <value>設備アイテムID</value>
+            public int? FacilityItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(設備)</summary>
             /// <value>翻訳ID(設備)</value>
             public int? FacilityItemTranslationId { get; set; }
@@ -790,20 +870,31 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 設備名</summary>
             /// <value>設備名</value>
             public string FacilityName { get; set; }
+            /// <summary>Gets or sets 設備名(変更前)</summary>
+            /// <value>設備名(変更前)</value>
+            public string FacilityNameBefore { get; set; }
             /// <summary>Gets or sets 設備の親構成ID</summary>
             /// <value>設備の親構成ID</value>
             public int? FacilityParentId { get; set; }
             /// <summary>Gets or sets 工程番号</summary>
             /// <value>設備番号</value>
             public int? FacilityParentNumber { get; set; }
-
+            /// <summary>Gets or sets 工程番号</summary>
+            /// <value>設備番号</value>
+            public int? FacilityParentNumberBefore { get; set; }
         }
 
         /// <summary>
         /// ExcelPortマスタ用場職種機種階層系共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterJobList
+        public class CommonExcelPortMasterJobList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets 構成グループID</summary>
             /// <value>構成グループID</value>
             public int? StructureGroupId { get; set; }
@@ -834,6 +925,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 職種ID(構成ID)</summary>
             /// <value>職種ID(構成ID)</value>
             public long? JobId { get; set; }
+            /// <summary>Gets or sets 職種アイテムID</summary>
+            /// <value>職種アイテムID</value>
+            public int? JobItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(職種)</summary>
             /// <value>翻訳ID(職種)</value>
             public int? JobItemTranslationId { get; set; }
@@ -843,18 +937,27 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 職種名</summary>
             /// <value>職種名</value>
             public string JobName { get; set; }
+            /// <summary>Gets or sets 職種名(変更前)</summary>
+            /// <value>職種名(変更前)</value>
+            public string JobNameBefore { get; set; }
             /// <summary>Gets or sets 職種の親構成ID</summary>
             /// <value>職種の親構成ID</value>
             public int? JobParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
             public int? JobParentNumber { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? JobParentNumberBefore { get; set; }
             /// <summary>Gets or sets 保全実績集計職種コード</summary>
             /// <value>保全実績集計職種コード</value>
             public string JobCode { get; set; }
             /// <summary>Gets or sets 機種大分類ID(構成ID)</summary>
             /// <value>機種大分類ID(構成ID)</value>
             public long? LargeClassId { get; set; }
+            /// <summary>Gets or sets 機種大分類アイテムID</summary>
+            /// <value>機種大分類アイテムID</value>
+            public int? LargeClassItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(機種大分類)</summary>
             /// <value>翻訳ID(機種大分類)</value>
             public int? LargeClassItemTranslationId { get; set; }
@@ -864,15 +967,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機種大分類名</summary>
             /// <value>機種大分類名</value>
             public string LargeClassName { get; set; }
+            /// <summary>Gets or sets 機種大分類名(変更前)</summary>
+            /// <value>機種大分類名(変更前)</value>
+            public string LargeClassNameBefore { get; set; }
             /// <summary>Gets or sets 機種大分類の親構成ID</summary>
             /// <value>機種大分類の親構成ID</value>
             public int? LargeClassParentId { get; set; }
             /// <summary>Gets or sets 職種番号</summary>
             /// <value>職種番号</value>
             public int? LargeClassParentNumber { get; set; }
+            /// <summary>Gets or sets 職種番号</summary>
+            /// <value>職種番号</value>
+            public int? LargeClassParentNumberBefore { get; set; }
             /// <summary>Gets or sets 機種中分類ID(構成ID)</summary>
             /// <value>機種中分類ID(構成ID)</value>
             public long? MiddleClassId { get; set; }
+            /// <summary>Gets or sets 機種中分類アイテムID</summary>
+            /// <value>機種中分類アイテムID</value>
+            public int? MiddleClassItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(機種中分類)</summary>
             /// <value>翻訳ID(機種中分類)</value>
             public int? MiddleClassItemTranslationId { get; set; }
@@ -882,15 +994,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機種中分類名</summary>
             /// <value>機種中分類名</value>
             public string MiddleClassName { get; set; }
+            /// <summary>Gets or sets 機種中分類名(変更前)</summary>
+            /// <value>機種中分類名(変更前)</value>
+            public string MiddleClassNameBefore { get; set; }
             /// <summary>Gets or sets 機種中分類の親構成ID</summary>
             /// <value>機種中分類の親構成ID</value>
             public int? MiddleClassParentId { get; set; }
             /// <summary>Gets or sets 機種大分類番号</summary>
             /// <value>機種大分類番号</value>
             public int? MiddleClassParentNumber { get; set; }
+            /// <summary>Gets or sets 機種大分類番号</summary>
+            /// <value>機種大分類番号</value>
+            public int? MiddleClassParentNumberBefore { get; set; }
             /// <summary>Gets or sets 機種小分類ID(構成ID)</summary>
             /// <value>機種小分類ID(構成ID)</value>
             public long? SmallClassId { get; set; }
+            /// <summary>Gets or sets 機種小分類アイテムID</summary>
+            /// <value>機種小分類アイテムID</value>
+            public int? SmallClassItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(機種小分類)</summary>
             /// <value>翻訳ID(機種小分類)</value>
             public int? SmallClassItemTranslationId { get; set; }
@@ -900,19 +1021,31 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機種小分類名</summary>
             /// <value>機種小分類名</value>
             public string SmallClassName { get; set; }
+            /// <summary>Gets or sets 機種小分類名(変更前)</summary>
+            /// <value>機種小分類名(変更前)</value>
+            public string SmallClassNameBefore { get; set; }
             /// <summary>Gets or sets 機種小分類の親構成ID</summary>
             /// <value>機種小分類の親構成ID</value>
             public int? SmallClassParentId { get; set; }
             /// <summary>Gets or sets 機種中分類番号</summary>
             /// <value>機種中分類番号</value>
             public int? SmallClassParentNumber { get; set; }
+            /// <summary>Gets or sets 機種中分類番号</summary>
+            /// <value>機種中分類番号</value>
+            public int? SmallClassParentNumberBefore { get; set; }
         }
 
         /// <summary>
         /// ExcelPortマスタ用予備品ロケーション共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterPartsList
+        public class CommonExcelPortMasterPartsList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets 構成グループID</summary>
             /// <value>構成グループID</value>
             public int? StructureGroupId { get; set; }
@@ -940,27 +1073,39 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
             public int? FactoryParentNumber { get; set; }
-            /// <summary>Gets or sets 予備品倉庫ID(構成ID)</summary>
-            /// <value>予備品倉庫ID(構成ID)</value>
+            /// <summary>Gets or sets 倉庫ID(構成ID)</summary>
+            /// <value>倉庫ID(構成ID)</value>
             public long? WarehouseId { get; set; }
-            /// <summary>Gets or sets 翻訳ID(予備品倉庫)</summary>
-            /// <value>翻訳ID(予備品倉庫)</value>
+            /// <summary>Gets or sets 倉庫アイテムID</summary>
+            /// <value>倉庫アイテムID</value>
+            public int? WarehouseItemId { get; set; }
+            /// <summary>Gets or sets 翻訳ID(倉庫)</summary>
+            /// <value>翻訳ID(倉庫)</value>
             public int? WarehouseItemTranslationId { get; set; }
-            /// <summary>Gets or sets 予備品倉庫番号</summary>
-            /// <value>予備品倉庫番号</value>
+            /// <summary>Gets or sets 倉庫番号</summary>
+            /// <value>倉庫番号</value>
             public int? WarehouseNumber { get; set; }
-            /// <summary>Gets or sets 予備品倉庫名</summary>
-            /// <value>予備品倉庫名</value>
+            /// <summary>Gets or sets 倉庫名</summary>
+            /// <value>倉庫名</value>
             public string WarehouseName { get; set; }
-            /// <summary>Gets or sets 予備品倉庫の親構成ID</summary>
-            /// <value>予備品倉庫の親構成ID</value>
+            /// <summary>Gets or sets 倉庫名(変更前)</summary>
+            /// <value>倉庫名(変更前)</value>
+            public string WarehouseNameBefore { get; set; }
+            /// <summary>Gets or sets 倉庫の親構成ID</summary>
+            /// <value>倉庫の親構成ID</value>
             public int? WarehouseParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
             public int? WarehouseParentNumber { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? WarehouseParentNumberBefore { get; set; }
             /// <summary>Gets or sets 棚ID(構成ID)</summary>
             /// <value>棚ID(構成ID)</value>
             public long? RackId { get; set; }
+            /// <summary>Gets or sets 棚アイテムID</summary>
+            /// <value>棚アイテムID</value>
+            public int? RackItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(棚)</summary>
             /// <value>翻訳ID(棚)</value>
             public int? RackItemTranslationId { get; set; }
@@ -970,19 +1115,31 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 棚名</summary>
             /// <value>棚名</value>
             public string RackName { get; set; }
+            /// <summary>Gets or sets 棚名(変更前)</summary>
+            /// <value>棚名(変更前)</value>
+            public string RackNameBefore { get; set; }
             /// <summary>Gets or sets 棚の親構成ID</summary>
-            /// <value>棚の親構成ID</value>
+            /// <value>機種小分類の親構成ID</value>
             public int? RackParentId { get; set; }
-            /// <summary>Gets or sets 工場番号</summary>
-            /// <value>予備品倉庫番号</value>
+            /// <summary>Gets or sets 倉庫番号</summary>
+            /// <value>倉庫番号</value>
             public int? RackParentNumber { get; set; }
+            /// <summary>Gets or sets 倉庫番号</summary>
+            /// <value>倉庫番号</value>
+            public int? RackParentNumberBefore { get; set; }
         }
 
         /// <summary>
         /// ExcelPortマスタ用部門共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterDepartmentList
+        public class CommonExcelPortMasterDepartmentList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets 構成グループID</summary>
             /// <value>構成グループID</value>
             public int? StructureGroupId { get; set; }
@@ -1013,6 +1170,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 部門ID(構成ID)</summary>
             /// <value>部門ID(構成ID)</value>
             public long? DepartmentId { get; set; }
+            /// <summary>Gets or sets 部門アイテムID</summary>
+            /// <value>部門アイテムID</value>
+            public int? DepartmentItemId { get; set; }
             /// <summary>Gets or sets 翻訳ID(部門)</summary>
             /// <value>翻訳ID(部門)</value>
             public int? DepartmentItemTranslationId { get; set; }
@@ -1022,12 +1182,18 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 部門名</summary>
             /// <value>部門名</value>
             public string DepartmentName { get; set; }
+            /// <summary>Gets or sets 部門名(変更前)</summary>
+            /// <value>部門名(変更前)</value>
+            public string DepartmentNameBefore { get; set; }
             /// <summary>Gets or sets 部門の親構成ID</summary>
             /// <value>部門の親構成ID</value>
             public int? DepartmentParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
             public int? DepartmentParentNumber { get; set; }
+            /// <summary>Gets or sets 工場番号</summary>
+            /// <value>工場番号</value>
+            public int? DepartmentParentNumberBefore { get; set; }
             /// <summary>Gets or sets 部門コード</summary>
             /// <value>部門コード</value>
             public string DepartmentCode { get; set; }
@@ -1039,8 +1205,17 @@ namespace CommonTMQUtil
         /// <summary>
         /// ExcelPortマスタ用並び順共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterOrderList
+        public class CommonExcelPortMasterOrderList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
+            /// <summary>Gets or sets 送信時処理名</summary>
+            /// <value>送信時処理名</value>
+            public string ProcessName { get; set; }
             /// <summary>Gets or sets 構成ID</summary>
             /// <value>構成ID</value>
             public int? StructureId { get; set; }
@@ -1056,6 +1231,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets アイテム翻訳名称 </summary>
             /// <value>アイテム翻訳名称 </value>
             public string ItemName { get; set; }
+            /// <summary>Gets or sets 並び順対象工場ID</summary>
+            /// <value>並び順対象工場ID</value>
+            public int? TargetFactoryId { get; set; }
             /// <summary>Gets or sets 工場ID</summary>
             /// <value>工場ID</value>
             public int? FactoryId { get; set; }
@@ -1070,8 +1248,17 @@ namespace CommonTMQUtil
         /// <summary>
         /// ExcelPortマスタ用標準アイテム未使用共通データクラス
         /// </summary>
-        public class CommonExcelPortMasterItemUnUseList
+        public class CommonExcelPortMasterItemUnUseList : ComDao.CommonTableItem
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
+            /// <summary>Gets or sets 送信時処理名</summary>
+            /// <value>送信時処理名</value>
+            public string ProcessName { get; set; }
             /// <summary>Gets or sets 構成ID</summary>
             /// <value>構成ID</value>
             public int? StructureId { get; set; }
@@ -1097,6 +1284,12 @@ namespace CommonTMQUtil
         /// </summary>
         public class CommonExcelPortMasterCondition
         {
+            /// <summary>Gets or sets 行番号</summary>
+            /// <value>行番号</value>
+            public int? RowNo { get; set; }
+            /// <summary>Gets or sets 送信時処理ID</summary>
+            /// <value>送信時処理ID</value>
+            public long? ProcessId { get; set; }
             /// <summary>Gets or sets メンテナンス対象(構成ID)</summary>
             /// <value>メンテナンス(構成ID)</value>
             public int MaintenanceTarget { get; set; }
@@ -1120,7 +1313,7 @@ namespace CommonTMQUtil
             public List<long> FactoryIdList { get; set; }
             /// <summary>Gets or sets 階層番号リスト</summary>
             /// <value>階層番号リスト</value>
-            public List<long> LayerIdList { get; set; }
+            public List<int> LayerIdList { get; set; }
         }
         #endregion
 
@@ -2667,6 +2860,1154 @@ namespace CommonTMQUtil
             return true;
         }
         #endregion
+
+        /// <summary>
+        /// ExcelPort マスタアイテム削除処理
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="db">DBクラス</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool deleteExcelPortData(TMQUtil.CommonExcelPortMasterList registInfo, ComDB db)
+        {
+            // 削除SQL実行(論理削除)
+            if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsStructureInfoAddDeleteFlg, ComMaster.SqlName.SubDir, registInfo, db))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 翻訳マスタ登録
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <param name="transId">翻訳ID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registTranslationExcelPort(TMQUtil.CommonExcelPortMasterList registInfo, DateTime now, string languageId, ComDB db, string userId, out int transId)
+        {
+            transId = -1;
+
+            // 条件を作成
+            TMQUtil.ItemTranslationForMaster userTran = new();
+            userTran.LocationStructureId = (int)registInfo.FactoryId;
+            userTran.LanguageId = languageId;
+            userTran.TranslationText = registInfo.TranslationText;
+            userTran.TranslationTextBk = registInfo.TranslationTextBefore;
+            userTran.TranslationId = registInfo.TranslationId;
+
+            // ユーザ言語以外の言語情報
+            var otherTranList = TMQUtil.SqlExecuteClass.SelectList<TMQUtil.ItemTranslationForMaster>(ComMaster.SqlName.GetLanguageList, ComMaster.SqlName.SubDir, new { LanguageId = languageId }, db);
+            otherTranList = otherTranList.Where(x => x.LanguageId != languageId).ToList();
+            foreach (TMQUtil.ItemTranslationForMaster result in otherTranList)
+            {
+                result.StructureGroupId = (int)registInfo.StructureGroupId;
+                result.LocationStructureId = (int)registInfo.FactoryId;
+            }
+
+            // 新規登録フラグ
+            var isNew = false;
+
+            // 送信時処理を判定
+            if (registInfo.ProcessId == TMQConst.SendProcessId.Regist)
+            {
+                // 新規登録
+                isNew = isNewTranslation(ref transId);
+            }
+            else
+            {
+                // 更新
+                // ユーザ言語の翻訳が変更されているか
+                var isUpd = false;
+                if (userTran.TranslationText != userTran.TranslationTextBk)
+                {
+                    isUpd = true;
+                }
+
+                if (!isUpd)
+                {
+                    // 翻訳が変更されていない場合
+                    // 翻訳ID取得
+                    if (userTran.TranslationId != null)
+                    {
+                        transId = (int)userTran.TranslationId;
+                    }
+                }
+                else
+                {
+                    // 翻訳が変更されている場合
+                    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                    isNew = isNewTranslation(ref transId);
+                }
+            }
+
+            // 翻訳マスタ登録
+            if (isNew)
+            {
+                // 翻訳マスタに同じ翻訳が存在しない場合、新規登録
+                if (!registTranslationDb(ref transId, now))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 翻訳マスタに同じ翻訳が存在する場合、翻訳更新
+                if (!updateTranslationDb(ref transId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+            // 翻訳マスタ検索(翻訳マスタ新規登録の場合True)
+            bool isNewTranslation(ref int tranId)
+            {
+                // ユーザ言語のアイテム翻訳に対して工場内に同じ翻訳が存在するか翻訳マスタを検索
+                var registTranIds = TMQUtil.SqlExecuteClass.SelectList<int?>(ComMaster.SqlName.GetMsTranslationInfo, ComMaster.SqlName.SubDir, userTran, db, listUnComment: new List<string> { "AddItem" });
+                if (registTranIds == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    // 同じ翻訳が存在する場合、翻訳ID順の先頭を採用する
+                    tranId = (int)registTranIds.First();
+                    return false;
+                }
+            }
+
+            // 翻訳マスタ登録
+            bool registTranslationDb(ref int tranId, DateTime now)
+            {
+                // 登録するデータクラスを作成
+                ComDao.MsTranslationEntity registInfo = new();
+
+                // ユーザ言語のアイテム翻訳情報を新規登録
+                registInfo.LocationStructureId = userTran.LocationStructureId;
+                registInfo.LanguageId = userTran.LanguageId;
+                registInfo.TranslationText = userTran.TranslationText;
+                SetCommonDataBaseClass(now, ref registInfo, userId, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out tranId, ComMaster.SqlName.InsertMsTranslationInfoGetTranslationId, ComMaster.SqlName.SubDir, registInfo, db))
+                {
+                    return false;
+                }
+
+                // ユーザ言語以外のアイテム翻訳情報を新規登録
+                foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
+                {
+                    registInfo = new();
+                    registInfo.LocationStructureId = otherTran.LocationStructureId;
+                    registInfo.TranslationId = tranId;
+                    registInfo.LanguageId = otherTran.LanguageId;
+                    registInfo.TranslationText = otherTran.TranslationText;
+                    SetCommonDataBaseClass(now, ref registInfo, userId, userId);
+
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsTranslationInfo, ComMaster.SqlName.SubDir, registInfo, db))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // 翻訳マスタ更新
+            bool updateTranslationDb(ref int tranId)
+            {
+                // 翻訳IDの翻訳を、画面のアイテム翻訳に更新する
+
+                // ユーザ言語以外のアイテム翻訳情報
+                foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
+                {
+                    // 登録するデータクラスを作成
+                    ComDao.MsTranslationEntity condition = new();
+
+                    // ユーザ言語のアイテム翻訳情報を新規登録
+                    condition.LocationStructureId = userTran.LocationStructureId;
+                    condition.TranslationId = tranId;
+                    condition.LanguageId = otherTran.LanguageId;
+                    condition.TranslationText = otherTran.TranslationText;
+                    SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                    // 翻訳マスタ情報取得
+                    var transInfo = new ComDao.MsTranslationEntity().GetEntity(otherTran.LocationStructureId, tranId, otherTran.LanguageId, db);
+                    if (transInfo == null)
+                    {
+                        // 翻訳マスタに存在しない場合、新規登録
+                        // 登録SQL実行
+                        if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsTranslationInfo, ComMaster.SqlName.SubDir, condition, db))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // 画面ではここで他言語の翻訳を更新するがエクセルポートは1言語のみなのでなにもしない
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPort アイテムマスタ登録
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="transId">翻訳ID</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registItemExcelPort(TMQUtil.CommonExcelPortMasterList registInfo, int transId, DateTime now, string languageId, ComDB db, string userId, out int itemId)
+        {
+            itemId = -1;
+
+            // 送信時処理を判定
+            if (registInfo.ProcessId == TMQConst.SendProcessId.Regist)
+            {
+                // 新規登録
+                // 登録するデータクラスを作成
+                ComDao.MsItemEntity condition = new();
+                condition.StructureGroupId = registInfo.StructureGroupId;
+                condition.ItemTranslationId = transId;
+                SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out itemId, ComMaster.SqlName.InsertMsItemInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 更新
+
+                // 条件を作成
+                TMQUtil.ItemTranslationForMaster userTran = new();
+                userTran.LocationStructureId = (int)registInfo.FactoryId;
+                userTran.LanguageId = languageId;
+                userTran.TranslationText = registInfo.TranslationText;
+                userTran.TranslationTextBk = registInfo.TranslationTextBefore;
+                userTran.TranslationId = registInfo.TranslationId;
+
+                // アイテムID取得
+                itemId = (int)registInfo.ItemId;
+
+                // アイテムマスタ検索
+                var itemEntity = new ComDao.MsItemEntity().GetEntity(itemId, db);
+                if (itemEntity == null)
+                {
+                    // アイテムマスタに存在しない場合、エラーを返す
+                    return false;
+                }
+
+                // 翻訳が変更されているか
+                if (itemEntity.ItemTranslationId == transId)
+                {
+                    // 変更されていない場合、処理終了
+                    return true;
+                }
+
+                // 登録するデータクラスを作成
+                ComDao.MsItemEntity condition = new();
+                condition.ItemId = itemId;
+                condition.ItemTranslationId = transId;
+                SetCommonDataBaseClass(now, ref condition, userId);
+
+                // アイテムマスタ更新
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsItemInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort アイテムマスタ拡張登録
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <param name="itemExCnt">拡張項目の件数</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registItemExExcelPort(TMQUtil.CommonExcelPortMasterList registInfo, int itemId, int itemExCnt, DateTime now, ComDB db, string userId)
+        {
+            // 拡張項目件数分繰り返し
+            for (int i = 1; i <= itemExCnt; i++)
+            {
+                // 登録するデータクラスを作成
+                ComDao.MsItemExtensionEntity condition = new();
+                condition.ItemId = itemId;
+                condition.SequenceNo = i;
+                switch (i)
+                {
+                    case 1:
+                        condition.ExtensionData = registInfo.ExData1;
+                        break;
+                    case 2:
+                        condition.ExtensionData = registInfo.ExData2;
+                        break;
+                    case 3:
+                        condition.ExtensionData = registInfo.ExData3;
+                        break;
+                    case 4:
+                        condition.ExtensionData = registInfo.ExData4;
+                        break;
+                    case 5:
+                        condition.ExtensionData = registInfo.ExData5;
+                        break;
+                    case 6:
+                        condition.ExtensionData = registInfo.ExData6;
+                        break;
+                    case 7:
+                        condition.ExtensionData = registInfo.ExData7;
+                        break;
+                    case 8:
+                        condition.ExtensionData = registInfo.ExData8;
+                        break;
+                    case 9:
+                        condition.ExtensionData = registInfo.ExData9;
+                        break;
+                    case 10:
+                        condition.ExtensionData = registInfo.ExData10;
+                        break;
+                    default:
+                        break;
+                }
+
+                // アイテムマスタ拡張検索
+                var itemExEntity = new ComDao.MsItemExtensionEntity().GetEntity(itemId, i, db);
+                if (itemExEntity == null)
+                {
+                    // アイテムマスタ拡張に存在しない場合、新規登録
+
+                    // 実行条件の共通項目設定
+                    SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsItemExtensionInfo, ComMaster.SqlName.SubDir, condition, db))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    // アイテムマスタ拡張に存在する場合、拡張データを比較
+                    if (itemExEntity.ExtensionData == condition.ExtensionData)
+                    {
+                        // 変更されていない場合、更新対象外
+                        continue;
+                    }
+                    // アイテムマスタ拡張更新
+                    // 実行条件の共通項目設定
+                    SetCommonDataBaseClass(now, ref condition, userId);
+
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsItemExtensionInfo, ComMaster.SqlName.SubDir, condition, db))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        ///  ExcelPort 構成マスタ登録
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registStructureExcelPort(TMQUtil.CommonExcelPortMasterList registInfo, int itemId, DateTime now, ComDB db, string userId)
+        {
+            // 登録するデータクラスを作成
+            ComDao.MsStructureEntity condition = new();
+            condition.FactoryId = registInfo.FactoryId;
+            condition.StructureGroupId = registInfo.StructureGroupId;
+            condition.ParentStructureId = null;
+            condition.StructureLayerNo = null;
+            condition.StructureItemId = itemId;
+            condition.DeleteFlg = false;
+            SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+            // 送信時処理を判定
+            if (registInfo.ProcessId == TMQConst.SendProcessId.Regist)
+            {
+                // 新規登録
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out int structureId, ComMaster.SqlName.InsertMsStructureInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 更新
+                // 構成マスタ検索
+                var stEntity = new ComDao.MsStructureEntity().GetEntity(registInfo.StructureId, db);
+                if (stEntity == null)
+                {
+                    // 構成マスタに存在しない場合、エラーを返す
+                    return false;
+                }
+
+                // 削除フラグを比較
+                if (stEntity.DeleteFlg == condition.DeleteFlg)
+                {
+                    // 変更されていない場合、更新対象外
+                    return true;
+                }
+
+                // 構成マスタ更新
+                // 構成ID設定
+                condition.StructureId = registInfo.StructureId;
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsStructureInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 並び順設定登録
+        /// </summary>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="resultOrderList">並び順登録情報</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registItemOrderExcelPort(int structureGroupId, List<TMQUtil.CommonExcelPortMasterOrderList> resultOrderList, DateTime now, ComDB db, string userId)
+        {
+            // 工場別アイテム表示順マスタ削除
+            if (!deleteItem())
+            {
+                return false;
+            }
+
+            // 工場別アイテム表示順マスタ登録
+            foreach (TMQUtil.CommonExcelPortMasterOrderList registInfo in resultOrderList)
+            {
+                // テーブル共通項目の設定
+                registInfo.InsertUserId = int.Parse(userId);
+                registInfo.UpdateUserId = int.Parse(userId);
+                registInfo.InsertDatetime = now;
+                registInfo.UpdateDatetime = now;
+                registInfo.FactoryId = registInfo.TargetFactoryId;
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsStructureOrder, ComMaster.SqlName.SubDir, registInfo, db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+            // 並び順データ削除
+            bool deleteItem()
+            {
+                // 削除対象がない場合は終了
+                if (resultOrderList.Count == 0)
+                {
+                    return true;
+                }
+
+                // SQL取得
+                if (!TMQUtil.GetFixedSqlStatement(ComMaster.SqlName.SubDir, ComMaster.SqlName.DeleteMsStructureOrder, out string baseSql))
+                {
+                    return false;
+                }
+
+                // SQL実行
+                int result = db.Regist(baseSql, new { @StructureGroupId = structureGroupId, @FactoryId = resultOrderList[0].TargetFactoryId });
+                if (result < 0)
+                {
+                    // 削除エラー
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPort 標準アイテム未使用設定登録
+        /// </summary>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="resultUnuseList">標準アイテム未使用登録情報</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registUnuseItemExcelPort(int structureGroupId, List<TMQUtil.CommonExcelPortMasterItemUnUseList> resultUnuseList, DateTime now, ComDB db, string userId)
+        {
+            // 既存のデータを削除
+            if (!deleteItem())
+            {
+                return false;
+            }
+
+            // 登録処理
+            foreach (TMQUtil.CommonExcelPortMasterItemUnUseList result in resultUnuseList)
+            {
+                // 未使用にする工場が選択されていない場合はスキップ
+                if (string.IsNullOrEmpty(result.UnuseFactoryId))
+                {
+                    continue;
+                }
+
+                // 未使用にする工場IDを分割
+                var factoryIdList = result.UnuseFactoryId.Split("|");
+
+                // 工場ID毎に登録する
+                foreach (string factoryId in factoryIdList)
+                {
+                    // 登録情報を作成
+                    ComDao.MsStructureUnusedEntity registInfo = new();
+                    registInfo.StructureId = (int)result.StructureId;
+                    registInfo.FactoryId = int.Parse(factoryId);
+                    registInfo.StructureGroupId = structureGroupId;
+                    registInfo.InsertDatetime = now;
+                    registInfo.InsertUserId = int.Parse(userId);
+                    registInfo.UpdateDatetime = now;
+                    registInfo.UpdateUserId = int.Parse(userId);
+
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsStructureUnused, ComMaster.SqlName.SubDir, registInfo, db))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+
+            // 並び順データ削除
+            bool deleteItem()
+            {
+                // SQL取得
+                if (!TMQUtil.GetFixedSqlStatement(ComMaster.SqlName.ExcelPortDir, ComMaster.SqlName.DeleteExcelPortItemUnUseList, out string baseSql))
+                {
+                    return false;
+                }
+
+                // SQL実行
+                int result = db.Regist(baseSql, new { @StructureGroupId = structureGroupId });
+                if (result < 0)
+                {
+                    // 削除エラー
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPort 翻訳マスタ登録(階層系)
+        /// </summary>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="translationText">翻訳名</param>
+        /// <param name="translationTextBefore">変更前翻訳名</param>
+        /// <param name="translationId">翻訳ID</param>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="keyId">構成ID</param>
+        /// <param name="structureLayerNo">階層番号</param>
+        /// <param name="parentStructureId">親構成ID</param>
+        /// <param name="transId">翻訳ID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registTranslationStructureExcelPort(int structureGroupId,
+                                                               DateTime now,
+                                                               string languageId,
+                                                               ComDB db,
+                                                               string userId,
+                                                               string translationText,
+                                                               string translationTextBefore,
+                                                               int? translationId,
+                                                               int factoryId,
+                                                               long? keyId,
+                                                               int structureLayerNo,
+                                                               int? parentStructureId,
+                                                               out int transId,
+                                                               bool isNewRegist)
+        {
+            transId = -1;
+
+            int locationStructureId = factoryId;
+            if (structureGroupId == (int)TMQConst.MsStructure.GroupId.SpareLocation)
+            {
+                locationStructureId = TMQConst.CommonFactoryId;
+            }
+
+            // 条件を作成
+            TMQUtil.ItemTranslationForMaster userTran = new();
+            userTran.LocationStructureId = locationStructureId;
+            userTran.LanguageId = languageId;
+            userTran.TranslationText = translationText;
+            userTran.TranslationTextBk = translationTextBefore;
+            userTran.TranslationId = translationId;
+
+            // ユーザ言語以外の言語情報
+            var transList = TMQUtil.SqlExecuteClass.SelectList<TMQUtil.ItemTranslationForMaster>(ComMaster.SqlName.GetLanguageList, ComMaster.SqlName.SubDir, new { LanguageId = languageId }, db);
+            var otherTranList = transList.Where(x => x.LanguageId != languageId).ToList();
+            foreach (TMQUtil.ItemTranslationForMaster result in otherTranList)
+            {
+                result.StructureGroupId = structureGroupId;
+                result.LocationStructureId = locationStructureId;
+            }
+
+            var userTran2 = transList.Where(x => x.LanguageId == languageId).FirstOrDefault();
+            userTran2.StructureGroupId = structureGroupId;
+            userTran2.LocationStructureId = locationStructureId;
+            userTran2.FactoryId = factoryId;
+            userTran2.TranslationId = translationId;
+            userTran2.TranslationText = translationText;
+            userTran2.TranslationTextBk = translationTextBefore;
+            userTran2.LanguageId = languageId;
+
+
+            // 新規登録フラグ
+            var isNew = false;
+
+            // 構成IDがnullの場合は新規登録
+            if (keyId == null || isNewRegist)
+            {
+                if (structureGroupId == (int)TMQConst.MsStructure.GroupId.Department)
+                {
+                    isNew = isNewTranslation(ref transId);
+                }
+                else
+                {
+                    userTran2.FactoryId = factoryId;
+                    userTran2.StructureLayerNo = structureLayerNo;
+                    userTran2.ParentStructureId = parentStructureId;
+
+                    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                    isNew = isNewTranslationByFactory(2, ref transId);
+                }
+
+            }
+            else
+            {
+                // 更新
+                // ユーザ言語の翻訳が変更されているか
+                var isUpd = false;
+                if (userTran.TranslationText != userTran.TranslationTextBk)
+                {
+                    isUpd = true;
+                }
+
+                if (!isUpd)
+                {
+                    // 翻訳が変更されていない場合
+                    // 翻訳ID取得
+                    if (userTran.TranslationId != null)
+                    {
+                        transId = (int)userTran.TranslationId;
+                    }
+                }
+                else
+                {
+                    // 翻訳が変更されている場合
+                    // 工場内に同じ翻訳が存在するか翻訳マスタを検索
+                    isNew = isNewTranslation(ref transId);
+                }
+            }
+
+            // 翻訳マスタ登録
+            if (isNew)
+            {
+                // 翻訳マスタに同じ翻訳が存在しない場合、新規登録
+                if (!registTranslationDb(ref transId, now))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 翻訳マスタに同じ翻訳が存在する場合、翻訳更新
+                if (!updateTranslationDb(ref transId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+            // 翻訳マスタ検索(翻訳マスタ新規登録の場合True)
+            bool isNewTranslation(ref int tranId)
+            {
+                // ユーザ言語のアイテム翻訳に対して工場内に同じ翻訳が存在するか翻訳マスタを検索
+                var registTranIds = TMQUtil.SqlExecuteClass.SelectList<int?>(ComMaster.SqlName.GetMsTranslationInfo, ComMaster.SqlName.SubDir, userTran, db, listUnComment: new List<string> { "AddItem" });
+                if (registTranIds == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    // 同じ翻訳が存在する場合、翻訳ID順の先頭を採用する
+                    tranId = (int)registTranIds.First();
+                    return false;
+                }
+            }
+
+            // 翻訳マスタ検索(工場毎)
+            bool isNewTranslationByFactory(int searchType, ref int tranId)
+            {
+                // ユーザ言語のアイテム翻訳に対して工場内に同じ翻訳が存在するか翻訳マスタを検索
+
+                var registTranIds = TMQUtil.SqlExecuteClass.SelectList<int?>(ComMaster.SqlName.GetMsTranslationInfoByFactory, ComMaster.SqlName.SubDir, userTran2, db, listUnComment: new List<string> { "AddItem" });                // 検索実行
+                if (searchType == 2)
+                {
+                    registTranIds = TMQUtil.SqlExecuteClass.SelectList<int?>(ComMaster.SqlName.GetMsTranslationInfoByFactory, ComMaster.SqlName.SubDir, userTran2, db, listUnComment: new List<string> { "AddItem", "AddItem2" });
+                }
+                if (registTranIds == null)
+                {
+                    // 同じ翻訳が存在しない場合、新規登録
+                    return true;
+                }
+                else
+                {
+                    // 同じ翻訳が存在する場合、翻訳ID順の先頭を採用する
+                    tranId = (int)registTranIds.First();
+                }
+
+                return false;
+            }
+
+            // 翻訳マスタ登録
+            bool registTranslationDb(ref int tranId, DateTime now)
+            {
+                // 登録するデータクラスを作成
+                ComDao.MsTranslationEntity registInfo = new();
+
+                // ユーザ言語のアイテム翻訳情報を新規登録
+                registInfo.LocationStructureId = userTran.LocationStructureId;
+                registInfo.LanguageId = userTran.LanguageId;
+                registInfo.TranslationText = userTran.TranslationText;
+                SetCommonDataBaseClass(now, ref registInfo, userId, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out tranId, ComMaster.SqlName.InsertMsTranslationInfoGetTranslationId, ComMaster.SqlName.SubDir, registInfo, db))
+                {
+                    return false;
+                }
+
+                // ユーザ言語以外のアイテム翻訳情報を新規登録
+                foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
+                {
+                    registInfo = new();
+                    registInfo.LocationStructureId = otherTran.LocationStructureId;
+                    registInfo.TranslationId = tranId;
+                    registInfo.LanguageId = otherTran.LanguageId;
+                    registInfo.TranslationText = otherTran.TranslationText;
+                    SetCommonDataBaseClass(now, ref registInfo, userId, userId);
+
+                    // 登録SQL実行
+                    if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsTranslationInfo, ComMaster.SqlName.SubDir, registInfo, db))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // 翻訳マスタ更新
+            bool updateTranslationDb(ref int tranId)
+            {
+                // 翻訳IDの翻訳を、画面のアイテム翻訳に更新する
+
+                // ユーザ言語以外のアイテム翻訳情報
+                foreach (TMQUtil.ItemTranslationForMaster otherTran in otherTranList)
+                {
+                    // 登録するデータクラスを作成
+                    ComDao.MsTranslationEntity condition = new();
+
+                    // ユーザ言語のアイテム翻訳情報を新規登録
+                    condition.LocationStructureId = userTran.LocationStructureId;
+                    condition.TranslationId = tranId;
+                    condition.LanguageId = otherTran.LanguageId;
+                    condition.TranslationText = otherTran.TranslationText;
+                    SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                    // 翻訳マスタ情報取得
+                    var transInfo = new ComDao.MsTranslationEntity().GetEntity(otherTran.LocationStructureId, tranId, otherTran.LanguageId, db);
+                    if (transInfo == null)
+                    {
+                        // 翻訳マスタに存在しない場合、新規登録
+                        // 登録SQL実行
+                        if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsTranslationInfo, ComMaster.SqlName.SubDir, condition, db))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // 画面ではここで他言語の翻訳を更新するがエクセルポートは1言語のみなのでなにもしない
+                    }
+                }
+
+                return true;
+            }
+        }
+
+
+        /// <summary>
+        /// ExcelPort アイテムマスタ登録(階層系)
+        /// </summary>
+        /// <param name="keyId">構成ID</param>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="translationText">翻訳名</param>
+        /// <param name="translationTextBefore">変更前翻訳名</param>
+        /// <param name="translationIdBefore">翻訳ID</param>
+        /// <param name="registItemId">アイテムID</param>
+        /// <param name="transId">翻訳ID</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registItemStructureExcelPort(long? keyId,
+                                               int structureGroupId,
+                                               int factoryId,
+                                               string translationText,
+                                               string translationTextBefore,
+                                               int? translationIdBefore,
+                                               int? registItemId,
+                                               int transId,
+                                               DateTime now,
+                                               string languageId,
+                                               ComDB db,
+                                               string userId,
+                                               out int itemId,
+                                               bool isNewRegist)
+        {
+            itemId = -1;
+
+            // 構成IDがnullの場合は新規登録
+            if (keyId == null || isNewRegist)
+            {
+                // 新規登録
+                // 登録するデータクラスを作成
+                ComDao.MsItemEntity condition = new();
+                condition.StructureGroupId = structureGroupId;
+                condition.ItemTranslationId = transId;
+                SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out itemId, ComMaster.SqlName.InsertMsItemInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 更新
+
+                // 条件を作成
+                TMQUtil.ItemTranslationForMaster userTran = new();
+                userTran.LocationStructureId = factoryId;
+                userTran.LanguageId = languageId;
+                userTran.TranslationText = translationText;
+                userTran.TranslationTextBk = translationTextBefore;
+                userTran.TranslationId = translationIdBefore;
+
+                // アイテムID取得
+                itemId = (int)registItemId;
+
+                // アイテムマスタ検索
+                var itemEntity = new ComDao.MsItemEntity().GetEntity(itemId, db);
+                if (itemEntity == null)
+                {
+                    // アイテムマスタに存在しない場合、エラーを返す
+                    return false;
+                }
+
+                // 翻訳が変更されているか
+                if (itemEntity.ItemTranslationId == transId)
+                {
+                    // 変更されていない場合、処理終了
+                    return true;
+                }
+
+                // 登録するデータクラスを作成
+                ComDao.MsItemEntity condition = new();
+                condition.ItemId = itemId;
+                condition.ItemTranslationId = transId;
+                SetCommonDataBaseClass(now, ref condition, userId);
+
+                // アイテムマスタ更新
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsItemInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 構成マスタ登録(階層系)
+        /// </summary>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="keyId">構成ID</param>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <param name="parentStructureId">親構成ID</param>
+        /// <param name="structureLayerNo">階層番号</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ユーザーID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registStructureExcelPort(int structureGroupId,
+                                                    long? keyId,
+                                                    int factoryId,
+                                                    int itemId,
+                                                    int? parentStructureId,
+                                                    int? structureLayerNo,
+                                                    DateTime now,
+                                                    ComDB db,
+                                                    string userId,
+                                                    bool isNewRegist,
+                                                    out int structureId)
+        {
+            structureId = -1;
+
+            // 登録するデータクラスを作成
+            ComDao.MsStructureEntity condition = new();
+            condition.FactoryId = factoryId;
+            condition.StructureGroupId = structureGroupId;
+            condition.ParentStructureId = parentStructureId;
+            condition.StructureLayerNo = structureLayerNo;
+            condition.StructureItemId = itemId;
+            condition.DeleteFlg = false;
+            SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+            // 構成IDがnullの場合は新規登録
+            if (keyId == null || isNewRegist)
+            {
+                // 新規登録
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<int>(out structureId, ComMaster.SqlName.InsertMsStructureInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 更新
+                structureId = Convert.ToInt32(keyId);
+
+                // 構成マスタ検索
+                var stEntity = new ComDao.MsStructureEntity().GetEntity(Convert.ToInt32(keyId), db);
+                if (stEntity == null)
+                {
+                    // 構成マスタに存在しない場合、エラーを返す
+                    return false;
+                }
+
+                // 削除フラグを比較
+                if (stEntity.DeleteFlg == condition.DeleteFlg)
+                {
+                    // 変更されていない場合、更新対象外
+                    return true;
+                }
+
+                // 構成マスタ更新
+                // 構成ID設定
+                condition.StructureId = Convert.ToInt32(keyId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsStructureInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort アイテムマスタ拡張登録(階層系)
+        /// </summary>
+        /// <param name="exData">登録情報</param>
+        /// <param name="sequenceNo">連番</param>
+        /// <param name="itemId">アイテムID</param>
+        /// <param name="now">現在日時</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="userId">ログインユーザID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool registStructureItemExExcelPort(string exData, int sequenceNo, int itemId, DateTime now, ComDB db, string userId)
+        {
+
+            // 登録するデータクラスを作成
+            ComDao.MsItemExtensionEntity condition = new();
+            condition.ItemId = itemId;
+            condition.SequenceNo = sequenceNo;
+            condition.ExtensionData = exData;
+
+            // アイテムマスタ拡張検索
+            var itemExEntity = new ComDao.MsItemExtensionEntity().GetEntity(itemId, sequenceNo, db);
+            if (itemExEntity == null)
+            {
+                // アイテムマスタ拡張に存在しない場合、新規登録
+
+                // 実行条件の共通項目設定
+                SetCommonDataBaseClass(now, ref condition, userId, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.InsertMsItemExtensionInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // アイテムマスタ拡張に存在する場合、拡張データを比較
+                if (itemExEntity.ExtensionData == condition.ExtensionData)
+                {
+                    // 変更されていない場合、更新対象外
+                    return true;
+                }
+                // アイテムマスタ拡張更新
+                // 実行条件の共通項目設定
+                SetCommonDataBaseClass(now, ref condition, userId);
+
+                // 登録SQL実行
+                if (!TMQUtil.SqlExecuteClass.Regist(ComMaster.SqlName.UpdateMsItemExtensionInfo, ComMaster.SqlName.SubDir, condition, db))
+                {
+                    return false;
+                }
+            }
+
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 翻訳を取得する一時テーブル作成
+        /// </summary>
+        /// <param name="structureGroupId"></param>
+        /// <param name="db"></param>
+        /// <param name="languageId"></param>
+        public static void createTempTblExcelPort(int structureGroupId, ComDB db, string languageId)
+        {
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(db, languageId);
+
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Location,
+                (GroupId)Enum.ToObject(typeof(GroupId), structureGroupId)
+            };
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
+        }
+
+        /// <summary>
+        /// ExcelPort 階層系ではないマスタの工場に関する入力チェック
+        /// </summary>
+        /// <param name="result">Excelにて入力されたレコード</param>
+        /// <param name="msg">エラーメッセージ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool commonFactoryCheckExcelPort(TMQUtil.CommonExcelPortMasterList result, out string[] msg)
+        {
+            msg = null;
+
+            if (result.ProcessId == TMQConst.SendProcessId.Regist)
+            {
+                //新規登録時
+                // 工場IDが標準工場の場合
+                if (result.FactoryId == TMQConst.CommonFactoryId)
+                {
+                    // 標準アイテムは登録できません。
+                    msg = new string[] { ComRes.ID.ID141270004 };
+                    return false;
+                }
+            }
+            else if (result.ProcessId == TMQConst.SendProcessId.Update)
+            {
+                // 更新時
+                // ①初期表示時、登録時の工場IDが0(標準アイテム)の場合
+                // ②工場アイテムから標準アイテムに変更されている場合
+                if ((result.FactoryIdBefore == TMQConst.CommonFactoryId || result.FactoryId == TMQConst.CommonFactoryId) ||
+                    (result.FactoryIdBefore != TMQConst.CommonFactoryId && result.FactoryId == TMQConst.CommonFactoryId))
+                {
+                    // 標準アイテムは登録できません。
+                    msg = new string[] { ComRes.ID.ID141270004 };
+                    return false;
+                }
+            }
+
+            // 工場アイテムが別の工場アイテムに変更されている場合
+            if (result.FactoryIdBefore != TMQConst.CommonFactoryId &&
+                result.FactoryId != TMQConst.CommonFactoryId &&
+                result.FactoryIdBefore != result.FactoryId)
+            {
+                // 別工場のアイテムに変更することはできません。
+                msg = new string[] { ComRes.ID.ID141290008 };
+                return false;
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// ExcelPort 階層系の文字数チェック
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static bool commonTextByteCheckExcelPort(string text, out int maxlength)
+        {
+            maxlength = ItemTranslasionMaxLength;
+
+            // 文字数チェック
+            if (text.Length > maxlength)
+            {
+                return false;
+            }
+
+            return true;
+        }
         #endregion
     }
 }

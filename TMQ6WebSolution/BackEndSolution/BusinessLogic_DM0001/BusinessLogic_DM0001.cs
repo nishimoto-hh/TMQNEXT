@@ -50,6 +50,10 @@ namespace BusinessLogic_DM0001
                 /// 一時テーブルに構成ID(職種)を追加するSQL
                 /// </summary>
                 public const string InsertJobStructureIdToTemp = "InsertJobStructureIdToTemp";
+                /// <summary>
+                /// 一覧画面検索時、データの件数を取得するSQL
+                /// </summary>
+                public const string GetCountAttachmentList = "GetCountAttachmentList";
             }
         }
 
@@ -312,13 +316,14 @@ namespace BusinessLogic_DM0001
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY attachment_date desc, conduct_name, document_type_structure_id, document_no");
             // 一覧検索実行
             IList<CommonDaoDM.searchResult> results = db.GetListByDataClass<CommonDaoDM.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<CommonDaoDM.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }
 

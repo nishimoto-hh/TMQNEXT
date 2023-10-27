@@ -138,20 +138,120 @@
                 Job = 1010,
                 // 原因性格階層
                 FailureCausePersonality = 1020,
+                // 保全方式
+                Conservation = 1030,
                 // 予備品機能場所階層
                 SpareLocation = 1040,
+                // 処置対策
+                TreatmentMeasure = 1050,
+                // 予算性格区分
+                BudgetPersonality = 1060,
+                // 緊急度
+                Urgency = 1070,
+                // 発見方法
+                DiscoveryMethods = 1080,
+                // 変更管理
+                ChangeManagement = 1090,
+                // 環境安全管理
+                EnvSafetyManagement = 1100,
                 // 呼出
                 Call = 1110,
                 // 系停止
                 StopSystem = 1130,
+                // 実績結果
+                ActualResult = 1140,
+                // メーカー
+                Manufacturer = 1150,
+                // 適用法規
+                ApplicableLaws = 1160,
+                // 機器レベル
+                MachineLevel = 1170,
+                // 部位マスタ
+                SiteMaster = 1180,
+                // 重要度
+                Importance = 1200,
+                // 使用区分
+                UseSegment = 1210,
+                // 保全項目(点検内容)
+                InspectionDetails = 1220,
+                // 保全区分
+                MaintainanceDivision = 1230,
+                // 点検種別
+                MaintainanceKind = 1240,
+                // 作業項目
+                WorkItem = 1280,
+                // 目的区分
+                Purpose = 1290,
+                // 予算管理区分
+                BudgetManagement = 1300,
+                // 処置区分
+                Treatment = 1310,
+                // 設備区分
+                Facility = 1320,
+                // 時期
+                Season = 1330,
                 // 仕様項目選択肢
                 SpecSelectItem = 1340,
+                // 仕様単位種別
+                SpecUnitType = 1350,
+                // 仕様単位
+                SpecUnit = 1360,
+                // 仕様項目入力形式
+                SpecType = 1370,
+                // 修繕費分類
+                RepairCostClass = 1380,
                 // 突発区分
                 Sudden = 1400,
+                // 作業区分
+                WorkClass = 1410,
+                // 依頼部課係
+                RequestDepartmentClerk = 1420,
+                // 工事区分
+                ConstructionDivision = 1430,
+                // 自・他責
+                Responsibility = 1440,
+                // 施工会社
+                Company = 1450,
+                // 故障性格分類
+                FailurePersonalityClass = 1470,
+                // 生産への影響
+                EffectProduction = 1480,
+                // 品質への影響
+                EffectQuality = 1490,
+                // 故障現象
+                Phenomenon = 1510,
+                // 故障性格要因
+                FailurePersonalityFactor = 1520,
+                //保全活動区分
+                ActivityDivision = 1530,
                 //依頼番号採番パターン
                 RequestNumberingPattern = 1540,
+                //作業／故障区分
+                WorkFailureDivision = 1550,
+                //故障分析
+                FailureAnalysis = 1560,
+                //完了/応急
+                TreatmentStatus = 1580,
+                //要/否
+                NecessityMeasure = 1590,
+                //仕入先
+                Vender = 1720,
+                //数量管理単位
+                Unit = 1730,
+                //金額管理単位
+                Currency = 1740,
+                //部門
+                Department = 1760,
+                //金額管理単位
+                Account = 1770,
                 // スケジュール作成上限
                 MakeScheduleYear = 1800,
+                // 故障原因
+                FailureCause = 1810,
+                // 対策分類Ⅰ
+                MeasureClass1 = 1820,
+                // 対策分類Ⅱ
+                MeasureClass2 = 1830,
                 // 点検種別毎管理(機器別管理基準)工場
                 MaintainanceKindManageFactory = 1840,
                 //MQ分類
@@ -160,14 +260,22 @@
                 StatusList = 1860,
                 // スケジュール表示単位
                 ScheduleDisp = 1870,
+                // スケジュール基準
+                ScheduleType = 1890,
+                // 進捗状況
+                Progress = 1900,
                 // 工場毎年度期間
                 YearSpan = 1910,
+                // 保全部課係
+                MaintenanceDepartmentClerk = 1930,
                 // 新旧区分
                 OldNewDivition = 1940,
                 // 受払区分
                 InoutDivision = 1950,
                 // 作業区分
                 WorkDivision = 1960,
+                // 予備品使用区分
+                PartsUseSegment = 1970,
                 // 出庫区分
                 IssueDivision = 1980,
                 // 棚卸作成区分
@@ -180,20 +288,28 @@
                 BeginningMonth = 2020,
                 // 丸め処理区分
                 RoundDivision = 2050,
+                // 機種別仕様項目数値書式
+                SpecNumDecimalPlaces = 2060,
                 // 変更管理 申請状況
                 ApplicationStatus = 2090,
                 // 変更管理 申請区分
                 ApplicationDivision = 2100,
                 // ExcelPort送信時処理区分
                 ProcessDivision = 2120,
+                // ExcelPortチェックボックス項目用区分
+                CheckBoxItemDivision = 2130,
                 // 変更管理帳票出力対象項目定義
                 OutputItem = 2150,
+                // ExcelPort保全活動完了区分
+                CompletionDivision = 2170,
                 // 権限
                 Authority = 9040,
                 // テンポラリフォルダパス
                 TempFolderPath = 9200,
                 // ExcelPort 出力可能最大行数
-                ExcelPortMaxCount = 9220
+                ExcelPortMaxCount = 9220,
+                // Excel 出力可能最大行数
+                ExcelMaxCount = 9320
             }
 
             /// <summary>
@@ -440,7 +556,15 @@
                     /// <summary>
                     /// 長期計画
                     /// </summary>
-                    HM0002 = 2
+                    HM0002 = 2,
+                    /// <summary>
+                    /// 保全部位、保全項目(機器台帳)
+                    /// </summary>
+                    HM0001Content = 3,
+                    /// <summary>
+                    /// 保全部位、保全項目(長期計画)
+                    /// </summary>
+                    HM0002Content = 4
                 }
 
                 /// <summary>
@@ -478,26 +602,22 @@
                 }
 
                 /// <summary>
-                /// ExcelPort送信時処理区分
+                /// ExcelPort保全活動完了区分
                 /// </summary>
-                public enum ExcelPortProcessDivision
+                public enum CompletionDivision
                 {
                     /// <summary>
-                    /// 送信時処理区分なし(選択されていない)
+                    /// 全件
                     /// </summary>
-                    None = 0,
+                    All = 0,
                     /// <summary>
-                    /// 新規登録
+                    /// 未完了
                     /// </summary>
-                    Insert = 1,
+                    Incomplete = 1,
                     /// <summary>
-                    /// 更新
+                    /// 完了
                     /// </summary>
-                    Update = 2,
-                    /// <summary>
-                    /// 削除
-                    /// </summary>
-                    Delete = 9
+                    Completion = 2
                 }
             }
         }

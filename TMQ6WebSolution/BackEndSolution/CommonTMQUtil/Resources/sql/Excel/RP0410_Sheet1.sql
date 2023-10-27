@@ -73,20 +73,88 @@ SELECT
     ISNULL(tbl.model_type,'') + ISNULL(tbl.standard_size,'') AS model_type, -- 型式(仕様)
 
     tbl.manufacturer_structure_id, -- メーカー
-    [dbo].[get_v_structure_item](tbl.manufacturer_structure_id, tbl.factoryId, tbl.languageId) AS manufacturer_name,
-
+    (
+     SELECT
+         tra.translation_text 
+     FROM
+         v_structure_item_all AS tra 
+     WHERE
+         tra.language_id = tbl.languageId
+         AND tra.location_structure_id = ( 
+             SELECT
+                 MAX(st_f.factory_id) 
+             FROM
+                 #temp_structure_factory AS st_f 
+             WHERE
+                 st_f.structure_id = tbl.manufacturer_structure_id
+                 AND st_f.factory_id IN (0, tbl.factoryId)
+         )
+         AND tra.structure_id = tbl.manufacturer_structure_id
+    ) AS manufacturer_name,                        -- メーカー名
+    
     tbl.old_new_structure_id, -- 新旧区分
-    [dbo].[get_v_structure_item](tbl.old_new_structure_id, tbl.factoryId, tbl.languageId) AS old_new_name,
+    (
+     SELECT
+         tra.translation_text 
+     FROM
+         v_structure_item_all AS tra 
+     WHERE
+         tra.language_id = tbl.languageId
+         AND tra.location_structure_id = ( 
+             SELECT
+                 MAX(st_f.factory_id) 
+             FROM
+                 #temp_structure_factory AS st_f 
+             WHERE
+                 st_f.structure_id = tbl.old_new_structure_id
+                 AND st_f.factory_id IN (0, tbl.factoryId)
+         )
+         AND tra.structure_id = tbl.old_new_structure_id
+    ) AS old_new_name,                        -- 新旧区分名
     
     -- 在庫金額 
     tbl.stock_amount, -- 出庫金額
 
     tbl.account_structure_id, -- 勘定項目
-    [dbo].[get_v_structure_item](tbl.account_structure_id, tbl.factoryId, tbl.languageId) AS account_name,
+    (
+     SELECT
+         tra.translation_text 
+     FROM
+         v_structure_item_all AS tra 
+     WHERE
+         tra.language_id = tbl.languageId
+         AND tra.location_structure_id = ( 
+             SELECT
+                 MAX(st_f.factory_id) 
+             FROM
+                 #temp_structure_factory AS st_f 
+             WHERE
+                 st_f.structure_id = tbl.account_structure_id
+                 AND st_f.factory_id IN (0, tbl.factoryId)
+         )
+         AND tra.structure_id = tbl.account_structure_id
+    ) AS account_name,                        -- 勘定項目名
     [dbo].[get_rep_extension_data](tbl.account_structure_id, tbl.factoryId, tbl.languageId, 1) AS account_cd,
 
     tbl.department_structure_id, -- 部門ID
-    [dbo].[get_v_structure_item](tbl.department_structure_id, tbl.factoryId, tbl.languageId) AS department_name,
+--    (
+--     SELECT
+--         tra.translation_text 
+--     FROM
+--         v_structure_item_all AS tra 
+--     WHERE
+--         tra.language_id = tbl.languageId
+--         AND tra.location_structure_id = ( 
+--             SELECT
+--                 MAX(st_f.factory_id) 
+--             FROM
+--                 #temp_structure_factory AS st_f 
+--             WHERE
+--                 st_f.structure_id = tbl.department_structure_id
+--                 AND st_f.factory_id IN (0, tbl.factoryId)
+--         )
+--         AND tra.structure_id = tbl.department_structure_id
+--    ) AS department_name,                        -- 部門名
     [dbo].[get_rep_extension_data](tbl.department_structure_id, tbl.factoryId, tbl.languageId, 1) AS department_cd,
 
     -- 在庫数
@@ -104,6 +172,9 @@ SELECT
     ,'' as department_id_list -- 部門ID（条件）
     ,'' as factory_name -- 工場名
     ,'' as warehouse_name -- 予備品倉庫名
+
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM
 (
     SELECT
@@ -188,9 +259,43 @@ FROM
         currency.currency_round_division
 ) tbl
 ORDER BY
-    [dbo].[get_v_structure_item](tbl.parts_location_id, tbl.factoryId, tbl.languageId), -- 棚番
+    (
+     SELECT
+         tra.translation_text 
+     FROM
+         v_structure_item_all AS tra 
+     WHERE
+         tra.language_id = tbl.languageId
+         AND tra.location_structure_id = ( 
+             SELECT
+                 MAX(st_f.factory_id) 
+             FROM
+                 #temp_structure_factory AS st_f 
+             WHERE
+                 st_f.structure_id = tbl.parts_location_id
+                 AND st_f.factory_id IN (0, tbl.factoryId)
+         )
+         AND tra.structure_id = tbl.parts_location_id
+    ),                        -- 棚名
     ISNULL(parts_location_detail_no,''), -- 棚番枝番  
     tbl.parts_no, -- 予備品ｺｰﾄﾞNo.
-    [dbo].[get_v_structure_item](tbl.old_new_structure_id, tbl.factoryId, tbl.languageId), -- 新旧区分
+    (
+     SELECT
+         tra.translation_text 
+     FROM
+         v_structure_item_all AS tra 
+     WHERE
+         tra.language_id = tbl.languageId
+         AND tra.location_structure_id = ( 
+             SELECT
+                 MAX(st_f.factory_id) 
+             FROM
+                 #temp_structure_factory AS st_f 
+             WHERE
+                 st_f.structure_id = tbl.old_new_structure_id
+                 AND st_f.factory_id IN (0, tbl.factoryId)
+         )
+         AND tra.structure_id = tbl.old_new_structure_id
+    ),                        -- 新旧区分名
     [dbo].[get_rep_extension_data](tbl.department_structure_id, tbl.factoryId, tbl.languageId, 1), -- 部門コード
     [dbo].[get_rep_extension_data](tbl.account_structure_id, tbl.factoryId, tbl.languageId, 1) -- 勘定科目コード

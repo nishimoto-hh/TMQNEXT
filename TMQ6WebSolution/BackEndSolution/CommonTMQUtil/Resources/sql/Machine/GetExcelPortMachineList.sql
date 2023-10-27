@@ -16,7 +16,7 @@ mc.equipment_level_structure_id,
            SELECT
                MAX(st_f.factory_id) 
            FROM
-               structure_factory AS st_f 
+               #temp_structure_factory AS st_f 
            WHERE
                st_f.structure_id = mc.equipment_level_structure_id
                AND st_f.factory_id IN (0, factoryId)
@@ -24,6 +24,12 @@ mc.equipment_level_structure_id,
        AND tra.structure_id = mc.equipment_level_structure_id
 ) AS equipment_level_name,
 mc.location_structure_id,
+mc.location_district_structure_id AS district_id,
+mc.location_factory_structure_id AS factory_id,
+mc.location_plant_structure_id AS plant_id,
+mc.location_series_structure_id AS series_id,
+mc.location_stroke_structure_id AS stroke_id,
+mc.location_facility_structure_id AS facility_id,
 mc.importance_structure_id,
 ( 
    SELECT
@@ -36,7 +42,7 @@ mc.importance_structure_id,
            SELECT
                MAX(st_f.factory_id) 
            FROM
-               structure_factory AS st_f 
+               #temp_structure_factory AS st_f 
            WHERE
                st_f.structure_id = mc.importance_structure_id
                AND st_f.factory_id IN (0, factoryId)
@@ -55,7 +61,7 @@ mc.conservation_structure_id AS inspection_site_conservation_structure_id,
            SELECT
                MAX(st_f.factory_id) 
            FROM
-               structure_factory AS st_f 
+               #temp_structure_factory AS st_f 
            WHERE
                st_f.structure_id = mc.conservation_structure_id
                AND st_f.factory_id IN (0, factoryId)
@@ -67,20 +73,21 @@ mc.number_of_installation,
 mc.date_of_installation,
 mc.machine_note,
 mc.job_structure_id,
+mc.job_kind_structure_id AS job_id,
+mc.job_large_classfication_structure_id AS large_classfication_id,
+mc.job_middle_classfication_structure_id AS middle_classfication_id,
+mc.job_small_classfication_structure_id AS small_classfication_id,
 eq.circulation_target_flg,
 (SELECT 
   CASE  eq.circulation_target_flg 
   WHEN 1 THEN (
                SELECT TOP(1) v.translation_text
-               FROM v_structure_item_all v,
+               FROM (SELECT * FROM v_structure_item_all WHERE structure_group_id = 2130 AND language_id = @LanguageId AND location_structure_id IN (0, factoryId))v,
 			        ms_item_extension mi
 			   WHERE v.structure_item_id = mi.item_id
-			   AND v.structure_group_id = 2130
 			   AND mi.sequence_no = 1
-			   AND mi.extension_data = 1
-			   AND v.language_id = @LanguageId
-			   AND v.location_structure_id IN (0, factoryId)
-			   )
+			   AND mi.extension_data = '1'
+			  )
   ELSE NULL
   END
 ) AS circulation_target_flg_name,
@@ -96,7 +103,7 @@ eq.manufacturer_structure_id,
            SELECT
                MAX(st_f.factory_id) 
            FROM
-               structure_factory AS st_f 
+               #temp_structure_factory AS st_f 
            WHERE
                st_f.structure_id = eq.manufacturer_structure_id
                AND st_f.factory_id IN (0, factoryId)
@@ -120,7 +127,7 @@ eq.use_segment_structure_id,
            SELECT
                MAX(st_f.factory_id) 
            FROM
-               structure_factory AS st_f 
+               #temp_structure_factory AS st_f 
            WHERE
                st_f.structure_id = eq.use_segment_structure_id
                AND st_f.factory_id IN (0, factoryId)
@@ -133,29 +140,24 @@ eq.maintainance_kind_manage,
   CASE  eq.maintainance_kind_manage 
   WHEN 1 THEN (
                SELECT TOP(1) v.translation_text
-               FROM v_structure_item_all v,
+               FROM (SELECT * FROM v_structure_item_all WHERE structure_group_id = 2130 AND language_id = @LanguageId AND location_structure_id IN (0, factoryId))v,
 			        ms_item_extension mi
 			   WHERE v.structure_item_id = mi.item_id
-			   AND v.structure_group_id = 2130
 			   AND mi.sequence_no = 1
-			   AND mi.extension_data = 1
-			   AND v.language_id = @LanguageId
-			   AND v.location_structure_id IN (0, factoryId)
-			   )
-  ELSE NULL
+			   AND mi.extension_data = '1'
+			  )
   END
 ) AS maintainance_kind_manage_name,
 eq.equipment_note,
-SUBSTRING(REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
+
+REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
  FROM mc_applicable_laws ma
  WHERE ma.machine_id = mc.machine_id
  ORDER BY ma.applicable_laws_structure_id
- FOR XML PATH('')),' ',''),1,LEN(REPLACE((SELECT STR(applicable_laws_structure_id) + '|'
- FROM mc_applicable_laws ma
- WHERE ma.machine_id = mc.machine_id
- ORDER BY ma.applicable_laws_structure_id
- FOR XML PATH('')),' ',''))-1) AS applicable_laws_structure_id, 
-SUBSTRING(REPLACE((SELECT tra.translation_text + ','
+ FOR XML PATH('')),' ','') AS applicable_laws_structure_id, 
+ 
+TRIM(',' FROM
+(SELECT tra.translation_text + ','
 FROM
 	v_structure_item_all AS tra ,
 	mc_applicable_laws ml
@@ -165,38 +167,199 @@ WHERE
 		SELECT
 			MAX(st_f.factory_id) 
 		FROM
-			structure_factory AS st_f ,
-			mc_applicable_laws mal
+			#temp_structure_factory AS st_f 
 		WHERE
-			st_f.structure_id = mal.applicable_laws_structure_id
-			AND mal.machine_id = mc.machine_id
+			st_f.structure_id = ml.applicable_laws_structure_id
 			AND st_f.factory_id IN (0, factoryId)
 	) 
 AND tra.structure_id = ml.applicable_laws_structure_id
 AND ml.machine_id = mc.machine_id
 ORDER BY ml.applicable_laws_structure_id
-FOR XML PATH('')),' ',''),1,LEN(REPLACE((SELECT tra.translation_text + ','
-								FROM
-									v_structure_item_all AS tra ,
-									mc_applicable_laws ml
-								WHERE
-									tra.language_id = @LanguageId
-									AND tra.location_structure_id = ( 
-										SELECT
-											MAX(st_f.factory_id) 
-										FROM
-											structure_factory AS st_f ,
-											mc_applicable_laws mal
-										WHERE
-											st_f.structure_id = mal.applicable_laws_structure_id
-											AND mal.machine_id = mc.machine_id
-											AND st_f.factory_id IN (0, factoryId)
-									) 
-								AND tra.structure_id = ml.applicable_laws_structure_id
-								AND ml.machine_id = mc.machine_id
-								ORDER BY ml.applicable_laws_structure_id
-FOR XML PATH('')),' ',''))-1) AS applicable_laws_name
-FROM (SELECT mc.*,dbo.get_target_layer_id(mc.location_structure_id, 1)as factoryId FROM mc_machine mc) mc
+FOR XML PATH(''))) AS applicable_laws_name,
+
+-- èÍèääKëwÇÃñ|ñÛ
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_district_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_district_structure_id
+) AS district_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_factory_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_factory_structure_id
+) AS factory_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_plant_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_plant_structure_id
+) AS plant_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_series_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_series_structure_id
+) AS series_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_stroke_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_stroke_structure_id
+) AS stroke_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.location_facility_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.location_facility_structure_id
+) AS facility_name,
+-- êEéÌã@éÌäKëwÇÃñ|ñÛ
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.job_kind_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.job_kind_structure_id
+) AS job_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.job_large_classfication_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.job_large_classfication_structure_id
+) AS large_classfication_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.job_middle_classfication_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.job_middle_classfication_structure_id
+) AS middle_classfication_name,
+( 
+   SELECT
+       tra.translation_text 
+   FROM
+       v_structure_item_all AS tra 
+   WHERE
+       tra.language_id = @LanguageId
+       AND tra.location_structure_id = ( 
+           SELECT
+               MAX(st_f.factory_id) 
+           FROM
+               #temp_structure_factory AS st_f 
+           WHERE
+               st_f.structure_id = mc.job_small_classfication_structure_id
+               AND st_f.factory_id IN (0, factoryId)
+       ) 
+       AND tra.structure_id = mc.job_small_classfication_structure_id
+) AS small_classfication_name
+FROM (SELECT mc.*,location_factory_structure_id as factoryId FROM mc_machine mc) mc
 LEFT JOIN mc_equipment eq
 ON mc.machine_id = eq.machine_id
 WHERE EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND mc.location_structure_id = temp.structure_id)

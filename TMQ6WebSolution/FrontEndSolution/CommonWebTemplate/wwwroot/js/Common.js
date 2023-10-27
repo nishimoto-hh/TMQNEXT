@@ -728,6 +728,14 @@ const autocompDivDef = {
     CodeOnly: "3"
 }
 
+/** 定義 読込件数 */
+const selectCntMaxDef = {
+    /** デフォルト値 */
+    Default: 50,
+    /** すべて */
+    All: -1
+}
+
 /** 定数　非同期処理の完了制御に使用 */
 const promise = {
     // オートコンプリート完了制御
@@ -2148,9 +2156,9 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
                         td = getFactoryTdElement(selector);
                     }
                     if (!td || td.length == 0) {
-                        if (getCurrentModalNo(P_Article) > 0) {
+                        if (getCurrentModalNo(selector) > 0) {
                             // モーダル画面の場合、呼び元の詳細エリアも探す
-                            td = getFactoryTdElement($("#detail_divid_" + getFormNo()));
+                            td = getFactoryTdElement($("#detail_divid_" + getFormNo(selector)));
                         }
                     }
 
@@ -2402,6 +2410,13 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
 
         // 元の値はdata-value属性から取得する
         const dataValue = $(selector).data('value') + "";
+        let dataValueEx;
+        if (changeColNo < 0) {
+            if ($(selector).hasClass('DispCount')) {
+                // 読込件数コンボの場合、読込件数上限のデフォルト値を取得
+                dataValueEx = getSelectCntMaxDefault(null, selector) + "";
+            }
+        }
         $.each(data, function () {
             // optionタグ追加
             const optionVal = this.VALUE1;
@@ -2434,6 +2449,9 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
                 if (dataValue != null && dataValue.length > 0) {
                     // data-value属性の値を優先する
                     selected = optionVal == dataValue;
+                } else if (dataValueEx != null && dataValueEx.length > 0) {
+                    // dataValueExが空でない場合、EXPARAM1の値と比較する
+                    selected = this.EXPARAM1 == dataValueEx;
                 } else {
                     selected = (preComboValue != null && preComboValue.length > 0) && optionVal == preComboValue;
                 }
@@ -2685,6 +2703,44 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
             }
         }
     });
+}
+
+/**
+ * コンボボックスの初期化処理
+ * @param {string} appPath      ：アプリケーションパス
+ * @param {number} formNo       ：画面NO
+ * @param {boolean} isExclude   ：除外フラグ(true:指定画面NOを除外する/false:指定画面NOを初期化する)
+ */
+function initComboBoxes(appPath, formNo, isExclude) {
+    var comboBoxes;
+    var parents = $('article[data-formno], table[data-formno]');
+    if (!isExclude) {
+        parents = $(parents).filter('[data-formno=0]');
+    } else {
+        parents = $(parents).filter('[data-formno!=0]');
+    }
+    if (parents && parents.length > 0) {
+        var comboBoxes = $(parents).find('select[id^="cbo"]');
+
+        $.each(comboBoxes, function (id, cbo) {
+            callInitComboBox(appPath, cbo);
+        });
+        comboBoxes = null;
+    }
+    parents = null;
+}
+
+/**
+ * コンボボックスの初期化処理呼び出し
+ * @param {string} appPath  ：アプリケーションパス
+ * @param {string} cbo      ：対象セレクタor要素
+ */
+function callInitComboBox(appPath, cbo) {
+    const sqlId = $(cbo).data('sqlid');
+    const param = $(cbo).data('param');
+    const option = $(cbo).data('option');
+    const nullCheck = $(cbo).data('nullcheck');
+    initComboBox(appPath, cbo, sqlId, param, option, nullCheck, -1);
 }
 
 /**
@@ -3221,6 +3277,41 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
     text = null;
 }
 
+/**
+ * 複数選択リストの初期化処理
+ * @param {string} appPath      ：アプリケーションパス
+ * @param {number} formNo       ：画面NO
+ * @param {boolean} isExclude   ：除外フラグ(true:指定画面NOを除外する/false:指定画面NOを初期化する)
+ */
+function initMultiSelectBoxes(appPath, formNo, isExclude) {
+    var parents = $('article[data-formno], table[data-formno]');
+    if (!isExclude) {
+        parents = $(parents).filter('[data-formno=0]');
+    } else {
+        parents = $(parents).filter('[data-formno!=0]');
+    }
+    if (parents && parents.length > 0) {
+        var selectBoxes = $(parents).find('ul[id^="mlt"]');
+        $.each(selectBoxes, function (idx, select) {
+            callInitMultiSelectBox(appPath, select);
+        });
+        selectBoxes = null;
+    }
+    parents = null;
+}
+
+/**
+ * 複数選択リストの初期化処理呼び出し
+ * @param {string} appPath  ：アプリケーションパス
+ * @param {string} cbo      ：対象セレクタor要素
+ */
+function callInitMultiSelectBox(appPath, select) {
+    const sqlId = $(select).data('sqlid');
+    const param = $(select).data('param');
+    const option = $(select).data('option');
+    const nullCheck = $(select).data('nullcheck');
+    initMultiSelectBox(appPath, select, sqlId, param, option, nullCheck);
+}
 /**
  * 付近に開いた状態の複数選択チェックボックスがあれば、閉じる
  * @param {any} target チェック対象コントロール
@@ -6753,6 +6844,7 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
     }
 
     var getPageNoFromStorage = false;
+    let isBackBtn = false;
 
     var btnCtrlIdW = ctrlIdInit;        //「Init」:初期化処理（ﾒﾆｭｰ選択時・共通機能遷移時・他機能遷移時）
     if (btnCtrlId != null && btnCtrlId.length > 0) {
@@ -6767,6 +6859,7 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         if (btnCtrlId.indexOf(ctrlIdBack) >= 0) {
             // 戻る処理の場合、セッションストレージからページ番号を取得する
             getPageNoFromStorage = true
+            isBackBtn = true;
         }
     }
 
@@ -6782,6 +6875,15 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         if (conditionDataList == null) { conditionDataList = []; }
         conditionDataList = conditionDataList.concat(detailConditionDataList);
     }
+
+    // 103(Tabulator)一覧の場合、読込件数上限にデフォルト値をセット
+    var listDefines = $.grep(P_listDefines, function (define, idx) {
+        return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3);
+    });
+    $.each(listDefines, function (idx, define) {
+        // 読込件数上限を取得＆設定
+        define.VAL5 = !isBackBtn ? getSelectCntMaxDefault(define.CTRLID) : getSelectCntMax(define.CTRLID);
+    });
 
     // 場所階層/職種機種データ取得(ストレージより)
     var locationIdList = getSelectedStructureIdListFromStorage(structureGroupDef.Location, treeViewDef.TreeMenu);
@@ -6947,6 +7049,16 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
                     // セッションストレージのページ番号をクリア
                     removeSaveDataFromSessionStorageForList(sessionStorageCode.PageNo, conductId, formNo, tbl_id.replace('#', ''));
                 }
+
+                if (data && data.length > 0) {
+                    // 詳細条件適用有無を取得
+                    var isDetailConditionApplied = $.grep(data, function (info, idx) {
+                        return (info.CTRLID == id && info.IsDetailConditionApplied);
+                    });
+                    var selectCntDisabled = isDetailConditionApplied != null && isDetailConditionApplied.length > 0;
+                    // 表示件数コンボの活性状態を設定
+                    setSelectCntControlStatus(id, selectCntDisabled);
+                }
             });
 
             var promise = new Promise((resolve) => {
@@ -6979,6 +7091,8 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
             setEventForEditFlg(true, null, "#" + P_formTopId);
             setEventForEditFlg(true, null, "#" + P_formDetailId);
             setEventForEditFlg(true, null, "#" + P_formBottomId);
+
+            //console.time('outputList');
         },
         // 2つめは通信失敗時のコールバック
         function (resultInfo) {
@@ -7021,6 +7135,11 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         function (resultInfo) {
             //処理中メッセージ：off
             processMessage(false);
+
+            //    if (!isBackBtn && ((transPtn == transPtnDef.None && formNo == 0) || transPtn == transPtnDef.OtherTab)) {
+            //        setTimeout(initComboBoxes, 0, appPath, formNo, true);
+            //        setTimeout(initMultiSelectBoxes, 0, appPath, formNo, true);
+            //    }
         });
 
 }
@@ -9101,6 +9220,15 @@ function reportCreate(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtr
         }
     }
 
+    // 103(Tabulator)一覧の場合、読込件数上限をセット
+    var listDefines = $.grep(P_listDefines, function (define, idx) {
+        return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3);
+    });
+    $.each(listDefines, function (idx, define) {
+        // 読込件数上限を取得＆設定
+        define.VAL5 = getSelectCntMax(define.CTRLID, formNo);
+    });
+
     // 場所階層/職種機種データ取得
     var locationIdList = getSelectedStructureIdList(structureGroupDef.Location, treeViewDef.TreeMenu, false);
     var jobIdList = getSelectedStructureIdList(structureGroupDef.Job, treeViewDef.TreeMenu, true);
@@ -9347,7 +9475,7 @@ function excelPortDownload(appPath, btn, conductId, pgmId, formNo, conductPtn, b
         var rowNo = $(btn).closest("div.tabulator-row").find("div[tabulator-field=ROWNO]")[0].innerText;
         var tblId = "#" + $(btn).closest("div.ctrlId").attr("id");
         // フィルターを掛けている場合を考慮して以下で行番号を取得
-        rowNo = P_listData[tblId].getRowFromPosition(rowNo, true).getData().ROWNO -1;
+        rowNo = P_listData[tblId].getRowFromPosition(parseInt(rowNo, 10), true).getData().ROWNO;
         conditionDataList.push(getTempDataForTabulator(formNo, rowNo, tblId));
 
     } else {
@@ -10624,15 +10752,20 @@ function initDeleteRowBtn(appPath, btns) {
                     var rowNo = chk.ROWNO;
                     var updateRow = table.searchRows("ROWNO", "=", rowNo);
                     // 行ステータスに9: 削除行をセット
-                    updateRow[0].update({ "ROWSTATUS": rowStatusDef.Delete });
+                    //updateRow[0].update({ "ROWSTATUS": rowStatusDef.Delete });
+                    updateRow[0].getData().ROWSTATUS = rowStatusDef.Delete;
                     //削除行のデータを取得
                     var deleteData = getTempDataForTabulator(formNo, rowNo, tableId, 0);
                     deleteDataList.push(deleteData);
-                    //行を削除
-                    updateRow[0].delete();
+                    ////行を削除
+                    //updateRow[0].delete();
                 });
                 //削除行のデータを退避
                 P_deleteData[tableId] = P_deleteData[tableId].concat(deleteDataList);
+                //行を削除
+                var deleteRowNoList = deleteDataList.map(function (item) { return item.ROWNO });
+                table.deleteRow(deleteRowNoList);
+                //再描画
                 table.redraw();
             } else {
                 $.each(checkes, function (idx, chk) {
@@ -10687,6 +10820,17 @@ function initAllSelectCancelBtn(isSelect, appPath, btns) {
                     table = null;
                     return;
                 }
+
+                //表示中のページのみチェックボックスのON/OFF
+                checkes = $(tbl).find(".tabulator-row .tabulator-cell[tabulator-field='SELTAG'] :checkbox");
+                $.each(checkes, function (idx, chk) {
+                    if (!$(chk).is(":disabled") && $(chk).is(":visible")) {
+                        var tr = $(chk).closest(".tabulator-row");
+                        setupDataEditedFlg(tr);
+                        $(chk).prop('checked', isSelect);
+                    }
+                });
+
                 var rows = table.getRows("active");//フィルタリングされている行
                 if (!rows) { return; }
                 $.each(rows, function (i, row) {
@@ -10694,11 +10838,14 @@ function initAllSelectCancelBtn(isSelect, appPath, btns) {
                     if (row.getData().SELTAG == val) {
                         return true;//continue
                     }
-                    //行番号
-                    var rowNo = row.getData().ROWNO;
-                    //SELTAGに選択状態を設定
-                    var item = { ROWNO: rowNo, SELTAG: val };
-                    table.updateData([item]);
+                    //チェック状態を設定
+                    row.getData().SELTAG = val;
+
+                    ////行番号
+                    //var rowNo = row.getData().ROWNO;
+                    ////SELTAGに選択状態を設定
+                    //var item = { ROWNO: rowNo, SELTAG: val };
+                    //table.updateData([item]);
                 });
                 table = null;
             } else {
@@ -10747,6 +10894,17 @@ function initAllSelectCancelBtnPage(isSelect, appPath, btns) {
             if (ctrltype == ctrlTypeDef.IchiranPtn3) {
                 var table = P_listData['#' + tableid];
                 if (!table) { return; }
+
+                //表示中のページのみチェックボックスのON/OFF
+                checkes = $(tbl).find(".tabulator-row .tabulator-cell[tabulator-field='SELTAG'] :checkbox");
+                $.each(checkes, function (idx, chk) {
+                    if (!$(chk).is(":disabled") && $(chk).is(":visible")) {
+                        var tr = $(chk).closest(".tabulator-row");
+                        setupDataEditedFlg(tr);
+                        $(chk).prop('checked', isSelect);
+                    }
+                });
+
                 var rows = table.getData("display");//表示中のページの行のみ
                 if (!rows) { return; }
                 $.each(rows, function (i, row) {
@@ -10754,12 +10912,15 @@ function initAllSelectCancelBtnPage(isSelect, appPath, btns) {
                     if (row.getData().SELTAG == val) {
                         return true;//continue
                     }
-                    //行番号
-                    var rowNo = row.getData().ROWNO;
-                    //SELTAGに選択状態を設定
-                    var item = { ROWNO: rowNo, SELTAG: val };
-                    table.updateData([item]);
+                    //チェック状態を設定（HTMLには反映されないので、表示中のページのみチェックボックスのON/OFF制御を行う）
+                    row.getData().SELTAG = val;
+                    ////行番号
+                    //var rowNo = row.getData().ROWNO;
+                    ////SELTAGに選択状態を設定
+                    //var item = { ROWNO: rowNo, SELTAG: val };
+                    //table.updateData([item]);
                 });
+
                 table = null;
             } else {
                 checkes = $(tbl).find("tr:not('.base_tr') td[data-name='SELTAG'] :checkbox");
@@ -13015,7 +13176,7 @@ function clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo
     }
 
     //FormData生成
-   var formData = new FormData($(form).get(0));
+    var formData = new FormData($(form).get(0));
 
     // クリックされたボタンを判定
     var btnClickedBtn;
@@ -13144,7 +13305,7 @@ function clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo
                 // 画面変更ﾌﾗｸﾞ初期化
                 dataEditedFlg = false;
 
-               //処理中メッセージ：off
+                //処理中メッセージ：off
                 processMessage(false);
                 // 実行中フラグOFF
                 P_ProcExecuting = false;
@@ -13572,7 +13733,21 @@ function initDetailSearchCondition(target) {
             const valNo = 'VAL' + itemNo;
             // チェック状態を設定
             const checked = savedData[0][valNo + '_checked'];
-            $(tr).find('td.select input[type="checkbox"]').prop('checked', checked);
+
+            // 選択チェックボックスの初期化
+            var checkBoxSelect = $(tr).find('td.select input[type="checkbox"]');
+            $(checkBoxSelect).prop('checked', checked);
+            // 選択チェックイベントハンドラの設定
+            $(checkBoxSelect).off('click');
+            $(checkBoxSelect).on('click', function () {
+                const table = $(this).closest('table');
+                var checkedCheckBox = $(table).find('td.select input[type="checkbox"]:checked');
+                if (!checkedCheckBox || checkedCheckBox.length == 0) {
+                    // 選択チェック無しの場合、対象一覧の読込件数コンボとボタンを活性化
+                    const ctrlId = $(table).data('parentid');
+                    setSelectCntControlStatus(ctrlId, false);
+                }
+            });
 
             // NULL検索チェックボックスのチェック状態を設定
             var nullSearch = savedData[0][valNo + '_nullSearch'];
@@ -13691,7 +13866,7 @@ function initDetailSearchExecBtn(appPath, btn, conductId) {
         var table = $("#detail_search table:not(.hide)");
         if (table == null && table.length == 0) { return; }
 
-        console.time('javascript');
+        //console.time('javascript');
         P_TabulatorEventWaitStatus = tabulatorEventWaitStatusDef.WaitTableBuilting;
         P_ExecRenComFlag = false;
 
@@ -14178,7 +14353,7 @@ function getItemCustomizeTableId(element) {
 function initTreeViewSearchBtn(appPath, btn) {
     // ボタンクリックイベントハンドラの設定
     $(btn).on('click', function () {
-        console.time('javascript');
+        //console.time('javascript');
         P_TabulatorEventWaitStatus = tabulatorEventWaitStatusDef.WaitTableBuilting;
         P_ExecRenComFlag = false;
 
@@ -14377,13 +14552,14 @@ function initSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStruc
         // 親要素が選択されている場合、自身を選択リストから削除(複数選択可能な場合)
         selectedNodes = [];
         var ids = nodes.filter(x => x["parent"] != "#").map(x => x["id"]);
+        var locationGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
         $.each(nodes, function (idx, node) {
             var parent = node.parent;
             //if (!ids.includes(parent) && parent != '#') {
             //    // 親要素が選択されていない場合、リストに追加
             //    selectedNodes.push(node);
             //}
-            if (isMultiSelect && (structureGrpId == structureGroupDef.Location || structureGrpId == structureGroupDef.LocationForUserMst)) {
+            if (isMultiSelect && locationGrpIds.includes(structureGrpId)) {
                 // 複数選択の場所階層の場合
                 var layerNo = getTreeViewLayerNo(node);
                 if (layerNo == structureLayerNo.Factory || (!ids.includes(parent) && parent != '#' && layerNo > structureLayerNo.Factory)) {
@@ -14936,6 +15112,9 @@ function transChildForm(appPath, childNo, dispPtn, transDiv, parentNo, btn_ctrlI
         // 日付コントロールの初期化(APより移行)
         initDateTypePicker($(articlePop).find("tr:not('.base_tr')"), false);
 
+        // コンボボックスの初期化
+        resetComboBox(appPath, $(articlePop).find('select'));
+
         // - ﾎﾟｯﾌﾟｱｯﾌﾟ表示
         showModalForm(modal);
 
@@ -15033,6 +15212,9 @@ function transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo
         initBackBtnForPopup(appPath, backBtn, transPtn);
         backBtn = null;
 
+        //// コンボボックスの初期化⇒一覧への設定処理の後へ移動
+        //resetComboBox(appPath, $(editDiv).find('select'));
+
         // 一覧CTRLIDをdata-ctrlid属性にｾｯﾄ
         setAttrByNativeJs(formEdit, "data-ctrlid", transTarget);
 
@@ -15093,6 +15275,9 @@ function transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo
             }
             deleteBtn = null;
         }
+
+        // コンボボックスの初期化
+        resetComboBox(appPath, $(editDiv).find('select'));
 
         //入力ﾌｫｰﾏｯﾄ設定処理
         var formEditId = "#" + $(formEdit).attr('id');
@@ -15622,6 +15807,27 @@ function getPageData(appPath, btn, btnCtrlId, conductId, pgmId, formNo, conductP
         }
         conditionDataList = conditionDataList.concat(detailConditionDataList);
     }
+
+    // 103(Tabulator)一覧の場合、読込件数上限をセット
+    var listDefines = $.grep(P_listDefines, function (define, idx) {
+        return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3);
+    });
+    $.each(listDefines, function (idx, define) {
+        // 読込件数上限を取得＆設定
+        var selectCnt = getSelectCntMax(define.CTRLID, formNo);
+        var detailCondition = $.grep(detailConditionDataList, function (condition, idx2) {
+            return (condition.CTRLID == define.CTRLID);
+        });
+        var select = getSelectCntCombo(define.CTRLID);
+        if (detailCondition != null && detailCondition.length > 0) {
+            // 詳細検索条件指定有りの場合、読込件数を「すべて」に更新
+            selectCnt = selectCntMaxDef.All;
+            $(select).find('option:selected').prop('selected', false);
+            $(select).find('option[exparam1="' + selectCnt + '"]').prop('selected', true);
+        }
+        define.VAL5 = selectCnt
+    });
+
     if (saveDetailCondition) {
         // チェック状態を含めた条件データをLocalStorageへ保存
         detailConditionDataList = getDetailConditionData(conductId, formNo, null, false, true);
@@ -15720,6 +15926,22 @@ function getPageData(appPath, btn, btnCtrlId, conductId, pgmId, formNo, conductP
             setButtonStatus();
             /* ボタン権限制御 切替 end ================================================== */
 
+            if (data && data.length > 0) {
+                // 103(Tabulator)一覧を抽出
+                var listDefines = $.grep(P_listDefines, function (define, idx) {
+                    return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3);
+                });
+                $.each(listDefines, function (idx, define) {
+                    // 詳細条件適用有無を取得
+                    var isDetailConditionApplied = $.grep(data, function (info, idx2) {
+                        return (info.CTRLID == define.CTRLID && info.IsDetailConditionApplied);
+                    });
+                    var selectCntDisabled = isDetailConditionApplied != null && isDetailConditionApplied.length > 0;
+                    // 表示件数コンボの活性状態を設定
+                    setSelectCntControlStatus(define.CTRLID, selectCntDisabled);
+                });
+            }
+
             // 列固定
             setFixColCss();
 
@@ -15730,6 +15952,11 @@ function getPageData(appPath, btn, btnCtrlId, conductId, pgmId, formNo, conductP
 
             // tabindexを制御
             nextFocus();
+
+            //console.time('outputList');
+
+            // 【オーバーライド関数】ページデータ取得後
+            postGetPageData(appPath, btn, conductId, pgmId, formNo);
         },
         // 2つめは通信失敗時のコールバック
         function (resultInfo) {
@@ -18787,6 +19014,9 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
     // 詳細検索条件適用状況の設定
     setConditionAppliedStatus(id, data[0]);
 
+    // 読込件数エリアの総件数の設定
+    setSelectAllCntLabel(ctrlId, data);
+
     var header = tabulatorHeader.data('header');
 
     // スケジュール列の定義をクリア
@@ -19208,7 +19438,7 @@ function setHeaderNoLink(head, id, editptn, referenceMode, appPath) {
                 //linkHtml += cell.getValue();
                 //NOリンク列の表示テキストは1から連番とする
                 //linkHtml += 1;
-                linkHtml += parseInt(row.getPosition(true), 10) + 1;//row.getPosition(true)は0始まりの行番号
+                linkHtml += parseInt(row.getPosition(true), 10);//row.getPosition(true)は1始まりの行番号
             }
             linkHtml += '</a>';
             return linkHtml;
@@ -20915,8 +21145,8 @@ function setDispRowNo(row) {
     if (cell) {
         let ele = cell.getElement();
         let link = $(ele).find('a');
-        //row.getPosition(true)は0始まりの行番号
-        let rownum = parseInt(row.getPosition(true), 10) + 1;
+        //row.getPosition(true)は1始まりの行番号
+        let rownum = parseInt(row.getPosition(true), 10);
         //NOリンク列のテキストを変更
         $(link).text(rownum);
         //ツリーを開いている場合
@@ -20972,7 +21202,7 @@ function setDispRowNo2(id, index, row) {
         row = row.getTreeParent();
     } else if (flg) {
         link = link[index];
-        let rownum = parseInt(row.getPosition(true), 10) + 1; //row.getPosition(true)は0始まりの行番号
+        let rownum = parseInt(row.getPosition(true), 10); //row.getPosition(true)は1始まりの行番号
         $(link).text(rownum);
         nextIndex = nextIndex + 1;
     }
@@ -21333,7 +21563,7 @@ function initShownModalForm(modal, isTreeView) {
  * @param {number}  transPtn    ：画面遷移ﾊﾟﾀｰﾝ(1：子画面、2：単票入力、4：共通機能、5：他機能別ﾀﾌﾞ、6：他機能表示切替)
  */
 function initHiddenModalForm(appPath, modal, transPtn) {
-    backBtn = $(modal).find('input:button[data-actionkbn="' + actionkbn.Back + '"]');
+    backBtn = $(modal).find('.selected input:button[data-actionkbn="' + actionkbn.Back + '"]');
     var btnCtrlId = $(backBtn).attr("name");    //戻るﾎﾞﾀﾝ
     var currentModalNo = getCurrentModalNo(backBtn);
 
@@ -21541,6 +21771,10 @@ function fileDownloadLink(appPath, formNo, ctrlId, element) {
             if (fileName != null && fileName.length > 0) {
                 // ダウンロードファイル名が指定されている場合のみ、ダウンロード処理実行
                 var formDetail = $(P_Article).find("#" + P_formDetailId);
+                if (formDetail == null || formDetail.length == 0) {
+                    // 単票画面の場合(機器台帳の保全項目編集など)、編集画面となる
+                    formDetail = $(P_Article).find("#" + P_formEditId);
+                }
                 setAttrByNativeJs(formDetail, "method", "POST");
                 setAttrByNativeJs(formDetail, "action", appPath + "Common/Report?output=2&fileName=" + fileName + "&filePath=" + filePath);
 
@@ -21618,4 +21852,23 @@ function clearTrans(btn) {
     text[0].value = "";
     // トリガー処理で翻訳
     $(text).trigger("change");
+}
+
+/**
+ *  新規ウィンドウ表示処理
+ *  @param {string} appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+*/
+function showNewWindow(appPath) {
+    // Form要素生成
+    var form = '<form id="postForm" style="display:none;">';
+    form += '<input type="hidden" name="CONDUCTID" value="CM00001">';
+    form += '<input type="hidden" name="FORMNO" value="0">';
+    form += '<input name="__RequestVerificationToken" type="hidden" value="' + getRequestVerificationToken() + '">';
+    form += '</form>';
+    $(form).appendTo("body");
+    $("#postForm").attr("action", appPath + 'Common');
+    $("#postForm").attr("method", "POST");
+    $("#postForm").attr("target", "_blank");
+    $("#postForm").submit();
+    $("#postForm").remove();
 }

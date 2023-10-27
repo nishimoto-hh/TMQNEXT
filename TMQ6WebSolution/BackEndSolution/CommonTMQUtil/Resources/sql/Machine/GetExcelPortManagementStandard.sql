@@ -2,7 +2,17 @@
 SELECT 
        ma.factoryId,
        ma.job_structure_id,
+       ma.job_kind_structure_id AS job_id,
+       ma.job_large_classfication_structure_id AS large_classfication_id,
+       ma.job_middle_classfication_structure_id AS middle_classfication_id,
+       ma.job_small_classfication_structure_id AS small_classfication_id,
 	   ma.location_structure_id,
+	   ma.location_district_structure_id AS district_id,
+	   ma.location_factory_structure_id AS factory_id,
+	   ma.location_plant_structure_id AS plant_id,
+	   ma.location_series_structure_id AS series_id,
+	   ma.location_stroke_structure_id AS stroke_id,
+	   ma.location_facility_structure_id AS facility_id,
        mcp.management_standards_component_id,        -- 機器別管理基準部位ID
        mcp.machine_id,                               -- 機番ID
 	   ma.equipment_level_structure_id,              -- 機器レベル
@@ -17,7 +27,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = ma.equipment_level_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -40,7 +50,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = mcp.inspection_site_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -59,7 +69,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = msc.inspection_site_importance_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -78,7 +88,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = msc.inspection_site_conservation_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -99,7 +109,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = msc.inspection_content_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -118,7 +128,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					#temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = msc.maintainance_division
 					   AND st_f.factory_id IN (0, factoryId)
@@ -137,7 +147,7 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					#temp_structure_factory AS st_f 
 				   WHERE
 					   st_f.structure_id = msc.maintainance_kind_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
@@ -150,6 +160,32 @@ SELECT
 	   msc.long_plan_id,                             -- 長期計画件名ID
 	   msc.schedule_type_structure_id,               -- スケジュール管理区分
 		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					#temp_structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = msc.schedule_type_structure_id
+					AND st_f.factory_id IN (0, factoryId)
+			) 
+			AND tra.structure_id = msc.schedule_type_structure_id
+		) AS schedule_type_name, -- スケジュール管理区分
+	   ms.maintainance_schedule_id,                  -- 保全スケジュールID
+	   ms.is_cyclic,                                 -- 周期ありフラグ
+	   ms.cycle_year,                                -- 周期(年)
+	   ms.cycle_month,                               -- 周期(月)
+	   ms.cycle_day,                                 -- 周期(日)
+	   ms.disp_cycle,                                -- 表示周期
+	   ms.start_date,                                -- 開始日
+		-- 場所階層の翻訳
+		( 
 		   SELECT
 			   tra.translation_text 
 		   FROM
@@ -160,20 +196,176 @@ SELECT
 				   SELECT
 					   MAX(st_f.factory_id) 
 				   FROM
-					   structure_factory AS st_f 
+					   #temp_structure_factory AS st_f 
 				   WHERE
-					   st_f.structure_id = msc.schedule_type_structure_id
+					   st_f.structure_id = ma.location_district_structure_id
 					   AND st_f.factory_id IN (0, factoryId)
 			   ) 
-			   AND tra.structure_id = msc.schedule_type_structure_id
-		) AS schedule_type_name, -- スケジュール管理区分
-	   ms.maintainance_schedule_id,                  -- 保全スケジュールID
-	   ms.is_cyclic,                                 -- 周期ありフラグ
-	   ms.cycle_year,                                -- 周期(年)
-	   ms.cycle_month,                               -- 周期(月)
-	   ms.cycle_day,                                 -- 周期(日)
-	   ms.disp_cycle,                                -- 表示周期
-	   ms.start_date                                -- 開始日
+			   AND tra.structure_id = ma.location_district_structure_id
+		) AS district_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.location_factory_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.location_factory_structure_id
+		) AS factory_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.location_plant_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.location_plant_structure_id
+		) AS plant_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.location_series_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.location_series_structure_id
+		) AS series_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.location_stroke_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.location_stroke_structure_id
+		) AS stroke_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.location_facility_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.location_facility_structure_id
+		) AS facility_name,
+		-- 職種機種階層の翻訳
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.job_kind_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.job_kind_structure_id
+		) AS job_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.job_large_classfication_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.job_large_classfication_structure_id
+		) AS large_classfication_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.job_middle_classfication_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.job_middle_classfication_structure_id
+		) AS middle_classfication_name,
+		( 
+		   SELECT
+			   tra.translation_text 
+		   FROM
+			   v_structure_item_all AS tra 
+		   WHERE
+			   tra.language_id = @LanguageId
+			   AND tra.location_structure_id = ( 
+				   SELECT
+					   MAX(st_f.factory_id) 
+				   FROM
+					   #temp_structure_factory AS st_f 
+				   WHERE
+					   st_f.structure_id = ma.job_small_classfication_structure_id
+					   AND st_f.factory_id IN (0, factoryId)
+			   ) 
+			   AND tra.structure_id = ma.job_small_classfication_structure_id
+		) AS small_classfication_name
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
     ,(SELECT a.*
@@ -194,7 +386,7 @@ FROM mc_management_standards_component mcp -- 機器別管理基準部位
 	 			 OR a.update_datetime IS NULL AND b.update_datetime IS NULL --null結合を考慮
 	 			)
 	 ) ms, -- 保全スケジュール
-	 (SELECT mc.*,dbo.get_target_layer_id(mc.location_structure_id, 1)as factoryId FROM mc_machine mc)  ma,
+	 (SELECT mc.*,location_factory_structure_id as factoryId FROM mc_machine mc)  ma,
 	 mc_equipment eq
 WHERE mcp.management_standards_component_id = msc.management_standards_component_id
 AND msc.management_standards_content_id = ms.management_standards_content_id

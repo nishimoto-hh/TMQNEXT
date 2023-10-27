@@ -337,8 +337,10 @@ namespace BusinessLogic_Common
                     return -1;
                 }
 
-                var list = new List<Dictionary<string, object>>();
+                // 機能IDが設定されている場合はユーザー情報の更新時
+                bool isUpdateUserInfo = !string.IsNullOrEmpty(this.ConductId);
 
+                var list = new List<Dictionary<string, object>>();
                 if (this.searchConditionDictionary != null && this.searchConditionDictionary.Count > 0)
                 {
                     int result = ComUtil.GetLoginAuthentication(this.db, loginId, userId, this.searchConditionDictionary, ref list, isNewLogin);
@@ -363,8 +365,12 @@ namespace BusinessLogic_Common
                         {
                             factoryId = belongingInfo.DutyFactoryId.ToString();
                         }
-                        // ログインログ出力
-                        logger.LoginLog(factoryId, this.UserId);
+                        if (!isUpdateUserInfo)
+                        {
+                            // ログインログ出力
+                            // ※ユーザー情報更新時には出力しない
+                            logger.LoginLog(factoryId, this.UserId);
+                        }
                     }
                 }
             }

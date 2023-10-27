@@ -97,12 +97,12 @@ FROM mc_management_standards_component mcp -- 機器別管理基準部位
 WHERE mcp.management_standards_component_id = msc.management_standards_component_id
 AND msc.management_standards_content_id = ms.management_standards_content_id
 AND mcp.machine_id = ma.machine_id
-AND (msc.maintainance_division <> (SELECT it.structure_id
+AND (msc.maintainance_division <> (SELECT TOP(1) it.structure_id
 	  FROM ms_structure it,
 	       ms_item_extension ex
 	  WHERE it.structure_item_id = ex.item_id
 	  AND it.structure_group_id = 1230
-	  AND ex.extension_data IN (3)-- 保全区分が日常点検は非表示
+	  AND ex.extension_data IN ('3')-- 保全区分が日常点検は非表示
 	 ) -- 構成マスタ
 	 OR msc.maintainance_division IS NULL)
 AND mcp.is_management_standard_conponent = 1    -- 機器別管理基準フラグ

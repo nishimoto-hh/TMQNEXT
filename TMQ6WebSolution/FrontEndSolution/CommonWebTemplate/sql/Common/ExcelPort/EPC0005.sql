@@ -14,7 +14,7 @@ SELECT
     ,item.translation_text AS name
     ,coalesce(order_common.display_order, order_factory.display_order, item.structure_id) AS display_order
 
-FROM v_structure_item_all AS item
+FROM v_structure_item AS item
 
 -- 工場共通表示順
 LEFT OUTER JOIN ms_structure_order AS order_common
@@ -42,6 +42,10 @@ AND item.language_id = /*languageId*/'ja'
 
 /*IF param2 != null && param2 != '' */
     AND item.structure_layer_no = /*param2*/0
+/*END*/
+
+/*IF param3 != null && param3 != '' */
+    AND CONVERT(int, item_ex.extension_data) in /*param3*/(1)
 /*END*/
 
  -- 工場別未使用標準アイテムに工場が含まれていないものを表示

@@ -1,0 +1,120 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\..\FrontEndSolution\CommonWebTemplate\bin\Logic\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--<Compile Remove="Resources\sql\Attachment\**" />
+    <Compile Remove="Resources\sql\Common\PartsInventory\**" />
+    <Compile Remove="Resources\sql\Excel\**" />
+    <Compile Remove="Resources\sql\InventoryControl\**" />
+    <Compile Remove="Resources\sql\InventoryFirm\**" />
+    <Compile Remove="Resources\sql\Inventory\**" />
+    <Compile Remove="Resources\sql\IssueInput\**" />
+    <Compile Remove="Resources\sql\LongPlanMachine\**" />
+    <Compile Remove="Resources\sql\LongPlan\**" />
+    <Compile Remove="Resources\sql\Machine\**" />
+    <Compile Remove="Resources\sql\MaintenancePerformance\**" />
+    <Compile Remove="Resources\sql\Maintenance\**" />
+    <Compile Remove="Resources\sql\Master\**" />
+    <Compile Remove="Resources\sql\Parts\**" />
+    <Compile Remove="Resources\sql\Report\**" />
+    <Compile Remove="Resources\sql\SelectItem\**" />
+    <Compile Remove="Resources\sql\SelectParts\**" />
+    <Compile Remove="Resources\sql\SelectUser\**" />
+    <Compile Remove="Resources\sql\Transfer\**" />
+    <Compile Remove="Resources\sql\Trans\**" />-->
+    <!--<EmbeddedResource Remove="Resources\sql\Attachment\**" />
+    <EmbeddedResource Remove="Resources\sql\Common\PartsInventory\**" />
+    <EmbeddedResource Remove="Resources\sql\Excel\**" />
+    <EmbeddedResource Remove="Resources\sql\InventoryControl\**" />
+    <EmbeddedResource Remove="Resources\sql\InventoryFirm\**" />
+    <EmbeddedResource Remove="Resources\sql\Inventory\**" />
+    <EmbeddedResource Remove="Resources\sql\IssueInput\**" />
+    <EmbeddedResource Remove="Resources\sql\LongPlanMachine\**" />
+    <EmbeddedResource Remove="Resources\sql\LongPlan\**" />
+    <EmbeddedResource Remove="Resources\sql\Machine\**" />
+    <EmbeddedResource Remove="Resources\sql\MaintenancePerformance\**" />
+    <EmbeddedResource Remove="Resources\sql\Maintenance\**" />
+    <EmbeddedResource Remove="Resources\sql\Master\**" />
+    <EmbeddedResource Remove="Resources\sql\Parts\**" />
+    <EmbeddedResource Remove="Resources\sql\Report\**" />
+    <EmbeddedResource Remove="Resources\sql\SelectItem\**" />
+    <EmbeddedResource Remove="Resources\sql\SelectParts\**" />
+    <EmbeddedResource Remove="Resources\sql\SelectUser\**" />
+    <EmbeddedResource Remove="Resources\sql\Transfer\**" />
+    <EmbeddedResource Remove="Resources\sql\Trans\**" />
+    <None Remove="Resources\sql\Attachment\**" />
+    <None Remove="Resources\sql\Common\PartsInventory\**" />
+    <None Remove="Resources\sql\Excel\**" />
+    <None Remove="Resources\sql\InventoryControl\**" />
+    <None Remove="Resources\sql\InventoryFirm\**" />
+    <None Remove="Resources\sql\Inventory\**" />
+    <None Remove="Resources\sql\IssueInput\**" />
+    <None Remove="Resources\sql\LongPlanMachine\**" />
+    <None Remove="Resources\sql\LongPlan\**" />
+    <None Remove="Resources\sql\Machine\**" />
+    <None Remove="Resources\sql\MaintenancePerformance\**" />
+    <None Remove="Resources\sql\Maintenance\**" />
+    <None Remove="Resources\sql\Master\**" />
+    <None Remove="Resources\sql\Parts\**" />
+    <None Remove="Resources\sql\Report\**" />
+    <None Remove="Resources\sql\SelectItem\**" />
+    <None Remove="Resources\sql\SelectParts\**" />
+    <None Remove="Resources\sql\SelectUser\**" />
+    <None Remove="Resources\sql\Transfer\**" />
+    <None Remove="Resources\sql\Trans\**" />-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="CommonDataBaseClass.cs" />
+    <Compile Remove="CommonTMQUtilExcel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\sql\Common\GetNextSequence.sql" />
+    <None Remove="Resources\sql\Common\Select_GetImageFileInfo.sql" />
+    <None Remove="Resources\sql\Common\Select_GetStructureExtDataOrderByItemOrder.sql" />
+    <None Remove="Resources\sql\Common\Select_GetStructureIdOrderdExData.sql" />
+    <None Remove="Resources\sql\Common\Select_InventoryConfirmationDate.sql" />
+    <None Remove="Resources\sql\Common\Select_InventryGetCount.sql" />
+    <None Remove="Resources\sql\Common\Select_StructureItemExDataList.sql" />
+    <None Remove="Resources\sql\Common\SELECT_StructureList.sql" />
+    <None Remove="Resources\sql\Common\Select_TakeInventoryConfirmationDate.sql" />
+    <None Remove="Resources\sql\Common\Select_UpperStructureList.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\GetNextSequence.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\Select_TakeInventoryConfirmationDate.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\Select_GetStructureExtDataOrderByItemOrder.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\Select_StructureItemExDataList.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\Select_StructureList.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\Select_UpperStructureList.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CommonSolution\CommonDefinitions\CommonDefinitions.csproj" />
+    <!--<ProjectReference Include="..\CommonExcelUtil\CommonExcelUtil.csproj" />-->
+    <ProjectReference Include="..\CommonSTDUtil\CommonSTDUtil.csproj" />
+  </ItemGroup>
+
+</Project>

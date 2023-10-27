@@ -210,19 +210,4 @@ WITH number_unit AS (
         AND pid.inout_datetime <= @TargetYearMonthNext       --受払日時 <= 対象年月の末日
         AND inout_division.extension_data = '2'              --払出
 )
-, structure_factory AS ( 
-    -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-        structure_id
-        , location_structure_id AS factory_id 
-    FROM
-        v_structure_item_all 
-    WHERE
-        structure_group_id IN ( 
-            1730
-            , 1740
-            , 1760
-            , 1770
-        ) 
-        AND language_id = @LanguageId
-) 
+

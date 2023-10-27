@@ -2175,6 +2175,41 @@ namespace CommonWebTemplate.CommonUtil
             return returnInfo;
         }
 
+        /// <summary>
+        /// ユーザー権限情報取得
+        /// </summary>
+        /// <param name="procData">
+        /// 業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ(※以下、使用項目、内(*)：必須項目)
+        /// 　LoginUserId:ログインユーザID(*)
+        /// </param>
+        /// <param name="userId">ユーザID</param>
+        /// <returns>処理ステータス情報</returns>
+        public CommonProcReturn GetUserAuthorizationInfo(CommonProcData procData, CommonDataEntities context, ref UserInfoDef userInfo)
+        {
+            //== ﾛｸﾞｲﾝ認証 ==
+            AuthenticationUtil authU = new AuthenticationUtil(context);
+            BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+            userInfo = null;
+
+            bool isCheckOK = false;
+            CommonUserMst loginData = new CommonUserMst(procData.LoginUserName, string.Empty, string.Empty, procData.LoginUserId);
+            CommonProcReturn returnInfo = authU.LoginAuthentication(loginData, false, procData, out isCheckOK, ref userInfo, true);
+            if (returnInfo.IsProcEnd())
+            {
+                //ﾕｰｻﾞｰ認証NG
+                return returnInfo;
+            }
+            if (false == isCheckOK)
+            {
+                //ﾕｰｻﾞｰ認証NG
+                blogic.GetResourceName(procData, new List<string> { CommonSTDUtil.CommonResources.ID.ID941430004 }, out IDictionary<string, string> resources);
+                return new CommonProcReturn(CommonProcReturn.ProcStatus.Error, blogic.ConvertResourceName(CommonSTDUtil.CommonResources.ID.ID941430004, resources));   // ログイン認証に失敗しました。ユーザー権限がありません。
+            }
+
+            //処理結果
+            return returnInfo;
+        }
         #endregion
 
         #region === Private処理 ===

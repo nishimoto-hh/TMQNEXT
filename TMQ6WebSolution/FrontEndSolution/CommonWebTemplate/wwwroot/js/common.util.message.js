@@ -536,7 +536,8 @@ function dispLoading(msg) {
 function removeLoading() {
     var removeFunc = function () {
         $("#loading").remove();
-        console.timeEnd('javascript');
+        //console.timeEnd('javascript');
+        //console.timeEnd('outputList');
     }
     // 実行タイミングを描画完了後になるようずらす
     setTimeout(removeFunc, 0);

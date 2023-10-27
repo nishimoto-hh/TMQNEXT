@@ -8,3 +8,8 @@
 .unit_hide td .date_div span.unit {
     display: none;
 }
+
+/* 詳細画面 変更管理情報の一覧タイトルと折り畳みアイコンを非表示にするためのCSSクラス */
+.HistoryInfoTitle {
+    display: none;
+}

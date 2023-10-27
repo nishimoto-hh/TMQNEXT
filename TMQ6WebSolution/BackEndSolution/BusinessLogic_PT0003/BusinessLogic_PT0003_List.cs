@@ -48,7 +48,7 @@ namespace BusinessLogic_PT0003
             var pageInfo = GetPageInfo(ConductInfo.FormList.List.InventoryList, this.pageInfoList);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
             {
                 return false;
             }
@@ -101,7 +101,7 @@ namespace BusinessLogic_PT0003
             }
 
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchInventoryResult>(pageInfo, results, cnt, false))
+            if (SetSearchResultsByDataClassForList<Dao.searchInventoryResult>(pageInfo, results, cnt, false))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;

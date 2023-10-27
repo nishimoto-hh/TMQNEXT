@@ -52,9 +52,16 @@
 
     // 一覧編集パターン
     ViewBag.DatEditPtn = Model.FORMDEFINE.DAT_EDITPTN;
+
+    string relationIdAttr = string.Empty;
+    if (!isCtrlGrp && !"-".Equals(Model.FORMDEFINE.CTR_RELATIONCTRLID))
+    {
+        // 一覧で関連コントロールグループIDがセットされている場合
+        relationIdAttr = "data-relation-id=" + Model.FORMDEFINE.CTR_RELATIONCTRLID;
+    }
 }
 
-<div id="@divName" class="@dispClass">
+<div id="@divName" class="@dispClass" @relationIdAttr>
     @if (isVList)
     {
         // 　－　テーブル（縦方向一覧）

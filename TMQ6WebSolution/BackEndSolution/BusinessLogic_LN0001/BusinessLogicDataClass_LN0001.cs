@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using IListAccessor = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil.IListAccessor;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using BusinessLogicBase = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase;
 
 namespace BusinessLogic_LN0001
 {
@@ -17,7 +21,7 @@ namespace BusinessLogic_LN0001
         /// <summary>
         /// 検索結果のデータクラス
         /// </summary>
-        public class ListSearchResult : ComDao.LnLongPlanEntity
+        public class ListSearchResult : ComDao.LnLongPlanEntity, IListAccessor
         {
             /// <summary>Gets or sets 機器添付</summary>
             /// <value>機器添付</value>
@@ -145,6 +149,287 @@ namespace BusinessLogic_LN0001
             public DateTime? AttachmentUpdateDatetime { get; set; }
             #endregion
             #endregion
+
+            /// <summary>
+            /// 一時テーブルレイアウト作成処理(性能改善対応)
+            /// </summary>
+            /// <param name="mapDic">マッピング情報のディクショナリ</param>
+            /// <returns>一時テーブルレイアウト</returns>
+            public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+            {
+                dynamic paramObj;
+
+                paramObj = new ExpandoObject() as IDictionary<string, object>;
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkEquip, nameof(this.FileLinkEquip), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkSubject, nameof(this.FileLinkSubject), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PersonName, nameof(this.PersonName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.KeyId, nameof(this.KeyId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PreparationFlg, nameof(this.PreparationFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DistrictId, nameof(this.DistrictId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DistrictName, nameof(this.DistrictName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryId, nameof(this.FactoryId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryName, nameof(this.FactoryName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PlantId, nameof(this.PlantId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PlantName, nameof(this.PlantName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SeriesId, nameof(this.SeriesId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SeriesName, nameof(this.SeriesName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StrokeId, nameof(this.StrokeId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StrokeName, nameof(this.StrokeName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityId, nameof(this.FacilityId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityName, nameof(this.FacilityName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobId, nameof(this.JobId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobName, nameof(this.JobName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LargeClassficationId, nameof(this.LargeClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LargeClassficationName, nameof(this.LargeClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MiddleClassficationId, nameof(this.MiddleClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MiddleClassficationName, nameof(this.MiddleClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SmallClassficationId, nameof(this.SmallClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SmallClassficationName, nameof(this.SmallClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MaintenanceSeasonName, nameof(this.MaintenanceSeasonName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.WorkItemName, nameof(this.WorkItemName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetManagementName, nameof(this.BudgetManagementName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetPersonalityName, nameof(this.BudgetPersonalityName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PurposeName, nameof(this.PurposeName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.WorkClassName, nameof(this.WorkClassName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TreatmentName, nameof(this.TreatmentName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityStructureName, nameof(this.FacilityStructureName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IsDisplayMaintainanceKind, nameof(this.IsDisplayMaintainanceKind), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.McManStConUpdateDatetime, nameof(this.McManStConUpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ScheDetailUpdateDatetime, nameof(this.ScheDetailUpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentUpdateDatetime, nameof(this.AttachmentUpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TableName, nameof(this.TableName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanId, nameof(this.LongPlanId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.Subject, nameof(this.Subject), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationStructureId, nameof(this.LocationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationDistrictStructureId, nameof(this.LocationDistrictStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationFactoryStructureId, nameof(this.LocationFactoryStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationPlantStructureId, nameof(this.LocationPlantStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationSeriesStructureId, nameof(this.LocationSeriesStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationStrokeStructureId, nameof(this.LocationStrokeStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationFacilityStructureId, nameof(this.LocationFacilityStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobStructureId, nameof(this.JobStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobKindStructureId, nameof(this.JobKindStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobLargeClassficationStructureId, nameof(this.JobLargeClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobMiddleClassficationStructureId, nameof(this.JobMiddleClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobSmallClassficationStructureId, nameof(this.JobSmallClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectNote, nameof(this.SubjectNote), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PersonId, nameof(this.PersonId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.WorkItemStructureId, nameof(this.WorkItemStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetManagementStructureId, nameof(this.BudgetManagementStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetPersonalityStructureId, nameof(this.BudgetPersonalityStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MaintenanceSeasonStructureId, nameof(this.MaintenanceSeasonStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PurposeStructureId, nameof(this.PurposeStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.WorkClassStructureId, nameof(this.WorkClassStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TreatmentStructureId, nameof(this.TreatmentStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityStructureId, nameof(this.FacilityStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateSerialid, nameof(this.UpdateSerialid), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertDatetime, nameof(this.InsertDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertUserId, nameof(this.InsertUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateDatetime, nameof(this.UpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+
+                return paramObj;
+            }
+        }
+
+        /// <summary>
+        /// ExelPort用データクラス
+        /// </summary>
+        public class ExcelPort
+        {
+            /// <summary>
+            /// 実行条件
+            /// </summary>
+            public class Condition
+            {
+                /// <summary>Gets or sets 長期計画件名ID</summary>
+                /// <value>長期計画件名ID</value>
+                public string LongPlanIdList { get; set; }
+                /// <summary>Gets or sets 機器別管理基準内容IDリスト</summary>
+                /// <value>機器別管理基準内容IDリスト</value>
+                public string ManagementStandardsContentIdList { get; set; }
+                /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+                /// <value>機器別管理基準内容ID</value>
+                public long? ManagementStandardsContentId { get; set; }
+                /// <summary>Gets or sets 保全スケジュールID</summary>
+                /// <value>保全スケジュールID</value>
+                public long? MaintainanceScheduleId { get; set; }
+                /// <summary>Gets or sets スケジュール開始年月</summary>
+                /// <value>スケジュール開始年月</value>
+                /// <remarks>"yyyyMM"フォーマット</remarks>
+                public string ScheduleDateFrom { get; set; }
+                /// <summary>Gets or sets スケジュール終了年月</summary>
+                /// <value>スケジュール終了年月</value>
+                /// <remarks>"yyyyMM"フォーマット</remarks>
+                public string ScheduleDateTo { get; set; }
+                /// <summary>Gets or sets 言語ID</summary>
+                /// <value>言語ID</value>
+                public string LanguageId { get; set; }
+            }
+
+            /// <summary>
+            /// スケジュール詳細取得結果一覧
+            /// </summary>
+            public class Result : InputCheck.Result
+            {
+                /// <summary>Gets or sets 長期計画件名ID</summary>
+                /// <value>長期計画件名ID</value>
+                public long LongPlanId { get; set; }
+            }
+
+            /// <summary>
+            /// 長期計画一覧
+            /// </summary>
+            public class List : ListSearchResult
+            {
+                /// <summary>Gets or sets 行番号</summary>
+                /// <value>行番号</value>
+                public int? RowNo { get; set; }
+                /// <summary>Gets or sets 送信時処理ID</summary>
+                /// <value>送信時処理ID</value>
+                public long? ProcessId { get; set; }
+            }
+
+            /// <summary>
+            /// 機器別管理基準一覧
+            /// </summary>
+            public class DeitalList: ComDao.CommonTableItem
+            {
+                /// <summary>Gets or sets 行番号</summary>
+                /// <value>行番号</value>
+                public int? RowNo { get; set; }
+                /// <summary>Gets or sets 送信時処理ID</summary>
+                /// <value>送信時処理ID</value>
+                public long? ProcessId { get; set; }
+
+                // 機番情報
+                /// <summary>Gets or sets 機器番号</summary>
+                /// <value>機器番号</value>
+                public string MachineNo { get; set; }
+                /// <summary>Gets or sets 機器名称</summary>
+                /// <value>機器名称</value>
+                public string MachineName { get; set; }
+                /// <summary>Gets or sets 場所階層ID</summary>
+                /// <value>場所階層ID</value>
+                public int? LocationStructureId { get; set; }
+                /// <summary>Gets or sets 工場ID</summary>
+                /// <value>工場ID</value>
+                public int? FactoryId { get; set; }
+                /// <summary>Gets or sets 地区ID</summary>
+                /// <value>地区ID</value>
+                public int? DistrictId { get; set; }
+                /// <summary>Gets or sets プラントID</summary>
+                /// <value>プラントID</value>
+                public int? PlantId { get; set; }
+                /// <summary>Gets or sets 系列ID</summary>
+                /// <value>系列ID</value>
+                public int? SeriesId { get; set; }
+                /// <summary>Gets or sets 工程ID</summary>
+                /// <value>工程ID</value>
+                public int? StrokeId { get; set; }
+                /// <summary>Gets or sets 設備ID</summary>
+                /// <value>設備ID</value>
+                public int? FacilityId { get; set; }
+                /// <summary>Gets or sets 職種機種ID</summary>
+                /// <value>職種機種ID</value>
+                public int? JobStructureId { get; set; }
+                /// <summary>Gets or sets 職種ID</summary>
+                /// <value>職種ID</value>
+                public int? JobId { get; set; }
+                /// <summary>Gets or sets 機種大分類ID</summary>
+                /// <value>機種大分類ID</value>
+                public int? LargeClassficationId { get; set; }
+                /// <summary>Gets or sets 機種中分類ID</summary>
+                /// <value>機種中分類ID</value>
+                public int? MiddleClassficationId { get; set; }
+                /// <summary>Gets or sets 機種小分類ID</summary>
+                /// <value>機種小分類ID</value>
+                public int? SmallClassficationId { get; set; }
+
+                // 機器別管理基準内容
+                /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+                /// <value>機器別管理基準内容ID</value>
+                public long ManagementStandardsContentId { get; set; }
+                /// <summary>Gets or sets 点検内容ID</summary>
+                /// <value>点検内容ID</value>
+                public int? InspectionContentStructureId { get; set; }
+
+                // 機器別管理基準部位
+                /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+                /// <value>機器別管理基準部位ID</value>
+                public long ManagementStandardsComponentId { get; set; }
+                /// <summary>Gets or sets 保全部位ID</summary>
+                /// <value>保全部位ID</value>
+                public int? InspectionSiteId { get; set; }
+
+                // 長期計画件名情報
+                /// <summary>Gets or sets 長期計画件名ID</summary>
+                /// <value>長期計画件名ID</value>
+                public new long? LongPlanId { get; set; }
+                /// <summary>Gets or sets 件名</summary>
+                /// <value>件名</value>
+                public string Subject { get; set; }
+                /// <summary>Gets or sets 件名メモ</summary>
+                /// <value>件名メモ</value>
+                public string SubjectNote { get; set; }
+                /// <summary>Gets or sets 担当者名</summary>
+                /// <value>担当者名</value>
+                public string PersonName { get; set; }
+
+                // 保全スケジュール情報
+                /// <summary>Gets or sets 保全スケジュールID</summary>
+                /// <value>保全スケジュールID</value>
+                public long? MaintainanceScheduleId { get; set; }
+
+                /// <summary>Gets or sets 開始日</summary>
+                /// <value>開始日</value>
+                public DateTime StartDate { get; set; }
+
+                // 翻訳
+                /// <summary>Gets or sets 地区名称</summary>
+                /// <value>地区名称</value>
+                public string DistrictName { get; set; }
+                /// <summary>Gets or sets 工場名称</summary>
+                /// <value>工場名称</value>
+                public string FactoryName { get; set; }
+                /// <summary>Gets or sets プラント名称</summary>
+                /// <value>プラント名称</value>
+                public string PlantName { get; set; }
+                /// <summary>Gets or sets 系列名称</summary>
+                /// <value>系列名称</value>
+                public string SeriesName { get; set; }
+                /// <summary>Gets or sets 工程名称</summary>
+                /// <value>工程名称</value>
+                public string StrokeName { get; set; }
+                /// <summary>Gets or sets 設備名称</summary>
+                /// <value>設備名称</value>
+                public string FacilityName { get; set; }
+                /// <summary>Gets or sets 職種名称</summary>
+                /// <value>職種名称</value>
+                public string JobName { get; set; }
+                /// <summary>Gets or sets 機種大分類名称</summary>
+                /// <value>機種大分類名称</value>
+                public string LargeClassficationName { get; set; }
+                /// <summary>Gets or sets 機種中分類名称</summary>
+                /// <value>機種中分類名称</value>
+                public string MiddleClassficationName { get; set; }
+                /// <summary>Gets or sets 機種小分類名称</summary>
+                /// <value>機種小分類名称</value>
+                public string SmallClassficationName { get; set; }
+
+                /// <summary>Gets or sets 保全部位名称</summary>
+                /// <value>保全部位名称</value>
+                public string InspectionSiteName { get; set; }
+                /// <summary>Gets or sets 保全項目名称</summary>
+                /// <value>保全項目名称</value>
+                public string InspectionContentName { get; set; }
+
+                /// <summary>Gets or sets スケジュールリスト</summary>
+                /// <value>スケジュールリスト</value>
+                public List<CommonTMQUtil.ScheduleInfo> ScheduleList { get; set; }
+            }
         }
 
         /// <summary>
@@ -172,6 +457,15 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets 長期計画件名ID</summary>
                 /// <value>長期計画件名ID</value>
                 public long LongPlanId { get; set; }
+                /// <summary>Gets or sets 件名</summary>
+                /// <value>件名</value>
+                public string Subject { get; set; }
+                /// <summary>Gets or sets 件名メモ</summary>
+                /// <value>件名メモ</value>
+                public string SubjectNote { get; set; }
+                /// <summary>Gets or sets 担当者名</summary>
+                /// <value>担当者名</value>
+                public string PersonName { get; set; }
 
                 // 機器別管理基準内容
                 /// <summary>Gets or sets 機器別管理基準内容ID</summary>
@@ -192,7 +486,6 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets スケジュール管理基準ID</summary>
                 /// <value>スケジュール管理基準ID</value>
                 public int? ScheduleTypeStructureId { get; set; }
-
                 // 機器別管理基準部位
                 /// <summary>Gets or sets 機器別管理基準部位ID</summary>
                 /// <value>機器別管理基準部位ID</value>
@@ -217,6 +510,19 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets 重要度</summary>
                 /// <value>重要度</value>
                 public int? ImportanceStructureId { get; set; }
+                /// <summary>Gets or sets 機器重要度名称</summary>
+                /// <value>機器重要度名称</value>
+                public string ImportanceName { get; set; }
+
+                /// <summary>Gets or sets 工場ID</summary>
+                /// <value>工場ID</value>
+                public int? FactoryId { get; set; }
+                /// <summary>Gets or sets 場所階層ID</summary>
+                /// <value>場所階層ID</value>
+                public int? LocationStructureId { get; set; }
+                /// <summary>Gets or sets 職種機種ID</summary>
+                /// <value>職種機種ID</value>
+                public int? JobStructureId { get; set; }
 
                 // 保全スケジュール
                 /// <summary>Gets or sets 保全スケジュールID</summary>
@@ -292,9 +598,43 @@ namespace BusinessLogic_LN0001
             }
 
             /// <summary>
+            /// スケジュール一覧
+            /// </summary>
+            public class ScheduleList
+            {
+                // 機器別管理基準内容
+                /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+                /// <value>機器別管理基準内容ID</value>
+                public long ManagementStandardsContentId { get; set; }
+
+                // 保全スケジュール
+                /// <summary>Gets or sets 保全スケジュールID</summary>
+                /// <value>保全スケジュールID</value>
+                public long MaintainanceScheduleId { get; set; }
+
+                // 保全スケジュール詳細
+                /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
+                /// <value>保全スケジュール詳細ID</value>
+                public long MaintainanceScheduleDetailId { get; set; }
+                /// <summary>Gets or sets スケジュール日</summary>
+                /// <value>スケジュール日</value>
+                public DateTime ScheduleDate { get; set; }
+                /// <summary>Gets or sets 完了フラグ</summary>
+                /// <value>完了フラグ</value>
+                public bool Completion { get; set; }
+
+                /// <summary>Gets or sets スケジュールID</summary>
+                /// <value>スケジュールID</value>
+                public int ScheduleId { get; set; }
+                /// <summary>Gets or sets スケジュール文字列</summary>
+                /// <value>スケジュール文字列</value>
+                public string Schedule { get; set; }
+            }
+
+            /// <summary>
             /// 表示条件
             /// </summary>
-            public class Condition:TMQDao.ScheduleList.Condition
+            public class Condition : TMQDao.ScheduleList.Condition
             {
                 /// <summary>Gets or sets スケジュール表示計画内容</summary>
                 /// <value>スケジュール表示計画内容</value>
@@ -304,6 +644,7 @@ namespace BusinessLogic_LN0001
                 /// <value>スケジュール表示計画内容(拡張項目の値)</value>
                 public int SchedulePlanContentExtension { get; set; }
             }
+
         }
 
         /// <summary>
@@ -332,6 +673,9 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets スケジュール日の年月</summary>
                 /// <value>スケジュール日の年月</value>
                 public string ScheduleYm { get; set; }
+                /// <summary>Gets or sets 完了フラグ</summary>
+                /// <value>完了フラグ</value>
+                public bool? Complition { get; set; }
             }
             /// <summary>
             /// 入力チェックの引数
@@ -717,6 +1061,10 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets 言語ID</summary>
                 /// <value>言語ID</value>
                 public string LanguageId { get; set; }
+                /// <summary>Gets or sets 長期計画IDリスト(カンマ区切り)</summary>
+                /// <value>長期計画IDリスト(カンマ区切り)</value>
+                public string LongPlanIdList { get; set; }
+
                 /// <summary>
                 /// コンストラクタ
                 /// </summary>

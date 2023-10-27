@@ -482,6 +482,12 @@ namespace BusinessLogic_HM0002
                 return false;
             }
 
+            // 表示中の一覧のコントロールID
+            bool isDisplayMaintainanceKind = getIsDisplayMaintainanceKindByDetail(false);
+            string listCtrlId = getDetailListCtrlId(isDisplayMaintainanceKind);
+            // 保全項目一覧
+            var list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, listCtrlId);
+
             // 変更管理テーブル・変更管理詳細テーブル 登録処理
             TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0002);
 
@@ -497,11 +503,24 @@ namespace BusinessLogic_HM0002
             }
 
             DateTime now = DateTime.Now;
+            // 登録更新ユーザ
+            int userId = int.Parse(this.UserId);
 
             // 削除する情報を長計件名変更管理テーブルに登録する
             if (!registHmLnLongPlan(historyManagementResult.historyManagementId, header.LongPlanId, now))
             {
                 return false;
+            }
+            foreach (var row in list)
+            {
+                Dao.Detail.List info = new();
+                SetDataClassFromDictionary(row, listCtrlId, info);
+                //機器別管理基準内容変更管理テーブルの登録
+                bool contentResult = registHistoryContent(historyManagementResult.historyManagementId, info.ManagementStandardsContentId, ExecutionDivision.DeleteContent, now, userId);
+                if (!contentResult)
+                {
+                    return false;
+                }
             }
             //再表示
             if (!initDetail(DetailDispType.Redisplay, historyManagementResult.historyManagementId))
@@ -614,7 +633,17 @@ namespace BusinessLogic_HM0002
             historyEntity.ExecutionDivision = ExecutionDivision.DeleteLongPlan;
             historyEntity.Subject = entity.Subject;
             historyEntity.LocationStructureId = entity.LocationStructureId;
+            historyEntity.LocationDistrictStructureId = entity.LocationDistrictStructureId;
+            historyEntity.LocationFactoryStructureId = entity.LocationFactoryStructureId;
+            historyEntity.LocationPlantStructureId = entity.LocationPlantStructureId;
+            historyEntity.LocationSeriesStructureId = entity.LocationSeriesStructureId;
+            historyEntity.LocationStrokeStructureId = entity.LocationStrokeStructureId;
+            historyEntity.LocationFacilityStructureId = entity.LocationFacilityStructureId;
             historyEntity.JobStructureId = entity.JobStructureId;
+            historyEntity.JobKindStructureId = entity.JobKindStructureId;
+            historyEntity.JobLargeClassficationStructureId = entity.JobLargeClassficationStructureId;
+            historyEntity.JobMiddleClassficationStructureId = entity.JobMiddleClassficationStructureId;
+            historyEntity.JobSmallClassficationStructureId = entity.JobSmallClassficationStructureId;
             historyEntity.SubjectNote = entity.SubjectNote;
             historyEntity.PersonId = entity.PersonId;
             historyEntity.PersonName = entity.PersonName;

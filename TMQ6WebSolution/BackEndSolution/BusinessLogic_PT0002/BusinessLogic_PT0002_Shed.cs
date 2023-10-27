@@ -39,7 +39,13 @@ namespace BusinessLogic_PT0002
             getSql(SqlName.GetShedList, listUnComment, out string baseSql, out string withSql, out string execSql, pageInfo);
 
             // 総件数を取得し総件数をチェック
-            checkTotalCount(execSql, condition, pageInfo, out int cnt);
+            int cnt = db.GetCount(execSql, condition);
+            // 総件数のチェック
+            if (!CheckSearchTotalCount(cnt, pageInfo))
+            {
+                SetSearchResultsByDataClass<Dao.searchResultShed>(pageInfo, null, cnt, false);
+                return false;
+            }
 
             // 検索結果格納リスト
             IList<Dao.searchResultShed> results = new List<Dao.searchResultShed>();
@@ -49,12 +55,13 @@ namespace BusinessLogic_PT0002
             {
                 // 一覧検索SQLを取得し、ORDER BY句を追加
                 string orderBy = " ORDER BY tbl.receiving_datetime DESC ";
-                getListSearchSql(execSql, baseSql, withSql, orderBy, out StringBuilder selectSql);
+                getListSearchSql(execSql, baseSql, withSql, orderBy, pageInfo, out StringBuilder selectSql);
 
                 // 一覧検索実行
                 results = db.GetListByDataClass<Dao.searchResultShed>(selectSql.ToString(), condition);
                 if (results == null || results.Count == 0)
                 {
+                    SetSearchResultsByDataClass<Dao.searchResultShed>(pageInfo, null, 0, false);
                     return false;
                 }
 
@@ -83,7 +90,7 @@ namespace BusinessLogic_PT0002
                         result.LocationId = TMQUtil.GetDisplayPartsLocation(result.LocationId, result.PartsLocationDetailNo, joinStr);
                     }
 
-                    if(!string.IsNullOrEmpty(result.ToLocationId) && !string.IsNullOrEmpty(result.ToPartsLocationDetailNo))
+                    if (!string.IsNullOrEmpty(result.ToLocationId) && !string.IsNullOrEmpty(result.ToPartsLocationDetailNo))
                     {
                         // 棚番 + 枝番
                         result.ToLocationId = TMQUtil.GetDisplayPartsLocation(result.ToLocationId, result.ToPartsLocationDetailNo, joinStr);
@@ -138,7 +145,7 @@ namespace BusinessLogic_PT0002
             }
 
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResultShed>(pageInfo, results, results.Count(), true))
+            if (SetSearchResultsByDataClassForList<Dao.searchResultShed>(pageInfo, results, cnt, true))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;

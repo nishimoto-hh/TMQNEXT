@@ -5,12 +5,22 @@ SELECT
     target.machine_no,                   -- 機器番号
     target.machine_name,                 -- 機器名称
     target.location_structure_id,        -- 場所階層(変更管理テーブル)
+    target.location_district_structure_id AS district_id, -- 地区
+    target.location_factory_structure_id AS factory_id,   -- 工場
+    target.location_plant_structure_id AS plant_id,       -- プラント
+    target.location_series_structure_id AS series_id,     -- 系列
+    target.location_stroke_structure_id AS stroke_id,     -- 工程
+    target.location_facility_structure_id AS facility_id, --設備
     target.installation_location,        -- 設置場所
     target.number_of_installation,       -- 設置台数
     target.date_of_installation,         -- 設置年月
     target.machine_note,                 -- 機番メモ
     target.applicable_laws_structure_id, -- 適用法規
     target.job_structure_id,             -- 職種機種(変更管理テーブル)
+    target.job_kind_structure_id AS job_id,                                  -- 職種
+    target.job_large_classfication_structure_id AS large_classfication_id,   -- 機種大分類
+    target.job_middle_classfication_structure_id AS middle_classfication_id, -- 機種中分類
+    target.job_small_classfication_structure_id AS small_classfication_id,   -- 機種小分類
     target.manufacturer_type,            -- メーカー型式
     target.model_no,                     -- 型式コード
     target.serial_no,                    -- 製造番号
@@ -62,7 +72,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.equipment_level_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -80,7 +90,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.importance_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -98,7 +108,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.conservation_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -123,7 +133,7 @@ SELECT
                         SELECT
                             MAX(st_f.factory_id)
                         FROM
-                            structure_factory AS st_f
+                            #temp_structure_factory AS st_f
                         WHERE
                             st_f.structure_id = laws.applicable_laws_structure_id
                         AND st_f.factory_id IN(0, target.factory_id)
@@ -153,7 +163,7 @@ SELECT
                         SELECT
                             MAX(st_f.factory_id)
                         FROM
-                            structure_factory AS st_f
+                            #temp_structure_factory AS st_f
                         WHERE
                             st_f.structure_id = laws.applicable_laws_structure_id
                         AND st_f.factory_id IN(0, target.factory_id)
@@ -174,7 +184,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.manufacturer_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -192,7 +202,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.use_segment_structure_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -210,7 +220,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.application_status_id
                 AND st_f.factory_id IN(0, target.factory_id)
@@ -228,12 +238,195 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = target.application_division_id
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.application_division_id
-    ) AS application_division_name -- 申請区分
+    ) AS application_division_name, -- 申請区分
+
+
+
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_district_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_district_structure_id
+    ) AS district_name, -- 地区
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_factory_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_factory_structure_id
+    ) AS factory_name, -- 工場
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_plant_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_plant_structure_id
+    ) AS plant_name, -- プラント
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_series_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_series_structure_id
+    ) AS series_name, -- 系列
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_stroke_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_stroke_structure_id
+    ) AS stroke_name, -- 工程
+        (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.location_facility_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.location_facility_structure_id
+    ) AS facility_name, -- 設備
+        (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.job_kind_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.job_kind_structure_id
+    ) AS job_name, -- 職種
+        (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.job_large_classfication_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.job_large_classfication_structure_id
+    ) AS large_classfication_name, -- 機種大分類
+        (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.job_middle_classfication_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.job_middle_classfication_structure_id
+    ) AS middle_classfication_name, -- 機種中分類
+        (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.job_small_classfication_structure_id
+                AND st_f.factory_id IN(0, target.location_factory_structure_id)
+            )
+        AND tra.structure_id = target.job_small_classfication_structure_id
+    ) AS small_classfication_name -- 機種小分類
 FROM
     target

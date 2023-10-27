@@ -128,6 +128,9 @@ namespace CommonWebTemplate.CommonDefinitions
         /// <summary>ボタン情報</summary>
         public List<Dictionary<string, object>> ButtonStatusList { get; set; }
 
+        /// <summary>ユーザー情報の再取得</summary>
+        public bool UpdateUserInfo { get; set; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -142,6 +145,7 @@ namespace CommonWebTemplate.CommonDefinitions
             this.ResultList = new List<Dictionary<string, object>>();
             this.Individual = new Dictionary<string, object>();
             this.ButtonStatusList = new List<Dictionary<string, object>>();
+            this.UpdateUserInfo = false;
         }
     }
 
@@ -161,6 +165,7 @@ namespace CommonWebTemplate.CommonDefinitions
             this.MaxCnt = 0;
             this.PageSize = 0;
             this.SortValNo = 0;
+            this.SelectMaxCnt = -1;
         }
 
         /// <summary>
@@ -193,6 +198,10 @@ namespace CommonWebTemplate.CommonDefinitions
             {
                 this.SortValNo = Convert.ToInt32(def["VAL4"].ToString());
             }
+            if (def.ContainsKey("VAL5") && !CommonUtil.IsNullOrEmpty(def["VAL5"]))
+            {
+                this.SelectMaxCnt = Convert.ToInt64(def["VAL5"].ToString());
+            }
         }
 
         /// <summary>コントロールID</summary>
@@ -205,6 +214,8 @@ namespace CommonWebTemplate.CommonDefinitions
         public int MaxCnt { get; set; }
         /// <summary>1ページ当たりの件数</summary>
         public int PageSize { get; set; }
+        /// <summary>読込件数上限</summary>
+        public long SelectMaxCnt { get; set; }
         /// <summary>ソート対象項目番号</summary>
         public int SortValNo { get; set; }
         /// <summary>ソート対象カラム名</summary>

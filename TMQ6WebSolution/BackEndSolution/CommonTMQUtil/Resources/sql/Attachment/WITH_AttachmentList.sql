@@ -58,4 +58,54 @@ factory AS(
         structure_group_id = 1000
     AND structure_layer_no = 0
     AND language_id = @LanguageId
+),
+rs_subject AS(
+    SELECT
+        translation_text
+    FROM
+        ms_translation
+    WHERE
+        translation_id = 111400002
+    AND language_id = @LanguageId
+    AND location_structure_id = 0
+),
+failure_subject AS(
+    SELECT
+        translation_text
+    FROM
+        ms_translation
+    WHERE
+        translation_id = 111100016
+    AND language_id = @LanguageId
+    AND location_structure_id = 0
+),
+img_subject AS(
+    SELECT
+        translation_text
+    FROM
+        ms_translation
+    WHERE
+        translation_id = 111060021
+    AND language_id = @LanguageId
+    AND location_structure_id = 0
+),
+doc_subject AS(
+    SELECT
+        translation_text
+    FROM
+        ms_translation
+    WHERE
+        translation_id = 111280018
+    AND language_id = @LanguageId
+    AND location_structure_id = 0
+),
+map_subject AS(
+    SELECT
+        translation_text
+    FROM
+        ms_translation
+    WHERE
+        translation_id = 111380026
+    AND language_id = @LanguageId
+    AND location_structure_id = 0
 )

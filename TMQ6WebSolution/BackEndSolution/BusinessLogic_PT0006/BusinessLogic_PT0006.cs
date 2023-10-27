@@ -21,6 +21,7 @@ using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using PT0001Condition = BusinessLogic_PT0001.BusinessLogicDataClass_PT0001.detailSearchCondition;
 using InventryCheck = CommonTMQUtil.CommonTMQUtil.PartsInventory.InventryGetInfo.SqlName;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_PT0006
 {
@@ -136,8 +137,16 @@ namespace BusinessLogic_PT0006
             /// <summary>SQL名：新旧区分、部門、勘定科目より棚ID、棚枝番を取得するSQL/summary>
             public const string SelectLocationInfo = "Select_location_info";
 
+            /// <summary>SQL名：予備品情報取得/summary>
+            public const string GetDetailPartsInfo = "GetDetailPartsInfo";
+            /// <summary>SQL名：予備品情報取得/summary>
+            /// <summary>SQL名：一覧取得</summary>
+            public const string GetPartsList = "GetPartsList";
+
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDirIssue = @"IssueInput";
+            /// <summary>SQL格納先サブディレクトリ名(予備品仕様)</summary>
+            public const string SubDirParts = @"Parts";
         }
 
         /// <summary>
@@ -513,7 +522,7 @@ namespace BusinessLogic_PT0006
                 {
                     return false;　//エラー
                 }
-                else if(!string.IsNullOrEmpty(this.MsgId))
+                else if (!string.IsNullOrEmpty(this.MsgId))
                 {
                     // 対象予備品に対して1件も入庫がない場合
                     isEnterExsists = false;
@@ -719,12 +728,15 @@ namespace BusinessLogic_PT0006
                     // 画面タイプをセット(ボタン制御用)
                     result.FormType = int.Parse(FormMode.Reference);
                 }
-                else if(result.FormType != int.Parse(FormMode.Reference))
+                else if (result.FormType != int.Parse(FormMode.Reference))
                 {
                     // 画面タイプをセット(ボタン制御用)
                     result.FormType = int.Parse(formMode);
                 }
             }
+
+            // 小数点以下桁数・丸め処理区分を設定
+            setDigit(ref result);
 
             // 検索結果の設定
             if (SetSearchResultsByDataClass<Dao.registIssue>(issueInputInfo, new List<Dao.registIssue> { result }, 1, true))
@@ -733,6 +745,43 @@ namespace BusinessLogic_PT0006
                 return true;
             }
             return false;
+
+            // 小数点以下桁数を検索結果に設定
+            void setDigit(ref Dao.registIssue result)
+            {
+                // 該当予備品データを取得
+                ComDao.PtPartsEntity partsInfo = new ComDao.PtPartsEntity().GetEntity(long.Parse(result.PartsId), this.db);
+                // 構成マスタより数量管理単位のデータを取得
+                ComDao.MsStructureEntity structureInfo = new ComDao.MsStructureEntity().GetEntity((int)partsInfo.UnitStructureId, this.db);
+                // アイテムIDより数量管理単位の小数点以下桁数を取得
+                ComDao.MsItemExtensionEntity extensionInfo = new ComDao.MsItemExtensionEntity().GetEntity((int)structureInfo.StructureItemId, 2, this.db);
+                //小数点以下桁数を設定
+                result.Digit = int.Parse(extensionInfo.ExtensionData);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDirParts, SqlName.GetDetailPartsInfo, out string executeSql);
+                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDirParts, SqlName.GetPartsList, out string withSql);
+
+                // SQL実行
+                IList<Dao.RoundDigit> partsResult = db.GetListByDataClass<Dao.RoundDigit>(withSql + executeSql, new
+                {
+                    @LanguageId = this.LanguageId,
+                    @PartsId = long.Parse(result.PartsId),
+                    @UserFactoryId = TMQUtil.GetUserFactoryId(this.UserId, db)
+                });
+
+                // 取得できない場合は四捨五入
+                if (partsResult == null || partsResult.Count == 0)
+                {
+                    result.RoundDivision = (int)TMQConsts.RoundDivision.Round;
+                }
+                else
+                {
+                    // 取得できれば取得した内容を設定
+                    result.RoundDivision = partsResult[0].UnitRoundDivision;
+                }
+            }
+
         }
 
         /// <summary>
@@ -1109,7 +1158,7 @@ namespace BusinessLogic_PT0006
         }
         #endregion
 
-　　　　#region privateメソッド
+        #region privateメソッド
         /// <summary>
         /// 初期値を取得する
         /// </summary>

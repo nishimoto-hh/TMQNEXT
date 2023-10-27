@@ -14,11 +14,29 @@ WITH factory AS(
         ,dbo.get_target_layer_id(factory_id, 0) AS districtId
     FROM
         v_structure_item_all
+    /*IF param4 != null && param4 != ''*/
+        -- ExcelPortの場合、拡張項目4に値がセットされていない(変更管理対象工場でない)、かつ拡張項目5に'1'がセットされているExcelPort利用対象工場のみ取得
+        LEFT JOIN
+            ms_item_extension AS ex4
+        ON  (
+                structure_item_id = ex4.item_id
+            AND ex4.sequence_no = 4
+            )
+        INNER JOIN
+            ms_item_extension AS ex
+        ON  (
+                structure_item_id = ex.item_id
+            AND ex.sequence_no = 5
+            )
+    /*END*/
     WHERE
         structure_group_id = /*param1*/1000
     AND language_id = /*languageId*/'ja'
     AND structure_layer_no = /*param2*/0
-
+    /*IF param4 != null && param4 != ''*/
+        AND (ex4.extension_data IS NULL OR ex4.extension_data = '')
+        AND ex.extension_data = /*param4*/'1'
+    /*END*/
 )
 -- ユーザ権限を特定するために拡張項目の値を取得
 ,auth AS(

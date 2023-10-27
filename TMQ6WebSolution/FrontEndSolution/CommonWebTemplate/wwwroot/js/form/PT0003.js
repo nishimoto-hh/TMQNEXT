@@ -1203,6 +1203,12 @@ function preInputCheckUpload(appPath, conductId, formNo) {
  *  @param btn           ：押下されたボタン要素
  */
 function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
+
+    // 共通-移庫入力画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
+    if (IsExecPT0007_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+        return PT0007_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
+    }
+
     if (formNo == FormUpload.No || formNo == FormRegist.No) {
         //新規取込画面 チェック時、新規登録画面 登録時
 
@@ -1318,4 +1324,20 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
             setValue(FormRegist.List.Id, FormRegist.List.AccountOldNewDivision, 1, CtrlFlag.Label, data[0].EXPARAM2, false, false);
         }
     }
+}
+
+/**
+ *【オーバーライド用関数】ページデータ取得後
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
+
+    // 出庫入力画面
+    PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo);
 }

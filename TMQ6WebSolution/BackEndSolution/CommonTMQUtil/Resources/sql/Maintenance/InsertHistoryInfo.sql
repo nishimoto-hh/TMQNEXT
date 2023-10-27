@@ -29,6 +29,7 @@ INSERT INTO ma_history(
     ,[effect_quality_structure_id]
     ,[failure_site]
     ,[parts_existence_flg]
+    ,[follow_flg]
     ,[update_serialid]
     ,[insert_datetime]
     ,[insert_user_id]
@@ -80,6 +81,7 @@ VALUES(
     ,@EffectQualityStructureId
     ,@FailureSite
     ,@PartsExistenceFlg
+    ,@FollowFlg
     ,@UpdateSerialid
     ,@InsertDatetime
     ,@InsertUserId

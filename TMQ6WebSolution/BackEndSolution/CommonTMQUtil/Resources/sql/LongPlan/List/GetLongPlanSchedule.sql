@@ -1,13 +1,36 @@
 /*
 * スケジュールの内容を取得するSQL
 */
+WITH long_plan_ids AS (
 SELECT
-     lp.long_plan_id AS key_id
+    *
+FROM
+    STRING_SPLIT(@LongPlanIdList, ',')
+)
+SELECT
+    lp.long_plan_id AS key_id
     ,msd.schedule_date
     ,msd.complition
     ,mscn.maintainance_kind_structure_id
     ,ie.extension_data AS maintainance_kind_level
-    ,dbo.get_translation_text_all(mscn.maintainance_kind_structure_id,lp.location_structure_id,1240,@LanguageId) AS maintainance_kind_char
+    ,(
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = mscn.maintainance_kind_structure_id
+                AND st_f.factory_id IN(0, lp.location_factory_structure_id)
+            )
+        AND tra.structure_id = mscn.maintainance_kind_structure_id
+    ) AS maintainance_kind_char
     ,msd.summary_id
     ,msd.maintainance_schedule_detail_id AS new_maintainance_key
 FROM
@@ -41,5 +64,13 @@ FROM
         AND ie.sequence_no = 1
         )
 WHERE
-    msd.schedule_date IS NOT NULL
+    EXISTS(
+        SELECT
+            *
+        FROM
+            long_plan_ids temp
+        WHERE
+            lp.long_plan_id = temp.value
+    )
+AND msd.schedule_date IS NOT NULL
 AND msd.schedule_date BETWEEN @ScheduleStart AND @ScheduleEnd

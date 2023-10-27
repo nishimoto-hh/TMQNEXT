@@ -67,7 +67,8 @@ new { id = "formTop", enctype = "multipart/form-data" } // その他の属性
 </span>
 <ul id="app_navi_menu" class="hide">
     @*新規ウィンドウ*@
-    <li><a href="#" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911120002", ViewBag.TransDictionary)</a></li>
+    @*<li><a href="#" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911120002", ViewBag.TransDictionary)</a></li>*@
+    <li><a href="#" rel="noopener noreferrer" onclick="showNewWindow('@ViewBag.AppRoutePath'); return false;">@blogic.ConvertResourceName("911120002", ViewBag.TransDictionary)</a></li>
     @*ヘルプ*@
     <li><a href="@manualUrl" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911290001", ViewBag.TransDictionary)</a></li>
     @{

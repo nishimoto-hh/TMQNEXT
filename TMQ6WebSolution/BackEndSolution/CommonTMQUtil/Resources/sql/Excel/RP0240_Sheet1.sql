@@ -10,27 +10,59 @@ SELECT
     ISNULL(pp.model_type,'') + ISNULL(pp.standard_size,'') AS model_type, -- 型式(仕様)
     
     pp.manufacturer_structure_id, -- メーカー
-    [dbo].[get_v_structure_item](pp.manufacturer_structure_id, pp.factory_id, @LanguageId) AS manufacturer_name,
-
+    --[dbo].[get_v_structure_item](pp.manufacturer_structure_id, pp.factory_id, @LanguageId) AS manufacturer_name,
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pp.manufacturer_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pp.manufacturer_structure_id
+    ) AS manufacturer_name, -- メーカー(翻訳)
     pp.parts_no, -- 予備品ｺｰﾄﾞNo.
 
     pl.old_new_structure_id, -- 新旧区分
-    [dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_name,
-
-    -- sum(ISNULL(pih.inout_quantity, 0)) as inout_quantity, -- 出庫数
-    FORMAT(sum(ISNULL(pih.inout_quantity, 0)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as inout_quantity, -- 出庫数
+    --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_name,
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.old_new_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.old_new_structure_id
+    ) AS old_new_name, -- 新旧区分(翻訳)
+    FORMAT(SUM(ISNULL(pih.inout_quantity, 0)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as inout_quantity, -- 出庫数
     FORMAT(SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as issue_monney, -- 出庫金額
-    -- pih.inout_datetime, -- 検収年月
     FORMAT(pih.inout_datetime,'yyyy/MM') as inout_datetime, -- 検収年月
-
     pih.account_structure_id, -- 勘定項目
     [dbo].[get_rep_extension_data](pih.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,
-
     pih.department_structure_id, -- 部門ID
     [dbo].[get_rep_extension_data](pih.department_structure_id, pp.factory_id, @LanguageId, 1) AS department_cd,
 
     pih.management_no, -- 管理No
-    pih.management_division -- 管理区分
+    pih.management_division, -- 管理区分
+    '1' AS output_report_location_name_got_flg,                            -- 機能場所名称情報取得済フラグ（帳票用）
+    '1' AS output_report_job_name_got_flg                                 -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM pt_inout_history pih -- 受払履歴
     INNER JOIN pt_lot pl -- ロット情報
          ON pl.lot_control_id = pih.lot_control_id
@@ -55,36 +87,32 @@ WHERE
 AND
     pih.delete_flg = 0
 -- 受払区分 2：払出 （構成グループID：1950、払出：413）
---AND 
---    pih.inout_division_structure_id IN (413) 
 AND pih.inout_division_structure_id IN (
-    SELECT
-        structure_id
+    SELECT 
+        ms.structure_id
     FROM
-        v_structure_item_all AS si 
-    INNER JOIN ms_item_extension AS ie 
-    ON si.structure_item_id = ie.item_id 
-    AND si.structure_group_id = 1950 
+        ms_structure ms
+    INNER JOIN
+        ms_item_extension ex
+    ON  ms.structure_item_id = ex.item_id
     WHERE
-        language_id = 'ja'
-    AND ie.extension_data = '2'
+         ms.structure_group_id = 1950
+    AND  ex.extension_data = '2'
 )
 
 -- 作業区分 2：出庫、4：部門移庫、6：棚卸出庫
 -- （構成グループID：1960、部門移庫：402、出庫：404、棚卸出庫：406）
---AND 
---    pih.work_division_structure_id IN (402,404,406) 
 AND pih.work_division_structure_id IN (
     SELECT
-        structure_id
+        ms.structure_id
     FROM
-        v_structure_item_all AS si 
-    INNER JOIN ms_item_extension AS ie 
-    ON si.structure_item_id = ie.item_id 
-    AND si.structure_group_id = 1960 
+        ms_structure ms
+    INNER JOIN
+        ms_item_extension ex
+    ON  ms.structure_item_id = ex.item_id
     WHERE
-        language_id = 'ja'
-    AND ie.extension_data in ('2','4','6')
+        ms.structure_group_id = 1960
+    AND ex.extension_data in ('2','4','6')
 ) 
 
 /*@TargetYearMonth
@@ -209,10 +237,46 @@ GROUP BY
     ,pp.factory_id
 ORDER BY
     -- 棚番、予備品ｺｰﾄﾞNo.、新旧区分、出庫年月、勘定科目、部門コード、管理No、管理区分
-    [dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, @LanguageId)
+    --[dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, @LanguageId)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pls.parts_location_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pls.parts_location_id
+    )
     ,pls.parts_location_detail_no 
     ,pp.parts_no
-    ,[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId)
+    --,[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId)
+    ,(
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.old_new_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.old_new_structure_id
+    )
     ,FORMAT(pih.inout_datetime,'yyyy/MM')
     ,[dbo].[get_rep_extension_data](pih.account_structure_id, pp.factory_id, @LanguageId, 1)
     ,[dbo].[get_rep_extension_data](pih.department_structure_id, pp.factory_id, @LanguageId, 1)

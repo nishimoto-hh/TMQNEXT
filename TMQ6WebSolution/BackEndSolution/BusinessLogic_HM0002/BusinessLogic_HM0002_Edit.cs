@@ -103,8 +103,10 @@ namespace BusinessLogic_HM0002
             EditDispType editType = getEditType();
             bool isInsert = isInsertEdit(editType);
             // キー情報取得
-            Dao.detailSearchCondition info = getParam(ConductInfo.FormEdit.ControlId.Hide, true, false);
-            bool isTransactionMode = info.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction;
+            Dao.detailSearchCondition info = new();
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormEdit.ControlId.Hide);
+            SetDataClassFromDictionary(targetDic, ConductInfo.FormEdit.ControlId.Hide, info, new List<string> { HistoryManagementId, LongPlanId });
+            bool isTransactionMode = info.HistoryManagementId == null || info.HistoryManagementId <= 0;
             if (!isInsert && isTransactionMode)
             {
                 //「承認済」以外の変更管理が紐づいている場合、エラー
@@ -130,8 +132,7 @@ namespace BusinessLogic_HM0002
             // 階層情報を設定
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.ListSearchResult>(ref registStructureInfo, new List<StructureType> { StructureType.Location, StructureType.Job });
             // 職種と地区の値を登録するデータクラスに設定
-            registInfo.JobStructureId = registStructureInfo[0].JobStructureId;
-            registInfo.LocationStructureId = registStructureInfo[0].LocationStructureId;
+            setLayerInfo(ref registInfo, registStructureInfo[0]);
             // 登録
             if (!registDb(registInfo, out long newLongPlanId, out long historyManagementId))
             {
@@ -152,6 +153,27 @@ namespace BusinessLogic_HM0002
             List<string> toCtrlIdList = getResultMappingInfoByGrpNo(ConductInfo.FormEdit.HeaderGroupNo).CtrlIdList;
             initFormByLongPlanId(param, toCtrlIdList, out bool isMaintainanceKindFactory, out int factoryId, true);
             return true;
+
+            // 画面のツリーの階層情報を登録用データクラスにセット
+            void setLayerInfo(ref Dao.ListSearchResult target, Dao.ListSearchResult source)
+            {
+                // 場所階層
+                target.LocationStructureId = source.LocationStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.LocationDistrictStructureId = ComUtil.ConvertStringToInt(source.DistrictName);
+                target.LocationFactoryStructureId = ComUtil.ConvertStringToInt(source.FactoryName);
+                target.LocationPlantStructureId = ComUtil.ConvertStringToInt(source.PlantName);
+                target.LocationSeriesStructureId = ComUtil.ConvertStringToInt(source.SeriesName);
+                target.LocationStrokeStructureId = ComUtil.ConvertStringToInt(source.StrokeName);
+                target.LocationFacilityStructureId = ComUtil.ConvertStringToInt(source.FacilityName);
+                // 職種機種階層
+                target.JobStructureId = source.JobStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.JobKindStructureId = ComUtil.ConvertStringToInt(source.JobName);
+                target.JobLargeClassficationStructureId = ComUtil.ConvertStringToInt(source.LargeClassficationName);
+                target.JobMiddleClassficationStructureId = ComUtil.ConvertStringToInt(source.MiddleClassficationName);
+                target.JobSmallClassficationStructureId = ComUtil.ConvertStringToInt(source.SmallClassficationName);
+            }
         }
 
         /// <summary>
@@ -352,7 +374,17 @@ namespace BusinessLogic_HM0002
                 historyEntity.ExecutionDivision = registInfo.ExecutionDivision;
                 historyEntity.Subject = registInfo.Subject;
                 historyEntity.LocationStructureId = registInfo.LocationStructureId;
+                historyEntity.LocationDistrictStructureId = registInfo.LocationDistrictStructureId;
+                historyEntity.LocationFactoryStructureId = registInfo.LocationFactoryStructureId;
+                historyEntity.LocationPlantStructureId = registInfo.LocationPlantStructureId;
+                historyEntity.LocationSeriesStructureId = registInfo.LocationSeriesStructureId;
+                historyEntity.LocationStrokeStructureId = registInfo.LocationStrokeStructureId;
+                historyEntity.LocationFacilityStructureId = registInfo.LocationFacilityStructureId;
                 historyEntity.JobStructureId = registInfo.JobStructureId;
+                historyEntity.JobKindStructureId = registInfo.JobKindStructureId;
+                historyEntity.JobLargeClassficationStructureId = registInfo.JobLargeClassficationStructureId;
+                historyEntity.JobMiddleClassficationStructureId = registInfo.JobMiddleClassficationStructureId;
+                historyEntity.JobSmallClassficationStructureId = registInfo.JobSmallClassficationStructureId;
                 historyEntity.SubjectNote = registInfo.SubjectNote;
                 historyEntity.PersonId = registInfo.PersonId;
                 historyEntity.PersonName = registInfo.PersonName;

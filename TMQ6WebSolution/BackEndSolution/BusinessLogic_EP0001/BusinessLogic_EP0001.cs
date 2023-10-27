@@ -103,10 +103,12 @@ namespace BusinessLogic_EP0001
             // 初期表示
             if (this.FormNo == 0)
             {
+            	// 一覧画面
                 searchList();
             }
             else if (this.FormNo == 1)
             {
+            	// 条件画面
                 searchListCondition();
             }
 
@@ -119,6 +121,17 @@ namespace BusinessLogic_EP0001
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int SearchImpl()
         {
+            if (this.FormNo == 0)
+            {
+            	// 一覧画面
+                searchList();
+            }
+            else if (this.FormNo == 1)
+            {
+            	// 条件画面
+                searchListCondition();
+            }
+
             return ComConsts.RETURN_RESULT.OK;
         }
 

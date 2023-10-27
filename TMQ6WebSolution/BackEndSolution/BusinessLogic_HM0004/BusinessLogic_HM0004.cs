@@ -17,21 +17,12 @@ using Dao = BusinessLogic_HM0004.BusinessLogicDataClass_HM0004;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
-/*
- * このプロジェクトは実装サンプルです。
- * 過剰なコメントや処理および分岐なども含まれているので、実装の際は削除をお願いします。
- * サンプルのため、単純な画面の仕様を想定しています。
- * 実際の機能でこのような実装が難しい場合は、仕様に応じて相応しい実装を行ってください。
-*/
-
-/// <summary>
-/// 機能のテンプレート、実装サンプル
-/// </summary>
 namespace BusinessLogic_HM0004
 {
     /// <summary>
-    /// 機能のテンプレート、実装サンプル
+    /// 変更管理 帳票出力
     /// </summary>
     public class BusinessLogic_HM0004 : CommonBusinessLogicBase
     {
@@ -169,8 +160,6 @@ namespace BusinessLogic_HM0004
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int ReportImpl()
         {
-            int result = 0;
-
             this.ResultList = new();
 
             // 画面情報取得
@@ -183,7 +172,7 @@ namespace BusinessLogic_HM0004
             int reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
             // エクセル出力共通処理
-            TMQUtil.CommonOutputExcel(
+            bool result = TMQUtil.CommonOutputExcel(
                 reportFactoryId,            // 工場ID
                 this.PgmId,                       // プログラムID
                 null,                        // シートごとのパラメータでの選択キー情報リスト
@@ -206,7 +195,24 @@ namespace BusinessLogic_HM0004
                 null,
                 null,
                 null,
-                condition);
+                condition,
+                this.messageResources);
+
+            if (!result)
+            {
+                if (string.IsNullOrEmpty(message))
+                {
+                    // 「出力処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120006 });
+                }
+                else
+                {
+                    this.MsgId = message;
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                return ComConsts.RETURN_RESULT.NG;
+            }
 
             // OUTPUTパラメータに設定
             this.OutputFileType = fileType;
@@ -256,7 +262,7 @@ namespace BusinessLogic_HM0004
             List<Dictionary<string, object>> resultList = ComUtil.GetDictionaryListByCtrlId(this.searchConditionDictionary, ctrlId, true);
             // 構成IDのリスト
             List<int> structureIdList = new();
-            IList <Dao.locationJobCondition> list = new List<Dao.locationJobCondition>();
+            IList<Dao.locationJobCondition> list = new List<Dao.locationJobCondition>();
             // 一覧を繰り返し、データクラスに変換、リストへ追加する
             foreach (var resultRow in resultList)
             {
@@ -287,17 +293,29 @@ namespace BusinessLogic_HM0004
                 list.Add(info);
             }
 
-            if(list.Count == 0)
+            if (list.Count != 0)
             {
-                return null;
+                //設定されている最下層の構成IDを取得する
+                TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.locationJobCondition>(ref list, new List<StructureType> { isLocation ? StructureType.Location : StructureType.Job });
+                structureIdList.AddRange(list.Select(x => isLocation ? x.LocationStructureId ?? -1 : x.JobStructureId ?? -1).Distinct().ToList());
             }
-
-            //設定されている最下層の構成IDを取得する
-            TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.locationJobCondition>(ref list, new List<StructureType> { isLocation ? StructureType.Location : StructureType.Job });
-            structureIdList.AddRange(list.Select(x => isLocation ? x.LocationStructureId ?? -1 : x.JobStructureId ?? -1).Distinct().ToList());
-            if (structureIdList.Count == 1 && structureIdList[0] == -1)
+            if (structureIdList.Count == 0 || (structureIdList.Count == 1 && structureIdList[0] == -1))
             {
-                return null;
+                if (isLocation && (this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0))
+                {
+                    // 場所階層の指定なしの場合、所属場所階層を渡す
+                    structureIdList = getBelongLocationIdList();
+                }
+                else if (!isLocation && (this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0))
+                {
+                    // 職種機種の指定なしの場合、所属職種機種を渡す
+                    structureIdList = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
+                }
+                if (structureIdList.Count == 0)
+                {
+                    //取得できない場合、データを表示しない
+                    return "-1";
+                }
             }
 
             //配下の構成IDを取得しカンマ区切りの文字列にする

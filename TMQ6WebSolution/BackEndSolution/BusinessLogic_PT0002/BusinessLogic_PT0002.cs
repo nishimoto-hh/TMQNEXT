@@ -17,6 +17,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using STDData = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace BusinessLogic_PT0002
 {
@@ -367,7 +368,8 @@ namespace BusinessLogic_PT0002
                             dataList = getDataListByResultInfoDictionary(targetCtrlId);
 
                             // 出荷一覧のみ子レコードの結果をマージする
-                            if (targetCtrlId == TargetCtrlId.IssueResults){
+                            if (targetCtrlId == TargetCtrlId.IssueResults)
+                            {
                                 // 子レコードのデータを取得
                                 dataList2 = getDataListByResultInfoDictionary(TargetCtrlId.IssueResultsChild);
 
@@ -375,13 +377,13 @@ namespace BusinessLogic_PT0002
                                 List<Dictionary<string, string>> mergeDataList = new List<Dictionary<string, string>>();
                                 // 親レコードに対して、紐づけ用の項目の値で紐づく子レコードをマージする
                                 // 子レコードの項目名には子レコード認識用の追加接続詞があるため、キー重複は無い前提
-                                foreach(Dictionary<string, string> dicData in dataList)
+                                foreach (Dictionary<string, string> dicData in dataList)
                                 {
                                     foreach (Dictionary<string, string> dicData2 in dataList2)
                                     {
-                                        if(dicData2.ContainsKey(OutputReportDefine.LinkColumnNameForChildRecord 
-                                                + OutputReportDefine.AddColumnNameForChildRecord) == true 
-                                            && dicData2[OutputReportDefine.LinkColumnNameForChildRecord 
+                                        if (dicData2.ContainsKey(OutputReportDefine.LinkColumnNameForChildRecord
+                                                + OutputReportDefine.AddColumnNameForChildRecord) == true
+                                            && dicData2[OutputReportDefine.LinkColumnNameForChildRecord
                                                 + OutputReportDefine.AddColumnNameForChildRecord] == dicData[OutputReportDefine.LinkColumnNameForChildRecord])
                                         {
                                             Dictionary<string, string> mergeDic = dicData.Concat(dicData2)
@@ -418,33 +420,35 @@ namespace BusinessLogic_PT0002
                                         sqlItem = sqlItem + ",";
                                     }
                                     sqlItem += "'" + keyValuePair.Value + "'" + " AS " + keyValuePair.Key;
-/*
-                                    // 個別処理：新旧区分の埋め込み
-                                    if(keyValuePair.Key == OutputReportDefine.ColumnNameNewOldStructureId)
-                                    {
-                                        sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameNewOldName;
-                                    }
+                                    /*
+                                                                        // 個別処理：新旧区分の埋め込み
+                                                                        if(keyValuePair.Key == OutputReportDefine.ColumnNameNewOldStructureId)
+                                                                        {
+                                                                            sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameNewOldName;
+                                                                        }
 
-                                    // 個別処理：出庫区分の埋め込み
-                                    if (keyValuePair.Key == OutputReportDefine.ColumnNameShippingDivisionStructureId)
-                                    {
-                                        sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameShippingDivisionName;
-                                    }
+                                                                        // 個別処理：出庫区分の埋め込み
+                                                                        if (keyValuePair.Key == OutputReportDefine.ColumnNameShippingDivisionStructureId)
+                                                                        {
+                                                                            sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameShippingDivisionName;
+                                                                        }
 
-                                    // 個別処理：予備品倉庫の埋め込み
-                                    if (keyValuePair.Key == OutputReportDefine.ColumnNameStorageLocationId)
-                                    {
-                                        sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameStorageLocationName;
-                                    }
+                                                                        // 個別処理：予備品倉庫の埋め込み
+                                                                        if (keyValuePair.Key == OutputReportDefine.ColumnNameStorageLocationId)
+                                                                        {
+                                                                            sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameStorageLocationName;
+                                                                        }
 
-                                    // 個別処理：予備品倉庫（移庫先）の埋め込み
-                                    if (keyValuePair.Key == OutputReportDefine.ColumnNameToStorageLocationId)
-                                    {
-                                        sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameToStorageLocationName;
-                                    }
-*/
+                                                                        // 個別処理：予備品倉庫（移庫先）の埋め込み
+                                                                        if (keyValuePair.Key == OutputReportDefine.ColumnNameToStorageLocationId)
+                                                                        {
+                                                                            sqlItem += "," + "[dbo].[get_v_structure_item](" + keyValuePair.Value + "," + factoryId + ",'" + this.LanguageId + "') AS " + OutputReportDefine.ColumnNameToStorageLocationName;
+                                                                        }
+                                    */
                                 }
                                 sql += "SELECT " + sqlItem;
+                                sql += ", '1' AS output_report_location_name_got_flg "; // 機能場所名称情報取得済フラグ（帳票用）
+                                sql += ", '1' AS output_report_job_name_got_flg "; // 職種・機種名称情報取得済フラグ（帳票用）
                             }
                             var summaryDataList = db.GetListByDataClass<dynamic>(sql.ToString());
                             dicSummaryDataList.Add(sheetDefine.SheetNo, summaryDataList);
@@ -594,11 +598,12 @@ namespace BusinessLogic_PT0002
                             // 取得結果の辞書（スネークケース、値）用データに変換
                             rowDic = getDicItemNameAndValue(formData, true);
                         }
-                        else {
+                        else
+                        {
                             // 選択データのみ対象とする
                             if (ComUtil.IsSelectedRowDictionary(resultInfo))
                             {
-                                if(targetCtrlId == TargetCtrlId.EnterResults)
+                                if (targetCtrlId == TargetCtrlId.EnterResults)
                                 {
                                     // 画面から項目名（スネークケース）、項目値を取得
                                     Dao.searchResultEnter formData = new();
@@ -718,6 +723,25 @@ namespace BusinessLogic_PT0002
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110005 });
                 return false;
             }
+
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.SpareLocation,
+                GroupId.Unit,
+                GroupId.Currency,
+                GroupId.Department,
+                GroupId.Account,
+                GroupId.OldNewDivition,
+                GroupId.IssueDivision
+            };
+
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
 
             // 入庫タブ検索
             searchListEnter(conditionObj, listUnComment);
@@ -855,10 +879,10 @@ namespace BusinessLogic_PT0002
         /// <param name="withSql">WITH句</param>
         /// <param name="selectSql">一覧検索SQL</param>
         /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
-        private bool getListSearchSql(string execSql, string baseSql, string withSql, string orderBy, out StringBuilder selectSql)
+        private bool getListSearchSql(string execSql, string baseSql, string withSql, string orderBy, CommonWebTemplate.CommonDefinitions.PageInfo pageInfo, out StringBuilder selectSql)
         {
             // 一覧検索SQL文の取得
-            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
+            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql, false, pageInfo.SelectMaxCnt);
             // 検索SQLにORDER BYを追加
             selectSql = new StringBuilder(execSql);
             selectSql.AppendLine(orderBy);

@@ -1,0 +1,8 @@
+{
+    "settings": {
+      "documentationRules": {
+        "documentPrivateElements": true,
+        "documentPrivateFields": true
+      }
+    }
+  }

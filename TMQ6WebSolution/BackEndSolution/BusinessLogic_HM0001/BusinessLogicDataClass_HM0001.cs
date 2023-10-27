@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BusinessLogicBase = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase;
 using ComDao = CommonSTDUtil.CommonDataBaseClass;
-using TmqDao = CommonTMQUtil.TMQCommonDataClass;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using IListAccessor = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil.IListAccessor;
+using TmqDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_HM0001
 {
@@ -52,7 +56,7 @@ namespace BusinessLogic_HM0001
         /// <summary>
         /// 一覧画面・詳細画面・詳細編集画面の検索結果
         /// </summary>
-        public class searchResult : TmqDao.HmMcMachineEntity, HistoryManagementDao.IHistoryManagementCommon
+        public class searchResult : TmqDao.HmMcMachineEntity, HistoryManagementDao.IHistoryManagementCommon, IListAccessor
         {
             /// <summary>Gets or sets メーカー</summary>
             /// <value>メーカー</value>
@@ -333,6 +337,142 @@ namespace BusinessLogic_HM0001
             /// <value>機種小分類名称</value>
             public string OldSmallClassficationName { get; set; }
             #endregion
+
+            /// <summary>
+            /// 一時テーブルレイアウト作成処理(性能改善対応)
+            /// </summary>
+            /// <param name="mapDic">マッピング情報のディクショナリ</param>
+            /// <returns>一時テーブルレイアウト</returns>
+            public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+            {
+                dynamic paramObj;
+
+                paramObj = new ExpandoObject() as IDictionary<string, object>;
+
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerStructureId, nameof(this.ManufacturerStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerType, nameof(this.ManufacturerType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelNo, nameof(this.ModelNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SerialNo, nameof(this.SerialNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DateOfManufacture, nameof(this.DateOfManufacture), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeliveryDate, nameof(this.DeliveryDate), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.EquipmentNote, nameof(this.EquipmentNote), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicableLawsStructureId, nameof(this.ApplicableLawsStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UseSegmentStructureId, nameof(this.UseSegmentStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FixedAssetNo, nameof(this.FixedAssetNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteConservationStructureId, nameof(this.InspectionSiteConservationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.CirculationTargetFlg, nameof(this.CirculationTargetFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MaintainanceKindManage, nameof(this.MaintainanceKindManage), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkEquipment, nameof(this.FileLinkEquipment), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkMachine, nameof(this.FileLinkMachine), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IsChangedComponent, nameof(this.IsChangedComponent), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ConductName, nameof(this.ConductName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationUserName, nameof(this.ApplicationUserName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApprovalUserName, nameof(this.ApprovalUserName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationDate, nameof(this.ApplicationDate), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApprovalDate, nameof(this.ApprovalDate), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationReason, nameof(this.ApplicationReason), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.RejectionReason, nameof(this.RejectionReason), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationDivisionId, nameof(this.ApplicationDivisionId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationDivisionCode, nameof(this.ApplicationDivisionCode), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationStatusId, nameof(this.ApplicationStatusId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationStatusCode, nameof(this.ApplicationStatusCode), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ValueChanged, nameof(this.ValueChanged), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.HistoryManagementId, nameof(this.HistoryManagementId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ProcessMode, nameof(this.ProcessMode), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AbleApproval, nameof(this.AbleApproval), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IsCertified, nameof(this.IsCertified), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IsCertifiedFactory, nameof(this.IsCertifiedFactory), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ExecutionDivision, nameof(this.ExecutionDivision), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.EquipmentId, nameof(this.EquipmentId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.McUpdateSerialId, nameof(this.McUpdateSerialId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.EqUpdateSerialId, nameof(this.EqUpdateSerialId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DispType, nameof(this.DispType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.HmEquipmentId, nameof(this.HmEquipmentId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StatusCntExceptApproved, nameof(this.StatusCntExceptApproved), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.EquipmentLevel, nameof(this.EquipmentLevel), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ImportanceName, nameof(this.ImportanceName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteConservationName, nameof(this.InspectionSiteConservationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicableLawsName, nameof(this.ApplicableLawsName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerName, nameof(this.ManufacturerName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UseSegmentName, nameof(this.UseSegmentName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationStatusName, nameof(this.ApplicationStatusName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ApplicationDivisionName, nameof(this.ApplicationDivisionName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DistrictId, nameof(this.DistrictId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DistrictName, nameof(this.DistrictName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryId, nameof(this.FactoryId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryName, nameof(this.FactoryName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PlantId, nameof(this.PlantId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PlantName, nameof(this.PlantName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SeriesId, nameof(this.SeriesId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SeriesName, nameof(this.SeriesName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StrokeId, nameof(this.StrokeId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StrokeName, nameof(this.StrokeName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityId, nameof(this.FacilityId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FacilityName, nameof(this.FacilityName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobId, nameof(this.JobId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobName, nameof(this.JobName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LargeClassficationId, nameof(this.LargeClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LargeClassficationName, nameof(this.LargeClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MiddleClassficationId, nameof(this.MiddleClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MiddleClassficationName, nameof(this.MiddleClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SmallClassficationId, nameof(this.SmallClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SmallClassficationName, nameof(this.SmallClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldLocationStructureId, nameof(this.OldLocationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldJobStructureId, nameof(this.OldJobStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldDistrictId, nameof(this.OldDistrictId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldDistrictName, nameof(this.OldDistrictName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldFactoryId, nameof(this.OldFactoryId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldFactoryName, nameof(this.OldFactoryName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldPlantId, nameof(this.OldPlantId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldPlantName, nameof(this.OldPlantName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldSeriesId, nameof(this.OldSeriesId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldSeriesName, nameof(this.OldSeriesName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldStrokeId, nameof(this.OldStrokeId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldStrokeName, nameof(this.OldStrokeName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldFacilityId, nameof(this.OldFacilityId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldFacilityName, nameof(this.OldFacilityName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldJobId, nameof(this.OldJobId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldJobName, nameof(this.OldJobName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldLargeClassficationId, nameof(this.OldLargeClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldLargeClassficationName, nameof(this.OldLargeClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldMiddleClassficationId, nameof(this.OldMiddleClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldMiddleClassficationName, nameof(this.OldMiddleClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldSmallClassficationId, nameof(this.OldSmallClassficationId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.OldSmallClassficationName, nameof(this.OldSmallClassficationName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TableName, nameof(this.TableName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.HmMachineId, nameof(this.HmMachineId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineId, nameof(this.MachineId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationStructureId, nameof(this.LocationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationDistrictStructureId, nameof(this.LocationDistrictStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationFactoryStructureId, nameof(this.LocationFactoryStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationPlantStructureId, nameof(this.LocationPlantStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationSeriesStructureId, nameof(this.LocationSeriesStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationStrokeStructureId, nameof(this.LocationStrokeStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationFacilityStructureId, nameof(this.LocationFacilityStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobStructureId, nameof(this.JobStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobKindStructureId, nameof(this.JobKindStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobLargeClassficationStructureId, nameof(this.JobLargeClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobMiddleClassficationStructureId, nameof(this.JobMiddleClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobSmallClassficationStructureId, nameof(this.JobSmallClassficationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineNo, nameof(this.MachineNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineName, nameof(this.MachineName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InstallationLocation, nameof(this.InstallationLocation), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.NumberOfInstallation, nameof(this.NumberOfInstallation), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.EquipmentLevelStructureId, nameof(this.EquipmentLevelStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DateOfInstallation, nameof(this.DateOfInstallation), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ImportanceStructureId, nameof(this.ImportanceStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ConservationStructureId, nameof(this.ConservationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineNote, nameof(this.MachineNote), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateSerialid, nameof(this.UpdateSerialid), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertDatetime, nameof(this.InsertDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InsertUserId, nameof(this.InsertUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateDatetime, nameof(this.UpdateDatetime), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
+
+                return paramObj;
+            }
         }
 
         /// <summary>
@@ -451,6 +591,33 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
             /// <value>保全スケジュール変更管理ID</value>
             public long HmMaintainanceScheduleId { get; set; }
+
+            #region 翻訳
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public string EquipmentLevelName { get; set; }
+            /// <summary>Gets or sets 保全部位</summary>
+            /// <value>保全部位</value>
+            public string InspectionSiteName { get; set; }
+            /// <summary>Gets or sets 部位重要度</summary>
+            /// <value>部位重要度</value>
+            public string InspectionSiteImportanceName { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public string InspectionSiteConservationName { get; set; }
+            /// <summary>Gets or sets 保全区分</summary>
+            /// <value>保全区分</value>
+            public string MaintainanceDivisionName { get; set; }
+            /// <summary>Gets or sets 保全項目</summary>
+            /// <value>保全項目</value>
+            public string InspectionContentName { get; set; }
+            /// <summary>Gets or sets 点検種別</summary>
+            /// <value>点検種別</value>
+            public string MaintainanceKindName { get; set; }
+            /// <summary>Gets or sets スケジュール管理</summary>
+            /// <value>スケジュール管理</value>
+            public string ScheduleTypeName { get; set; }
+            #endregion
         }
 
         /// <summary>
@@ -511,5 +678,16 @@ namespace BusinessLogic_HM0001
             /// <value>機器別管理基準内容ID</value>
             public long ManagementStandardsContentId { get; set; }
         }
+
+        /// <summary>
+        /// 拡張項目取得 データクラス
+        /// </summary>
+        public class ExtensionVal : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets 拡張値</summary>
+            /// <value>拡張値</value>
+            public string ExtensionData { get; set; }
+        }
+
     }
 }

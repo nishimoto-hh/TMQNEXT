@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CommonExcelUtil\CommonExcelUtil.csproj" />
     <ProjectReference Include="..\CommonSTDUtil\CommonSTDUtil.csproj" />
+    <ProjectReference Include="..\CommonTMQUtil\CommonTMQUtil.csproj" />
   </ItemGroup>
 
 </Project>

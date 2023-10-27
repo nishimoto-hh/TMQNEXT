@@ -33,7 +33,7 @@ WHERE   (pt.factory_id = (SELECT v.factory_id
 																		  AND   REPLACE(STR(machine_id),' ','') = @MachineId)) -- 対象工場と同じ地区に属する共通工場
 						AND vi.structure_layer_no = 1 
 						AND ie.sequence_no = 3 
-						AND ie.extension_data = 1
+						AND ie.extension_data = '1'
 						)
 		)
 AND     (pt.job_structure_id = dbo.get_top_layer_id((SELECT job_structure_id

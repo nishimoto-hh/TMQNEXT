@@ -1653,6 +1653,118 @@
             /// 既存データに対して登録は指定できません。
             /// </summary>
             public const string ID141070006 = "141070006";
+            /// <summary>
+            /// 標準棚枝番
+            /// </summary>
+            public const string ID111270032 = "111270032";
+            /// <summary>
+            /// 標準アイテムは登録できません。
+            /// </summary>
+            public const string ID141270004 = "141270004";
+            /// <summary>
+            /// 別工場のアイテムに変更することはできません。
+            /// </summary>
+            public const string ID141290008 = "141290008";
+            /// <summary>
+            /// 数量管理単位
+            /// </summary>
+            public const string ID111130009 = "111130009";
+            /// <summary>
+            /// 金額管理単位
+            /// </summary>
+            public const string ID111070042 = "111070042";
+            /// <summary>
+            /// 仕入先コード
+            /// </summary>
+            public const string ID111120131 = "111120131";
+            /// <summary>
+            /// 勘定科目コード
+            /// </summary>
+            public const string ID111060062 = "111060062";
+            /// <summary>
+            /// 系停止「なし」の場合、系停止時間は設定できません。
+            /// </summary>
+            public const string ID141090004 = "141090004";
+            /// <summary>
+            /// 件名区分は変更できません。
+            /// </summary>
+            public const string ID141090005 = "141090005";
+            /// <summary>
+            /// 並び順設定
+            /// </summary>
+            public const string ID141210001 = "141210001";
+            /// <summary>
+            /// 標準アイテム未使用設定
+            /// </summary>
+            public const string ID141270005 = "141270005";
+            /// <summary>
+            /// 保全受付または完了済のため、削除できません。
+            /// </summary>
+            public const string ID141300008 = "141300008";
+            /// <summary>
+            /// 履歴が存在する年月には新規にスケジュールを追加できません。
+            /// </summary>
+            public const string ID141400001 = "141400001";
+            /// <summary>
+            /// 仕様項目名
+            /// </summary>
+            public const string ID111100039 = "111100039";
+            /// <summary>
+            /// 数値書式
+            /// </summary>
+            public const string ID111130015 = "111130015";
+            /// <summary>
+            /// 単位種別
+            /// </summary>
+            public const string ID111160067 = "111160067";
+            /// <summary>
+            /// 単位
+            /// </summary>
+            public const string ID111160029 = "111160029";
+            /// <summary>
+            /// 単位種別に紐づく単位を選択してください。
+            /// </summary>
+            public const string ID141160020 = "141160020";
+            /// <summary>
+            /// 新規追加はできません。
+            /// </summary>
+            public const string ID141120015 = "141120015";
+            /// <summary>
+            /// 権限が無いため変更できません。
+            /// </summary>
+            public const string ID141090006 = "141090006";
+            /// <summary>
+            /// 保全活動件名は変更できません。
+            /// </summary>
+            public const string ID141300009 = "141300009";
+            /// <summary>
+            /// 該当の仕様項目の関連付けを全て削除することはできません。
+            /// </summary>
+            public const string ID141060009 = "141060009";
+            /// <summary>
+            /// 既に登録されている職種の組み合わせです。
+            /// </summary>
+            public const string ID141130003 = "141130003";
+            /// <summary>
+            /// 構成機器が登録されている機器の為、機器レベルを変更できません。
+            /// </summary>
+            public const string ID141100001 = "141100001";
+            /// <summary>
+            /// 数値で入力してください。
+            /// </summary>
+            public const string ID941130004 = "941130004";
+            /// <summary>
+            /// {0}文字以内で入力して下さい。
+            /// </summary>
+            public const string ID941060018 = "941060018";
+            /// <summary>
+            /// 移庫日が入庫日以前のデータは移庫できません。
+            /// </summary>
+            public const string ID141020005 = "141020005";
+            /// <summary>
+            /// 変更管理の承認者は一般ユーザか特権ユーザを指定してください。
+            /// </summary>
+            public const string ID141290009 = "141290009";
         }
     }
 }

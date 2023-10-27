@@ -210,7 +210,7 @@ namespace BusinessLogic_PT0007
             List<Dao.getInventoryDate> inventoryCondition = getInventoryDateCondition();
 
             // 入力チェック
-            if (isErrorRegistCommon(partsInfo, ConductInfo.DepartmentControlId.DepartmentTransferInfo, departmentInfoTo.RelocationDate, inventoryCondition))
+            if (isErrorRegistCommon(partsInfo, ConductInfo.DepartmentControlId.DepartmentTransferInfo, departmentInfoTo.RelocationDate, inventoryCondition, departmentInfoTo.LotControlId))
             {
                 return false;
             }
@@ -400,6 +400,17 @@ namespace BusinessLogic_PT0007
 
                 string errMsg = string.Empty; // エラーメッセージ
                 string val = string.Empty;    // エラー項目の項目番号
+
+                // 入庫単価が0以下の場合はエラー
+                if (departmentInfoTo.UnitPrice <= 0)
+                {
+                    // 「入庫単価は0以下で登録できません。」
+                    errMsg = GetResMessage(new string[] { ComRes.ID.ID141060007, ComRes.ID.ID111220008 });
+                    val = infoDepartment.getValName("UnitPrice");
+                    errorInfoDepartment.setError(errMsg, val); // エラー情報をセット
+                    errorInfoDictionary.Add(errorInfoDepartment.Result); // エラー情報を追加
+                    return true;
+                }
 
                 // 入庫単価が10桁より多い場合エラー
                 if (departmentInfoTo.UnitPrice > 9999999999.99m)

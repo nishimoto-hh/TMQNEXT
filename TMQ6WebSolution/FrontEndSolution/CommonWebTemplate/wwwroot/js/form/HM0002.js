@@ -27,13 +27,13 @@ document.write("<script src=\"" + getPath() + "/HM0004.js\"></script>");
 // 保全情報一覧の列情報
 const MaintList = {
     MachineNo: 1, MachineName: 2, MachineImportance: 3, MainInspection: 4, MainContent: 5, Budget: 6, ScheduleType: 7,
-    CycleYear: 8, CycleMonth: 9, CycleDay: 10, DispCycle: 11, StartDate: 12, ScheduleDate: 13, MainKind: 14,
+    CycleYear: 8, CycleMonth: 9, CycleDay: 10, DispCycle: 11, StartDate: 12, ScheduleDate: 13, MainKind: 14, MainKindId: 67,
     ApplicationDivisionCode: 62, // 申請区分コード(拡張項目)
 };
 // 保全情報一覧(点検種別毎)の列情報
 const MaintListKind = {
     MachineNo: 1, MachineName: 2, MachineImportance: 3, MainKind: 4, MainInspection: 5, MainContent: 6, Budget: 7, ScheduleType: 8,
-    CycleYear: 9, CycleMonth: 10, CycleDay: 11, DispCycle: 12, StartDate: 13, ScheduleDate: 14, MachineId: 56, ContentId: 53,
+    CycleYear: 9, CycleMonth: 10, CycleDay: 11, DispCycle: 12, StartDate: 13, ScheduleDate: 14, MachineId: 56, ContentId: 53, MainKindId: 65,
     ApplicationDivisionCode: 62, // 申請区分コード(拡張項目)
 };
 
@@ -94,7 +94,7 @@ const FormList = {
             Purpose: 22,                 // 目的区分
             WorkClass: 23,               // 作業区分
             Treatment: 24,               // 処置区分
-            Facility: 25,                // 設備区分
+            FacilityDivision: 25,        // 設備区分
             Content: 30,                 // 保全情報変更有無
             ApplicationDivisionCode: 55, // 申請区分コード(拡張項目)
             ValueChanged: 56             // 変更のあった項目
@@ -224,6 +224,8 @@ const FormSelect = {
     , Hide: { Id: "BODY_060_00_LST_3" }
     , Location: { Id: "COND_000_00_LST_3" }
     , Job: { Id: "COND_010_00_LST_3" }
+    , DetailCondition: { Id: "COND_020_00_LST_3", UseSegment: 1 }
+    , Button: { Search: "Search" }
 };
 
 // スケジュールを表示する一覧
@@ -317,6 +319,15 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var processMode = getValue(FormDetail.Info.Id, FormDetail.Info.ProcessMode, 1, CtrlFlag.Label);
         // ボタン押下可能なボタンにフォーカスをセット
         setFocusButtonHistory(processMode);
+    } else if (formNo == FormEdit.No) {
+        // 登録ボタンにフォーカス
+        setFocusButton(FormEdit.Button.Regist);
+    } else if (formNo == FormSelect.No) {
+        // 検索条件の使用区分を非表示
+        var useSegment = $(getCtrl(FormSelect.DetailCondition.Id, FormSelect.DetailCondition.UseSegment, 1, CtrlFlag.Combo)).closest('tr');
+        setHide(useSegment, true);
+        // 検索ボタンにフォーカス
+        setFocusButton(FormSelect.Button.Search);
     }
 
     if (isMaintListForm(formNo)) {
@@ -724,6 +735,11 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
         var applicationDivisionCode = getValue(FormDetail.Info.Id, FormDetail.Info.ApplicationDivisionCode, 1, CtrlFlag.Label, false, false);
         // 背景色変更処理
         changeBackGroundColorHistoryDetail(applicationDivisionCode, getColumnList(), FormDetail.Info.Id, FormDetail.Info.ValueChanged);
+
+        //処理モード
+        var processMode = getValue(FormDetail.Info.Id, FormDetail.Info.ProcessMode, 1, CtrlFlag.Label);
+        // ボタン押下可能なボタンにフォーカスをセット
+        setFocusButtonHistory(processMode);
     }
 
 }
@@ -1027,7 +1043,7 @@ function setMaintKindListGrouping(formInfo) {
 
         // 点検種別
         // 点検種別を調整
-        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(listInfo.ColInfo.MainKind, prevKindId, index, list);
+        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(listInfo.ColInfo.MainKindId, prevKindId, index, list);
         prevKindId = newPrevKindId;
         changeCols = [listInfo.ColInfo.MainKind, listInfo.ColInfo.CycleYear, listInfo.ColInfo.CycleMonth, listInfo.ColInfo.CycleDay, listInfo.ColInfo.DispCycle, listInfo.ColInfo.StartDate, listInfo.ColInfo.ScheduleDate];
         setGroupToCols(index, changeCols, isTopMachine || isTopKind, isBottomMachine || isBottomKind);
@@ -1260,5 +1276,23 @@ function setHideRowControl(ctrlId) {
     if (!flg) {
         //非表示
         changeRowControl(ctrlId, flg);
+    }
+}
+
+/**
+ *【オーバーライド用関数】
+ *  画面状態設定後の個別実装
+ *
+ * @status {number}       ：ﾍﾟｰｼﾞ状態　0：初期状態、1：検索後、2：明細表示後ｱｸｼｮﾝ、3：ｱｯﾌﾟﾛｰﾄﾞ後
+ * @pageRowCount {number} ：ﾍﾟｰｼﾞ全体のﾃﾞｰﾀ行数
+ * @conductPtn {byte}     ：com_conduct_mst.ptn
+ * @formNo {number}       ：画面番号
+ */
+function setPageStatusEx(status, pageRowCount, conductPtn, formNo) {
+    if (formNo == FormDetail.No) {
+        // 申請区分
+        var applicationDivisionCode = getValue(FormDetail.Info.Id, FormDetail.Info.ApplicationDivisionCode, 1, CtrlFlag.Label, false, false);
+        // 背景色変更処理
+        changeBackGroundColorHistoryDetail(applicationDivisionCode, getColumnList(), FormDetail.Info.Id, FormDetail.Info.ValueChanged);
     }
 }

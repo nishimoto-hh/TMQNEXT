@@ -116,6 +116,7 @@ factory_order AS(
     SELECT
         0
 )
+, structure_list AS ( 
 /*END*/
 SELECT
      vs.structure_id AS structureId
@@ -199,5 +200,63 @@ AND
 AND
     mt.language_id = /*LanguageId*/'ja'
         
+/*IF NarrowHistoryFactory==0 */
 ORDER BY
     vs.structure_group_id, factory_order, vs.structure_layer_no, displayOrder, structureId
+/*END*/
+/*IF NarrowHistoryFactory>0 */
+--変更管理の場合、表示工場の絞り込みにより地区配下に表示する工場が無い場合はその地区を除外する
+) 
+, district_list AS ( 
+    --地区のみ取得
+    SELECT
+        structureId 
+    FROM
+        structure_list 
+    WHERE
+        structureGroupId = 1000 
+        AND structureLayerNo = 0
+) 
+, factory_list AS ( 
+    --工場のみ取得
+    SELECT
+        parentStructureId 
+    FROM
+        structure_list 
+    WHERE
+        structureGroupId = 1000 
+        AND structureLayerNo = 1
+) 
+SELECT
+    * 
+FROM
+    structure_list sl 
+WHERE
+    NOT EXISTS ( 
+        --配下にデータがない地区は除外する
+        SELECT
+            * 
+        FROM
+            ( 
+                SELECT
+                    dl.structureId
+                    , COUNT(fl.parentStructureId) count 
+                FROM
+                    district_list dl 
+                    LEFT JOIN factory_list fl 
+                        ON dl.structureId = fl.parentStructureId 
+                GROUP BY
+                    dl.structureId 
+                HAVING
+                    COUNT(fl.parentStructureId) = 0
+            ) district 
+        WHERE
+            sl.structureId = district.structureId
+    ) 
+ORDER BY
+    structureGroupId
+    , factory_order
+    , structureLayerNo
+    , displayOrder
+    , structureId
+/*END*/

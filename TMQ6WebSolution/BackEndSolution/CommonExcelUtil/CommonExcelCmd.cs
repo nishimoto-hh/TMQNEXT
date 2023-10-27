@@ -695,17 +695,16 @@ namespace CommonExcelUtil
         /// </param>
         public void ShowSheet(string[] param)
         {
-            if (param.Length < 1 || string.IsNullOrEmpty(param[0]))
+            // デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 1 && !string.IsNullOrEmpty(param[0]))
             {
-                // パラメータ不足
-                return;
-            }
-
-            workSheet = GetWorkSheet(param[0], 1);
-            if (workSheet == null)
-            {
-                // 指定シート無し
-                return;
+                workSheet = GetWorkSheet(param[0], 1);
+                if (workSheet == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
             }
 
             // 対象シートを表示
@@ -735,6 +734,54 @@ namespace CommonExcelUtil
             }
             workSheet.SetTabActive();
 
+        }
+
+        /// <summary>
+        /// SelectSheet：シートを選択
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象シート名またはシート番号 デフォルトは先頭シート
+        /// </param>
+        public void SelectSheet(string[] param)
+        {
+            // デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 1 && !string.IsNullOrEmpty(param[0]))
+            {
+                workSheet = GetWorkSheet(param[0], 1);
+                if (workSheet == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
+            }
+
+            // シートを選択
+            workSheet.SetTabSelected(true);
+        }
+
+        /// <summary>
+        /// UnSelectSheet：シートの選択を解除
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象シート名またはシート番号 デフォルトは先頭シート
+        /// </param>
+        public void UnSelectSheet(string[] param)
+        {
+            // デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 1 && !string.IsNullOrEmpty(param[0]))
+            {
+                workSheet = GetWorkSheet(param[0], 1);
+                if (workSheet == null)
+                {
+                    // 指定シート無し
+                    return;
+                }
+            }
+
+            // シートの選択を解除
+            workSheet.SetTabSelected(false);
         }
 
         /// <summary>
@@ -1962,6 +2009,59 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
+        /// FontColor：指定範囲の文字色の設定を行う
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象行、列、セル範囲
+        /// [1]：文字色
+        /// [2]：シート名またはシート番号　デフォルトは先頭シート
+        /// </param>
+        public void FontColor(string[] param)
+        {
+            if (param.Length < 2)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // シート名　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[2]))
+            {
+                workSheet = GetWorkSheet(param[2], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            string range = string.Empty;
+            // 対象行、列、セル範囲が指定されている場合
+            var rangeType = CheckRangeAddressMatch(param[0]);
+            if (rangeType == RangeType.Invalid)
+            {
+                // 指定位置不正
+                return;
+            }
+            // 範囲指定でない場合、範囲指定に変換
+            range = ConvertToRangeAddress(rangeType, param[0]);
+
+            if (string.IsNullOrEmpty(param[1]))
+            {
+                // 文字色が指定されている場合のみ実行
+                return;
+            }
+            // 文字色を設定
+            workSheet.Range(range).Style.Font.FontColor = XLColor.FromHtml(param[1]);
+        }
+
+        /// <summary>
         /// formulaA1：計算式の設定
         /// </summary>
         /// <param name="param">
@@ -2023,6 +2123,8 @@ namespace CommonExcelUtil
         /// [2]：シート名またはシート番号　デフォルトは先頭シート
         /// [3]：追加フラグ　"1"：追加、省略時または左記以外の値は更新
         /// [4]：表示フラグ　"1"：表示、省略時または左記以外の値は非表示
+        /// [5]：幅　省略時の場合は自動調整
+        /// [6]：高さ　省略時の場合は自動調整
         /// </param>
         public void SetCellComment(string [] param)
         {
@@ -2078,7 +2180,7 @@ namespace CommonExcelUtil
                 else
                 {
                     // 追加フラグが上記以外の場合、一旦削除
-                    comment.Delete();
+                    comment = cell.CreateComment();
                 }
             }
             else
@@ -2093,6 +2195,21 @@ namespace CommonExcelUtil
             {
                 // 表示フラグがONの場合、コメントを表示
                 comment.SetVisible();
+            }
+
+            // コメントサイズの自動調整をON
+            comment.Style.Size.AutomaticSize = true;
+
+            if (param.Length >= 6 && !string.IsNullOrEmpty (param[5]))
+            {
+                // 幅が指定されている場合、コメントの幅を設定
+                comment.Style.Size.SetWidth(Convert.ToInt64(param[5]));
+            }
+
+            if (param.Length >= 7 && !string.IsNullOrEmpty(param[6]))
+            {
+                // 高さが指定されている場合、コメントの高さを設定
+                comment.Style.Size.SetHeight(Convert.ToInt64(param[6]));
             }
         }
 
@@ -2585,7 +2702,7 @@ namespace CommonExcelUtil
         /// </summary>
         /// <param name="param">シート名またはシート番号　デフォルトは先頭シート</param>
         /// <returns></returns>
-        public long GetLastRowNo(string param = "")
+        public int GetLastRowNo(string param = "")
         {
             // シート名またはシート番号　デフォルトは先頭シート
             workSheet = workBook.Worksheet(1);
@@ -2654,7 +2771,9 @@ namespace CommonExcelUtil
             {
                 int row = cell.Address.RowNumber - minRowNo;
                 int col = cell.Address.ColumnNumber - minColNo;
-                result[row, col] = cell.Value.ToString();
+                // 2023/02/10 フォーマットされた値を取得するよう変更
+                //result[row, col] = cell.Value.ToString();
+                result[row, col] = cell.GetFormattedString();
             }
             return result;
         }

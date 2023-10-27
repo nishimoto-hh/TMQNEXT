@@ -1,8 +1,6 @@
 ﻿/* ========================================================================
  *  機能名　    ：   【MC0001】機器台帳
  * ======================================================================== */
-// 納品用 - 変更管理処理実施フラグ
-const isExecuteHistory = false;
 
 /**
  * 自身の相対パスを取得
@@ -163,7 +161,7 @@ const DatailManagementStandard = {
     ManagementStandardList: {
         Id: "BODY_090_00_LST_1",
         ColumnNo: {
-            EquipLevel: 1,
+            EquipLevel: 32,
             MachineNo: 2,
             MachineName: 3,
             ManagementStandardCompId: 19,
@@ -199,6 +197,21 @@ const DatailManagementStandard = {
         Id: "BODY_160_00_LST_1",
         ButtonId: {
             ReSearch: "ReSearch" // 再表示ボタン
+        },
+        ColumnNo:
+        {
+            CycleYear: 11,
+            CycleMonth: 12,
+            CycleDay: 13,
+            CycleDisp: 14,
+            StartDate: 15,
+            ScheduleMante: 16,
+            CycleYearLabel: 17,
+            CycleMonthLabel: 18,
+            CycleDayLabel: 19,
+            CycleDispLabel: 20,
+            StartDateLabel: 21,
+            ScheduleManteLabel: 22
         }
     },
     ScheduleLankList: {
@@ -220,13 +233,20 @@ const DatailManagementStandard = {
             CycleDisp: 14,
             StartDate: 15,
             ScheduleMante: 16,
-            ComponentId: 17,
-            ContentId: 18,
-            SchedulleId: 19,
-            UpdDate: 20,
-            MachineId: 21,
-            KeyId: 22,
-            GroupKey: 23
+            CycleYearLabel: 17,
+            CycleMonthLabel: 18,
+            CycleDayLabel: 19,
+            CycleDispLabel: 20,
+            StartDateLabel: 21,
+            ScheduleManteLabel: 22,
+            ComponentId: 23,
+            ContentId: 24,
+            SchedulleId: 25,
+            UpdDate: 26,
+            MachineId: 27,
+            KeyId: 28,
+            GroupKey: 29,
+            MainteLankId: 32
         },
     },
     ButtonId: {
@@ -403,6 +423,7 @@ const SelectMachine = {
     SearchCondition30: {
         Id: "COND_030_00_LST_3", // 検索条件エリア(使用区分～製造年月)
         ScheduleType: 9,         // スケジュール管理
+        MainteKind: 10,          // 点検種別毎管理
         InspectionSite: 11,      // 保全部位
         InspectionContent: 12    // 保全項目
     },
@@ -517,15 +538,15 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         }
 
         // 変更管理ボタンの表示制御
-        if (isExecuteHistory) {
-            var hideBtns = [SearchList.ButtonId.New]; //新規ボタンを非表示にする
-            var flagValue = getHistoryManagementFlgValue(true); // フラグの値
-            if (flagValue == HistoryManagementDisplayFlag.Dual) {
-                // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
-                hideBtns = [];
-            }
-            setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), SearchList.ButtonId.HistoryManagementList, hideBtns);
+        var hideBtns = [SearchList.ButtonId.New]; //新規ボタンを非表示にする
+        var flagValue = getHistoryManagementFlgValue(true); // フラグの値
+        if (flagValue == HistoryManagementDisplayFlag.Dual) {
+            // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
+            hideBtns = [];
         }
+        // 空のリストをセット
+        var hideLists = [];
+        setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), SearchList.ButtonId.HistoryManagementList, hideBtns, hideLists);
 
 
     } else if (formNo == MachineDatail.No) {
@@ -584,10 +605,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
         // 変更管理ボタンの表示制御
         var hideBtns = [MachineDatail.ButtonId.Copy, MachineDatail.ButtonId.Update, MachineDatail.ButtonId.Delete];
-        var hideLists = [DatailManagementStandard.ManagementStandardList.Id];
-        if (isExecuteHistory) {
-            setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), MachineDatail.ButtonId.HistoryManagementDetail, hideBtns, hideLists);
-        }
+        var hideLists = [];
+        setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), MachineDatail.ButtonId.HistoryManagementDetail, hideBtns, hideLists);
 
     } else if (formNo == MachineEditDetail.No) {
         //詳細画面
@@ -620,6 +639,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         hideItem.hide();
         //保全項目
         hideItem = $("#" + SelectMachine.SearchCondition30.Id + getAddFormNo()).find("*[data-name='VAL" + SelectMachine.SearchCondition30.InspectionContent + "']");
+        hideItem.hide();
+        //点検種別毎管理
+        hideItem = $("#" + SelectMachine.SearchCondition30.Id + getAddFormNo()).find("*[data-name='VAL" + SelectMachine.SearchCondition30.MainteKind + "']");
         hideItem.hide();
     }
     else if (formNo == SpecEdit.No) {
@@ -869,7 +891,7 @@ function beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, condu
     if (conductIdW == RM00001_ConductId) {
         return RM0001_beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW);
     }
-    if (formNoW == 3 || conductIdW == SP0001_ConductId) {
+    if (formNoW == 3 || formNoW == 0 || conductIdW == SP0001_ConductId) {
         return;
     }
     // ここでローカルストレージに保存
@@ -1093,6 +1115,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
 
     //機器別管理基準タブ 表示一覧選択ボタン
     if (btnCtrlId == DatailManagementStandard.ButtonId.ManagementStandardList) { // 保全項目一覧
+
         // 一覧の表示状態を切り替え
         changeListDisplay(DatailManagementStandard.ManagementStandardList.Id, true);
         changeListDisplay(DatailManagementStandard.Format1List.Id, false);
@@ -1103,6 +1126,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         setGrayButton(DatailManagementStandard.ButtonId.ManagementStandardList, false);
         setGrayButton(DatailManagementStandard.ButtonId.Format1List, true);
         setGrayButton(DatailManagementStandard.ButtonId.ScheduleList, true);
+
 
     } else if (btnCtrlId == DatailManagementStandard.ButtonId.Format1List) { // 様式１一覧
         // 一覧の表示状態を切り替え
@@ -1117,15 +1141,26 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         setGrayButton(DatailManagementStandard.ButtonId.ScheduleList, true);
 
     } else if (btnCtrlId == DatailManagementStandard.ButtonId.ScheduleList) { // スケジューリング
+
+        // 描画に間に合っていないため間隔をあけて実行
+        setTimeout(function () {
+            setEventFlg();
+        }, 500);
+
         // 一覧の表示状態を切り替え
         changeListDisplay(DatailManagementStandard.ManagementStandardList.Id, false);
         changeListDisplay(DatailManagementStandard.Format1List.Id, false);
         changeListDisplay(DatailManagementStandard.ScheduleCondList.Id, true);
+
+        // 変更管理対象かどうかを取得
+        var historyManagementFlg = getIsHisotyManagement(false);
+
         // 点検種別毎フラグを取得
         var flg = getValue(MachineDatail.MachineDatail50.Id, 10, 1, CtrlFlag.ChkBox, false, false);
         if (flg == true) {
             changeListDisplay(DatailManagementStandard.ScheduleList.Id, false);
             changeListDisplay(DatailManagementStandard.ScheduleLankList.Id, true);
+            // 罫線制御処理
             // 罫線制御処理
             setTimeout(function () { setMaintKindListGroupingMachine(); }, 500);
 
@@ -1141,6 +1176,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         } else {
             changeListDisplay(DatailManagementStandard.ScheduleList.Id, true);
             changeListDisplay(DatailManagementStandard.ScheduleLankList.Id, false);
+
         }
 
         // ボタン色を変更
@@ -1174,6 +1210,23 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
             changeDispCheckBox(DatailConstitution.LoopList);
         }, 50);
     }
+}
+
+
+/**
+ *  スケジューリング一覧の変更フラグ設定
+ */
+function setEventFlg() {
+    var tbl = $(P_Article).find('#' + DatailManagementStandard.ScheduleList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
+    if ($(tbl).length) {
+        setEventForEditFlg(true, tbl);
+    }
+
+    var tbl1 = $(P_Article).find('#' + DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
+    if ($(tbl1).length) {
+        setEventForEditFlg(true, tbl1);
+    }
+
 }
 
 /**
@@ -1277,26 +1330,26 @@ function prevCreateTabulator(appPath, id, options, header, dispData) {
             header.unshift({ title: "", rowHandle: true, field: "moveRowBtn", formatter: "handle", headerSort: false, frozen: true, width: 30, minWidth: 30 });
         }
     } else if (id == "#" + DatailLongPlan.LongPlanList.Id + "_1") {
-        rowNoLinkChangeLongPlan();
-
+        setTimeout(function () {
+            rowNoLinkChangeLongPlan();
+        }, 50);
 
     } else if (id == "#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + "_1") {
-        rowNoLinkChangeMa();
-
+        setTimeout(function () {
+            rowNoLinkChangeMa();
+        }, 50);
 
     } else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + "_1") {
 
         //変更管理対象ならNoリンク非活性制御
-        if (isExecuteHistory && getIsHisotyManagement(false)) {
+        if (getIsHisotyManagement(false)) {
             //ブラウザに処理が戻った際に実行
             setTimeout(function () {
-                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+                setHideDetailLinkStandartList();
             }, 0);
         }
 
     }
-
-
 }
 
 /**
@@ -1365,56 +1418,55 @@ function initTabOriginal(tabNo, tableId) {
     // 表示するタブ番号を判定
     if (tabNo == DatailConstitution.TabNo) { // 構成機器タブ
 
+        // 構成機器タブ
+        initTabConstitution();
         // 親子構成ボタンがクリックされていたか判定
         var button = getButtonCtrl(DatailConstitution.ButtonId.Parent);
         if (button.hasClass('clickedButton')) {
             // クリックされていなかった場合
-            button = getButtonCtrl(DatailConstitution.ButtonId.Loop)
+            button = getButtonCtrl(DatailConstitution.ButtonId.Loop);
             $(button).click();
         }
         else {
             // クリックされていた場合
             $(button).click();
         }
+
     } else if (tabNo == DatailManagementStandard.TabNo) { // 機器別管理基準タブ
         // スケジューリング一覧の行データが取得できた後に非表示処理を行う。
-        // 初期状態で非表示とすると更新フラグイベント付与が正常に動作しない
-        if (tableId == DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
+        //// 初期状態で非表示とすると更新フラグイベント付与が正常に動作しない
 
-            //if (tableId == DatailManagementStandard.ScheduleList.Id + getAddFormNo()) {
-            var tbl = $(P_Article).find('#' + DatailManagementStandard.ScheduleList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
-            if ($(tbl).length) {
-                var rows = $(tbl.element).find(".tabulator-row");
-                setEventForEditFlg(true, rows);
-                // 機器別管理基準タブ初期表示一覧設定
-                // 保全項目一覧をクリック
-                var button = getButtonCtrl(DatailManagementStandard.ButtonId.ManagementStandardList);
-                $(button).click();
-            }
-            //} else if (tableId == DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
-            var tbl1 = $(P_Article).find('#' + DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
-            if ($(tbl1).length) {
-                var rows = $(tbl1.element).find(".tabulator-row");
-                setEventForEditFlg(true, rows);
-                // 機器別管理基準タブ初期表示一覧設定
-                // 保全項目一覧をクリック
-                var button = getButtonCtrl(DatailManagementStandard.ButtonId.ManagementStandardList);
-                $(button).click();
-            }
-            //}
+        if (tableId == DatailManagementStandard.ScheduleList.Id + getAddFormNo()) {
+
+            // 描画に間に合っていないため間隔をあけて実行
+            setTimeout(function () {
+                setEventFlg();
+            }, 500);
+
+        } else if (tableId == DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
+
+            // 描画に間に合っていないため間隔をあけて実行
+            setTimeout(function () {
+                setEventFlg();
+            }, 500);
+
         }
         //変更管理対象ならNoリンク非活性制御
-        if (isExecuteHistory && getIsHisotyManagement(false)) {
+        if (getIsHisotyManagement(false)) {
             //ブラウザに処理が戻った際に実行
             setTimeout(function () {
-                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+                setHideDetailLinkStandartList();
             }, 0);
         }
 
     } else if (tabNo == 4) { // タブ// 長期計画一覧
-        rowNoLinkChangeLongPlan();
+        setTimeout(function () {
+            rowNoLinkChangeLongPlan();
+        }, 50);
     } else if (tabNo == 5) { // タブ// 保全活動
-        rowNoLinkChangeMa();
+        setTimeout(function () {
+            rowNoLinkChangeMa();
+        }, 50);
     }
 
 
@@ -1626,11 +1678,32 @@ function postBuiltTabulator(tbl, id) {
     // 文書管理 詳細画面
     DM0002_postBuitTabulator(tbl, id);
 
-    if (id == "#" + DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
+    if (id == "#" + DatailManagementStandard.ScheduleList.Id + getAddFormNo()) {
+
+        // スケジューリング一覧
+        // ラベル列/入力可能列の表示切替を行う
+        hideColumnOfScheduleBaseList(getIsHisotyManagement(false));
+
+        // 描画に間に合っていないため間隔をあけて実行
+        setTimeout(function () {
+            setEventFlg();
+        }, 500);
+
+    }
+    else if (id == "#" + DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
+
+        // ラベル列/入力可能列の表示切替を行う
+        hideColumnOfScheduleLankList(getIsHisotyManagement(false));
+
         // 詳細画面 機器別管理基準タブ 点検種別毎スケジューリング一覧
         // 保全活動一覧(点検種別毎)の場合、罫線調整処理を呼び出す
         // 一覧の非表示行を設定しているので、少し遅らせる
         setTimeout(function () { setMaintKindListGroupingMachine(); }, 500);
+        // 描画に間に合っていないため間隔をあけて実行
+        setTimeout(function () {
+            setEventFlg();
+        }, 500);
+
     }
     else if (id == "#" + DatailConstitution.ParentList.Id + getAddFormNo()) {
         // 詳細画面 構成機器タブ 親子構成一覧
@@ -1645,6 +1718,7 @@ function postBuiltTabulator(tbl, id) {
         // 選択ボタン列を非表示にする
         var table = P_listData['#' + SelectMachine.SelectMachineList.Id + getAddFormNo()];
         table.hideColumn("VAL" + SelectMachine.SelectMachineList.SelectBtn);
+        tbl.redraw(true);
     } else if (id == '#' + MachineDatail.MachineDatail75.Id + getAddFormNo()) {
         // 参照画面 機種別仕様タブ レイアウトと値の設定
         initEquipmentSpec(MachineDatail.MachineDatail75);
@@ -1652,47 +1726,33 @@ function postBuiltTabulator(tbl, id) {
         // 機種別仕様編集画面 機種別仕様 レイアウトと値の設定
         initEquipmentSpec(SpecEdit.SpecDetail20);
     } else if (id == '#' + DatailLongPlan.LongPlanList.Id + getAddFormNo()) {
-        rowNoLinkChangeLongPlan();
+        setTimeout(function () {
+            rowNoLinkChangeLongPlan();
+        }, 50);
     } else if (id == '#' + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
-        rowNoLinkChangeMa();
+        // 描画に間に合っていないため間隔をあけて実行
+        setTimeout(function () {
+            rowNoLinkChangeMa();
+        }, 50);
     } else if (id == '#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
 
         //変更管理対象ならNoリンク非活性制御
-        if (isExecuteHistory && getIsHisotyManagement(false)) {
+        if (getIsHisotyManagement(false)) {
             //ブラウザに処理が戻った際に実行
             setTimeout(function () {
-                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+                setHideDetailLinkStandartList();
             }, 0);
         }
     }
 }
 
 /**
- * 保全項目のNoリンク非活性制御
- * @param {any} tbl 一覧
- * @param {any} rows 行
+ * 保全項目のNoリンク非表示制御
  */
-function setDisabledLink(tbl) {
-    // 対象コントール内の全行取得
-    var trs = tbl.getRows("display");
-    $(trs).each(function (i, tr) {
-        ////ブラウザに処理が戻った際に実行
-        //setTimeout(function () {
-        // データのリンクを無効にする
-        noneLinkData(tr.getData()["ROWNO"]);
-        //}, 0);
-    });
-
-
-    //// 一覧データ取得
-    //var tbl = $(P_Article).find('#' + DatailLongPlan.LongPlanList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
-    //if ($(tbl).length) {
-    //    $.each($(tbl), function (idx, row) {
-    //        var target = getCtrl(DatailLongPlan.LongPlanList.Id, 1, idx, CtrlFlag.Link, false, false);
-    //        target.innerHTML = '<span class="glyphicon glyphicon-file"></span>';
-    //    });
-    //}
-
+function setHideDetailLinkStandartList() {
+    var hideBtns = [];
+    var hideLists = [DatailManagementStandard.ManagementStandardList.Id];
+    setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), MachineDatail.ButtonId.HistoryManagementDetail, hideBtns, hideLists, true);
 }
 
 /**
@@ -1720,23 +1780,6 @@ function noneLinkData(rowNo) {
         }
 
     }
-    //else {
-    //    // 入出庫履歴一覧の要素取得
-    //    ctrlId = InoutList.EnterIssueHistory.Id;
-
-    //    // 入出庫一覧の要素取得
-    //    var tbl = $("#" + ctrlId + getAddFormNo() + "_div").find("div .tabulator-row");
-    //    if (tbl.length > 0) {
-
-    //        // 繰越のデータのレコードのNo.リンクを無効化する
-    //        var link = $("#" + ctrlId + getAddFormNo() + "_div").find("div .tabulator-row").find("div[tabulator-field='ROWNO']")[0];
-    //        $(link).addClass("linkDisable");
-    //        // 文字色を黒に変更
-    //        var value = $(link).find("a");
-    //        $(value)[0].style.color = "black";
-
-    //    }
-    //}
 }
 /**
  *【オーバーライド用関数】
@@ -1808,6 +1851,8 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     // 共通-文書管理詳細画面の実行正常終了後処理
     DM0002_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
 
+    // 構成機器タブ
+    initTabConstitution();
 }
 
 /**
@@ -1882,7 +1927,7 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
 
     // 機能IDが「帳票出力」の場合
     if (getConductId() == RM00001_ConductId) {
-        return RM0001_reportCheckPre(appPath, conductId, formNo, btn)
+        return RM0001_reportCheckPre(appPath, conductId, formNo, btn);
     }
 
     return true;
@@ -2139,9 +2184,19 @@ function addItemLayout(templateVal, ctrlType, addVal, rowData, define) {
 
         //小数部の桁数
         var decimalPlace = rowData["VAL" + define.ColumnNo.DecimalPlace];
+        //if (decimalPlace) {
+        //    //data-format属性(#.###等)
+        //    setAttrByNativeJs(ele, "data-format", "." + "#".repeat(decimalPlace));
+        //}
         if (decimalPlace) {
             //data-format属性(#.###等)
             setAttrByNativeJs(ele, "data-format", "." + "#".repeat(decimalPlace));
+        } else {
+            // 少数桁0の場合にフォーマット
+            if (decimalPlace == 0) {
+                //data-format属性(#.###等)
+                setAttrByNativeJs(ele, "data-format", "###");
+            }
         }
     });
 
@@ -2291,7 +2346,7 @@ function setMaintKindListGroupingMachine() {
 
     // 点検種別一覧から値を取得
     var getListKindValue = function (index, valNo) {
-        var ctrlFlag = (valNo == DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank) ? CtrlFlag.Combo : CtrlFlag.Label;
+        var ctrlFlag = (valNo == DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLankId) ? CtrlFlag.Combo : CtrlFlag.Label;
         var value = getValue(DatailManagementStandard.ScheduleLankList.Id, valNo, index, ctrlFlag);
         return value;
     }
@@ -2394,7 +2449,7 @@ function setMaintKindListGroupingMachine() {
 
         // 点検種別
         // 点検種別を調整
-        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank, prevKindId, index, list);
+        var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLankId, prevKindId, index, list);
         prevKindId = newPrevKindId;
         changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante];
         setGroupToCols(index, changeCols, isTopMachine || isTopKind, isBottomMachine || isBottomKind);
@@ -2516,19 +2571,21 @@ function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
         changeDispCheckBox(DatailConstitution.LoopList);
     }
     else if (id == "#" + DatailLongPlan.LongPlanList.Id + getAddFormNo()) {
-        // 
-        rowNoLinkChangeLongPlan();
+        setTimeout(function () {
+            rowNoLinkChangeLongPlan();
+        }, 50);
     }
     else if (id == "#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
-        // 
-        rowNoLinkChangeMa();
+        setTimeout(function () {
+            rowNoLinkChangeMa();
+        }, 50);
     }
     else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
         //変更管理対象ならNoリンク非活性制御
-        if (isExecuteHistory && getIsHisotyManagement(false)) {
+        if (getIsHisotyManagement(false)) {
             //ブラウザに処理が戻った際に実行
             setTimeout(function () {
-                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+                setHideDetailLinkStandartList();
             }, 0);
         }
     }
@@ -2551,19 +2608,21 @@ function postTabulatorRenderCompleted(tbl, id) {
         changeDispCheckBox(DatailConstitution.LoopList);
     }
     else if (id == "#" + DatailLongPlan.LongPlanList.Id + getAddFormNo()) {
-        // 
-        rowNoLinkChangeLongPlan();
+        setTimeout(function () {
+            rowNoLinkChangeLongPlan();
+        }, 50);
     }
     else if (id == "#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
-        // 
-        rowNoLinkChangeMa();
+        setTimeout(function () {
+            rowNoLinkChangeMa();
+        }, 50);
     }
     else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
         //変更管理対象ならNoリンク非活性制御
-        if (isExecuteHistory && getIsHisotyManagement(false)) {
+        if (getIsHisotyManagement(false)) {
             //ブラウザに処理が戻った際に実行
             setTimeout(function () {
-                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+                setHideDetailLinkStandartList();
             }, 0);
         }
     }
@@ -2583,5 +2642,111 @@ function clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrl
 
     // 予備品検索画面
     SP0001_clickComConductSelectBtn(appPath, cmConductId, cmArticle, btn, fromCtrlId, ConductId_MC0001);
+
+}
+
+/**
+ * 点検種別毎スケジューリング一覧のラベル列/入力可能列の表示切替を行う
+ * */
+function hideColumnOfScheduleLankList(historyManagementFlg) {
+
+    // 点検種別毎スケジューリング一覧
+    var table = P_listData['#' + DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()];
+    // 変更管理対象か判定
+    if (historyManagementFlg) {
+        // 入力項目列を非表示にする
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear);     // 周期(年)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth);    // 周期(月)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay);      // 周期(日)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp);     // 表示周期
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate);     // 開始日
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante); // スケジュール管理
+
+        // ラベル列を表示する
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel);     // 周期(年)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonthLabel);    // 周期(月)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDayLabel);      // 周期(日)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel);     // 表示周期
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel);     // 開始日
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+    }
+    else {
+        // 入力項目列を表示する
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear);     // 周期(年)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth);    // 周期(月)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay);      // 周期(日)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp);     // 表示周期
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate);     // 開始日
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante); // スケジュール管理
+
+        // ラベル列を非表示する
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel);     // 周期(年)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonthLabel);    // 周期(月)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDayLabel);      // 周期(日)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel);     // 表示周期
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel);     // 開始日
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+    }
+}
+
+/**
+ * スケジューリング一覧のラベル列/入力可能列の表示切替を行う
+ * */
+function hideColumnOfScheduleBaseList(historyManagementFlg) {
+
+    // スケジューリング一覧
+    var table = P_listData['#' + DatailManagementStandard.ScheduleList.Id + getAddFormNo()];
+
+    // 変更管理対象か判定
+    if (historyManagementFlg) {
+        // 入力項目列を非表示にする
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleYear);     // 周期(年)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleMonth);    // 周期(月)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDay);      // 周期(日)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDisp);     // 表示周期
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.StartDate);     // 開始日
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleMante); // スケジュール管理
+
+        // ラベル列を表示する
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleYearLabel);     // 周期(年)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleMonthLabel);    // 周期(月)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDayLabel);      // 周期(日)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDispLabel);     // 表示周期
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.StartDateLabel);     // 開始日
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+    }
+    else {
+        // 入力項目列を表示する
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleYear);     // 周期(年)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleMonth);    // 周期(月)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDay);      // 周期(日)
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDisp);     // 表示周期
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.StartDate);     // 開始日
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleMante); // スケジュール管理
+
+        // ラベル列を非表示する
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleYearLabel);     // 周期(年)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleMonthLabel);    // 周期(月)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDayLabel);      // 周期(日)
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDispLabel);     // 表示周期
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.StartDateLabel);     // 開始日
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+    }
+}
+
+/**
+ * 機器別管理基準タブ スケジュール一覧の列表示/非表示
+ * @param {any} table 制御を行う一覧
+ * @param {any} isDisp 表示する場合True
+ * @param {any} ColNo 列番号
+ */
+function hideColumnOfScheduleList(table, isDisp, ColNo) {
+
+    if (isDisp) {
+        table.showColumn("VAL" + ColNo);
+    }
+    else {
+        table.hideColumn("VAL" + ColNo);
+    }
 
 }

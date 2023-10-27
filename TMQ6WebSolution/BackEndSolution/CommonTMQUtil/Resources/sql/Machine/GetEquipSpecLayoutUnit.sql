@@ -6,7 +6,7 @@ FROM (SELECT max(location_structure_id) location_structure_id,
 	  WHERE structure_group_id = '1360'
 	  AND language_id = @LanguageId
       AND structure_id = @SpecUnitId
-	  AND location_structure_id in (0,5)
+	  AND location_structure_id in (0,@FactoryId)
 	  GROUP BY item_translation_id,structure_id) vim,
       v_structure_item_all vi
 WHERE vim.structure_id = vi.structure_id

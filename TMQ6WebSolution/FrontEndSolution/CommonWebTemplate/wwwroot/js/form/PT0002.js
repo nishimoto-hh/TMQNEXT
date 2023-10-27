@@ -245,6 +245,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
  *  @param data        ：結果ﾃﾞｰﾀ
  */
 function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+
+    // 共通-入庫入力詳細画面の実行正常終了後処理
+    PT0005_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
     // 共通-出庫入力詳細画面の実行正常終了後処理
     PT0006_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
 
@@ -311,8 +315,6 @@ function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, va
 
     // 移庫入力画面 コンボボックス変更時イベント
     PT0007_setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo);
-
-
 }
 
 /**
@@ -355,4 +357,39 @@ function initTabOriginal(tabNo, tableId) {
     // 移庫入力画面 タブ切替時
     PT0007_initTabOriginal(tabNo, tableId);
 
+}
+
+/**
+ *【オーバーライド用関数】登録前追加条件取得処理
+ *  @param appPath       ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId     ：機能ID
+ *  @param formNo        ：画面番号
+ *  @param btn           ：押下されたボタン要素
+ */
+function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
+
+    // 共通-移庫入力画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
+    if (IsExecPT0007_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+        return PT0007_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
+    }
+
+    // それ以外の場合
+    var conditionDataList = [];
+    return conditionDataList;
+}
+
+/**
+ *【オーバーライド用関数】ページデータ取得後
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
+
+    // 出庫入力画面
+    PT0006_postGetPageData(appPath, btn, conductId, pgmId, formNo);
 }

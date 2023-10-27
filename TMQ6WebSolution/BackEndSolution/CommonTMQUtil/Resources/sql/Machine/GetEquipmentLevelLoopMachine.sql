@@ -31,13 +31,59 @@ wi_loop AS(
                 machine_id = @MachineId
             AND loop.loop_id = machine.loop_moto_id
         )
-)
+),
+structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1170) 
+        AND language_id = @LanguageId
+) 
 /*****************************    自分自身が「機器」    ****************************/
 SELECT
     CASE
-        WHEN equip_level.flg_level = 1 THEN dbo.get_translation_text(machine.equipment_level_structure_id,machine.location_structure_id,1170,@LanguageId) + '*' --自分自身と自分自身に紐付くものは「*」を付け加える
-        ELSE dbo.get_translation_text(machine.equipment_level_structure_id,machine.location_structure_id,1170,@LanguageId)
-    END AS equipment_level,                                                        --機器レベル
+        WHEN equip_level.flg_level = 1 THEN  --dbo.get_translation_text(machine.equipment_level_structure_id,machine.location_structure_id,1170,@LanguageId) + '*' --自分自身と自分自身に紐付くものは「*」を付け加える          
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = machine.equipment_level_structure_id
+					AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+			) 
+			AND tra.structure_id = machine.equipment_level_structure_id
+		) + '*' 
+        ELSE -- dbo.get_translation_text(machine.equipment_level_structure_id,machine.location_structure_id,1170,@LanguageId)
+        ( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = machine.equipment_level_structure_id
+					AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+			) 
+			AND tra.structure_id = machine.equipment_level_structure_id
+		)
+    END AS equipment_level,                                            --機器レベル
     machine.machine_no,                                                            --機器番号
     machine.machine_name,                                                          --機器名称
     machine.job_structure_id,                                                      --職種ID

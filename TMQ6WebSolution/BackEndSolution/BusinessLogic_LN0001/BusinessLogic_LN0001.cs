@@ -9,6 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
@@ -21,6 +23,10 @@ using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using SchedulePlanContent = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.SchedulePlanContent;
 using ScheduleStatus = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.ScheduleStatus;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using TMQExcelPort = CommonTMQUtil.CommonTMQUtil.ComExcelPort;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
+using AutoMapper;
 
 namespace BusinessLogic_LN0001
 {
@@ -36,6 +42,11 @@ namespace BusinessLogic_LN0001
 
         /// <summary>GetDetailWithのアンコメント用文字列</summary>
         private const string UnCommentWordOfGetDetailWith = "UnComp";
+        /// <summary>GetListのアンコメント用文字列</summary>
+        private const string UnCommentWordOfGetList = "UnExcelPort";
+
+        /// <summary>スケジュール日時条件用フォーマット</summary>
+        private const string ScheduleDateConditionFormat = "yyyyMM";
 
         /// <summary>
         /// SQLファイル名称
@@ -56,6 +67,11 @@ namespace BusinessLogic_LN0001
                 public const string GetList = "GetLongPlanList";
                 /// <summary>一覧スケジュール情報取得SQL</summary>
                 public const string GetListSchedule = "GetLongPlanSchedule";
+                /// <summary>一覧情報取得の一時テーブル作成SQL</summary>
+                public const string CreateTempTable = "CreateTableTempGetLongPlanList";
+                /// <summary>一覧情報取得の一時テーブル登録SQL</summary>
+                public const string InsertTempTable = "InsertTempGetLongPlanList";
+
             }
             /// <summary>
             /// 共通
@@ -89,6 +105,8 @@ namespace BusinessLogic_LN0001
                 public const string GetContentInfo = "GetContentInfoFromLongPlanId";
                 /// <summary>機器別管理基準内容IDに紐づくスケジュール情報を取得</summary>
                 public const string GetScheduleInfo = "GetScheduleInfoFromContentId";
+                /// <summary>機器別管理基準内容IDに紐づくスケジュール詳細情報を取得</summary>
+                public const string GetScheduleDetailInfo = "GetScheduleDetailInfoFromContentId";
             }
 
             /// <summary>
@@ -141,6 +159,8 @@ namespace BusinessLogic_LN0001
                 public const string GetDetailInspectionSite = GetDetail + "_InspectionSite";
                 /// <summary>保全情報一覧取得(保全項目)</summary>
                 public const string GetDetailMaintainance = GetDetail + "_Maintainance";
+                /// <summary>保全情報一覧取得(ExcelPort)</summary>
+                public const string GetDetailExcelPort = GetDetail + "_ExcelPort";
 
                 /// <summary>保全情報のスケジュール一覧取得SQLの名前共通部分</summary>
                 private const string GetSchedule = "GetScheduleList";
@@ -162,6 +182,7 @@ namespace BusinessLogic_LN0001
 
                 /// <summary>長期計画IDより紐づく機器の点検種別管理を取得するSQL</summary>
                 public const string GetMaintKindManageByLongPlanId = "GetMaintainanceKindManageByLongPlanId";
+
             }
 
             /// <summary>
@@ -212,6 +233,48 @@ namespace BusinessLogic_LN0001
                 /// <summary>スケジュール詳細更新</summary>
                 public const string UpdateScheduleDetail = "UpdateScheduleDetailPostpone";
             }
+
+            /// <summary>
+            /// 機器情報
+            /// </summary>
+            public static class Machine
+            {
+                /// <summary>SQL格納先サブディレクトリ名</summary>
+                public const string SubDir = @"Machine";
+                /// <summary>保全スケジュール詳細更新</summary>
+                public const string InsertScheduleDetail = "InsertMaintainanceScheduleDetail";
+            }
+
+            /// <summary>
+            /// ExelPort
+            /// </summary>
+            public static class ExcelPort
+            {
+                /// <summary>SQL格納先サブディレクトリ名</summary>
+                public const string SubDir = SqlName.SubDir + @"\ExcelPort";
+                /// <summary>保全情報一覧取得SQL</summary>
+                public const string GetDetail = "GetDetailList";
+                /// <summary>保全スケジュール情報取得SQL</summary>
+                public const string GetScheduleInfo = "GetScheduleInfo";
+                /// <summary>保全スケジュール詳細情報取得SQL(ダウンロード用)</summary>
+                public const string GetScheduleForDownload = "GetScheduleListForDownload";
+                /// <summary>保全スケジュール詳細情報取得SQL(アップロード用)</summary>
+                public const string GetScheduleForUpload = "GetScheduleListForUpload";
+                /// <summary>保全スケジュール詳細情報取得SQL(履歴完了データ)</summary>
+                public const string GetScheduleComplete = "GetScheduleListComplete";
+                /// <summary>長計件名IDに紐づく添付情報の削除SQL</summary>
+                public const string DeleteAttachment = "DeleteAttachment";
+                /// <summary>保全スケジュール詳細更新</summary>
+                public const string InsertScheduleDetail = "InsertMaintainanceScheduleDetail";
+                /// <summary>機器別管理基準情報の削除SQL</summary>
+                public const string DeleteContent = "DeleteContent";
+                /// <summary>機器別管理基準内容に紐づく保全スケジュール詳細情報の削除SQL</summary>
+                public const string DeleteScheduleDetail = "DeleteScheduleDetail";
+                /// <summary>保全スケジュール詳細の繰り返し回数の最大値取得SQL</summary>
+                public const string GetSequenceCountMax = "GetScheduleDetailSequenceCountMax";
+                /// <summary>保全スケジュール詳細情報の繰り返し回数更新SQL</summary>
+                public const string UpdateSequenceCount = "UpdateScheduleDetailSequenceCount";
+            }
         }
 
         /// <summary>
@@ -245,6 +308,10 @@ namespace BusinessLogic_LN0001
                     /// 非表示項目
                     /// </summary>
                     public const string HiddenInfo = "BODY_050_00_LST_0";
+
+                    /// <summary>ExcelPortアップロード</summary>
+                    public const string ExcelPortUpload = "LIST_000_1";
+
                 }
                 /// <summary>
                 /// ボタンコントロールID
@@ -282,6 +349,10 @@ namespace BusinessLogic_LN0001
                     /// スケジュール表示条件
                     /// </summary>
                     public const string ScheduleCondition = "BODY_050_00_LST_1";
+
+                    /// <summary>ExcelPortアップロード</summary>
+                    public const string ExcelPortUpload = "LIST_000_1";
+
                 }
                 /// <summary>
                 /// ボタンコントロールID
@@ -461,6 +532,19 @@ namespace BusinessLogic_LN0001
                 public const int Request = 1;
                 /// <summary>参照画面でなく、新規登録</summary>
                 public const int New = -1;
+            }
+        }
+
+        private static class ExcelPort
+        {
+            public static class LongPlan
+            {
+                public static class ColumnNo
+                {
+                    /// <summary>送信時処理</summary>
+                    public const int SendProcess = 2;
+
+                }
             }
         }
         #endregion
@@ -1156,6 +1240,294 @@ namespace BusinessLogic_LN0001
 
             return ComConsts.RETURN_RESULT.OK;
         }
+
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            else if (!string.IsNullOrEmpty(resultMsg))
+            {
+                // 正常終了時、詳細メッセージがセットされている場合、警告メッセージ
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+            }
+
+            // 個別データ検索処理
+            IList<Dictionary<string, object>> dataList = null;
+
+            // SQLパラメータに言語ID設定
+            dynamic whereParam = new ExpandoObject();
+            whereParam.LanguageId = this.LanguageId;
+
+            // 現在日付を取得
+            DateTime now = DateTime.Now;
+
+            if (excelPort.DownloadCondition.SheetNo == TMQExcelPort.SheetNo.LongPlan)
+            {
+                // 長期計画
+
+                // 一時テーブル設定
+                setTempTableForGetList(null, true);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string baseSql);
+                // WITH句は別に取得
+                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql);
+
+                // WHERE句に場所階層と職種機種を設定
+                var whereSql = new StringBuilder();
+                whereSql.AppendLine("WHERE");
+                whereSql.Append("EXISTS(SELECT * FROM #temp_structure_selected temp WHERE ");
+                whereSql.Append(CommonColumnName.LocationId).AppendLine("= temp.structure_id)");
+                whereSql.AppendLine("AND");
+                whereSql.Append("EXISTS(SELECT * FROM #temp_structure_selected temp WHERE ");
+                whereSql.Append(CommonColumnName.JobId).AppendLine("= temp.structure_id)");
+
+                // 一覧検索SQL文の取得
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql.ToString(), withSql);
+                var selectSql = new StringBuilder(executeSql);
+                selectSql.AppendLine("ORDER BY");
+                selectSql.AppendLine("subject");
+
+                // 一覧検索実行
+                IList<Dao.ExcelPort.List> results = db.GetListByDataClass<Dao.ExcelPort.List>(selectSql.ToString(), whereParam);
+                if (results == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // Dicitionalyに変換
+                dataList = ComUtil.ConvertClassToDictionary<Dao.ExcelPort.List>(results);
+
+            }
+            else if (excelPort.DownloadCondition.SheetNo == TMQExcelPort.SheetNo.ManagementStandards)
+            {
+                // 機器別管理基準
+
+                // 一時テーブル設定
+                setTempTableForGetList(-1, true);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.ExcelPort.SubDir, SqlName.ExcelPort.GetDetail, out string selectSql);
+
+                // 一覧検索実行
+                IList<Dao.ExcelPort.DeitalList> results = db.GetListByDataClass<Dao.ExcelPort.DeitalList>(selectSql, whereParam);
+                if (results == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機器別管理基準内容IDを抽出してパラメータへ設定
+                if (results.Count > 0)
+                {
+                    whereParam.ManagementStandardsContentIdList = string.Join(',', results.Select(x => x.ManagementStandardsContentId));
+                }
+
+                // Dicitionalyに変換
+                dataList = ComUtil.ConvertClassToDictionary<Dao.ExcelPort.DeitalList>(results);
+
+            }
+            //if (dataList == null || dataList.Count == 0)
+            //{
+            //    this.Status = CommonProcReturn.ProcStatus.Warning;
+            //    // 「該当データがありません。」
+            //    resultMsg = GetResMessage(ComRes.ID.ID941060001);
+            //    return ComConsts.RETURN_RESULT.NG;
+            //}
+
+            // 出力最大データ数チェック
+            if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                resultMsg = GetResMessage(ComRes.ID.ID141120013);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            if (excelPort.DownloadCondition.SheetNo == TMQExcelPort.SheetNo.ManagementStandards && dataList.Count > 0)
+            {
+                // 機器別管理基準の場合、データ件数チェック後にスケジュールデータを取得する
+                // スケジュール一覧取得
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.ExcelPort.SubDir, SqlName.ExcelPort.GetScheduleForDownload, out string selectSql);
+                // スケジュール一覧検索実行
+                IList<Dao.Detail.ScheduleList> schedules = db.GetListByDataClass<Dao.Detail.ScheduleList>(selectSql, whereParam);
+                if (schedules == null)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                var conIdName = nameof(Dao.Detail.ScheduleList.ManagementStandardsContentId);
+                var scIdName = nameof(Dao.Detail.ScheduleList.ScheduleId);
+                var scTextName = nameof(Dao.Detail.ScheduleList.Schedule);
+                var scDateName = nameof(Dao.Detail.ScheduleList.ScheduleDate);
+                for (int i = 0; i < TMQUtil.ComExcelPort.ScheduleMonths; i++)
+                {
+                    DateTime month = now.AddMonths(i);
+                    var tmpSchedules = schedules.Where(x => (x.ScheduleDate.Year == month.Year && x.ScheduleDate.Month == month.Month)).ToList();
+                    if (tmpSchedules != null && tmpSchedules.Count > 0)
+                    {
+                        // スケジュールのセット
+                        foreach (var schedule in tmpSchedules)
+                        {
+                            var data = dataList.Where(x => schedule.ManagementStandardsContentId.Equals(x[conIdName])).FirstOrDefault();
+                            if (data != null)
+                            {
+                                var keyId = scIdName + (i + 1);
+                                var keyText = scTextName + (i + 1);
+                                var keyDate = scDateName + (i + 1);
+                                if (data.ContainsKey(keyId))
+                                {
+                                    if ((DateTime)data[keyDate] <= schedule.ScheduleDate)
+                                    {
+                                        data[keyId] = schedule.ScheduleId;
+                                        data[keyText] = schedule.Schedule;
+                                        data[keyDate] = schedule.ScheduleDate;
+                                    }
+                                }
+                                else
+                                {
+                                    data.Add(keyId, schedule.ScheduleId);
+                                    data.Add(keyText, schedule.Schedule);
+                                    data.Add(keyDate, schedule.ScheduleDate);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 個別シート出力処理
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg, ref resultMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected override int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ExcelPortアップロードデータの取得
+            if (excelPort.UploadCondition.SheetNo == TMQExcelPort.SheetNo.LongPlan)
+            {
+                // 長期計画
+                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, ConductInfo.FormList.ControlId.ExcelPortUpload,
+                    out List<Dao.ExcelPort.List> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                //IListに変換する
+                IList<Dao.ExcelPort.List> list = resultList as IList<Dao.ExcelPort.List>;
+                //最下層の構成IDを取得して機能場所階層ID、職種機種階層IDにセットする
+                TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.ExcelPort.List>(ref list, new List<StructureType> { StructureType.Location, StructureType.Job }, true);
+                resultList = list.ToList();
+
+                // エラー情報リスト
+                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+
+                // 長期計画登録チェック処理
+                if (isErrorListForExcelPort(excelPort.UploadCondition, ref resultList, ref errorInfoList))
+                {
+                    // エラー情報シートへ設定
+                    excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 長期計画件名登録処理
+                if (!executeRegistListForExcelPort(resultList))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+            }
+            else if (excelPort.UploadCondition.SheetNo == TMQExcelPort.SheetNo.ManagementStandards)
+            {
+                // 機器別管理基準
+                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, ConductInfo.FormDetail.ControlId.ExcelPortUpload,
+                    out List<Dao.ExcelPort.DeitalList> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // エラー情報リスト
+                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+
+                // 機器別管理基準登録チェック処理
+                if(isErrorDetailListForExcelPort(excelPort.UploadCondition, ref resultList, ref errorInfoList))
+                {
+                    if (errorInfoList.Count > 0)
+                    {
+                        // エラー情報シートへ設定
+                        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                    }
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機器別管理基準登録処理
+                if (!executeRegistDetailListForExcelPort(excelPort.UploadCondition, resultList))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+            }
+            return ComConsts.RETURN_RESULT.OK;
+        }
         #endregion
 
         #region privateメソッド
@@ -1221,6 +1593,54 @@ namespace BusinessLogic_LN0001
 
         #region 一覧・参照画面関連
         /// <summary>
+        /// 一覧取得SQLに必要な、一時テーブル登録処理
+        /// </summary>
+        private void setTempTableForGetList(long? longPlanId = null, bool isExcelPort = false)
+        {
+            // 一覧の場合、長計件名IDがNull。詳細の場合、Nullでない。
+            bool isList = longPlanId == null;
+
+            // 一時テーブル関連処理
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment, FunctionTypeId.LongPlan });
+            // 使用する構成グループ(点検種別はスケジュールで使用)
+            var structuregroupList = new List<GroupId>
+                    {
+                        GroupId.Location, GroupId.Job, GroupId.Season, GroupId.BudgetPersonality, GroupId.Purpose,
+                        GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind,
+                        GroupId.WorkItem, GroupId.BudgetManagement
+                    };
+            if (!isList)
+            {
+                // 詳細の場合、翻訳を追加
+                structuregroupList.AddRange(new List<GroupId> { GroupId.Importance, GroupId.SiteMaster, GroupId.InspectionDetails, GroupId.ScheduleType });
+            }
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+
+            // 機能個別
+            if (!isExcelPort)
+            {
+                // Create文
+                string createSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.CreateTempTable, SqlName.List.SubDir, string.Empty);
+                // Insert文は一覧と詳細で異なる
+                List<string> listUnComment = new();
+                listUnComment.Add(isList ? "ForList" : "ForDetail");
+                // Insert文
+                string insertSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.InsertTempTable, SqlName.List.SubDir, string.Empty, listUnComment);
+                if (!isList)
+                {
+                    // 詳細の場合、長計件名IDをSQLに設定
+                    insertSql = insertSql.Replace("@LongPlanId", longPlanId.ToString());
+                }
+                // 設定
+                listPf.AddTempTableBySql(createSql, insertSql);
+            }
+
+            listPf.RegistTempTable(); // 登録
+        }
+
+        /// <summary>
         /// 指定された長期計画の一覧の情報を取得する
         /// </summary>
         /// <param name="param">取得する長期計画の条件</param>
@@ -1228,9 +1648,12 @@ namespace BusinessLogic_LN0001
         /// <returns>取得した長期計画の情報(一覧画面の1レコード)</returns>
         private Dao.ListSearchResult getLongPlanInfo(ComDao.LnLongPlanEntity param, bool isTree = false)
         {
+            // 一時テーブル関連処理
+            setTempTableForGetList(param.LongPlanId);
+
             // 一覧検索のSQLをキー指定で実行し、画面に表示する内容を取得する
-            TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql);
-            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string outSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, new List<string> { UnCommentWordOfGetList });
+            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string outSql, new List<string> { UnCommentWordOfGetList });
             StringBuilder execSql = new(withSql);
             execSql.AppendLine(addSqlWhereLongPlanId(outSql));
 
@@ -1441,8 +1864,8 @@ namespace BusinessLogic_LN0001
         /// <returns>入力チェック値リスト</returns>
         private List<Dao.InputCheck.Result> getListForInputCheck(Dao.InputCheck.Condition condition)
         {
-            // 機器別管理基準内容IDが検索条件に含まれている場合、SQLの検索条件を有効化
             List<string> listUnComment = new();
+            // 機器別管理基準内容IDが検索条件に含まれている場合、SQLの検索条件を有効化
             if (condition.ManagementStandardsContentIdList != null && condition.ManagementStandardsContentIdList.Count > 0)
             {
                 listUnComment.Add("Content");
@@ -1556,6 +1979,9 @@ namespace BusinessLogic_LN0001
             }
             TMQUtil.ScheduleListUtil.SetLayout(ref this.IndividualDictionary, cond, isMovable, getNendoText(), monthStartNendo);
 
+            // 一時テーブル設定
+            setTempTable();
+
             // 画面表示データの取得
             List<TMQDao.ScheduleList.Display> scheduleDisplayList;
             if (schedulePlanContent == SchedulePlanContent.Maintainance)
@@ -1591,6 +2017,14 @@ namespace BusinessLogic_LN0001
                 }
                 var scheduleDisplayList = listSchedule.Execute(scheduleList, cond, monthStartNendo, isLink, this.db, getScheduleLinkInfo());
                 return scheduleDisplayList;
+            }
+
+            void setTempTable()
+            {
+                TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                listPf.GetCreateTranslation();
+                listPf.GetInsertTranslationAll(new List<GroupId> { GroupId.MaintainanceKind }, true);
+                listPf.RegistTempTable();
             }
         }
 
@@ -1675,6 +2109,343 @@ namespace BusinessLogic_LN0001
                 }
             }
             return new Key(keyParam1, keyParam2, keyParam3);
+        }
+        #endregion
+
+        #region ExcelPort関連
+        /// <summary>
+        /// ExcelPort入力チェック：長期計画
+        /// </summary>
+        /// <param name="resultList">対象データリスト</param>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>チェック結果</returns>
+        private bool isErrorListForExcelPort(TMQUtil.ExcelPortUploadCondition uploadCondition, ref List<Dao.ExcelPort.List> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            bool isError = false;
+
+            // 送信時処理が削除のデータを抽出
+            var deleteList = resultList.Where(x => x.ProcessId == TMQConst.SendProcessId.Delete);
+            if(deleteList == null || deleteList.Count() == 0)
+            {
+                return isError;
+            }
+
+            // 長計件名IDを抽出
+            var longPlanIdList = deleteList.Select(x => x.LongPlanId.ToString()).ToList();
+
+            // 長計件名IDに紐づく保全スケジュール詳細情報を取得
+            var scheduleList = getScheduleDetailListForExcelPort(
+                new Dao.ExcelPort.Condition()
+                {
+                    LongPlanIdList = string.Join(',', longPlanIdList),
+                    ScheduleDateFrom = uploadCondition.ScheduleDateFrom.ToString(ScheduleDateConditionFormat),
+                    ScheduleDateTo = uploadCondition.ScheduleDateTo.ToString(ScheduleDateConditionFormat)
+                });
+
+            foreach (var result in deleteList)
+            {
+                if (scheduleList != null && scheduleList.Count(x => x.LongPlanId == result.LongPlanId && x.SummaryId != null) > 0)
+                {
+                    // 保全活動が紐づけられているスケジュールが存在する場合
+                    // 「保全活動が作成されている為、削除できません。」
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(result.RowNo.Value, ExcelPort.LongPlan.ColumnNo.SendProcess, null, GetResMessage(ComRes.ID.ID141300004), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    isError = true;
+                }
+            }
+            return isError;
+        }
+
+        /// <summary>
+        /// 保全スケジュール詳細情報を取得
+        /// </summary>
+        /// <param name="condition">条件(機器別管理基準内容ID、対象期間From/To)</param>
+        /// <returns>入力チェック値リスト</returns>
+        private List<Dao.ExcelPort.Result> getScheduleDetailListForExcelPort(Dao.ExcelPort.Condition condition, bool isComplete = false)
+        {
+            List<Dao.ExcelPort.Result> list;
+            if (!isComplete)
+            {
+                var unComment = !string.IsNullOrEmpty(condition.LongPlanIdList) ? "LongPlan" : "Content";
+                list = TMQUtil.SqlExecuteClass.SelectList<Dao.ExcelPort.Result>(
+                    SqlName.ExcelPort.GetScheduleForUpload, SqlName.ExcelPort.SubDir, condition, this.db, listUnComment:new List<string> { unComment });
+            }
+            else
+            {
+                list = TMQUtil.SqlExecuteClass.SelectList<Dao.ExcelPort.Result>(
+                    SqlName.ExcelPort.GetScheduleComplete, SqlName.ExcelPort.SubDir, condition, this.db);
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// ExcelPort入力チェック：長期計画
+        /// </summary>
+        /// <param name="resultList">対象データリスト</param>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>チェック結果</returns>
+        private bool isErrorDetailListForExcelPort(TMQUtil.ExcelPortUploadCondition uploadCondition, ref List<Dao.ExcelPort.DeitalList> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            bool isError = false;
+
+            // 機器別管理基準内容IDを抽出
+            var managementStandardsContentIdList = resultList.Select(x => x.ManagementStandardsContentId.ToString());
+
+            // 機器別管理基準内容IDに紐づく保全スケジュール詳細データを取得
+            var scheduleListAll = getScheduleDetailListForExcelPort(
+                new Dao.ExcelPort.Condition()
+                {
+                    ManagementStandardsContentIdList = string.Join(',', managementStandardsContentIdList),
+                    ScheduleDateFrom = uploadCondition.ScheduleDateFrom.ToString(ScheduleDateConditionFormat),
+                    ScheduleDateTo = uploadCondition.ScheduleDateTo.ToString(ScheduleDateConditionFormat),
+                    LanguageId = this.LanguageId
+                });
+            if(scheduleListAll == null || scheduleListAll.Count == 0)
+            {
+                return isError;
+            }
+
+            foreach (var result in resultList)
+            {
+                var scheduleList = scheduleListAll.Where(x => x.ManagementStandardsContentId == result.ManagementStandardsContentId).ToList();
+                if (result.LongPlanId != null)
+                {
+                    // 長期計画件名が設定されている場合、機器別管理基準に紐づけ
+                    if (scheduleList != null && scheduleList.Count > 0)
+                    {
+                        foreach (var schedule in result.ScheduleList)
+                        {
+                            // スケジュール済(○)の場合
+                            if (schedule.ScheduleId == (int)TMQConst.MsStructure.StructureId.ScheduleStatus.NoCreate)
+                            {
+                                if (scheduleList.Count(x => schedule.ScheduleDate.ToString(ScheduleDateConditionFormat).Equals(x.ScheduleDate.ToString(ScheduleDateConditionFormat)) &&
+                                   (x.Complition.HasValue && x.Complition.Value)) > 0)
+                                {
+                                    // 該当年月に履歴(●)が存在する場合
+                                    // 「履歴が存在する年月には新規にスケジュールを追加できません。」
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(result.RowNo.Value, schedule.ColumnNo, null, GetResMessage(ComRes.ID.ID141400001), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                                    isError = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // 長期計画件名が未設定の場合、長期計画件名の紐づけを解除
+                    if (scheduleList.Count(x => x.SummaryId != null) > 0)
+                    {
+                        // 保全活動が紐づけられているスケジュールが存在する場合
+                        // 「保全活動が作成されている為、削除できません。」
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo(result.RowNo.Value, ExcelPort.LongPlan.ColumnNo.SendProcess, null, GetResMessage(ComRes.ID.ID141300004), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                        isError = true;
+                    }
+                }
+            }
+            return isError;
+        }
+
+        /// <summary>
+        /// ExcelPort長期計画件名情報登録処理実行
+        /// </summary>
+        /// <param name="resultList">対象データリスト</param>
+        private bool executeRegistListForExcelPort(List<Dao.ExcelPort.List> resultList)
+        {
+            var now = DateTime.Now;
+            bool chkUpd = int.TryParse(this.UserId, out int updUserId);
+            for (int i = 0; i < resultList.Count; i++)
+            {
+                var result = resultList[i];
+                if (result.ProcessId == TMQConst.SendProcessId.Regist)
+                {
+                    // 登録の場合
+
+                    // ツリーの階層情報を登録用プロパティに設定
+                    setLayerInfo(result);
+                    // 共通の更新日時などを設定
+                    setExecuteConditionByDataClassCommon<Dao.ExcelPort.List>(ref result, now, updUserId, updUserId);
+                    // 長期計画件名情報を登録
+                    if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Common.InsertLongPlan, SqlName.SubDir, result, this.db))
+                    {
+                        return false;
+                    }
+                }
+                else if (result.ProcessId == TMQConst.SendProcessId.Update)
+                {
+                    // 内容更新の場合
+
+                    // ツリーの階層情報を登録用プロパティに設定
+                    setLayerInfo(result);
+                    // 共通の更新日時などを設定
+                    setExecuteConditionByDataClassCommon<Dao.ExcelPort.List>(ref result, now, updUserId, -1);
+                    // 長期計画件名情報を更新
+                    if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Common.UpdateLongPlan, SqlName.SubDir, result, this.db))
+                    {
+                        return false;
+                    }
+                }
+                else if (result.ProcessId == TMQConst.SendProcessId.Delete)
+                {
+                    // 削除の場合
+
+                    // 長期計画件名を削除
+                    if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Common.DeleteLongPlan, SqlName.SubDir, result, this.db))
+                    {
+                        return false;
+                    }
+
+                    // 機器別管理基準の長計件名IDをNullに更新
+                    // 共通の更新日時などを設定
+                    setExecuteConditionByDataClassCommon<Dao.ExcelPort.List>(ref result, now, updUserId, -1);
+                    // ※機器別管理基準が紐づけられていない場合もあるため、戻り値は見ない
+                    TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteAll, SqlName.Detail.SubDir, result, this.db);
+
+                    // 長期計画件名に紐づく添付情報を削除
+                    // ※添付情報が紐づけられていない場合もあるため、戻り値は見ない
+                    TMQUtil.SqlExecuteClass.Regist(SqlName.ExcelPort.DeleteAttachment, SqlName.ExcelPort.SubDir, result, this.db);
+                }
+            }
+            return true;
+
+            // ツリーの階層情報を登録用プロパティに設定
+            void setLayerInfo(Dao.ExcelPort.List target)
+            {
+                // 場所階層
+                target.LocationDistrictStructureId = target.DistrictId;
+                target.LocationFactoryStructureId = target.FactoryId;
+                target.LocationPlantStructureId = target.PlantId;
+                target.LocationSeriesStructureId = target.SeriesId;
+                target.LocationStrokeStructureId = target.StrokeId;
+                target.LocationFacilityStructureId = target.FacilityId;
+                // 職種機種
+                target.JobKindStructureId = target.JobId;
+                target.JobLargeClassficationStructureId = target.LargeClassficationId;
+                target.JobMiddleClassficationStructureId = target.MiddleClassficationId;
+                target.JobSmallClassficationStructureId = target.SmallClassficationId;
+            }
+        }
+
+        /// <summary>
+        /// ExcelPort機器別管理基準情報登録処理実行
+        /// </summary>
+        /// <param name="resultList">対象データリスト</param>
+        private bool executeRegistDetailListForExcelPort(TMQUtil.ExcelPortUploadCondition uploadCondition, List<Dao.ExcelPort.DeitalList> resultList)
+        {
+            var now = DateTime.Now;
+
+            var dateFrom = now.ToString(ScheduleDateConditionFormat);
+            var dateTo = now.AddMonths(TMQUtil.ComExcelPort.ScheduleMonths - 1).ToString(ScheduleDateConditionFormat);
+            bool chkUpd = int.TryParse(this.UserId, out int updUserId);
+
+            // 機器別管理基準内容IDを抽出
+            var managementStandardsContentIdList = resultList.Select(x => x.ManagementStandardsContentId.ToString()).ToList();
+
+            var condition = new Dao.ExcelPort.Condition()
+            {
+                ManagementStandardsContentIdList = string.Join(',', managementStandardsContentIdList),
+                ScheduleDateFrom = uploadCondition.ScheduleDateFrom.ToString(ScheduleDateConditionFormat),
+                ScheduleDateTo = uploadCondition.ScheduleDateTo.ToString(ScheduleDateConditionFormat)
+            };
+
+            // 機器別管理基準内容IDに紐づく保全スケジュールデータを取得
+            var scheduleInfoList = TMQUtil.SqlExecuteClass.SelectList<Dao.ExcelPort.DeitalList>(
+                SqlName.ExcelPort.GetScheduleInfo, SqlName.ExcelPort.SubDir, condition, this.db);
+
+            // 機器別管理基準内容IDに紐づく履歴完了(●)の保全スケジュール詳細データを取得
+            var scheduleListAll = getScheduleDetailListForExcelPort(condition, true);
+
+            // 送信時処理が更新のデータを抽出
+            var updateList = resultList.Where(x => x.ProcessId == TMQConst.SendProcessId.Update).ToList();
+            for (int i = 0; i < updateList.Count; i++)
+            {
+                var result = updateList[i];
+
+                // 機器別管理基準情報の長期計画件名IDを更新
+                // 共通の更新日時などを設定
+                setExecuteConditionByDataClassCommon<Dao.ExcelPort.DeitalList>(ref result, now, updUserId, -1);
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.SelectStandards.UpdateContent, SqlName.SelectStandards.SubDir, result, this.db))
+                {
+                    return false;
+                }
+
+                // 対象期間の保全スケジュール詳細情報を削除(保全履歴完了データ●は除く)
+                condition.ManagementStandardsContentId = result.ManagementStandardsContentId;
+                // ※削除対象のスケジュールデータが存在しない場合があるため、戻り値は見ない
+                TMQUtil.SqlExecuteClass.Regist(SqlName.ExcelPort.DeleteScheduleDetail, SqlName.ExcelPort.SubDir, condition, this.db);
+
+                if (result.ScheduleList.Count == 0)
+                {
+                    continue;
+                }
+
+                // 登録対象データからExcel上の履歴完了データ(●)を除く
+                result.ScheduleList = result.ScheduleList.Where(x => x.ScheduleId == (int)TMQConst.MsStructure.StructureId.ScheduleStatus.NoCreate).ToList();
+
+                if (scheduleListAll != null && scheduleListAll.Count > 0)
+                {
+                    // 保全スケジュール履歴完了データ(●)を取得
+                    var completeList = scheduleListAll.Where(x => x.ManagementStandardsContentId == result.ManagementStandardsContentId).ToList();
+                    if (completeList.Count > 0)
+                    {
+                        // スケジュール情報クラスへ詰め替え
+                        var mapConfig = new MapperConfiguration(x => x.CreateMap<Dao.ExcelPort.Result, CommonTMQUtil.ScheduleInfo>());
+                        var mapper = mapConfig.CreateMapper();
+                        var scheduleList = completeList.Select(x => mapper.Map<CommonTMQUtil.ScheduleInfo>(x)).ToList();
+                        // 入力データに追加して、スケジュール年月で並び替え
+                        result.ScheduleList.AddRange(scheduleList);
+                        result.ScheduleList = result.ScheduleList.OrderBy(x => x.ScheduleDate).ToList();
+                    }
+                }
+
+                // 前月までの繰り返し回数の最大値を取得
+                var sequenceCount = TMQUtil.SqlExecuteClass.SelectIntValue(SqlName.ExcelPort.GetSequenceCountMax, SqlName.ExcelPort.SubDir,
+                    new { MaintainanceScheduleId = result.MaintainanceScheduleId, ScheduleDate = dateFrom }, this.db);
+
+                foreach (var schedule in result.ScheduleList)
+                {
+                    // 保全スケジュール詳細データ
+                    ComDao.McMaintainanceScheduleDetailEntity detail = new();
+                    detail.SequenceCount = ++sequenceCount;
+                    if (schedule.ScheduleId == (int)TMQConst.MsStructure.StructureId.ScheduleStatus.NoCreate)
+                    {
+                        // スケジュール済(○)の場合、入力された保全スケジュール詳細情報を登録
+                        // 機器別管理基準内容IDに紐づく開始日がスケジュール日以前で最大の保全スケジュール情報を取得
+                        var scheduleInfo = scheduleInfoList.Where(x => x.ManagementStandardsContentId == condition.ManagementStandardsContentId &&
+                            x.StartDate.CompareTo(schedule.ScheduleDate) <= 0)
+                            .OrderByDescending(x => x.StartDate).FirstOrDefault();
+                        if (scheduleInfo == null)
+                        {
+                            // 存在しない場合は最小の開始日のスケジュール情報を取得
+                            scheduleInfo = scheduleInfoList.Where(x => x.ManagementStandardsContentId == condition.ManagementStandardsContentId)
+                            .OrderBy(x => x.StartDate).FirstOrDefault();
+                        }
+
+                        detail.SummaryId = null;
+                        detail.Complition = false;
+                        detail.MaintainanceScheduleId = scheduleInfo.MaintainanceScheduleId;
+                        detail.ScheduleDate = schedule.ScheduleDate;
+                        // 共通の更新日時などを設定
+                        setExecuteConditionByDataClassCommon<ComDao.McMaintainanceScheduleDetailEntity>(ref detail, now, updUserId, updUserId);
+                        // 新規登録
+                        if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Machine.InsertScheduleDetail, SqlName.Machine.SubDir, detail, this.db))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // 保全履歴完了(●)の場合、保全スケジュール詳細の繰り返し回数を更新
+                        // 共通の更新日時などを設定
+                        setExecuteConditionByDataClassCommon<ComDao.McMaintainanceScheduleDetailEntity>(ref detail, now, updUserId, -1);
+                        detail.MaintainanceScheduleDetailId = schedule.MaintainanceScheduleDetailId;
+                        // 更新
+                        if (!TMQUtil.SqlExecuteClass.Regist(SqlName.ExcelPort.UpdateSequenceCount, SqlName.ExcelPort.SubDir, detail, this.db))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
         }
         #endregion
 

@@ -1,5 +1,5 @@
-,
-district AS
+
+,district AS
 (
 SELECT
     ms.structure_id,
@@ -79,7 +79,7 @@ SELECT
                   structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.unit_structure_id
-              AND st_f.factory_id IN(0,@UserFactoryId)
+              AND st_f.factory_id IN(0,parts.factory_id)
            )
       AND tra.structure_id = parts.unit_structure_id
     ) AS unit_name,                                                                                              -- 数量管理単位(名称)   
@@ -97,7 +97,7 @@ SELECT
                   structure_factory AS st_f
               WHERE
                   st_f.structure_id = parts.currency_structure_id
-              AND st_f.factory_id IN(0, @UserFactoryId)
+              AND st_f.factory_id IN(0, parts.factory_id)
            )
       AND tra.structure_id = parts.currency_structure_id
     ) AS currency_name                                                                                           -- 金額管理単位(名称)

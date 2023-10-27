@@ -53,6 +53,9 @@ SELECT
     @CurrentPage as current_page,
     @LastPage  as last_page,
     @Total as total
+    
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 
 FROM (
 @GetEveryAccountAndDepartment*/
@@ -63,23 +66,119 @@ SELECT
     MONTH(CONVERT(date,@TargetYearMonth + '/01')) as month,
 
     pl.account_structure_id, -- 勘定項目
-    [dbo].[get_v_structure_item](pl.account_structure_id, pp.factory_id, @LanguageId) AS account_nm,
+    -- [dbo].[get_v_structure_item](pl.account_structure_id, pp.factory_id, @LanguageId) AS account_nm,
+    --勘定項目(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.account_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.account_structure_id
+    ) AS account_nm,
+
     [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_id,
     
     pl.department_structure_id, -- 部門ID
-    [dbo].[get_v_structure_item](pl.department_structure_id, pp.factory_id, @LanguageId) AS department_nm,
+    -- [dbo].[get_v_structure_item](pl.department_structure_id, pp.factory_id, @LanguageId) AS department_nm,
+    --部門(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.department_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.department_structure_id
+    ) AS department_nm,
     [dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, @LanguageId, 1) AS department_id,
 
     ROW_NUMBER() OVER (PARTITION BY pl.account_structure_id, pl.department_structure_id 
         ORDER BY pp.parts_no, 
-                [dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId), 
-                [dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, @LanguageId)) AS row_no,
+                --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId), 
+                --[dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, @LanguageId)) AS row_no,
+                --新旧区分(翻訳)
+                (
+                    SELECT
+                        tra.translation_text
+                    FROM
+                        v_structure_item_all AS tra
+                    WHERE
+                        tra.language_id = @LanguageId
+                    AND tra.location_structure_id = (
+                            SELECT
+                                MAX(st_f.factory_id)
+                            FROM
+                                #temp_structure_factory AS st_f
+                            WHERE
+                                st_f.structure_id = pl.old_new_structure_id
+                            AND st_f.factory_id IN(0, pp.factory_id)
+                        )
+                    AND tra.structure_id = pl.old_new_structure_id
+                ),
+                --棚番(翻訳)
+                (
+                    SELECT
+                        tra.translation_text
+                    FROM
+                        v_structure_item_all AS tra
+                    WHERE
+                        tra.language_id = @LanguageId
+                    AND tra.location_structure_id = (
+                            SELECT
+                                MAX(st_f.factory_id)
+                            FROM
+                                #temp_structure_factory AS st_f
+                            WHERE
+                                st_f.structure_id = pls.parts_location_id
+                            AND st_f.factory_id IN(0, pp.factory_id)
+                        )
+                    AND tra.structure_id = pls.parts_location_id
+                )) AS row_no,
 
     pp.parts_name as parts_name, -- 品名
     ISNULL(pp.model_type,'') + ISNULL(pp.standard_size,'') AS dimensions, -- 規格・寸法
 
     pp.unit_structure_id, -- 数量管理単位id
-    [dbo].[get_v_structure_item](pp.unit_structure_id, pp.factory_id, @LanguageId) AS unit_name,
+    -- [dbo].[get_v_structure_item](pp.unit_structure_id, pp.factory_id, @LanguageId) AS unit_name,
+    --数量管理単位(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pp.unit_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pp.unit_structure_id
+    ) AS unit_name,
 
     ISNULL(pls.stock_quantity, 0) AS stock_quantity, -- 在庫数
     ISNULL(pl.unit_price, 0) AS unit_price, -- 単価
@@ -87,7 +186,26 @@ SELECT
     dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
     
     pl.old_new_structure_id, -- 新旧区分
-    [dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_nm,
+    --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_nm,
+    --新旧区分(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.old_new_structure_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.old_new_structure_id
+    ) AS old_new_nm,
     [dbo].[get_rep_extension_data](pl.old_new_structure_id, pp.factory_id, @LanguageId, 1) AS old_new_cd,
     
     pl.receiving_datetime,  -- 入庫日
@@ -174,9 +292,6 @@ AND EXISTS
     )
 )
 
--- 新旧区分（新品、中古品）
--- AND
---     pl.old_new_structure_id in (375, 376のみ) 
 
 /*@TargetYearMonth
 AND

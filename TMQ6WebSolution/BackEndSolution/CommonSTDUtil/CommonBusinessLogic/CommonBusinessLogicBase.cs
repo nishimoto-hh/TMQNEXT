@@ -14,6 +14,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Unicode;
+using static CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil;
 using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComOpt = CommonSTDUtil.CommonSTDUtil.OptimisticExclusive;
@@ -54,6 +55,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
             public const string CreateTableTempJob = "CreateTableTempJob";
             /// <summary>職種機種IDを保存する一時テーブルへの登録用SQL</summary>
             public const string InsertTempJob = "InsertTempJob";
+            /// <summary>SQL名：上位の中で対象階層の構成リスト取得 </summary>
+            public const string GetTargetLayerList = "Structure_GetTargetLayerList";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
         }
@@ -133,6 +136,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected Dictionary<string, object> outParamPageInfoList;
         /// <summary>実行結果リスト</summary>
         protected List<Dictionary<string, object>> ResultList;
+        /// <summary>ユーザー情報の更新</summary>
+        protected bool UpdateUserInfo;
 
         /// <summary>ログ出力</summary>
         protected static CommonLogger.CommonLogger logger = CommonLogger.CommonLogger.GetInstance("logger");
@@ -495,6 +500,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 outParam.FileType = this.OutputFileType;
                 outParam.FileName = this.OutputFileName;
 
+                outParam.UpdateUserInfo = this.UpdateUserInfo;
+
                 //logger.Debug(string.Format("ResultJson : {0}", JsonSerializer.Serialize(this.ResultList)));
 
                 return result;
@@ -614,57 +621,34 @@ namespace CommonSTDUtil.CommonBusinessLogic
             // 選択キーデータリスト初期化
             List<SelectKeyData> selectKeyDataList = new List<SelectKeyData>();
 
+            List<ComUtil.DBMappingInfo> mappingList = getMappingInfo();
+            var key1MapInfo = getMapInfo(keyInfo.Key1, mappingList);
+            var key2MapInfo = getMapInfo(keyInfo.Key2, mappingList);
+            var key3MapInfo = getMapInfo(keyInfo.Key3, mappingList);
             // 選択行を繰り返し処理　データクラスに変換しリストへ追加
             foreach (var rowDic in selectedDics)
             {
                 SelectKeyData selectKeyData = new SelectKeyData();
 
-                List<ComUtil.DBMappingInfo> mappingList;
-                List<string> paramList = null;
-                if (paramList == null || paramList.Count == 0)
-                {
-                    mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(listId)).ToList();
-                }
-                else
-                {
-                    mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(listId) && paramList.Contains(x.ParamName)).ToList();
-                }
-
                 // キー１の設定値を取得し、設定
-                var mapInfo = mappingList.Where(x => x.ParamName.Equals(keyInfo.Key1)).FirstOrDefault();
-                if (mapInfo != null && string.IsNullOrEmpty(keyInfo.Key1) == false)
+                var key1Value = getKeyValue(key1MapInfo, rowDic);
+                if (key1Value.isSetValue)
                 {
-                    // 対象キーが設定済で数値変換可能かをチェックして登録する
-                    int wkInt;
-                    if (rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true)
-                    {
-                        selectKeyData.Key1 = rowDic[mapInfo.ValName];
-                    }
+                    selectKeyData.Key1 = key1Value.value;
                 }
-
                 // キー２の設定値を取得し、設定
-                mapInfo = mappingList.Where(x => x.ParamName.Equals(keyInfo.Key2)).FirstOrDefault();
-                // 対象キーが設定済で数値変換可能かをチェックして登録する
-                if (mapInfo != null && string.IsNullOrEmpty(keyInfo.Key2) == false)
+                var key2Value = getKeyValue(key2MapInfo, rowDic);
+                if (key2Value.isSetValue)
                 {
-                    // 対象キーが設定済で数値変換可能かをチェックして登録する
-                    int wkInt;
-                    if (rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true)
-                    {
-                        selectKeyData.Key2 = rowDic[mapInfo.ValName];
-                    }
+                    selectKeyData.Key2 = key2Value.value;
                 }
                 // キー３の設定値を取得し、設定
-                mapInfo = mappingList.Where(x => x.ParamName.Equals(keyInfo.Key3)).FirstOrDefault();
-                if (mapInfo != null && string.IsNullOrEmpty(keyInfo.Key3) == false)
+                var key3Value = getKeyValue(key3MapInfo, rowDic);
+                if (key3Value.isSetValue)
                 {
-                    // 対象キーが設定済で数値変換可能かをチェックして登録する
-                    int wkInt;
-                    if (rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true)
-                    {
-                        selectKeyData.Key3 = rowDic[mapInfo.ValName];
-                    }
+                    selectKeyData.Key3 = key3Value.value;
                 }
+
 
                 // キーが取得できた場合のみ
                 if (selectKeyData.Key1 != null || selectKeyData.Key2 != null || selectKeyData.Key3 != null)
@@ -676,6 +660,63 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             // 選択キーデータリストを返却
             return selectKeyDataList;
+
+            // 一覧のマッピング情報を取得
+            List<ComUtil.DBMappingInfo> getMappingInfo()
+            {
+                List<ComUtil.DBMappingInfo> mappingList;
+                List<string> paramList = null;
+                if (paramList == null || paramList.Count == 0)
+                {
+                    mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(listId)).ToList();
+                }
+                else
+                {
+                    mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(listId) && paramList.Contains(x.ParamName)).ToList();
+                }
+                return mappingList;
+            }
+
+            // 対象キーのマッピング情報を取得
+            // 引数
+            // target:キーの名前
+            // mappingList:一覧のマッピング情報
+            // 戻り値
+            // isExistsKey:キーの有無、有る場合True
+            // mapInfo:キーのマッピング情報
+            (bool isExistsKey, ComUtil.DBMappingInfo mapInfo) getMapInfo(string target, List<ComUtil.DBMappingInfo> mappingList)
+            {
+                // キーの設定値を取得し、設定
+                var mapInfo = mappingList.Where(x => x.ParamName.Equals(target)).FirstOrDefault();
+                // 対象キーが設定済で数値変換可能かをチェックして登録する
+                bool result = mapInfo != null && string.IsNullOrEmpty(target) == false;
+                return (result, mapInfo);
+            }
+
+            // キーの値を取得
+            // 引数
+            // keyMapInfo:対象キーのマッピング情報(getMapInfo参照)
+            // rowDic:一覧の行の内容
+            // 戻り値
+            // isSetValue:キーの値の有無、有る場合True
+            // value:キーの値
+            (bool isSetValue, object value) getKeyValue((bool isExistsKey, ComUtil.DBMappingInfo mapInfo) keyMapInfo, Dictionary<string, object> rowDic)
+            {
+                bool isSetValue = false;
+                object value = null;
+                var mapInfo = keyMapInfo.mapInfo;
+                if (keyMapInfo.isExistsKey)
+                {
+                    // 対象キーが設定済で数値変換可能かをチェックして登録する
+                    int wkInt;
+                    if (rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true)
+                    {
+                        value = rowDic[mapInfo.ValName];
+                        isSetValue = true;
+                    }
+                }
+                return (isSetValue, value);
+            }
         }
         /// <summary>
         /// 帳票用検索条件データ取得
@@ -3373,19 +3414,15 @@ namespace CommonSTDUtil.CommonBusinessLogic
         }
 
         /// <summary>
-        /// 型付検索結果の設定
+        /// 型付検索結果の設定(共通部分)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="tmpList">検索結果を一時テーブルレイアウトに変換した結果</param>
         /// <param name="pageInfo">ページ情報</param>
-        /// <param name="results">検索結果</param>
         /// <param name="cnt">総件数</param>
         /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
         /// <returns></returns>
-        protected bool SetSearchResultsByDataClass<T>(PageInfo pageInfo, IList<T> results, int cnt, bool isDetailConditionApplied = false)
+        private bool SetSearchResultsByDataClassCommon(List<ExpandoObject> tmpList, PageInfo pageInfo, int cnt, bool isDetailConditionApplied = false)
         {
-            // 検索結果を一時テーブルレイアウトへ変換
-            var tmpList = ConvertResultsToTmpTableListByDataClass(pageInfo, results);
-            //if (tmpList == null) { return false; }
             // 一時テーブル保存が必要かどうか
             if (pageInfo.CtrlType != FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2)
             {
@@ -3399,6 +3436,38 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 // OUTパラメータへ検索結果を設定
                 return setSearchResults(pageInfo, tmpList, cnt);
             }
+        }
+
+        /// <summary>
+        /// 型付検索結果の設定
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="pageInfo">ページ情報</param>
+        /// <param name="results">検索結果</param>
+        /// <param name="cnt">総件数</param>
+        /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
+        /// <returns></returns>
+        protected bool SetSearchResultsByDataClass<T>(PageInfo pageInfo, IList<T> results, int cnt, bool isDetailConditionApplied = false)
+        {
+            // 検索結果を一時テーブルレイアウトへ変換
+            var tmpList = ConvertResultsToTmpTableListByDataClass(pageInfo, results);
+            return SetSearchResultsByDataClassCommon(tmpList, pageInfo, cnt, isDetailConditionApplied);
+        }
+
+        /// <summary>
+        /// 型付検索結果の設定(一覧用個別処理)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="pageInfo">ページ情報</param>
+        /// <param name="results">検索結果</param>
+        /// <param name="cnt">総件数</param>
+        /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
+        /// <returns></returns>
+        protected bool SetSearchResultsByDataClassForList<T>(PageInfo pageInfo, IList<T> results, int cnt, bool isDetailConditionApplied = false) where T : IListAccessor
+        {
+            // 検索結果を一時テーブルレイアウトへ変換
+            var tmpList = ConvertResultsToTmpTableListByDataClassForList(pageInfo, results);
+            return SetSearchResultsByDataClassCommon(tmpList, pageInfo, cnt, isDetailConditionApplied);
         }
 
         /// <summary>
@@ -3935,7 +4004,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <summary>
         /// 型付検索結果を一時テーブルレイアウトデータへ変換
         /// </summary>
-        /// <param name="ctrlId">ページ情報</param>
+        /// <param name="pageInfo">ページ情報</param>
         /// <param name="results">検索結果</param>
         /// <returns></returns>
         protected List<ExpandoObject> ConvertResultsToTmpTableListByDataClass<T>(PageInfo pageInfo, IList<T> results)
@@ -3945,81 +4014,172 @@ namespace CommonSTDUtil.CommonBusinessLogic
             var mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(pageInfo.CtrlId)).ToList();
 
             var list = new List<ExpandoObject>();
-            dynamic pramObj;
+            dynamic paramObj;
             var rowNo = 1;
             var updateDate = DateTime.Now;
 
             // 検索結果クラスのプロパティを列挙
             var properties = typeof(T).GetProperties();
+            // マッピング情報のパラメータ名をキーに、プロパティへアクセスするアクセッサーを値に持つディクショナリ
+            var mapAccessorDic = new Dictionary<string, IAccessor>();
 
             foreach (var result in results)
             {
-                pramObj = new ExpandoObject() as IDictionary<string, object>;
-                pramObj.GUID = this.GUID;
-                pramObj.TABNO = this.BrowserTabNo;
-                pramObj.CTRLID = pageInfo.CtrlId;
-                pramObj.ROWNO = rowNo++;
-                pramObj.ROWSTATUS = TMPTBL_CONSTANTS.ROWSTATUS.Edit;
+                paramObj = new ExpandoObject() as IDictionary<string, object>;
+                setParamObjCommon(ref paramObj);
 
                 //IDictionary<string, object> dicResult = result as IDictionary<string, object>;
                 foreach (var mapInfo in mappingList)
                 {
-                    var paramName = mapInfo.ParamName;
-                    var prop = getProperty(properties, paramName);
-                    if (prop != null)
+                    var accessor = getAccessor(properties, mapInfo.ParamName, mapAccessorDic);
+                    if (accessor != null)
                     {
-                        // 指定したカラム名が検索結果に存在する場合、結果オブジェクトへ追加
-                        // フォーマットが指定されている場合、処理を行う
-                        if (!string.IsNullOrEmpty(mapInfo.Format))
-                        {
-                            if (prop.GetValue(result) is DateTime)
-                            {
-                                DateTime val = (DateTime)prop.GetValue(result);
-                                ((IDictionary<string, object>)pramObj).Add(mapInfo.ValName, val.ToString(mapInfo.Format));
-                            }
-                            else if (prop.GetValue(result) is decimal)
-                            {
-                                decimal val = (decimal)prop.GetValue(result);
-                                string formatVal = val.ToString(mapInfo.Format);
-                                ((IDictionary<string, object>)pramObj).Add(mapInfo.ValName, formatVal == "" ? val : formatVal);
-                            }
-                            else
-                            {
-                                ((IDictionary<string, object>)pramObj).Add(mapInfo.ValName, prop.GetValue(result));
-                            }
-                        }
-                        else
-                        {
-                            ((IDictionary<string, object>)pramObj).Add(mapInfo.ValName, prop.GetValue(result));
-                        }
+                        var propValue = accessor.GetValue(result);
+                        SetKeyAndValueToTempTableLayout(ref paramObj, mapInfo, propValue);
                     }
                 }
-                if (IsRequiredRegistTmpTable(pageInfo))
-                {
-                    pramObj.user_id = this.UserId;
-                    pramObj.update_date = updateDate;
-                }
 
-                list.Add(pramObj);
+                list.Add(paramObj);
             }
             return list;
 
-            // プロパティのリストより指定された名称のプロパティを取得する処理
-            static PropertyInfo getProperty(PropertyInfo[] properties, string pParamName)
+            // プロパティのリストより指定された名称のプロパティのアクセッサーを取得する処理
+            static IAccessor getAccessor(PropertyInfo[] properties, string pParamName, Dictionary<string, IAccessor> mapPropertyDic)
             {
-                // 以下と等価
-                // var prop = properties.FirstOrDefault(x => x.Name.ToUpper().Equals(paramName.ToUpper()));
-                // LinqでなくForeachで書く方がメモリの関係で高速
-                // 一覧画面などでは行数*列数で繰り返すため、性能が問題となる
+                // 一覧画面で大量の行・列の場合に性能が問題となるため、高速化
+                /*
+                 LinqをForeachに変更(こちらの方が速い、メモリの関係)
+                 値をプロパティによる取得でなく、デリゲートによるアクセッサーで取得する。大量データの場合はこちらの方が速い。
+                 少量(数十件未満)ならプロパティの方が速いが、数ミリ秒の差なので無視する。
+                 */
+
+                // パラメータ名とプロパティ名は大文字同士で比較
                 string paramName = pParamName.ToUpper();
+
+                // ディクショナリに存在するかを判定
+                if (mapPropertyDic.ContainsKey(paramName))
+                {
+                    return mapPropertyDic[paramName];
+                }
+
                 foreach (PropertyInfo prop in properties)
                 {
                     if (paramName == prop.Name.ToUpper())
                     {
-                        return prop;
+                        var accessor = prop.GetAccessor();
+                        mapPropertyDic.Add(paramName, accessor);
+                        return accessor;
                     }
                 }
                 return null;
+            }
+            // 共通部分(一覧用個別処理と同じ)
+            void setParamObjCommon(ref dynamic paramObj)
+            {
+                paramObj.GUID = this.GUID;
+                paramObj.TABNO = this.BrowserTabNo;
+                paramObj.CTRLID = pageInfo.CtrlId;
+                paramObj.ROWNO = rowNo++;
+                paramObj.ROWSTATUS = TMPTBL_CONSTANTS.ROWSTATUS.Edit;
+
+                if (IsRequiredRegistTmpTable(pageInfo))
+                {
+                    paramObj.user_id = this.UserId;
+                    paramObj.update_date = updateDate;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 型付検索結果を一時テーブルレイアウトデータへ変換(一覧用個別処理)
+        /// </summary>
+        /// <param name="pageInfo">ページ情報</param>
+        /// <param name="results">検索結果</param>
+        /// <returns></returns>
+        protected List<ExpandoObject> ConvertResultsToTmpTableListByDataClassForList<T>(PageInfo pageInfo, IList<T> results) where T : IListAccessor
+        {
+            // リフレクションにより型のプロパティを取得し、値を参照する方法は行・列が多い場合に性能が悪い
+            // 性能が問題となる機能(一覧表示)は、こちらを使用する
+            // インタフェースにより一時テーブルレイアウトデータへの変換処理の実装を強制し、呼び出すことでリフレクションが不要となる
+
+            if (results == null) { return null; }
+            var mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(pageInfo.CtrlId)).ToList();
+            var list = new List<ExpandoObject>();
+            var rowNo = 1;
+            var updateDate = DateTime.Now;
+            // プロパティ名よりマッピング情報を取得するためにマッピング情報のパラメータ名のディクショナリを作成
+            Dictionary<string, DBMappingInfo> mapDic = getMappingDictionary();
+            foreach (var result in results)
+            {
+                // インタフェースにより実装を強制される変換処理を実行
+                var paramObj = result.GetTmpTableData(mapDic);
+                setParamObjCommon(ref paramObj);
+                list.Add(paramObj);
+            }
+            return list;
+
+            // 共通部分(元の処理と同じ)
+            void setParamObjCommon(ref dynamic paramObj)
+            {
+                paramObj.GUID = this.GUID;
+                paramObj.TABNO = this.BrowserTabNo;
+                paramObj.CTRLID = pageInfo.CtrlId;
+                paramObj.ROWNO = rowNo++;
+                paramObj.ROWSTATUS = TMPTBL_CONSTANTS.ROWSTATUS.Edit;
+
+                if (IsRequiredRegistTmpTable(pageInfo))
+                {
+                    paramObj.user_id = this.UserId;
+                    paramObj.update_date = updateDate;
+                }
+            }
+            // マッピング情報のパラメータ名(大文字)とマッピング情報のディクショナリを作成
+            Dictionary<string, DBMappingInfo> getMappingDictionary()
+            {
+                Dictionary<string, DBMappingInfo> mapDic = new();
+                foreach (var mapInfo in mappingList)
+                {
+                    string key = mapInfo.ParamName.ToUpper();
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        mapDic.Add(key, mapInfo);
+                    }
+                }
+                return mapDic;
+            }
+        }
+
+        /// <summary>
+        /// 一時テーブルレイアウトデータにマッピング情報と値よりキー(VAL)と値を設定する
+        /// </summary>
+        /// <param name="paramObj">一時テーブルレイアウトデータ</param>
+        /// <param name="mapInfo">指定列のマッピング情報</param>
+        /// <param name="targetValue">設定する値</param>
+        public static void SetKeyAndValueToTempTableLayout(ref dynamic paramObj, DBMappingInfo mapInfo, object targetValue)
+        {
+            // 指定したカラム名が検索結果に存在する場合、結果オブジェクトへ追加
+            // フォーマットが指定されている場合、処理を行う
+            if (!string.IsNullOrEmpty(mapInfo.Format))
+            {
+                if (targetValue is DateTime)
+                {
+                    DateTime val = (DateTime)targetValue;
+                    ((IDictionary<string, object>)paramObj).Add(mapInfo.ValName, val.ToString(mapInfo.Format));
+                }
+                else if (targetValue is decimal)
+                {
+                    decimal val = (decimal)targetValue;
+                    string formatVal = val.ToString(mapInfo.Format);
+                    ((IDictionary<string, object>)paramObj).Add(mapInfo.ValName, formatVal == "" ? val : formatVal);
+                }
+                else
+                {
+                    ((IDictionary<string, object>)paramObj).Add(mapInfo.ValName, targetValue);
+                }
+            }
+            else
+            {
+                ((IDictionary<string, object>)paramObj).Add(mapInfo.ValName, targetValue);
             }
         }
 
@@ -6104,8 +6264,9 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="param">WHERE句パラメータ</param>
         /// <param name="isDetailConditionApplied">詳細検索条件適用フラグ</param>
         /// <param name="unUseLocation">予備品用の場所階層を使用する場合はTrue(デフォルトFalse)</param>
+        /// <param name="isJobKindOnly">職種階層のみの検索画面の場合はTrue(デフォルトFalse)</param>
         /// <returns>WHERE句生成結果</returns>
-        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false)
+        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false, bool isJobKindOnly = false)
         {
             sql = string.Empty;
             param = new ExpandoObject();
@@ -6165,6 +6326,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     this.db.Regist(insertSql, new { LocationIds = locationIds });
                     // EXISTS句追加
                     sbSql.Append(getExistsText(TempTableName.Location, CommonColumnName.LocationId));
+                    //読込件数取得用のWHERE句を追加
+                    param.CountSqlWhere = getExistsText(TempTableName.Location, CommonColumnName.LocationId);
                 }
             }
 
@@ -6199,6 +6362,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     this.db.Regist(insertSql, new { LocationIds = locationIds });
                     // EXISTS句追加
                     sbSql.Append(getExistsText(TempTableName.Location, CommonColumnName.PartsLocationId));
+                    //読込件数取得用のWHERE句を追加
+                    param.CountSqlWhere = getExistsText(TempTableName.Location, CommonColumnName.PartsLocationId);
                 }
             }
 
@@ -6218,13 +6383,34 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
                 if (jobIdList.Count > 0)
                 {
-                    jobIdList = GetLowerStructureIdList(jobIdList);
+                    if (!isJobKindOnly)
+                    {
+                        // 配下の階層を取得
+                        jobIdList = GetLowerStructureIdList(jobIdList);
+                    }
+                    else
+                    {
+                        // 職種階層のみを取得
+                        jobIdList = GetTargetLayerStructureIdList(jobIdList, 0);
+                    }
+
                     if (!useBelongingInfo && this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0)
                     {
                         //職種機種の指定ありの場合
+                        var target = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
 
-                        //所属職種の配下の構成IDを取得
-                        List<int> belongJobIdList = GetLowerStructureIdList(this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList());
+                        var belongJobIdList = new List<int>();
+                        if (!isJobKindOnly)
+                        {
+                            //所属職種の配下の構成IDを取得
+                            belongJobIdList = GetLowerStructureIdList(target);
+                        }
+                        else
+                        {
+                            // 職種階層のみを取得
+                            belongJobIdList = GetTargetLayerStructureIdList(target, 0);
+                        }
+
                         //所属職種と一致するもののみ抽出
                         jobIdList = jobIdList.Where(x => belongJobIdList.Contains(x)).ToList();
                     }
@@ -6255,6 +6441,12 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     this.db.Regist(insertSql, new { LocationIds = locationIds });
                     // EXISTS句追加
                     sbSql.Append(getExistsText(TempTableName.Job, CommonColumnName.JobId));
+                    //読込件数取得用のWHERE句を追加
+                    if (existsWhere)
+                    {
+                        param.CountSqlWhere = param.CountSqlWhere + "AND ";
+                    }
+                    param.CountSqlWhere = param.CountSqlWhere + getExistsText(TempTableName.Job, CommonColumnName.JobId);
                 }
             }
 
@@ -6381,6 +6573,24 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             // 選択された構成IDリストから配下の構成IDをすべて取得
             IList<int> list = this.db.GetList<int>(sql, new { StructureIdList = ids });
+            return list.ToList();
+        }
+
+        /// <summary>
+        /// 選択された構成IDリストから上位の中で指定された階層の構成IDをすべて取得
+        /// </summary>
+        /// <param name="baseIdList">構成IDリスト</param>
+        /// <param name="targetLayer">取得対象の階層</param>
+        /// <returns>上位の構成IDリスト</returns>
+        public List<int> GetTargetLayerStructureIdList(List<int> baseIdList, int targetLayer)
+        {
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', baseIdList);
+
+            // SQL取得
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetTargetLayerList, out string sql);
+            // 選択された構成IDリストから配下の構成IDをすべて取得
+            IList<int> list = this.db.GetList<int>(sql, new { StructureIdList = ids, StructureLayerNo = targetLayer });
             return list.ToList();
         }
 

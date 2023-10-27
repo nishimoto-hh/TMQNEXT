@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -22,6 +23,8 @@ using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureTy
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace BusinessLogic_MC0001
 {
@@ -89,6 +92,8 @@ namespace BusinessLogic_MC0001
             public const string GetChkLoopInfo = "GetLoopInfo";
             /// <summary>SQL名：親子構成存在取得</summary>
             public const string GetChkAccessoryInfo = "GetAccessoryInfo";
+            /// <summary>SQL名：機器レベル取得</summary>
+            public const string GetMachineLevel = "GetMachineLevel";
 
             /// <summary>SQL名：機番情報登録</summary>
             public const string InsertMachineInfo = "InsertMachineInfo";
@@ -400,7 +405,7 @@ namespace BusinessLogic_MC0001
             // データ開始行
             public const int StartRowNo = 4;
             // 送信時処理列番号
-            public const int ProccesColumnNo = 4;
+            public const int ProccesColumnNo = 5;
             // 開始日列番号
             public const int StratDateColumnNo = 39;
         }
@@ -973,7 +978,7 @@ namespace BusinessLogic_MC0001
                 // ページ情報取得
                 var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
 
-                // SQLを取得
+                //// SQLを取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string baseSql);
                 // WITH句は別に取得
                 TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string withSql);
@@ -985,33 +990,36 @@ namespace BusinessLogic_MC0001
                 //    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                 //    return ComConsts.RETURN_RESULT.NG;
                 //}
-                //////SQLパラメータに言語ID設定
-                //whereParam.LanguageId = this.LanguageId;
+                TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment });
+                var structuregroupList = new List<GroupId>
+                {
+                    GroupId.Location, GroupId.Job, GroupId.MachineLevel, GroupId.Importance, GroupId.Conservation, GroupId.Manufacturer, GroupId.UseSegment, GroupId.ApplicableLaws
+                };
+                listPf.GetCreateTranslation(); // テーブル作成
+                listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                                                                          //listPf.GetInsertLayerOnly(GroupId.Job, (int)TMQConst.MsStructure.StructureLayerNo.Job.Job);
+                                                                          //listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
+                listPf.RegistTempTable(); // 登録
+                //SQLパラメータに言語ID設定
                 string whereSql = null;
                 dynamic whereParam = new ExpandoObject();
                 whereParam.LanguageId = this.LanguageId;
 
                 // 一覧検索SQL文の取得
-                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, false, -1);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY");
                 selectSql.AppendLine("machine_no ");
                 selectSql.AppendLine(",machine_name ");
-
                 // 一覧検索実行
                 IList<Dao.excelPortMachineList> results = db.GetListByDataClass<Dao.excelPortMachineList>(selectSql.ToString(), whereParam);
-                if (results == null || results.Count == 0)
+                if (results == null)
                 {
                     // 「ダウンロード処理に失敗しました。」
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                     return ComConsts.RETURN_RESULT.NG;
                 }
-
-                // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-                List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortMachineList>(ref results, typeLst, this.db, this.LanguageId);
 
                 // Dicitionalyに変換
                 dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortMachineList>(results);
@@ -1035,13 +1043,24 @@ namespace BusinessLogic_MC0001
                 //    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                 //    return ComConsts.RETURN_RESULT.NG;
                 //}
-                //////SQLパラメータに言語ID設定
-                //whereParam.LanguageId = this.LanguageId;
+                TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                //listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment });
+                var structuregroupList = new List<GroupId>
+                {
+                    GroupId.Location, GroupId.Job, GroupId.MachineLevel, GroupId.SiteMaster, GroupId.Importance,  GroupId.InspectionDetails, GroupId.Conservation, GroupId.MaintainanceDivision, GroupId.MaintainanceKind, GroupId.ScheduleType
+                };
+                listPf.GetCreateTranslation(); // テーブル作成
+                listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                                                                          //listPf.GetInsertLayerOnly(GroupId.Job, (int)TMQConst.MsStructure.StructureLayerNo.Job.Job);
+                                                                          //listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
+                listPf.RegistTempTable(); // 登録
+                //SQLパラメータに言語ID設定
                 string whereSql = null;
                 dynamic whereParam = new ExpandoObject();
                 whereParam.LanguageId = this.LanguageId;
+
                 // 一覧検索SQL文の取得
-                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, false, -1);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY");
                 selectSql.AppendLine("machine_no ");
@@ -1051,30 +1070,24 @@ namespace BusinessLogic_MC0001
 
                 // 一覧検索実行
                 IList<Dao.excelPortManagementStandardResult> results = db.GetListByDataClass<Dao.excelPortManagementStandardResult>(selectSql.ToString(), whereParam);
-                if (results == null || results.Count == 0)
+                if (results == null)
                 {
                     // 「ダウンロード処理に失敗しました。」
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                     return ComConsts.RETURN_RESULT.NG;
                 }
 
-                // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-                List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortManagementStandardResult>(ref results, typeLst, this.db, this.LanguageId);
-
                 // Dicitionalyに変換
                 dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortManagementStandardResult>(results);
 
             }
-            if (dataList == null || dataList.Count == 0)
-            {
-                this.Status = CommonProcReturn.ProcStatus.Warning;
-                // 「該当データがありません。」
-                resultMsg = GetResMessage(ComRes.ID.ID941060001);
-                return ComConsts.RETURN_RESULT.NG;
-            }
+            //if (dataList == null || dataList.Count == 0)
+            //{
+            //    this.Status = CommonProcReturn.ProcStatus.Warning;
+            //    // 「該当データがありません。」
+            //    resultMsg = GetResMessage(ComRes.ID.ID941060001);
+            //    return ComConsts.RETURN_RESULT.NG;
+            //}
 
             // 出力最大データ数チェック
             if (!excelPort.CheckDownloadMaxCnt(dataList.Count))
@@ -1086,7 +1099,7 @@ namespace BusinessLogic_MC0001
             }
 
             // 個別シート出力処理
-            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg))
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg, ref resultMsg))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
@@ -1164,21 +1177,14 @@ namespace BusinessLogic_MC0001
                 // エラー情報リスト
                 List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
 
-                // 機器別管理基準登録チェック処理
-                if (!checkExcelPortManagementStandardRegist(ref resultList, ref errorInfoList))
+                // 機器別管理基準登録処理(チェック処理含む)
+                if (!executeExcelPortManagementStandardRegist(resultList, ref errorInfoList))
                 {
                     if (errorInfoList.Count > 0)
                     {
                         // エラー情報シートへ設定
                         excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
                     }
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
-
-                // 機器別管理基準登録処理
-                if (!executeExcelPortManagementStandardRegist(resultList))
-                {
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     return ComConsts.RETURN_RESULT.NG;
                 }
@@ -1192,6 +1198,10 @@ namespace BusinessLogic_MC0001
         #region privateメソッド
         private bool searchList()
         {
+            // 非表示項目
+            // 変更管理ボタンの表示制御用フラグ
+            setHistoryManagementFlg(TargetCtrlId.HiddenInfo);
+
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
 
@@ -1205,12 +1215,23 @@ namespace BusinessLogic_MC0001
             {
                 return false;
             }
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment });
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Location, GroupId.Job, GroupId.MachineLevel, GroupId.Importance, GroupId.Conservation, GroupId.Manufacturer, GroupId.UseSegment, GroupId.ApplicableLaws
+            };
+            //listPf.GetTranslation(structuregroupList);
+            //listPf.GetTranslationLayer(GroupId.Job, (int)Const.MsStructure.StructureLayerNo.Job.Job);
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            //listPf.GetInsertLayerOnly(GroupId.Job, (int)TMQConst.MsStructure.StructureLayerNo.Job.Job);
+            //listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
+            listPf.RegistTempTable(); // 登録
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
-            // SQL、WHERE句、WITH句より件数取得SQLを作成
-            string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
             // 総件数を取得
-            int cnt = db.GetCount(executeSql, whereParam);
+            int cnt = db.GetCount(TMQUtil.GetCountSql(new ComDao.McMachineEntity().TableName, whereParam), whereParam);
             // 総件数のチェック
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
@@ -1219,34 +1240,27 @@ namespace BusinessLogic_MC0001
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");
             selectSql.AppendLine("machine_no ");
             selectSql.AppendLine(",machine_name ");
+            //log("SQL実行開始", sw);
             // 一覧検索実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }
 
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId);
-
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
+            if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
 
-            // 非表示項目
-            // 変更管理ボタンの表示制御用フラグ
-            setHistoryManagementFlg(TargetCtrlId.HiddenInfo);
             return true;
         }
 
@@ -1336,6 +1350,10 @@ namespace BusinessLogic_MC0001
                     {
                         targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.Detail00);
                     }
+                    else if (this.CtrlId == "SearchDispCount")
+                    {
+                        targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.Detail00);
+                    }
                 }
             }
 
@@ -1379,6 +1397,10 @@ namespace BusinessLogic_MC0001
                         targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.EditDetail10);
                     }
                     else if (this.CtrlId == "ReSearch")
+                    {
+                        targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.Detail00);
+                    }
+                    else if (this.CtrlId == "SearchDispCount")
                     {
                         targetDictionary = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, TargetCtrlId.Detail00);
                     }
@@ -1739,8 +1761,8 @@ namespace BusinessLogic_MC0001
             Dao.searchResult result = getRegistInfo<Dao.searchResult>(grpNoList, now);
             results.Add(result);
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.searchResult>(ref results, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Location, TMQUtil.StructureLayerInfo.StructureType.Job });
-            registMachineInfo.LocationStructureId = result.LocationStructureId;
-            registMachineInfo.JobStructureId = result.JobStructureId;
+            // 職種と地区の値を登録するデータクラスに設定
+            setLayerInfo(ref registMachineInfo, result);
             registMachineInfo.ConservationStructureId = result.InspectionSiteConservationStructureId;
 
             // 機器情報
@@ -1796,7 +1818,7 @@ namespace BusinessLogic_MC0001
                     return false;
                 }
                 // 構成
-                if (!insertParent(machineResult.id, now))
+                if (!insertParent(machineResult.id, now , registMachineInfo.EquipmentLevelStructureId))
                 {
                     return false;
                 }
@@ -1829,6 +1851,26 @@ namespace BusinessLogic_MC0001
 
             return true;
 
+            // 画面のツリーの階層情報を登録用データクラスにセット
+            void setLayerInfo(ref ComDao.McMachineEntity target, Dao.searchResult source)
+            {
+                // 場所階層
+                target.LocationStructureId = source.LocationStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.LocationDistrictStructureId = ComUtil.ConvertStringToInt(source.DistrictName);
+                target.LocationFactoryStructureId = ComUtil.ConvertStringToInt(source.FactoryName);
+                target.LocationPlantStructureId = ComUtil.ConvertStringToInt(source.PlantName);
+                target.LocationSeriesStructureId = ComUtil.ConvertStringToInt(source.SeriesName);
+                target.LocationStrokeStructureId = ComUtil.ConvertStringToInt(source.StrokeName);
+                target.LocationFacilityStructureId = ComUtil.ConvertStringToInt(source.FacilityName);
+                // 職種機種階層
+                target.JobStructureId = source.JobStructureId;
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.JobKindStructureId = ComUtil.ConvertStringToInt(source.JobName);
+                target.JobLargeClassficationStructureId = ComUtil.ConvertStringToInt(source.LargeClassficationName);
+                target.JobMiddleClassficationStructureId = ComUtil.ConvertStringToInt(source.MiddleClassficationName);
+                target.JobSmallClassficationStructureId = ComUtil.ConvertStringToInt(source.SmallClassficationName);
+            }
         }
 
         /// <summary>
@@ -2732,8 +2774,13 @@ namespace BusinessLogic_MC0001
             }
             else
             {
+                if(epValue == null || epValue.Length == 0)
+                {
+                    return true;
+                }
                 applicableItems = epValue;
             }
+
             string[] appItem = applicableItems.Split('|');
             foreach (string val in appItem)
             {
@@ -2763,7 +2810,7 @@ namespace BusinessLogic_MC0001
         /// <param name="machineId">機番ID</param>
         /// <param name="dt">登録日時</param>
         /// <returns>正常終了:True 異常終了:False</returns>
-        private bool insertParent(long machineId, DateTime dt)
+        private bool insertParent(long machineId, DateTime dt, int? levelId)
         {
             // 親子構成
             ComDao.McMachineParentInfoEntity registParentInfo = new ComDao.McMachineParentInfoEntity();
@@ -2778,16 +2825,30 @@ namespace BusinessLogic_MC0001
             }
 
             // 機器レベルがループなら登録とする
-            // ループ構成
-            ComDao.McLoopInfoEntity registLoopInfo = new ComDao.McLoopInfoEntity();
-            registLoopInfo.MachineId = machineId;
-            registLoopInfo.InsertDatetime = dt;
-            registLoopInfo.UpdateDatetime = dt;
-            registLoopInfo.InsertUserId = int.Parse(this.UserId);
-            registLoopInfo.UpdateUserId = int.Parse(this.UserId);
-            if (!registInsertDb<ComDao.McLoopInfoEntity>(registLoopInfo, SqlName.InsertLoopInfo).returnFlag)
+            // 一覧検索SQL文の取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetMachineLevel, out string sql);
+            dynamic whereParam = null; // WHERE句パラメータ
+            whereParam = new { MachineLevel = levelId, LanguageId = this.LanguageId};
+            // 機器レベルの拡張項目取得
+            IList<Dao.ExtensionVal> results = db.GetListByDataClass<Dao.ExtensionVal>(sql, whereParam);
+            if (results == null || results.Count == 0)
             {
                 return false;
+            }
+            // ループ品なら登録
+            if (results[0].ExtensionData == "4")
+            {
+                // ループ構成
+                ComDao.McLoopInfoEntity registLoopInfo = new ComDao.McLoopInfoEntity();
+                registLoopInfo.MachineId = machineId;
+                registLoopInfo.InsertDatetime = dt;
+                registLoopInfo.UpdateDatetime = dt;
+                registLoopInfo.InsertUserId = int.Parse(this.UserId);
+                registLoopInfo.UpdateUserId = int.Parse(this.UserId);
+                if (!registInsertDb<ComDao.McLoopInfoEntity>(registLoopInfo, SqlName.InsertLoopInfo).returnFlag)
+                {
+                    return false;
+                }
             }
             //// 付属品構成
             //ComDao.McAccessoryInfoEntity registAcceInfo = new ComDao.McAccessoryInfoEntity();
@@ -2874,41 +2935,64 @@ namespace BusinessLogic_MC0001
                 if (resultList[i].ProcessId != null)
                 {
                     // 場所階層セット
+                    resultList[i].LocationStructureId = (int)resultList[i].DistrictId;
+                    resultList[i].LocationDistrictStructureId = (int)resultList[i].DistrictId;
                     resultList[i].LocationStructureId = (int)resultList[i].FactoryId;
+                    resultList[i].LocationFactoryStructureId = (int)resultList[i].FactoryId;
                     if (resultList[i].PlantId != null)
                     {
                         resultList[i].LocationStructureId = (int)resultList[i].PlantId;
+                        resultList[i].LocationPlantStructureId = (int)resultList[i].PlantId;
                     }
                     if (resultList[i].SeriesId != null)
                     {
                         resultList[i].LocationStructureId = (int)resultList[i].SeriesId;
+                        resultList[i].LocationSeriesStructureId = (int)resultList[i].SeriesId;
                     }
                     if (resultList[i].StrokeId != null)
                     {
                         resultList[i].LocationStructureId = (int)resultList[i].StrokeId;
+                        resultList[i].LocationStrokeStructureId = (int)resultList[i].StrokeId;
                     }
                     if (resultList[i].FacilityId != null)
                     {
                         resultList[i].LocationStructureId = (int)resultList[i].FacilityId;
+                        resultList[i].LocationFacilityStructureId = (int)resultList[i].FacilityId;
                     }
 
                     // 職種階層セット
                     resultList[i].JobStructureId = (int)resultList[i].JobId;
+                    resultList[i].JobKindStructureId = (int)resultList[i].JobId;
                     if (resultList[i].LargeClassficationId != null)
                     {
                         resultList[i].JobStructureId = (int)resultList[i].LargeClassficationId;
+                        resultList[i].JobLargeClassficationStructureId = (int)resultList[i].LargeClassficationId;
                     }
                     if (resultList[i].MiddleClassficationId != null)
                     {
                         resultList[i].JobStructureId = (int)resultList[i].MiddleClassficationId;
+                        resultList[i].JobMiddleClassficationStructureId = (int)resultList[i].MiddleClassficationId;
                     }
                     if (resultList[i].SmallClassficationId != null)
                     {
                         resultList[i].JobStructureId = (int)resultList[i].SmallClassficationId;
+                        resultList[i].JobSmallClassficationStructureId = (int)resultList[i].SmallClassficationId;
                     }
 
                     // 保全方式
                     resultList[i].ConservationStructureId = resultList[i].InspectionSiteConservationStructureId;
+
+                    // 循環対象
+                    if(resultList[i].CirculationTargetFlg == null)
+                    {
+                        resultList[i].CirculationTargetFlg = 0;
+                    }
+
+                    // 点検種別毎管理
+                    if (resultList[i].MaintainanceKindManage == null)
+                    {
+                        resultList[i].MaintainanceKindManage = 0;
+                    }
 
                     // 更新
                     if (resultList[i].ProcessId == 2)
@@ -2917,7 +3001,7 @@ namespace BusinessLogic_MC0001
                         if (!checkEpEquipmentLevel(resultList[i]))
                         {
                             // 構成機器が登録されている機器の為、機器レベルを変更できません。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.EquipmentLevelColumnNo, GetResMessage("111070003"), GetResMessage("141100001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortMachineListInfo.EquipmentLevelColumnNo, GetResMessage("111070003"), GetResMessage("141100001"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
                             errFlg = true;
                         }
 
@@ -2929,15 +3013,14 @@ namespace BusinessLogic_MC0001
                         if (!checkEpLongPlanExsits(resultList[i]))
                         {
                             // 長期計画で使用される機器の為、削除できません。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141170001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141170001"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
                             errFlg = true;
                         }
-
                         // 保全活動存在チェック
-                        if (!checkEpMaSummaryExsits(resultList[i]))
+                        else if (!checkEpMaSummaryExsits(resultList[i]))
                         {
                             // 保全活動で使用される機器の為、削除できません。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141300003"), TMQUtil.ComReport.LongitudinalDirection));
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141300003"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
                             errFlg = true;
                         }
 
@@ -2945,7 +3028,7 @@ namespace BusinessLogic_MC0001
                         if (!checkComposition((long)resultList[i].MachineId, true))
                         {
                             // 構成機器が登録されている機器の為、削除できません。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortMachineListInfo.StartRowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141070001"), TMQUtil.ComReport.LongitudinalDirection));
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortMachineListInfo.ProccesColumnNo, null, GetResMessage("141070001"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
                             errFlg = true;
                         }
                     }
@@ -3002,7 +3085,7 @@ namespace BusinessLogic_MC0001
                             return false;
                         }
                         // 構成
-                        if (!insertParent(machineResult.id, now))
+                        if (!insertParent(machineResult.id, now, resultList[i].EquipmentLevelStructureId))
                         {
                             return false;
                         }

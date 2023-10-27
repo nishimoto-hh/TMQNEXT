@@ -141,14 +141,4 @@ max_update_date_fixed AS --工場・職種ごとの最大の更新日時(確定�
         parts.factory_id,
         parts.job_structure_id,
         fixed.target_month
-), structure_factory AS ( 
-    -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
-    SELECT
-        structure_id
-        , location_structure_id AS factory_id 
-    FROM
-        v_structure_item 
-    WHERE
-        structure_group_id IN (1000,1010) 
-        AND language_id = @LanguageId
-) 
+)

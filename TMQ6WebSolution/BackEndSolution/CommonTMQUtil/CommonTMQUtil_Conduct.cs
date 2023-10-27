@@ -1296,7 +1296,7 @@ namespace CommonTMQUtil
                 // 以下①、②を判定
                 // ①ログインユーザーがシステム管理者かどうか
                 // ②変更管理データに紐付く場所階層IDの拡張項目4(承認ユーザーID)がログインユーザかどうか
-                if (!isSystemAdministrator() || !isCertifiedFactory(condition))
+                if (!isSystemAdministrator() && !isCertifiedFactory(condition))
                 {
                     // 選択された変更管理を(承認・否認)する権限がありません。
                     errMsg = new string[] { ComRes.ID.ID141140003, ComRes.ID.ID111290002, isApproval ? ComRes.ID.ID111120228 : ComRes.ID.ID111270036 };
@@ -1514,6 +1514,22 @@ namespace CommonTMQUtil
                 var factoryList = locationList.Where(x => x.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.Location.Factory && !string.IsNullOrEmpty(x.ExData)).ToList();
 
                 return factoryList;
+            }
+
+            /// <summary>
+            /// 変更管理対象の工場IDを取得
+            /// </summary>
+            /// <returns>変更管理対象の工場IDのリスト</returns>
+            public List<int> GetHistoryManagementFactoryIdList()
+            {
+                // 変更管理対象の工場リスト
+                var historyManagementFactoryList = GetApprovalUserList();
+                if (historyManagementFactoryList == null || historyManagementFactoryList.Count == 0)
+                {
+                    return new List<int>();
+                }
+                var factoryIdList = historyManagementFactoryList.Select(x => x.StructureId).Distinct().ToList();
+                return factoryIdList;
             }
 
             /// <summary>
@@ -1739,6 +1755,51 @@ namespace CommonTMQUtil
             public long? getHistoryManagementIdByKeyId(long keyId)
             {
                 return SqlExecuteClass.SelectEntity<long?>(Sql.GetHistoryManagementIdByKeyId, Sql.SubDir, new { KeyId = keyId, ApplicationConductId = this.ApplicationConductId}, this.Db);
+            }
+
+            /// <summary>
+            /// トップ画面から遷移した場合、「自身の申請のみを表示」のチェック状態を遷移元リンクにしたがう
+            /// </summary>
+            /// <param name="searchConditionDictionary">ref 画面の検索条件</param>
+            /// <param name="isFromTop">out トップ画面フラグ トップ画面から遷移していない場合はFalse</param>
+            /// <param name="isDispOnlyMySubject">out チェック状態 トップ画面から遷移した場合、この値を使用する 申請件数からならTrue、承認件数からならFalse</param>
+            public static void IsDispOnlyMySubjectFromTop(ref List<Dictionary<string, object>> searchConditionDictionary, out bool isFromTop, out bool isDispOnlyMySubject)
+            {
+                // グローバルリストのキー、1なら申請中件数、2なら承認待ち件数
+                const string CM00001_GlobalKeyHistory = "CM00001_HistoryParam";
+                isFromTop = false;
+                isDispOnlyMySubject = false;
+
+                var targetInfo = searchConditionDictionary.Where(x => x.ContainsKey(CM00001_GlobalKeyHistory));
+                if (!targetInfo.Any())
+                {
+                    // 画面の検索条件にトップ画面から遷移時にセットされるキーが無い場合、終了
+                    return;
+                }
+
+                // 以下、トップ画面から遷移した場合の処理
+                isFromTop = true;
+                var targetDic = targetInfo.First();
+                // 値を取得
+                string paramValue = targetDic[CM00001_GlobalKeyHistory].ToString();
+                switch (paramValue)
+                {
+                    case "1":
+                        // 申請件数より遷移の場合、チェックして検索
+                        isDispOnlyMySubject = true;
+                        break;
+                    case "2":
+                        // 承認件数より遷移の場合、チェックしないで検索
+                        isDispOnlyMySubject = false;
+                        break;
+                    default:
+                        // それ以外の場合、到達不能
+                        // トップ画面から遷移していないこととする
+                        isFromTop = false;
+                        break;
+                }
+                // グローバルリストから削除
+                searchConditionDictionary.Remove(targetDic);
             }
         }
     }

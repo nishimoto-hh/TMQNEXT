@@ -540,6 +540,14 @@ namespace BusinessLogic_PT0005
                     result.AccountCd = initAccoutInfo.AccountCd;
                     result.AccountOldNewDivision = initAccoutInfo.AccountOldNewDivision;
                 }
+
+                // 入庫する予備品データを取得
+                ComDao.PtPartsEntity partsInfo = new ComDao.PtPartsEntity().GetEntity(result.PartsId, this.db);
+                // 取得した予備品の棚番がNULLの場合は検索結果に「-1」を設定する
+                if (partsInfo.LocationRackStructureId == null)
+                {
+                    result.PartsLocationId = -1;
+                }
             }
             // 編集の場合
             else
@@ -965,7 +973,7 @@ namespace BusinessLogic_PT0005
                         if (!string.IsNullOrEmpty(result.PartsLocationDetailNo))
                         {
                             var enc = Encoding.GetEncoding("Shift_JIS");
-                            if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length)
+                            if (enc.GetByteCount(result.PartsLocationDetailNo) != result.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(result.PartsLocationDetailNo))
                             {
                                 // 「半角英数字で入力してください。」
                                 errMsg = GetResMessage(new string[] { ComRes.ID.ID141260002 });
@@ -985,8 +993,8 @@ namespace BusinessLogic_PT0005
                         // 入庫数の上下限チェック
                         if (storageQuantity <= 0)
                         {
-                            // 「入庫数は0より大きい数値で入力してください。」
-                            errMsg = GetResMessage(new string[] { ComRes.ID.ID941260012, ComRes.ID.ID111220007, "0" });
+                            // 「入庫数は0以下で登録できません。」
+                            errMsg = GetResMessage(new string[] { ComRes.ID.ID141060007, ComRes.ID.ID111220007 });
                             val = info.getValName("storage_quantity");
                             errorInfo.setError(errMsg, val);            // エラー情報をセット
                             errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
@@ -1007,8 +1015,8 @@ namespace BusinessLogic_PT0005
                         // 入庫単価の上下限チェック
                         if (unitPrice <= 0)
                         {
-                            // 「入庫単価は0より大きい数値で入力してください。」
-                            errMsg = GetResMessage(new string[] { ComRes.ID.ID941260012, ComRes.ID.ID111220008, "0" });
+                            // 「入庫単価は0以下で登録できません。」
+                            errMsg = GetResMessage(new string[] { ComRes.ID.ID141060007, ComRes.ID.ID111220008 });
                             val = info.getValName("unit_price");
                             errorInfo.setError(errMsg, val);            // エラー情報をセット
                             errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加

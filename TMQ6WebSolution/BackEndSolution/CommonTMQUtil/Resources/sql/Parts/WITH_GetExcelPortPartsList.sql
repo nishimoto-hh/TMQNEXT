@@ -1,10 +1,10 @@
-WITH structure_factory AS(
-    SELECT
-        structure_id,
-        location_structure_id AS factory_id
-    FROM
-        v_structure_item_all
-    WHERE
-        structure_group_id IN(1000, 1150, 1720, 1730, 1740, 1970)
-    AND language_id = @LanguageId
-)
+--WITH structure_factory AS(
+--    SELECT
+--        structure_id,
+--        location_structure_id AS factory_id
+--    FROM
+--        v_structure_item_all
+--    WHERE
+--        structure_group_id IN(1000, 1150, 1720, 1730, 1740, 1970)
+--    AND language_id = @LanguageId
+--)

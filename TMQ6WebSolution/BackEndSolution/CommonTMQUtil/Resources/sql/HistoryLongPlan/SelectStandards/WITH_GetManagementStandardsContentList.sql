@@ -270,7 +270,7 @@ AND EXISTS(
         @ManufacturerStructureId*/
         /*@ManufacturerType
         -- メーカー型式
-            AND eq.manufacturer_type LIKE '%'+ ManufacturerType+'%'
+            AND eq.manufacturer_type LIKE '%'+ @ManufacturerType+'%'
         @ManufacturerType*/
         /*@ModelNo
         -- 型式コード

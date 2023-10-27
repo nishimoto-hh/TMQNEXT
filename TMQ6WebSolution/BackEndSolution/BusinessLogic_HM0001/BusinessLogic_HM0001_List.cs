@@ -10,13 +10,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_HM0001
 {
@@ -37,8 +39,9 @@ namespace BusinessLogic_HM0001
         /// 一覧検索処理
         /// </summary>
         /// <param name="isInit">初期表示の場合はTrue</param>
+        /// <param name="isReSearch">一括承認/否認後の再検索の場合はTrue</param>
         /// <returns>エラーの場合False</returns>
-        private bool searchList(bool isInit)
+        private bool searchList(bool isInit, bool isReSearch = false)
         {
             // 初期検索時は「自分の件名のみ表示」をチェック状態にする
             if (!getSearchCondition(isInit, out int dispOnlyMySubject))
@@ -68,6 +71,9 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
+            // 翻訳の一時テーブルを作成
+            createTranslationTempTbl();
+
             // 検索条件を設定
             whereParam.LanguageId = this.LanguageId; // 言語ID
             whereParam.UserId = this.UserId;         // ログインユーザーID
@@ -76,17 +82,27 @@ namespace BusinessLogic_HM0001
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
             // 総件数を取得
-            int cnt = db.GetCount(executeSql, whereParam);
-
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetCountHistoryMachineList, out string cntSql, listUnComment);
+            cntSql += whereParam.CountSqlWhere;
+            int cnt = db.GetCount(cntSql, whereParam);
             // 総件数のチェック
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
+                // 一括承認/否認後の再検索の場合はデータが0件でもエラーとしない
+                if (isReSearch)
+                {
+                    return true;
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage(CommonResources.ID.ID941060001);
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
                 return false;
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
 
             // 機器番号の昇順
@@ -96,17 +112,21 @@ namespace BusinessLogic_HM0001
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                // 一括承認/否認後の再検索の場合はデータが0件でもエラーとしない
+                if (isReSearch)
+                {
+                    return true;
+                }
+
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage(CommonResources.ID.ID941060001);
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }
 
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定(変更管理データ・トランザクションデータ どちらも設定する)
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId);
-
-            // 変更があった項目を取得
-            TMQUtil.HistoryManagement.setValueChangedItem<Dao.searchResult>(results);
-
             // 検索結果の設定
-            if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
+            if (!SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return false;
@@ -139,9 +159,12 @@ namespace BusinessLogic_HM0001
             // 初期検索か判定
             if (isInit)
             {
-                // 初期値を設定
-                searchCondition.DispOnlyMySubject = IsDispOnlyMySubject; // 自分の件名のみ表示
-                outDispOnlyMySubject = IsDispOnlyMySubject;
+                // トップ画面から遷移した場合、遷移元のリンクに応じた「自分の件名のみ表示」のチェック状態を使用する
+                TMQUtil.HistoryManagement.IsDispOnlyMySubjectFromTop(ref this.searchConditionDictionary, out bool isTop, out bool isDispOnlyMySubject);
+                // チェック状態を設定
+                // トップ画面からの場合、戻り値に応じて設定。そうでない場合、チェック状態を設定
+                outDispOnlyMySubject = isTop ? (isDispOnlyMySubject ? IsDispOnlyMySubject : 0) : IsDispOnlyMySubject;
+                searchCondition.DispOnlyMySubject = outDispOnlyMySubject;
             }
             else
             {
@@ -157,6 +180,7 @@ namespace BusinessLogic_HM0001
 
                 // 取得した値を検索条件に設定
                 outDispOnlyMySubject = dispOnlyMySubject; // 自分の件名のみ表示
+                searchCondition.DispOnlyMySubject = dispOnlyMySubject;
             }
 
             // 承認系ボタン表示制御
@@ -173,6 +197,7 @@ namespace BusinessLogic_HM0001
 
         }
         #endregion
+
         #region 登録
         /// <summary>
         /// 一括承認・一括否認
@@ -243,7 +268,7 @@ namespace BusinessLogic_HM0001
             }
 
             // 一覧の再検索
-            searchList(false);
+            searchList(false, true);
 
             return ComConsts.RETURN_RESULT.OK;
         }

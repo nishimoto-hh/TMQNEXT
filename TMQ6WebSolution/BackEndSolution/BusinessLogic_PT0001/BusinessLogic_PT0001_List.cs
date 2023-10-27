@@ -10,14 +10,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_PT0001.BusinessLogicDataClass_PT0001;
 using DbTransaction = System.Data.IDbTransaction;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_PT0001
 {
@@ -41,7 +43,7 @@ namespace BusinessLogic_PT0001
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetPartsList, out string withSql);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
             {
                 return false;
             }
@@ -52,8 +54,30 @@ namespace BusinessLogic_PT0001
             // SQL、WHERE句、WITH句より件数取得SQLを作成
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+
+            // 添付情報作成
+            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.SpareImage, FunctionTypeId.SpareDocument });
+
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Location,
+                GroupId.Manufacturer,
+                GroupId.Vender,
+                GroupId.Unit,
+                GroupId.Currency,
+                GroupId.Job,
+                GroupId.SpareLocation
+            };
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
+
             // 総件数を取得
-            int cnt = db.GetCount(executeSql.ToString(), whereParam);
+            // 件数を取得するSQLを取得
+            int cnt = db.GetCount(executeSql, whereParam);
             // 総件数のチェック
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
@@ -62,7 +86,7 @@ namespace BusinessLogic_PT0001
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");    // 並び順を指定
             selectSql.AppendLine("parts_no");    // 予備品No. 昇順
@@ -72,20 +96,18 @@ namespace BusinessLogic_PT0001
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }
 
             // 丸め処理・数量と単位を結合
             results.ToList().ForEach(x => x.JoinStrAndRound());
 
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Job, StructureType.SpareLocation }, this.db, this.LanguageId); // 職種、予備品場所階層
-
             // 棚番と枝番を結合
             JoinLocationAndDetailNo(results);
 
             // 検索結果の設定
-            if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
+            if (!SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
             {
                 return false;
             }

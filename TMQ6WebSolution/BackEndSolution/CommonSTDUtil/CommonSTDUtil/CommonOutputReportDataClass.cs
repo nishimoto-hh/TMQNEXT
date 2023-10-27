@@ -174,6 +174,9 @@ namespace CommonSTDUtil.CommonSTDUtil
             /// <summary>Gets or sets 対象sqlパラメータ</summary>
             /// <value>対象sqlパラメータ</value>
             public string TargetSqlParams { get; set; }
+            /// <summary>Gets or sets 使用構成グループid</summary>
+            /// <value>使用構成グループid</value>
+            public string UseStructureGroupId { get; set; }
 
             /// <summary>
             /// プライマリーキー

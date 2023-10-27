@@ -30,8 +30,6 @@ WITH base AS(
                 man_com.machine_id = machine.machine_id         -- 機番ID
             )
             
---    WHERE man_con.long_plan_id = @LongPlanId                        -- 長計件名ID
---    WHERE man_con.long_plan_id in (1,2,135)                       -- 長計件名ID
 /*@UnComp
     AND EXISTS(
             SELECT
@@ -154,6 +152,16 @@ schedule AS(
                         main.management_standards_content_id = sub.management_standards_content_id
                     AND main.start_date < sub.start_date        -- 開始日
                 )
+            AND EXISTS(
+                    SELECT
+                        *
+                    FROM
+                        mc_management_standards_content AS con
+                    WHERE
+                        main.management_standards_content_id = con.management_standards_content_id
+                    -- 一時テーブルの長計件名IDと結合
+                    AND EXISTS (SELECT * FROM #temp temp WHERE con.long_plan_id = temp.Key1)
+                )
         ) AS schedule                                           -- スケジュール
         -- スケジュール詳細から保全スケジュールIDごとに最小のスケジュール日を取得
         LEFT OUTER JOIN
@@ -180,10 +188,6 @@ schedule AS(
                         WHERE
                             -- 保全活動件名ID
                             schedule_detail.summary_id = summary.summary_id
----------------------------------------------------------------------
---                        AND summary.long_plan_id = @LongPlanId
---                        AND summary.long_plan_id in (1,2,135)
----------------------------------------------------------------------
                     )
                 GROUP BY
                     schedule_detail.maintainance_schedule_id    -- 保全スケジュールID
@@ -220,9 +224,68 @@ SELECT
 --    vwki.translation_text AS work_item_name,                    -- 作業項目名称
 --    viss.translation_text AS inspection_site_name,              -- 保全部位
 --    vcon.translation_text AS inspection_content_name,           -- 保全項目
-    [dbo].[get_v_structure_item](lp.work_item_structure_id, base.factoryId, base.languageId) AS work_item_name,                         -- 作業項目名称
-    [dbo].[get_v_structure_item](man_com.inspection_site_structure_id, base.factoryId, base.languageId) AS inspection_site_name,        -- 保全部位
-    [dbo].[get_v_structure_item](man_con.inspection_content_structure_id, base.factoryId, base.languageId) AS inspection_content_name,  -- 保全項目
+
+    -- [dbo].[get_v_structure_item](lp.work_item_structure_id, base.factoryId, base.languageId) AS work_item_name,                         -- 作業項目名称
+    --作業項目名称(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = base.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = lp.work_item_structure_id
+                AND st_f.factory_id IN(0, base.factoryId)
+            )
+        AND tra.structure_id = lp.work_item_structure_id
+    ) AS work_item_name,
+    --[dbo].[get_v_structure_item](man_com.inspection_site_structure_id, base.factoryId, base.languageId) AS inspection_site_name,        -- 保全部位
+    --保全部位(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = base.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = man_com.inspection_site_structure_id
+                AND st_f.factory_id IN(0, base.factoryId)
+            )
+        AND tra.structure_id = man_com.inspection_site_structure_id
+    ) AS inspection_site_name,
+    -- [dbo].[get_v_structure_item](man_con.inspection_content_structure_id, base.factoryId, base.languageId) AS inspection_content_name,  -- 保全項目
+    --保全項目(翻訳)
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = base.languageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = man_con.inspection_content_structure_id
+                AND st_f.factory_id IN(0, base.factoryId)
+            )
+        AND tra.structure_id = man_con.inspection_content_structure_id
+    ) AS inspection_content_name,
+
 --    machine.machine_id,                                         -- 機番ID
     machine.machine_no,                                         -- 機器番号
     machine.machine_name,                                       -- 機器名称
@@ -256,6 +319,10 @@ SELECT
 --    machine.attachment_update_datetime
     -- 主キー退避
 --    @LongPlanId AS long_plan_id
+
+    , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
+    , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
+
 FROM
     base                                                        -- 基本テーブル
     INNER JOIN

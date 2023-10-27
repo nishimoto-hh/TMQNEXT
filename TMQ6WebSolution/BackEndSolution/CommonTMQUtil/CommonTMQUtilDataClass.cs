@@ -622,6 +622,15 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 書式文字列</summary>
             /// <value>書式文字列</value>
             public string FormatText { get; set; }
+
+            /// <summary>
+            /// オブジェクトのコピー
+            /// </summary>
+            /// <returns></returns>
+            public InoutDefine Copy()
+            {
+                return (InoutDefine)MemberwiseClone();
+            }
         }
 
         /// <summary>
@@ -656,7 +665,7 @@ namespace CommonTMQUtil
             public int FunctionTypeId { get; set; }
             /// <summary>Gets or setsキーID</summary>
             /// <value>キーID</value>
-            public int KeyId { get; set; }
+            public long KeyId { get; set; }
             /// <summary>Gets or sets 添付ID</summary>
             /// <value>添付ID</value>
             public long AttachmentId { get; set; }

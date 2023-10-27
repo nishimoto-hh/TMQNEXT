@@ -472,6 +472,10 @@ function clearSearchResult(targetTblId, formNo) {
     var vertical = $(detailTbls).filter(".vertical_tbl");
     if ($(vertical).length) {
         $.each($(vertical), function (i, tbl) {
+            if ($(tbl).closest('div.Filter').length > 0) {
+                // フィルター/読込件数エリアの場合はスキップ
+                return true;
+            }
             // 設定されたﾃﾞｰﾀをｸﾘｱ
             var tds = $(tbl).find("tbody td");
             if ($(tds).length) {
@@ -1575,6 +1579,8 @@ function initAddedArticleControls(appPath, conductId, elements) {
     if (cboData != null) {
         $.each(cboData, function (id, data) {
             initComboBox(appPath, "#" + id, data[0], data[1], data[2], data[3], -1);
+            //$.each(cboData, function (idx, id) {
+            //callInitComboBox(appPath, "#" + id);
         });
     }
     $(input).remove();
@@ -1598,6 +1604,8 @@ function initAddedArticleControls(appPath, conductId, elements) {
     if (mltSelData != null) {
         $.each(mltSelData, function (id, data) {
             initMultiSelectBox(appPath, "#" + id, data[0], data[1], data[2], data[3]);
+            //$.each(mltSelData, function (idx, id) {
+            //callInitMultiSelectBox(appPath, "#" + id);
         });
     }
     $(input).remove();
@@ -1743,4 +1751,15 @@ function setFocusBackOrClose() {
             }
         }
     }
+}
+
+/**
+ * 数値をカンマ区切りで変換
+ * @param {any} num 数値
+ */
+function setNumberToComma(num) {
+    var result = num.replaceAll(',', ''); // カンマを除去
+    // 正規表現でフォーマット
+    result = result.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    return result;
 }

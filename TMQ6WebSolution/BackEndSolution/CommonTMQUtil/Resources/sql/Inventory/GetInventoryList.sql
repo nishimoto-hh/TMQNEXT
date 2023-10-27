@@ -46,7 +46,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = target.old_new_structure_id 
                     AND st_f.factory_id IN (0, target.factory_id)
@@ -64,7 +64,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = target.unit_structure_id 
                     AND st_f.factory_id IN (0, target.factory_id)
@@ -82,7 +82,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = target.department_structure_id 
                     AND st_f.factory_id IN (0, target.factory_id)
@@ -100,7 +100,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = target.account_structure_id 
                     AND st_f.factory_id IN (0, target.factory_id)
@@ -118,7 +118,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id) 
                 FROM
-                    structure_factory AS st_f 
+                    #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = target.manufacturer_structure_id 
                     AND st_f.factory_id IN (0, target.factory_id)

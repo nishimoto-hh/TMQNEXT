@@ -8,10 +8,11 @@ SELECT DISTINCT
     ,coalesce(item.factory_id, 0) AS factory_id
     ,item_ex5.extension_data AS parent_id
     ,item.translation_text AS name
-    ,item_ex1.extension_data AS exparam1
+    ,ex_item_1.structure_id AS exparam1
+    ,ex_item_1.translation_text AS exparam2
     ,coalesce(order_common.display_order, order_factory.display_order, item.structure_id) AS display_order
 
-FROM v_structure_item_all AS item
+FROM v_structure_item AS item
 
 -- 工場共通表示順
 LEFT OUTER JOIN ms_structure_order AS order_common
@@ -23,26 +24,29 @@ LEFT OUTER JOIN ms_structure_order AS order_factory
 ON  item.structure_id = order_factory.structure_id
 AND item.factory_id = order_factory.factory_id
 
--- 拡張項目
+-- 拡張項目1
 LEFT OUTER JOIN ms_item_extension AS item_ex1 
 ON item.structure_item_id=item_ex1.item_id 
 AND item_ex1.sequence_no=1
+-- 拡張項目1に設定されている予算性格区分のアイテム
+LEFT OUTER JOIN v_structure_item AS ex_item_1 
+ON item_ex1.extension_data = CAST(ex_item_1.structure_item_id AS varchar) 
+AND item.language_id = ex_item_1.language_id
 
+-- 拡張項目5
 LEFT OUTER JOIN ms_item_extension AS item_ex5
 ON item.structure_item_id=item_ex5.item_id 
 AND item_ex5.sequence_no=5
 
 WHERE 
-    item.structure_group_id = /*param1*/1000
+    item.structure_group_id = /*param1*/1850
 AND item.language_id = /*languageId*/'ja'
 
 /*IF param1 != 1000 && param1 != 1010 && factoryIdList != null && factoryIdList.Count > 0*/
     AND item.location_structure_id in /*factoryIdList*/(0,5,6)
 /*END*/
 
-/*IF param2 != null && param2 != '' */
-    AND item.structure_layer_no = /*param2*/0
-/*END*/
+
 
  -- 工場別未使用標準アイテムに工場が含まれていないものを表示
 AND

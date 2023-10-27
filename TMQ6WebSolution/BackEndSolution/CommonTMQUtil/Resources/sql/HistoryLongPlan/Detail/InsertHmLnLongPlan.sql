@@ -6,7 +6,17 @@ INTO hm_ln_long_plan(
     , [execution_division]                      -- 処理区分
     , [subject]                                 -- 件名
     , [location_structure_id]                   -- 機能場所階層id
+    , [location_district_structure_id]          -- 地区id
+    , [location_factory_structure_id]           -- 工場id
+    , [location_plant_structure_id]             -- プラントid
+    , [location_series_structure_id]            -- 系列id
+    , [location_stroke_structure_id]            -- 工程id
+    , [location_facility_structure_id]          -- 設備id
     , [job_structure_id]                        -- 職種機種階層id
+    , [job_kind_structure_id]                   -- 職種id
+    , [job_large_classfication_structure_id]    -- 機種大分類id
+    , [job_middle_classfication_structure_id]   -- 機種中分類id
+    , [job_small_classfication_structure_id]    -- 機種小分類id
     , [subject_note]                            -- 件名メモ
     , [person_id]                               -- 担当者
     , [person_name]                             -- 担当者名
@@ -31,7 +41,17 @@ VALUES (
     , @ExecutionDivision                        -- 処理区分
     , @Subject                                  -- 件名
     , @LocationStructureId                      -- 機能場所階層id
+    , @LocationDistrictStructureId
+    , @LocationFactoryStructureId
+    , @LocationPlantStructureId
+    , @LocationSeriesStructureId
+    , @LocationStrokeStructureId
+    , @LocationFacilityStructureId
     , @JobStructureId                           -- 職種機種階層id
+    , @JobKindStructureId
+    , @JobLargeClassficationStructureId
+    , @JobMiddleClassficationStructureId
+    , @JobSmallClassficationStructureId
     , @SubjectNote                              -- 件名メモ
     , @PersonId                                 -- 担当者
     /*@New

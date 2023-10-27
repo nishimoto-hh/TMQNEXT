@@ -4,6 +4,12 @@ SET
     , [plan_implementation_content] = @PlanImplementationContent
     , [subject_note] = @SubjectNote
     , [location_structure_id] = @LocationStructureId
+    , [location_district_structure_id] = @DistrictId
+    , [location_factory_structure_id] = @FactoryId
+    , [location_plant_structure_id] = @PlantId
+    , [location_series_structure_id] = @SeriesId
+    , [location_stroke_structure_id] = @StrokeId
+    , [location_facility_structure_id] = @FacilityId
     , [job_structure_id] = @JobStructureId
     , [mq_class_structure_id] = @MqClassStructureId
     , [repair_cost_class_structure_id] = @RepairCostClassStructureId

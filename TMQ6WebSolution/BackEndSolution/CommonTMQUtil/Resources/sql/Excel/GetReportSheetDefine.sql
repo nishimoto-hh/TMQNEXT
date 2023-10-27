@@ -11,6 +11,7 @@ select
 	, record_count
 	, target_sql
 	, target_sql_params
+	, use_structure_group_id
 from
 	ms_output_report_sheet_define -- 出力帳票シート定義
 where

@@ -168,7 +168,8 @@ namespace BusinessLogic_PT0001
             // 階層情報の取得
             IList<Dao.editResult> registStructureInfo = new List<Dao.editResult> { registInfo };
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.editResult>(ref registStructureInfo, new List<StructureType> { StructureType.SpareLocation });
-
+            // 場所階層の値を設定
+            setLayerInfo(ref registInfo);
             var pattern = getEditType();
 
             // 排他チェック(更新のみ)
@@ -187,6 +188,17 @@ namespace BusinessLogic_PT0001
             if (!string.IsNullOrEmpty(registInfo.LocationStructureId.ToString()))
             {
                 registInfo.PartsLocationId = long.Parse(registInfo.LocationStructureId.ToString());
+                registInfo.LocationRackStructureId = registInfo.PartsLocationId;
+            }
+
+            // 発注点・発注量がNULLの場合は「0」で登録する
+            if (registInfo.LeadTimeExceptUnit == null)
+            {
+                registInfo.LeadTimeExceptUnit = 0;
+            }
+            if (registInfo.OrderQuantityExceptUnit == null)
+            {
+                registInfo.OrderQuantityExceptUnit = 0;
             }
 
             // 登録処理
@@ -211,6 +223,15 @@ namespace BusinessLogic_PT0001
             SetSearchResultsByDataClass<ComDao.PtPartsEntity>(pageInfo, new List<ComDao.PtPartsEntity> { info }, 1);
 
             return true;
+
+            // 画面のツリーの階層情報を登録用にセット
+            void setLayerInfo(ref Dao.editResult regist)
+            {
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                regist.LocationDistrictStructureId = ComUtil.ConvertStringToInt(regist.DistrictName);
+                regist.LocationFactoryStructureId = ComUtil.ConvertStringToInt(regist.FactoryName);
+                regist.LocationWarehouseStructureId = ComUtil.ConvertStringToInt(regist.WarehouseName);
+            }
         }
 
         /// <summary>
@@ -273,23 +294,14 @@ namespace BusinessLogic_PT0001
                 if (pattern == (int)EditDispType.New || pattern == (int)EditDispType.Copy || isUpdateNumChanged)
                 {
                     // 予備品Noの重複チェック
-                    if (checkPartsNo())
-                    {
-                        return true;
-                    }
+                    checkPartsNo();
                 }
 
                 // 倉庫と棚の関連チェック
-                if (checkPartsLocation())
-                {
-                    return true;
-                }
+                checkPartsLocation();
 
-                // 枝番が半角英数字か判定
-                if (checkPartsLocationDetailNo())
-                {
-                    return true;
-                }
+                // 枝番の半角英数字チェック
+                checkPartsLocationDetailNo();
 
                 // エラー情報格納クラス
                 var targetPurchaseInfo = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormEdit.ControlId.PurchaseInfo);
@@ -307,7 +319,6 @@ namespace BusinessLogic_PT0001
                     val = infoPurchase.getValName("LeadTime");
                     errortargetPurchaseInfo.setError(errMsg, val); // エラー情報をセット
                     errorInfoDictionary.Add(errortargetPurchaseInfo.Result); // エラー情報を追加
-                    return true;
                 }
 
                 // 発注量が10桁より多い場合エラー
@@ -317,7 +328,6 @@ namespace BusinessLogic_PT0001
                     val = infoPurchase.getValName("OrderQuantity");
                     errortargetPurchaseInfo.setError(errMsg, val); // エラー情報をセット
                     errorInfoDictionary.Add(errortargetPurchaseInfo.Result); // エラー情報を追加
-                    return true;
                 }
 
                 // 標準単価が10桁より多い場合エラー
@@ -327,12 +337,18 @@ namespace BusinessLogic_PT0001
                     val = infoPurchase.getValName("DefaultPrice");
                     errortargetPurchaseInfo.setError(errMsg, val); // エラー情報をセット
                     errorInfoDictionary.Add(errortargetPurchaseInfo.Result); // エラー情報を追加
+                }
+
+                // エラー情報が存在する場合はエラー
+                if (errorInfoDictionary.Count > 0)
+                {
                     return true;
                 }
 
                 return false;
 
-                bool checkPartsNo()
+                // 予備品Noの重複チェック
+                void checkPartsNo()
                 {
                     // 予備品Noの重複チェックをするSQLを取得
                     TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.GetPartsNoCount, out string outSql);
@@ -344,10 +360,12 @@ namespace BusinessLogic_PT0001
                     // 件数を取得
                     int cnt = db.GetEntityByDataClass<int>(outSql, param);
 
+                    //　エラーが無ければここで終了
                     if (cnt == 0)
                     {
-                        return false;
+                        return;
                     }
+
                     // 予備品Noに重複するものがあった場合
                     string ctrlId = ConductInfo.FormEdit.ControlId.PartsInfo;
                     // エラー情報を画面に設定するためのマッピング情報リスト
@@ -363,15 +381,15 @@ namespace BusinessLogic_PT0001
                     string errMsg = GetResMessage(new string[] { ComRes.ID.ID141120003, ComRes.ID.ID111380022 });
                     errorInfo.setError(errMsg, val); // エラー情報をセット
                     errorInfoDictionary.Add(errorInfo.Result); // エラー情報を追加
-                    return true;
                 }
 
-                bool checkPartsLocation()
+                // 倉庫と棚の関連チェック
+                void checkPartsLocation()
                 {
                     // 棚が指定されていない場合は何もしない
                     if (resultInfo.LocationStructureId == null || string.IsNullOrEmpty(resultInfo.LocationId))
                     {
-                        return false;
+                        return;
                     }
 
                     // 棚IDより倉庫IDを取得するSQLを取得
@@ -401,19 +419,16 @@ namespace BusinessLogic_PT0001
                         string errMsg = GetResMessage(new string[] { ComRes.ID.ID141380001 });
                         errorInfo.setError(errMsg, val); // エラー情報をセット
                         errorInfoDictionary.Add(errorInfo.Result); // エラー情報を追加
-                        return true;
-
                     }
-
-                    return false;
                 }
 
-                bool checkPartsLocationDetailNo()
+                // 枝番の半角英数字チェック
+                void checkPartsLocationDetailNo()
                 {
                     if (!string.IsNullOrEmpty(resultInfo.PartsLocationDetailNo))
                     {
                         var enc = Encoding.GetEncoding("Shift_JIS");
-                        if (enc.GetByteCount(resultInfo.PartsLocationDetailNo) != resultInfo.PartsLocationDetailNo.Length)
+                        if (enc.GetByteCount(resultInfo.PartsLocationDetailNo) != resultInfo.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(resultInfo.PartsLocationDetailNo))
                         {
                             string ctrlId = ConductInfo.FormEdit.ControlId.DetailNo;
                             // エラー情報を画面に設定するためのマッピング情報リスト
@@ -429,11 +444,8 @@ namespace BusinessLogic_PT0001
                             string errMsg = GetResMessage(new string[] { ComRes.ID.ID141260002 });
                             errorInfo.setError(errMsg, val); // エラー情報をセット
                             errorInfoDictionary.Add(errorInfo.Result); // エラー情報を追加
-                            return true;
                         }
                     }
-
-                    return false;
                 }
             }
         }

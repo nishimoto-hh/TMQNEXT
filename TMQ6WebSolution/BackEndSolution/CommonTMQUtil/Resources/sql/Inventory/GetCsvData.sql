@@ -65,7 +65,11 @@ WITH unit AS (
         FORMAT(pin.target_month, 'yyyy/MM') AS target_month -- 対象年月
         , FORMAT(pin.preparation_datetime, 'yyyy/MM/dd HH:mm') AS preparation_datetime -- 棚卸準備日時
         , pin.parts_location_id AS parts_location_id -- 棚ID
-        , pin.parts_location_detail_no AS parts_location_detail_no -- 棚番
+        , CASE 
+            WHEN DATALENGTH(pin.parts_location_detail_no) = 0 
+                THEN ' ' 
+            ELSE pin.parts_location_detail_no 
+            END AS parts_location_detail_no     -- 棚番
         , pp.parts_no                           -- 予備品No.
         , pp.parts_name                         -- 予備品名
         , ISNULL(pp.model_type, '') + ISNULL(pp.standard_size, '') AS model_type -- 型式(仕様)

@@ -11,11 +11,21 @@ WITH factory AS( -- 構成マスタより工場を取得
         structure_id,
         dbo.get_target_layer_id(factory_id, 0) AS districtId
     FROM
-        v_structure_item_all item
+        v_structure_item item
+    LEFT JOIN
+        ms_item_extension ex4 -- 変更履歴対象
+    ON item.structure_item_id = ex4.item_id
+    AND ex4.sequence_no = 4
+    LEFT JOIN
+        ms_item_extension ex5 -- EcelPort利用可能
+    ON item.structure_item_id = ex5.item_id
+    AND ex5.sequence_no = 5
     WHERE
         structure_group_id = 1000
     AND language_id = /*languageId*/'ja'
     AND structure_layer_no = 1
+    AND ex4.extension_data IS NULL -- 変更履歴対象外
+    AND ex5.extension_data = '1' -- ExcelPort使用権限あり
 )
 ,auth AS( -- ユーザ権限を特定するために拡張項目の値を取得
     SELECT
@@ -125,6 +135,7 @@ SELECT
     t.id,
     t.parent_id,
     t.name,
+    t.factory_id,
     coalesce(order_common.display_order, order_factory.display_order, t.structure_id) AS display_order
 FROM
     temp AS t

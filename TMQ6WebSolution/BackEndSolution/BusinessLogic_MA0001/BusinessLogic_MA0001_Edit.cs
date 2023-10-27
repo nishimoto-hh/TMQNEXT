@@ -264,6 +264,8 @@ namespace BusinessLogic_MA0001
             IList<Dao.detailSummaryInfo> results = new List<Dao.detailSummaryInfo>();
             results.Add(registSummaryInfo);
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.detailSummaryInfo>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job });
+            // 階層情報をセット
+            setLayerInfo(ref registSummaryInfo);
 
             //新規登録or更新
             bool isRegist = registSummaryInfo.SummaryId == newSummaryId;
@@ -353,7 +355,7 @@ namespace BusinessLogic_MA0001
             }
 
             //保全スケジュール詳細更新
-            if (!updateSchedule())
+            if (!updateSchedule(isRegist, registSummaryInfo.CompletionDate, summaryId, now))
             {
                 return false;
             }
@@ -365,6 +367,18 @@ namespace BusinessLogic_MA0001
             SetSearchResultsByDataClass<ComDao.MaSummaryEntity>(pageInfo, new List<ComDao.MaSummaryEntity> { info }, 1);
 
             return true;
+
+            // 場所階層の設定
+            void setLayerInfo(ref Dao.detailSummaryInfo target)
+            {
+                // 各階層のIDは名称のプロパティに文字列として格納される（ツリーの定義の関係）ため、数値に変換
+                target.DistrictId = ComUtil.ConvertStringToInt(target.DistrictName);
+                target.FactoryId = ComUtil.ConvertStringToInt(target.FactoryName);
+                target.PlantId = ComUtil.ConvertStringToInt(target.PlantName);
+                target.SeriesId = ComUtil.ConvertStringToInt(target.SeriesName);
+                target.StrokeId = ComUtil.ConvertStringToInt(target.StrokeName);
+                target.FacilityId = ComUtil.ConvertStringToInt(target.FacilityName);
+            }
 
             //依頼情報の登録
             bool registRequest()
@@ -389,67 +403,6 @@ namespace BusinessLogic_MA0001
                 {
                     return false;
                 }
-                return true;
-            }
-
-            //保全スケジュール詳細更新
-            bool updateSchedule()
-            {
-                if (isRegist || registSummaryInfo.CompletionDate == null)
-                {
-                    //完了日が設定されていない場合、更新なし
-                    return true;
-                }
-                //条件、更新値設定
-                ComDao.McMaintainanceScheduleDetailEntity detail = new();
-                detail.ScheduleDate = registSummaryInfo.CompletionDate;
-                detail.Complition = true;
-                detail.SummaryId = summaryId;
-
-                //SQL文の取得
-                string sql;
-                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetCountMaintainanceScheduleDetail, out sql))
-                {
-                    return false;
-                }
-                //更新対象の存在チェック
-                int cnt = db.GetCount(sql, detail);
-                if (cnt <= 0)
-                {
-                    //対象レコード無し
-                    return true;
-                }
-
-                // 共通の更新日時などを設定
-                bool chkUpd = int.TryParse(this.UserId, out int updatorCdNum);
-                setExecuteConditionByDataClassCommon<ComDao.McMaintainanceScheduleDetailEntity>(ref detail, now, updatorCdNum, -1);
-                //完了日の登録
-                bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.UpdateComplition, SqlName.SubDir, detail, this.db);
-                if (!result)
-                {
-                    return false;
-                }
-
-                // SQLを取得
-                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetCountTargetSchedule, out sql))
-                {
-                    return false;
-                }
-                //更新対象の存在チェック
-                cnt = db.GetCount(sql, detail);
-                if (cnt <= 0)
-                {
-                    //対象レコード無し
-                    return true;
-                }
-
-                //保全スケジュール詳細のスケジュール日の更新
-                result = TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.UpdateScheduleDate, SqlName.SubDir, detail, this.db);
-                if (!result)
-                {
-                    return false;
-                }
-
                 return true;
             }
         }
@@ -771,7 +724,7 @@ namespace BusinessLogic_MA0001
                 factoryPatternList = patternList.Where(x => x.FactoryId == 0).OrderBy(x => x.StructureId).ToList();
             }
             //採番パターン（パターンが複数取得できた場合、構成IDが最小のものを使用する）
-            string pattern = factoryPatternList[0].ExData;
+            string pattern = factoryPatternList == null || factoryPatternList.Count == 0 ? RequestNumberingPattern.Pattern1 : factoryPatternList[0].ExData;
 
             // 更新者ID、登録者IDの変換
             bool chkUpd = int.TryParse(this.UserId, out int updatorCdNum);
@@ -887,7 +840,7 @@ namespace BusinessLogic_MA0001
         private bool registInspectionData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now)
         {
             // 保全履歴登録
-            (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now);
+            (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now, isInspection(registSummaryInfo.ActivityDivision));
             if (!resultHistory.returnFlag)
             {
                 return false;
@@ -905,6 +858,8 @@ namespace BusinessLogic_MA0001
                 {
                     return false;
                 }
+                //フォロー有無がNULLの場合、Falseを設定
+                machine.FollowFlg = machine.FollowFlg ?? false;
 
                 // MaintainanceScheduleDetailIdがnullでないのは長期計画のリンクから遷移してきた場合の新規登録
                 if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New) || (registSummaryInfo.MaintainanceScheduleDetailId != null && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit)))
@@ -964,7 +919,7 @@ namespace BusinessLogic_MA0001
 
                     //保全履歴機器
                     //機器使用期間の設定
-                    int days = setUsedDaysMachine(registSummaryInfo, machine);
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
                     if (days >= 0)
                     {
                         historyMachine.UsedDaysMachine = days;
@@ -1003,7 +958,7 @@ namespace BusinessLogic_MA0001
 
                     //保全履歴機器
                     //機器使用期間の設定
-                    int days = setUsedDaysMachine(registSummaryInfo, machine);
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
                     if (days >= 0)
                     {
                         historyMachine.UsedDaysMachine = days;
@@ -1144,7 +1099,7 @@ namespace BusinessLogic_MA0001
                 if (machine.HistoryMachineId != null)
                 {
                     //機器使用期間の取得
-                    int days = setUsedDaysMachine(registSummaryInfo, machine);
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
                     if (days >= 0)
                     {
                         //保全履歴機器の設定
@@ -1190,7 +1145,7 @@ namespace BusinessLogic_MA0001
         private bool registFailureData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now)
         {
             // 保全履歴登録
-            (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now);
+            (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now, isInspection(registSummaryInfo.ActivityDivision));
             if (!resultHistory.returnFlag)
             {
                 return false;
@@ -1228,11 +1183,14 @@ namespace BusinessLogic_MA0001
             registFailureInfo.EquipmentId = registMachine.EquipmentId;
 
             //機器使用期間の設定
-            int days = setUsedDaysMachine(registSummaryInfo, registMachine);
+            int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, registMachine.MachineId);
             if (days >= 0)
             {
                 registFailureInfo.UsedDaysMachine = days;
             }
+
+            //フォロー有無がNULLの場合、Falseを設定
+            registFailureInfo.FollowFlg = registFailureInfo.FollowFlg ?? false;
 
             //実行SQLファイル名
             string sqlFile = SqlName.Regist.InsertHistoryFailure;
@@ -1255,19 +1213,86 @@ namespace BusinessLogic_MA0001
         }
 
         /// <summary>
+        /// 保全スケジュール詳細更新
+        /// </summary>
+        /// <param name="isRegist">新規登録の場合True</param>
+        /// <param name="completionDate">完了日</param>
+        /// <param name="summaryId">保全活動件名ID</param>
+        /// <param name="now">システム日時</param>
+        /// <returns>エラーの場合False</returns>
+        private bool updateSchedule(bool isRegist, DateTime? completionDate, long summaryId, DateTime now)
+        {
+            if (isRegist || completionDate == null)
+            {
+                //完了日が設定されていない場合、更新なし
+                return true;
+            }
+            //条件、更新値設定
+            ComDao.McMaintainanceScheduleDetailEntity detail = new();
+            detail.ScheduleDate = completionDate;
+            detail.Complition = true;
+            detail.SummaryId = summaryId;
+
+            //SQL文の取得
+            string sql;
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetCountMaintainanceScheduleDetail, out sql))
+            {
+                return false;
+            }
+            //更新対象の存在チェック
+            int cnt = db.GetCount(sql, detail);
+            if (cnt <= 0)
+            {
+                //対象レコード無し
+                return true;
+            }
+
+            // 共通の更新日時などを設定
+            bool chkUpd = int.TryParse(this.UserId, out int updatorCdNum);
+            setExecuteConditionByDataClassCommon<ComDao.McMaintainanceScheduleDetailEntity>(ref detail, now, updatorCdNum, -1);
+            //完了日の登録
+            bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.UpdateComplition, SqlName.SubDir, detail, this.db);
+            if (!result)
+            {
+                return false;
+            }
+
+            // SQLを取得
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetCountTargetSchedule, out sql))
+            {
+                return false;
+            }
+            //更新対象の存在チェック
+            cnt = db.GetCount(sql, detail);
+            if (cnt <= 0)
+            {
+                //対象レコード無し
+                return true;
+            }
+
+            //保全スケジュール詳細のスケジュール日の更新
+            result = TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.UpdateScheduleDate, SqlName.SubDir, detail, this.db);
+            if (!result)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        /// <summary>
         /// 機器使用期間の設定
         /// </summary>
-        /// <param name="summaryInfo">保全活動件名情報</param>
-        /// <param name="machine">対象機器</param>
+        /// <param name="completionDate">完了日</param>
+        /// <param name="machineId">機番ID</param>
         /// <returns>機器使用期間、取得できない場合-1</returns>
-        private int setUsedDaysMachine(Dao.detailSummaryInfo summaryInfo, Dao.detailMachine machine)
+        private int setUsedDaysMachine(DateTime? completionDate, long machineId)
         {
             int val = -1;
-            ComDao.McMachineEntity machineEntity = machine.GetEntity(machine.MachineId, this.db);
-            if (summaryInfo.CompletionDate != null && machineEntity != null && machineEntity.DateOfInstallation != null)
+            ComDao.McMachineEntity machineEntity = new ComDao.McMachineEntity().GetEntity(machineId, this.db);
+            if (completionDate != null && machineEntity != null && machineEntity.DateOfInstallation != null)
             {
                 //機器使用日数 = 完了日 - 設置日
-                TimeSpan days = (TimeSpan)(summaryInfo.CompletionDate - machineEntity.DateOfInstallation);
+                TimeSpan days = (TimeSpan)(completionDate - machineEntity.DateOfInstallation);
                 val = days.Days;
             }
             return val;
@@ -1281,8 +1306,9 @@ namespace BusinessLogic_MA0001
         /// <param name="maintenanceFlg">保全権限がある場合True</param>
         /// <param name="historyIndividualFlg">保全履歴個別工場表示フラグ</param>
         /// <param name="now">システム日時</param>
+        /// <param name="isInspection">点検の場合True、故障の場合False</param>
         /// <returns>returnFlag:エラーの場合False、val:登録データの取得値</returns>
-        private (bool returnFlag, long val) registHistory(long summaryId, bool isRegist, bool maintenanceFlg, string historyIndividualFlg, DateTime now)
+        private (bool returnFlag, long val) registHistory(long summaryId, bool isRegist, bool maintenanceFlg, string historyIndividualFlg, DateTime now, bool isInspection)
         {
             List<short> grpNoList = new List<short>();
             //表示しているタブの情報を登録する
@@ -1296,6 +1322,12 @@ namespace BusinessLogic_MA0001
                 //保全履歴（個別工場）タブ
                 grpNoList = new List<short>() { ConductInfo.FormRegist.GroupNo.HistoryIndividualInfo };
             }
+            // 故障の場合、フォロー有無の値を画面の項目より取得
+            if (!isInspection)
+            {
+                grpNoList.Add(ConductInfo.FormRegist.GroupNo.FailureInfo);
+            }
+
             Dao.historyInfo registHistoryInfo = getRegistInfo<Dao.historyInfo>(grpNoList, now);
             registHistoryInfo.SummaryId = summaryId;
 
@@ -1318,6 +1350,14 @@ namespace BusinessLogic_MA0001
                 registHistoryInfo.CallCount = callCountStr != null ? Convert.ToInt32(callCountStr) : null;
             }
 
+            // 点検の場合、フォロー有無の値を対象機器の一覧より取得
+            if (isInspection)
+            {
+                registHistoryInfo.FollowFlg = getFollowFlgOnInspection();
+            }
+            //フォロー有無がNULLの場合、Falseを設定
+            registHistoryInfo.FollowFlg = registHistoryInfo.FollowFlg ?? false;
+
             // 保全履歴登録
             if (maintenanceFlg || isRegist)
             {
@@ -1327,6 +1367,15 @@ namespace BusinessLogic_MA0001
                 return (returnFlag, val);
             }
             return (true, registHistoryInfo.HistoryId);
+
+            // 点検の場合にフォロー有無の値を取得する処理
+            bool getFollowFlgOnInspection()
+            {
+                // 対象機器一覧のフォロー有無を取得(削除行は含まない)
+                var machineList = convertDicListToClassList<Dao.detailMachine>(this.resultInfoDictionary, ConductInfo.FormRegist.ControlId.MachineList, new List<string> { "FollowFlg" });
+                // いずれかがTrueの場合はTrue
+                return machineList.Select(x => x.FollowFlg ?? false).Any(x => x);
+            }
         }
 
         /// <summary>
@@ -1384,7 +1433,7 @@ namespace BusinessLogic_MA0001
             result = results[0];
 
             // 保全スケジュール詳細データと同一の長期計画件名、同一年月データの最大更新日時を取得
-            if(!getMaxUpdateDateFromLongPlan(results[0].MaintainanceScheduleDetailId, out DateTime? maxUpdateDate))
+            if (!getMaxUpdateDateFromLongPlan(results[0].MaintainanceScheduleDetailId, out DateTime? maxUpdateDate))
             {
                 return false;
             }
@@ -1473,7 +1522,7 @@ namespace BusinessLogic_MA0001
                 }
 
                 // 保全スケジュール詳細IDをカンマ区切り
-                if(string.IsNullOrEmpty(registInfo.MaintainanceScheduleDetailId))
+                if (string.IsNullOrEmpty(registInfo.MaintainanceScheduleDetailId))
                 {
                     continue;
                 }

@@ -96,7 +96,11 @@ const FormDetail = {
         },
         Reason: { // 申請理由～否認理由
             Id: "BODY_110_00_LST_1", // コントロールグループID
+        },
+        CssClass: {
+            HistoryInfoTitle: "HistoryInfoTitle" // 一覧タイトルと折り畳みアイコンを非表示にするためのCSSクラス
         }
+
     },
     MachineInfo: { // 機番情報
         Location: { // 地区～設備
@@ -147,6 +151,7 @@ const FormDetail = {
         }
     },
     EquipmentInfo: { // 機器情報
+        TabNo: 1, // タブ番号
         Job: { // 職種～機種小分類
             Id: "BODY_050_00_LST_1", // コントロールグループID
             ColumnNo: {              // 項目番号
@@ -205,6 +210,7 @@ const FormDetail = {
             MachineId: 23,                      // 機番ID
             ApplicationDivisionCode: 27,        // 申請区分(拡張項目)
             ValueChanged: 28,                   // 変更のあった項目
+            EquipmentLevelLabel: 38              // 機器レベル(コンボ)
         }
     },
     Button: {                                                   // ボタンコントロールID
@@ -275,6 +281,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
+        // 変更管理情報の一覧タイトルと折り畳みアイコンを非表示にする
+        var historyInfoTitle = $($(P_Article).find("#detail_divid_1").find(".title")[0]).parent().find("a");
+        historyInfoTitle.addClass(FormDetail.HistoryManagementInfo.CssClass.HistoryInfoTitle);
+
         // タブ切替回数を「0」にする
         setValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, 0, false, false);
 
@@ -301,6 +311,13 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // ボタン押下可能なボタンにフォーカスをセット
         var processMode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ProcessMode, 1, CtrlFlag.Label, false, false);
         setFocusButtonHistory(processMode);
+
+        // 「機器台帳」タブクリック時イベントを設定
+        var machineTab = $(P_Article).find("a[data-tabno='" + FormDetail.EquipmentInfo.TabNo + "']")[0];
+        $(machineTab).click(function () {
+            // タブ切替回数を「0」にする
+            setValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, 0, false, false);
+        });
     }
     else if (formNo == FormEdit.No) {
 
@@ -495,6 +512,10 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
         // 背景色変更処理
         changeBackGroundColorHistoryDetail(condition.applicationDivisionCode, getColumnList(), FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ValueChanged);
+
+        // ボタン押下可能なボタンにフォーカスをセット
+        var processMode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ProcessMode, 1, CtrlFlag.Label, false, false);
+        setFocusButtonHistory(processMode);
     }
 }
 
@@ -659,7 +680,7 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             // 詳細画面より機器の情報を取得して設定する
             // 機器レベル
             var equipmentLevel = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo);
-            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo, equipmentLevel, true, false);
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevelLabel, 1, CtrlFlag.Combo, equipmentLevel, true, false);
 
             // 機器番号
             var machineNo = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineNo, 1, CtrlFlag.TextBox);
@@ -685,7 +706,7 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
             // 入力エリアを非活性にする
             // 機器レベル
-            var equipmentLevelCtrl = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo, true, false);
+            var equipmentLevelCtrl = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevelLabel, 1, CtrlFlag.Combo, true, false);
             changeInputControl(equipmentLevelCtrl, false);
 
             // 機器番号
@@ -723,7 +744,7 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 function initTabOriginal(tabNo, tableId) {
 
     if (tabNo == FormDetail.ManagementStandardsList.TabNo) {
-
+        // 機器別管理基準タブ
         // 初回(タブ切替数 = 0)の場合のみ保全項目一覧の背景色変更・コントロール非表示処理を行う
         var tabChangeCnt = parseInt(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, false, false));
 

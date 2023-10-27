@@ -363,13 +363,13 @@ namespace BusinessLogic_MA0001
             {
                 (int)Const.Attachment.FunctionTypeId.Summary, //件名添付
             };
-            attachment.KeyId = Convert.ToInt32(summaryId);
+            attachment.KeyId = Convert.ToInt64(summaryId);
             //削除する添付情報を取得
             List<ComDao.AttachmentEntity> result = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentInfo, SqlName.SubDir, attachment, this.db);
             if (result != null)
             {
                 //削除対象の件名添付が存在する場合、削除
-                if (!new ComDao.AttachmentEntity().DeleteByKeyId(Const.Attachment.FunctionTypeId.Summary, Convert.ToInt32(summaryId), this.db))
+                if (!new ComDao.AttachmentEntity().DeleteByKeyId(Const.Attachment.FunctionTypeId.Summary, Convert.ToInt64(summaryId), this.db))
                 {
                     return false;
                 }
@@ -388,7 +388,7 @@ namespace BusinessLogic_MA0001
                 };
                 //保全履歴故障情報IDを取得
                 string historyFailureId = getValueByKeyName(ConductInfo.FormDetail.ControlId.FailureInfoIds[0], "history_failure_id");
-                failureAttachment.KeyId = Convert.ToInt32(historyFailureId);
+                failureAttachment.KeyId = Convert.ToInt64(historyFailureId);
                 //削除する添付情報を取得
                 result = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentInfo, SqlName.SubDir, failureAttachment, this.db);
                 if (result != null)
@@ -535,7 +535,7 @@ namespace BusinessLogic_MA0001
         /// <param name="dataType">データタイプ</param>
         /// <param name="factoryId">工場ID</param>
         /// <returns>拡張データ</returns>
-        private string getItemExData(short seq, short dataType, int? factoryId)
+        private string getItemExData(short seq, short dataType, int? factoryId = 0)
         {
             string result = null;
 
@@ -605,6 +605,8 @@ namespace BusinessLogic_MA0001
             string zipFilePath = tempNewFolderPath + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
             // ダウンロードするZIPファイルの名前(とりあえず件名.zip)
             string zipFileName = subject + CommonConstants.REPORT.EXTENSION.ZIP_FILE;
+            // zipファイル名が有効か判定、無効なら日時に変更
+            zipFileName = getNewDownloadFilePath(tempRootPath, zipFileName);
 
             // ファイルダウンロード
             if (!SetDownloadZip(zipFilePath, tempNewFolderPath, zipFileName))
@@ -696,6 +698,32 @@ namespace BusinessLogic_MA0001
                 }
                 // このファイルパスは存在しないので、これを使用する
                 return targetPath;
+            }
+
+            // 件名をファイル名とすると、件名の内容によりエラーとなるので、その場合は日時をファイル名とする
+            // ファイルに使用できない文字(\/:?<>|)
+            // ファイルパスが256文字超(OSによる)
+            // tempRootPath 一時フォルダルートパス　ダウンロード時にここにファイルが作成される
+            // zipFileName zipファイル名
+            // return 実際に使用するzipファイル名 引数のzipファイル名でエラーとなるときに日時に置換
+            string getNewDownloadFilePath(string tempRootPath, string zipFileName)
+            {
+                string newFilePath = zipFileName;
+                // 実際にダウンロードされるファイルのパス
+                string downloadFilePath = Path.Combine(tempRootPath, zipFileName);
+                try
+                {
+                    // ファイルを作成し、削除
+                    System.IO.File.Create(downloadFilePath).Close();
+                    File.Delete(downloadFilePath);
+                }
+                catch (Exception ex)
+                {
+                    // 使用できないファイル名なら例外となるので、新たなファイル名を設定
+                    newFilePath = string.Format("{0:yyyyMMddHHmmssfff}{1}", DateTime.Now, CommonConstants.REPORT.EXTENSION.ZIP_FILE);
+                }
+
+                return newFilePath;
             }
         }
     }

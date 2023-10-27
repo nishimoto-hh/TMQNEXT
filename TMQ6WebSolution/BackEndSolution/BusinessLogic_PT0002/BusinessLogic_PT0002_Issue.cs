@@ -44,7 +44,13 @@ namespace BusinessLogic_PT0002
             getSql(SqlName.GetIssueList, listUnComment, out string baseSql, out string withSql, out string execSql, pageInfo);
 
             // 総件数を取得し総件数をチェック
-            checkTotalCount(execSql, condition, pageInfo, out int cnt);
+            int cnt = db.GetCount(execSql, condition);
+            // 総件数のチェック
+            if (!CheckSearchTotalCount(cnt, pageInfo))
+            {
+                SetSearchResultsByDataClass<Dao.searchResultIssueParents>(pageInfo, null, cnt, false);
+                return false;
+            }
 
             // 検索結果格納リスト
             IList<Dao.searchResultIssueParents> results = new List<Dao.searchResultIssueParents>();
@@ -54,12 +60,13 @@ namespace BusinessLogic_PT0002
             {
                 // 一覧検索SQLを取得し、ORDER BY句を追加
                 string orderBy = " ORDER BY tbl.inout_datetime DESC ";
-                getListSearchSql(execSql, baseSql, withSql, orderBy, out StringBuilder selectSql);
+                getListSearchSql(execSql, baseSql, withSql, orderBy, pageInfo, out StringBuilder selectSql);
 
                 // 一覧検索実行
                 results = db.GetListByDataClass<Dao.searchResultIssueParents>(selectSql.ToString(), condition);
                 if (results == null || results.Count == 0)
                 {
+                    SetSearchResultsByDataClass<Dao.searchResultIssueParents>(pageInfo, null, 0, false);
                     return false;
                 }
 
@@ -74,7 +81,7 @@ namespace BusinessLogic_PT0002
                 }
             }
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResultIssueParents>(pageInfo, results, results.Count(), true))
+            if (SetSearchResultsByDataClassForList<Dao.searchResultIssueParents>(pageInfo, results, cnt, true))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -101,6 +108,7 @@ namespace BusinessLogic_PT0002
             var results = TMQUtil.SqlExecuteClass.SelectList<Dao.searchResultIssueParents>(SqlName.GetIssueListChild, SqlName.SubDir, conditionObj, this.db);
             if (results == null || results.Count == 0)
             {
+                SetSearchResultsByDataClass<Dao.searchResultIssueParents>(pageInfo, null, 0, false);
                 return false;
             }
 
@@ -124,7 +132,7 @@ namespace BusinessLogic_PT0002
             }
 
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResultIssueParents>(pageInfo, results, results.Count(), true))
+            if (SetSearchResultsByDataClassForList<Dao.searchResultIssueParents>(pageInfo, results, results.Count(), true))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;

@@ -22,6 +22,8 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace BusinessLogic_MA0001
 {
@@ -64,36 +66,49 @@ namespace BusinessLogic_MA0001
             setJobCondition();
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, isJobKindOnly: true))
             {
                 return false;
             }
+            // 総件数を取得
+            int cnt = db.GetCount(TMQUtil.GetCountSql(new ComDao.MaSummaryEntity().TableName, whereParam), whereParam);
+            // 総件数のチェック
+            if (!CheckSearchTotalCount(cnt, pageInfo))
+            {
+                //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
+                return false;
+            }
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+            // 添付情報作成
+            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Summary, FunctionTypeId.HistoryFailureAnalyze, FunctionTypeId.HistoryFailureFactAnalyze });
+            // 翻訳用一時テーブル登録
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.MqClass, GroupId.StopSystem, GroupId.Sudden, GroupId.BudgetManagement, GroupId.BudgetPersonality,
+                GroupId.Season, GroupId.DiscoveryMethods, GroupId.ActualResult, GroupId.Phenomenon, GroupId.FailureCause,
+                GroupId.TreatmentMeasure, GroupId.Progress, GroupId.Location, GroupId.FailureCausePersonality
+            };
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList); // 各グループ
+            // 職種は職種階層のみなので別で指定
+            listPf.GetInsertLayerOnly(GroupId.Job, (int)Const.MsStructure.StructureLayerNo.Job.Job, true);
+            // 機能で作成するテーブル
+            listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
+            listPf.RegistTempTable(); // 登録
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
-            // SQL、WHERE句、WITH句より件数取得SQLを作成
-            //string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
-            //// 総件数を取得
-            //int cnt = db.GetCount(executeSql, whereParam);
-            //// 総件数のチェック
-            //if (!CheckSearchTotalCount(cnt, pageInfo))
-            //{
-            //    //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
-            //    this.Status = CommonProcReturn.ProcStatus.Warning;
-            //    // 「該当データがありません。」
-            //    this.MsgId = GetResMessage("941060001");
-            //    SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
-            //    return false;
-            //}
 
             // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
-            // 件名単位に集約するSQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.AddGetList, out string addSql);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
-            selectSql.AppendLine(addSql);
             selectSql.AppendLine("ORDER BY");
-            selectSql.AppendLine("occurrence_date desc");
-            selectSql.AppendLine(",summary_id desc");
+            selectSql.AppendLine("occurrence_date DESC");
+            selectSql.AppendLine(",summary_id DESC");
 
             // 一覧検索実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
@@ -107,16 +122,12 @@ namespace BusinessLogic_MA0001
                 return false;
             }
 
-            // 地区～設備、職種～機種小分類、原因性格1、原因性格2を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.FailureCause }, this.db, this.LanguageId);
-
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
+            if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
-
             return true;
 
             //職種を設定

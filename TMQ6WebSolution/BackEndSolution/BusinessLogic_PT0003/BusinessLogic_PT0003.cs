@@ -16,6 +16,7 @@ using Dao = BusinessLogic_PT0003.BusinessLogicDataClass_PT0003;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 
 namespace BusinessLogic_PT0003
 {
@@ -928,6 +929,18 @@ namespace BusinessLogic_PT0003
             {
                 return false;
             }
+
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+
+            // 翻訳する構成グループのリスト(棚卸データ、入庫一覧、出庫一覧で使用する翻訳をまとめて設定)
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Unit, GroupId.Currency, GroupId.Department, GroupId.Account, GroupId.Manufacturer, GroupId.OldNewDivition, GroupId.WorkDivision
+            };
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
 
             bool flg = true;
             // 棚卸データ一覧

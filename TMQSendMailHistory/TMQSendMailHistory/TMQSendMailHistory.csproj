@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TargetFramework>net6.0</TargetFramework>
+    
+    <ApplicationIcon />
+    <StartupObject>TMQSendMailHistory.program</StartupObject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningLevel>4</WarningLevel>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <OutputPath>bin\</OutputPath>
+    <NoWarn />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <NoWarn />
+    <OutputPath>bin\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="sql\Batch\**" />
+    <Compile Remove="sql\Common\AutoComplete\**" />
+    <Compile Remove="sql\Common\ComboBox\**" />
+    <Compile Remove="sql\Sample\**" />
+    <Compile Remove="sql\WorkFlow\**" />
+    <Compile Remove="exe\**" />
+    <EmbeddedResource Remove="sql\Batch\**" />
+    <EmbeddedResource Remove="sql\Common\AutoComplete\**" />
+    <EmbeddedResource Remove="sql\Common\ComboBox\**" />
+    <EmbeddedResource Remove="sql\Sample\**" />
+    <EmbeddedResource Remove="sql\WorkFlow\**" />
+    <EmbeddedResource Remove="xxxexe\**" />
+    <None Remove="sql\Batch\**" />
+    <None Remove="sql\Common\AutoComplete\**" />
+    <None Remove="sql\Common\ComboBox\**" />
+    <None Remove="sql\Sample\**" />
+    <None Remove="sql\WorkFlow\**" />
+    <None Remove="xxxexe\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Common\CommonProcData.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="SendMailHistoryUtil - コピー.csx" />
+    <None Remove="SendMailHistoryUtil - コピー2.csx" />
+    <None Remove="SendMailHistoryUtil - コピー3.csx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BackEndSolution\CommonSTDUtil\CommonSTDUtil.csproj" />
+    <ProjectReference Include="..\BackEndSolution\CommonTMQUtil\CommonTMQUtil.csproj" />
+    <ProjectReference Include="..\BackEndSolution\Dapper.OutsideSql\Dapper.OutsideSql.csproj" />
+    <ProjectReference Include="..\CommonSolution\CommonDefinitions\CommonDefinitions.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.1" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="6.21.5" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MailKit">
+      <HintPath>..\packages\MailKit.2.15.0\lib\net47\MailKit.dll</HintPath>
+    </Reference>
+    <Reference Include="MimeKit">
+      <HintPath>..\packages\MimeKit.2.15.0\lib\net47\MimeKit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -49,7 +49,7 @@ machine AS(
         machine_id,
         machine_no,
         machine_name,
-        location_structure_id,
+        location_factory_structure_id,
         importance_structure_id,
         -- 添付情報の更新日時
         (

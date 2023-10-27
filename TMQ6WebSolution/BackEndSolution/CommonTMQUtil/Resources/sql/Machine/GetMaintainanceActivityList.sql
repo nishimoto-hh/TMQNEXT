@@ -1,3 +1,15 @@
+WITH structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1180,1220,1810,1020,1050) 
+        AND language_id = @LanguageId
+) 
+
+
 SELECT row_number() over(order by ISNULL(completion_date,'9999/12/31') desc) as row_no,
        *
 FROM
@@ -5,12 +17,49 @@ FROM
 	   sm.subject,    -- 件名
 	   sm.completion_date,  -- 完了日
 	   hs.expenditure, --実績金額 
-	   (SELECT TOP(1)translation_text FROM v_structure_item_all WHERE structure_id = his.inspection_site_structure_id  AND language_id = @LanguageId AND location_structure_id IN @FactoryIdList order by location_structure_id desc)as maintenance_site , -- 作業部位
-	   (SELECT TOP(1)translation_text FROM v_structure_item_all WHERE structure_id =hic.inspection_content_structure_id  AND language_id = @LanguageId AND location_structure_id IN @FactoryIdList order by location_structure_id desc)as maintenance_content , -- 作業項目
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = his.inspection_site_structure_id
+					AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+			) 
+			AND tra.structure_id = his.inspection_site_structure_id
+		) AS maintenance_site, -- 部位
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = hic.inspection_content_structure_id
+					AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+			) 
+			AND tra.structure_id = hic.inspection_content_structure_id
+		) AS maintenance_content, -- 作業項目
 	   hs.total_working_time, -- 作業時間
 	   null as failure_cause_structure_id, -- 故障原因
+	   null as failure_cause_name,
        null as failure_cause_personality_structure_id, -- 原因性格 
+	   null as failure_cause_personality_name,
 	   null as treatment_measure_structure_id,         -- 処置対策
+	   null as treatment_measure_name,         -- 処置対策
 	   sm.plan_implementation_content                  -- 作業内容結果
 FROM ma_summary sm,
      ma_history hs,
@@ -33,9 +82,63 @@ SELECT sm.summary_id, -- 件名ID
 	   hf.maintenance_site , -- 作業部位
 	   hf.maintenance_content, -- 作業項目
 	   hs.total_working_time,  -- 作業時間
-	   hf.failure_cause_structure_id, -- 故障原因
-       hf.failure_cause_personality_structure_id,  -- 原因性格
+	   hf.failure_cause_structure_id, -- 故障原因 
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = hf.failure_cause_structure_id
+					AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+			) 
+			AND tra.structure_id = hf.failure_cause_structure_id
+		) AS failure_cause_name, -- 故障原因
+       hf.failure_cause_personality_structure_id,  -- 原因性格 
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = hf.failure_cause_personality_structure_id
+					AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+			) 
+			AND tra.structure_id = hf.failure_cause_personality_structure_id
+		) AS failure_cause_personality_name, -- 故障原因
 	   hf.treatment_measure_structure_id,  -- 処置対策
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = hf.treatment_measure_structure_id
+					AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+			) 
+			AND tra.structure_id = hf.treatment_measure_structure_id
+		) AS treatment_measure_name, -- 故障原因
 	   sm.plan_implementation_content -- 作業内容結果
 FROM ma_summary sm,
      ma_history hs,

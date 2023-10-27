@@ -555,6 +555,25 @@ namespace CommonWebTemplate.Controllers.Common
                     }
                 }
 
+                if (returnInfo.UpdateUserInfo)
+                {
+                    // ユーザー権限情報の更新が必要な場合
+                    UserInfoDef userInfo = null;
+                    CommonProcReturn returnInfoW = blogic.GetUserAuthorizationInfo(procData, this._context, ref userInfo);
+                    if (returnInfoW.IsProcEnd())
+                    {
+                        IList<object> retObj_err = new List<object>();
+                        retObj_err.Add(returnInfoW);                    //[0]:処理ステータス
+                        retObj_err.Add(results);                        //[1]:結果データ
+                        return BadRequest(retObj_err);
+                    }
+
+                    // セッションにユーザ管理情報を設定
+                    HttpContext.Session.SetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO, userInfo);
+
+                    blogic.MargeReturnInfo(ref returnInfo, returnInfoW);
+                }
+
                 //=== 処理結果を返す ===
                 IList<object> retObj = new List<object>();
                 retObj.Add(returnInfo);     //[0]:処理ステータス

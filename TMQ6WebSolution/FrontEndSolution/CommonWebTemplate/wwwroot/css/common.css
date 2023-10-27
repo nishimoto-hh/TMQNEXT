@@ -1621,11 +1621,11 @@ input[type="radio"] {
     font-weight: normal !important;
 }
 /* ソートアイコンの色 */
-.tabulator-col.tabulator-sortable[aria-sort=asc] .tabulator-arrow 
+.tabulator-col.tabulator-sortable[aria-sort=ascending] .tabulator-arrow 
 {
     border-bottom-color: #ed6a2d !important;
 }
-.tabulator-col.tabulator-sortable[aria-sort=desc] .tabulator-arrow 
+.tabulator-col.tabulator-sortable[aria-sort=descending] .tabulator-arrow 
 {
     border-top-color: #0ab5e9 !important;
 }
@@ -2033,5 +2033,23 @@ select.ui-datepicker-month {
 /*背景色をグレーに変更*/
 .hikiateGray > div {
     background-color: lightgray !important;
+}
+/*********************************************************/
+
+/******************** 読込件数エリア *********************/
+/* 総件数と検索ボタンのヘッダー部を非表示に */
+div[data-relation-id] table:nth-of-type(n+3) th{
+    width:0px;
+    display:none;
+}
+
+/* 総件数セルの幅を調整 */
+div[data-relation-id] table:nth-of-type(3) {
+    width: 100px !important;
+}
+
+/* 検索ボタンセルの幅を調整 */
+div[data-relation-id] table:nth-of-type(4) {
+    width: 60px !important;
 }
 /*********************************************************/

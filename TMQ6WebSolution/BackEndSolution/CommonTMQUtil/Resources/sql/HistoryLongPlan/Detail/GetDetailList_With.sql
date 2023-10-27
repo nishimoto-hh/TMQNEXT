@@ -97,6 +97,7 @@ WITH org_base AS (
                 hm_mc_management_standards_content hmsc 
             WHERE
                 hmsc.execution_division = 5      --保全情報一覧の削除
+                AND hmsc.history_management_id = @HistoryManagementId 
                 AND hmsc.management_standards_content_id = org_base.management_standards_content_id
         )                                       --削除した保全情報一覧の情報は除外する
         UNION 
@@ -118,7 +119,7 @@ machine AS (
         machine_id
         , machine_no
         , machine_name
-        , location_structure_id
+        , location_factory_structure_id
         , importance_structure_id
         ,                                       -- 添付情報の更新日時
         ( 

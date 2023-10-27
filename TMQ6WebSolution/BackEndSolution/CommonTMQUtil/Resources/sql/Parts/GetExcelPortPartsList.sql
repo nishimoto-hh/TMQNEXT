@@ -1,9 +1,14 @@
 SELECT
     parts.parts_id,                       -- 予備品ID
     parts.parts_no,                       -- 予備品№
+    parts.parts_no AS parts_no_before,    -- 予備品№(変更前)
     parts.parts_name,                     -- 予備品名称
     parts.factory_id AS parts_factory_id, -- 管理工場ID
-    parts.job_structure_id,               -- 職種ID
+    parts.location_district_structure_id AS district_id,   -- 地区ID
+    parts.location_factory_structure_id AS factory_id,     -- 工場ID
+    parts.location_warehouse_structure_id AS warehouse_id, -- 倉庫ID
+    parts.location_rack_structure_id AS rack_id,           -- 棚ID
+    parts.job_structure_id AS job_id,     -- 職種ID
     parts.manufacturer_structure_id,      -- メーカーID
     parts.model_type,                     -- 型式
     parts.materials,                      -- 材質
@@ -32,7 +37,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.manufacturer_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -50,7 +55,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.factory_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -68,7 +73,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.unit_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -86,7 +91,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.currency_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -104,7 +109,7 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.vender_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
@@ -122,12 +127,104 @@ SELECT
                 SELECT
                     MAX(st_f.factory_id)
                 FROM
-                    structure_factory AS st_f
+                    #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = parts.use_segment_structure_id
                 AND st_f.factory_id IN(0, parts.factory_id)
             )
         AND tra.structure_id = parts.use_segment_structure_id
-    ) AS use_segment_name -- 使用区分
+    ) AS use_segment_name, -- 使用区分
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.location_district_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.location_district_structure_id
+    ) AS district_name, -- 地区
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.location_factory_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.location_factory_structure_id
+    ) AS factory_name, -- 工場
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.location_warehouse_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.location_warehouse_structure_id
+    ) AS warehouse_name, -- 標準予備品倉庫
+    '''' + (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.location_rack_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.location_rack_structure_id
+    ) AS rack_name, -- 標準棚
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = parts.job_structure_id
+                AND st_f.factory_id IN(0, parts.factory_id)
+            )
+        AND tra.structure_id = parts.job_structure_id
+    ) AS job_name -- 職種
 FROM
     pt_parts AS parts
+WHERE EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND parts.factory_id = temp.structure_id)
+AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1010 AND  parts.job_structure_id = temp.structure_id)

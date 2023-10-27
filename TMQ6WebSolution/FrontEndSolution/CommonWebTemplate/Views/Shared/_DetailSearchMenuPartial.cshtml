@@ -152,13 +152,18 @@
                                             @*dispAddBtn = false;*@
 
                                             //ｺﾝﾎﾞ要素の設定情報を退避
-                                            var msData = new List<string>
-                                                ();
+                                            var msData = new List<string>();                                               
                                             msData.Add(item.RELATIONID);
                                             msData.Add(item.RELATIONPARAM);
                                             msData.Add((item.OPTIONINFO == null || "1" != item.OPTIONINFO) ? "0" : "1");
                                             msData.Add(item.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
                                             ViewBag.MltSelDatas.Add(id, msData);
+                                            @*var sqlId = item.RELATIONID;
+                                            var relationParam = item.RELATIONPARAM;
+                                            var option = (item.OPTIONINFO == null || "1" != item.OPTIONINFO) ? "0" : "1";
+                                            var nullchk = item.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0";
+                                            ViewBag.MltSelDatas.Add(id);*@
+
                                             var ctrlName_check = ctrlName + "[]";
                                             //C_OPTIONINFO=1の場合、「0:全て」を表示
                                             var classCtrlOption = (item.OPTIONINFO == null || "1" != item.OPTIONINFO) ? "ctrloption hide" : "ctrloption";
@@ -178,6 +183,7 @@
                                                     @:<div class="multisel-drop disabled">
                                                     }
                                                     @:<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@item.ITEMNAME" data-value="" title="@item.TOOLTIP">
+                                                    @*<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@item.ITEMNAME" data-value="" data-sqlid="@sqlId" data-param="@relationParam" data-option="@option" data-nullcheck="@nullchk" title="@item.TOOLTIP">*@
                                                         @:<li class="ctrloption">
                                                             @*C_OPTIONINFO=1の場合、「すべて」を表示*@
                                                             @:<label>

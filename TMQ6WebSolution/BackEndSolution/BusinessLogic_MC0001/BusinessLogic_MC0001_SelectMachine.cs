@@ -221,9 +221,6 @@ namespace BusinessLogic_MC0001
             // 検索条件の地区・職種は各階層に値が設定されているが、検索には「指定された最下層の値」以下の全ての階層IDを用いるので設定
             setStructureLayerInfo(ref condition);
 
-            // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
-            List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.selectMachineSearchCondition>(condition);
-
             // 検索するSQLを取得
             string sqlName = string.Empty;
             sqlName = getSqlName(out long? machineId);
@@ -240,6 +237,9 @@ namespace BusinessLogic_MC0001
             {
                 condition.HistoryManage = null;
             }
+
+            // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
+            List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.selectMachineSearchCondition>(condition);
 
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string baseSql, listUnComment);

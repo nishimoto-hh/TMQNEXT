@@ -264,7 +264,7 @@ namespace BusinessLogic_PT0003
                 if (!string.IsNullOrEmpty(info.PartsLocationDetailNo))
                 {
                     var enc = Encoding.GetEncoding("Shift_JIS");
-                    if (enc.GetByteCount(info.PartsLocationDetailNo) != info.PartsLocationDetailNo.Length)
+                    if (enc.GetByteCount(info.PartsLocationDetailNo) != info.PartsLocationDetailNo.Length || !ComUtil.IsAlphaNumeric(info.PartsLocationDetailNo))
                     {
                         // 半角英数字で入力してください。
                         string errMsg = GetResMessage(ComRes.ID.ID141260002);

@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 using ComDao = CommonSTDUtil.CommonDataBaseClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using IListAccessor = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil.IListAccessor;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using BusinessLogicBase = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase;
 
 namespace BusinessLogic_LN0002
 {
@@ -22,7 +26,7 @@ namespace BusinessLogic_LN0002
             /// <summary>
             /// 一覧
             /// </summary>
-            public class List
+            public class List : IListAccessor
             {
                 /// <summary>Gets or sets 一覧グループID</summary>
                 /// <value>一覧グループID</value>
@@ -139,6 +143,48 @@ namespace BusinessLogic_LN0002
                     rtn.HeaderFlg = true;
                     return rtn;
                 }
+
+                /// <summary>
+                /// 一時テーブルレイアウト作成処理(性能改善対応)
+                /// </summary>
+                /// <param name="mapDic">マッピング情報のディクショナリ</param>
+                /// <returns>一時テーブルレイアウト</returns>
+                public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+                {
+                    dynamic paramObj;
+
+                    paramObj = new ExpandoObject() as IDictionary<string, object>;
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.ListGroupId, nameof(this.ListGroupId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanId, nameof(this.LongPlanId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetPersonalityStructureId, nameof(this.BudgetPersonalityStructureId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineId, nameof(this.MachineId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineNo, nameof(this.MachineNo), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.MachineName, nameof(this.MachineName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManagementStandardsComponentId, nameof(this.ManagementStandardsComponentId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteStructureId, nameof(this.InspectionSiteStructureId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteImportanceStructureId, nameof(this.InspectionSiteImportanceStructureId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteConservationStructureId, nameof(this.InspectionSiteConservationStructureId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManagementStandardsContentId, nameof(this.ManagementStandardsContentId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionContentStructureId, nameof(this.InspectionContentStructureId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.MaintainanceScheduleId, nameof(this.MaintainanceScheduleId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleYear, nameof(this.CycleYear), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleMonth, nameof(this.CycleMonth), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleDay, nameof(this.CycleDay), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.StartDate, nameof(this.StartDate), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.KeyId, nameof(this.KeyId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteName, nameof(this.InspectionSiteName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.ImportanceName, nameof(this.ImportanceName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionSiteConservationName, nameof(this.InspectionSiteConservationName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.InspectionContentName, nameof(this.InspectionContentName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.BudgetPersonalityName, nameof(this.BudgetPersonalityName), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleYearDisplay, nameof(this.CycleYearDisplay), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleMonthDisplay, nameof(this.CycleMonthDisplay), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.CycleDayDisplay, nameof(this.CycleDayDisplay), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.HeaderFlg, nameof(this.HeaderFlg), mapDic);
+
+
+                    return paramObj;
+                }
             }
         }
 
@@ -158,6 +204,9 @@ namespace BusinessLogic_LN0002
                 /// <summary>Gets or sets 言語ID</summary>
                 /// <value>言語ID</value>
                 public string LanguageId { get; set; }
+                /// <summary>Gets or sets キーIDリスト(カンマ区切り)</summary>
+                /// <value>キーIDリスト(カンマ区切り)</value>
+                public string KeyIdList { get; set; }
                 /// <summary>
                 /// コンストラクタ
                 /// </summary>

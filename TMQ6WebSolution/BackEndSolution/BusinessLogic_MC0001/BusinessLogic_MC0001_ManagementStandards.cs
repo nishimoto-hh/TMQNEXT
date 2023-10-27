@@ -83,6 +83,8 @@ namespace BusinessLogic_MC0001
             public const string InsertMaintainanceScheduleDetail = "InsertMaintainanceScheduleDetail";
             /// <summary>SQL名：機器別管理基準部位  更新登録</summary>
             public const string UpdateManagementStandardsComponent = "UpdateManagementStandardsComponent";
+            /// <summary>SQL名：機器別管理基準部位  スケジューリング一覧更新登録</summary>
+            public const string UpdateManagementStandardsComponentSchedule = "UpdateManagementStandardsComponentSchedule";
             /// <summary>SQL名：機器別管理基準内容  更新登録</summary>
             public const string UpdateManagementStandardsContent = "UpdateManagementStandardsContent";
             /// <summary>SQL名：機器別管理基準内容  スケジューリング一覧更新登録</summary>
@@ -731,28 +733,28 @@ namespace BusinessLogic_MC0001
                 else
                 {
                     cycleChangeFlg = true;
-                    // 更新時確認チェック(周期・開始日変更チェック 点検種別毎時周期・開始日変更チェック)
-                    if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                }
+                // 更新時確認チェック(周期・開始日変更チェック 点検種別毎時周期・開始日変更チェック)
+                if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                {
+                    if (!insertFlg)
                     {
-                        if (!insertFlg)
-                        {
-                            // 検索条件取得
-                            dynamic whereParam = null; // WHERE句パラメータ
-                            string sql;
-                            // 一覧検索SQL文の取得
-                            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
-                            whereParam = new { MachineId = registResult.MachineId };
+                        // 検索条件取得
+                        dynamic whereParam = null; // WHERE句パラメータ
+                        string sql;
+                        // 一覧検索SQL文の取得
+                        TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
+                        whereParam = new { MachineId = registResult.MachineId };
 
-                            // 一覧検索実行
-                            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParam);
-                            if (results == null || results.Count == 0)
-                            {
-                                return false;
-                            }
-                            if (isConfirmRegistCycle(registResult, results[0].MaintainanceKindManage))
-                            {
-                                return true;
-                            }
+                        // 一覧検索実行
+                        IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParam);
+                        if (results == null || results.Count == 0)
+                        {
+                            return false;
+                        }
+                        if (isConfirmRegistCycle(registResult, results[0].MaintainanceKindManage))
+                        {
+                            return true;
                         }
                     }
                 }
@@ -913,12 +915,18 @@ namespace BusinessLogic_MC0001
                         return false;
                     }
 
-                    // 点検種別毎管理機器なら同点検種の周期なども変更
-                    registResult.MaintainanceScheduleId = maintainanceSchedule.id;
-                    if (!updateMaintainanceKindManage(registResult, now))
-                    {
-                        return false;
-                    }
+                    //// 点検種別毎管理機器なら同点検種の周期なども変更
+                    //registResult.MaintainanceScheduleId = maintainanceSchedule.id;
+                    //if (!updateMaintainanceKindManage(registResult, now))
+                    //{
+                    //    return false;
+                    //}
+                }
+                // 点検種別毎管理機器なら同点検種の周期なども変更
+                //registResult.MaintainanceScheduleId = maintainanceSchedule.id;
+                if (!updateMaintainanceKindManage(registResult, now))
+                {
+                    return false;
                 }
             }
 
@@ -1089,7 +1097,7 @@ namespace BusinessLogic_MC0001
                     }
                     // 更新
                     // 機器別管理基準部位
-                    if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateManagementStandardsComponent))
+                    if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateManagementStandardsComponentSchedule))
                     {
                         return false;
                     }
@@ -1414,7 +1422,7 @@ namespace BusinessLogic_MC0001
                     }
                     // 更新
                     // 機器別管理基準部位
-                    if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateManagementStandardsComponent))
+                    if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateManagementStandardsComponentSchedule))
                     {
                         return false;
                     }
@@ -2850,213 +2858,187 @@ namespace BusinessLogic_MC0001
             return maxDateResult.max_update_datetime;
         }
 
-        /// <summary>
-        /// ExcelPort機器別管理基準チェック処理
-        /// </summary>
-        /// <returns>true:正常終了</returns>
-        private bool checkExcelPortManagementStandardRegist(ref List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
-        {
-            // 入力チェック
-            bool errFlg = false;
-            for (int i = 0; i < resultList.Count; i++)
-            {
-                // 送信時処理IDが設定されているもののみ
-                if (resultList[i].ProcessId != null)
-                {
-                    // 場所階層セット
-                    resultList[i].LocationStructureId = (int)resultList[i].FactoryId;
-                    if (resultList[i].PlantId != null)
-                    {
-                        resultList[i].LocationStructureId = (int)resultList[i].PlantId;
-                    }
-                    if (resultList[i].SeriesId != null)
-                    {
-                        resultList[i].LocationStructureId = (int)resultList[i].SeriesId;
-                    }
-                    if (resultList[i].StrokeId != null)
-                    {
-                        resultList[i].LocationStructureId = (int)resultList[i].StrokeId;
-                    }
-                    if (resultList[i].FacilityId != null)
-                    {
-                        resultList[i].LocationStructureId = (int)resultList[i].FacilityId;
-                    }
+        ///// <summary>
+        ///// ExcelPort機器別管理基準チェック処理
+        ///// </summary>
+        ///// <returns>true:正常終了</returns>
+        //private bool checkExcelPortManagementStandardRegist(ref List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        //{
+        //    // 入力チェック
+        //    bool errFlg = false;
+        //    for (int i = 0; i < resultList.Count; i++)
+        //    {
+        //        // 送信時処理IDが設定されているもののみ
+        //        if (resultList[i].ProcessId != null)
+        //        {
 
-                    // 職種階層セット
-                    resultList[i].JobStructureId = (int)resultList[i].JobId;
-                    if (resultList[i].LargeClassficationId != null)
-                    {
-                        resultList[i].JobStructureId = (int)resultList[i].LargeClassficationId;
-                    }
-                    if (resultList[i].MiddleClassficationId != null)
-                    {
-                        resultList[i].JobStructureId = (int)resultList[i].MiddleClassficationId;
-                    }
-                    if (resultList[i].SmallClassficationId != null)
-                    {
-                        resultList[i].JobStructureId = (int)resultList[i].SmallClassficationId;
-                    }
+        //            // 新規
+        //            if (resultList[i].ProcessId == 1)
+        //            {
+        //                // 同一機器、部位、保全項目重複チェック
+        //                if (!checkEpContentDuplicate(resultList[i]))
+        //                {
+        //                    // 入力された部位、保全項目の組み合わせは既に登録されています。
+        //                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                    errFlg = true;
+        //                }
 
-                    // 新規
-                    if (resultList[i].ProcessId == 1)
-                    {
-                        // 同一機器、部位、保全項目重複チェック
-                        if (!checkEpContentDuplicate(resultList[i]))
-                        {
-                            // 入力された部位、保全項目の組み合わせは既に登録されています。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection));
-                            errFlg = true;
-                        }
+        //            }
+        //            // 更新
+        //            else if (resultList[i].ProcessId == 2)
+        //            {
+        //                // 同一機器、部位、保全項目重複チェック
+        //                if (!checkEpContentDuplicate(resultList[i]))
+        //                {
+        //                    // 入力された部位、保全項目の組み合わせは既に登録されています。
+        //                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                    errFlg = true;
+        //                }
 
-                    }
-                    // 更新
-                    else if (resultList[i].ProcessId == 2)
-                    {
-                        // 同一機器、部位、保全項目重複チェック
-                        if (!checkEpContentDuplicate(resultList[i]))
-                        {
-                            // 入力された部位、保全項目の組み合わせは既に登録されています。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection));
-                            errFlg = true;
-                        }
+        //                // 最新DBデータ取得
+        //                IList<Dao.managementStandardResult> beforeResult = null;
+        //                dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
+        //                beforeResult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
 
-                        // 最新DBデータ取得
-                        IList<Dao.managementStandardResult> beforeResult = null;
-                        dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
-                        beforeResult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
+        //                if (beforeResult != null && beforeResult.Count > 0)
+        //                {
+        //                    // 周期または開始日が変更されている
+        //                    if (resultList[i].CycleYear != beforeResult[0].CycleYear || resultList[i].CycleMonth != beforeResult[0].CycleMonth || resultList[i].CycleDay != beforeResult[0].CycleDay || resultList[i].StartDate != beforeResult[0].StartDate)
+        //                    {
+        //                        // 開始日が過去日だった際はエラー
+        //                        if (resultList[i].StartDate < DateTime.Now.Date)
+        //                        {
+        //                            // 過去日付は設定できません。
+        //                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060003"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                            errFlg = true;
+        //                        }
 
-                        if (beforeResult != null && beforeResult.Count > 0)
-                        {
-                            // 周期または開始日が変更されている
-                            if (resultList[i].CycleYear != beforeResult[0].CycleYear || resultList[i].CycleMonth != beforeResult[0].CycleMonth || resultList[i].CycleDay != beforeResult[0].CycleDay || resultList[i].StartDate != beforeResult[0].StartDate)
-                            {
-                                // 開始日が過去日だった際はエラー
-                                if (resultList[i].StartDate < DateTime.Now.Date)
-                                {
-                                    // 過去日付は設定できません。
-                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060003"), TMQUtil.ComReport.LongitudinalDirection));
-                                    errFlg = true;
-                                }
+        //                        // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+        //                        if (!checkEpScheduleAfterMsSummry(resultList[i]))
+        //                        {
+        //                            //  開始日には保全活動が登録されたスケジュール以降の日付を設定してください。
+        //                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060005"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                            errFlg = true;
+        //                        }
+        //                    }
+        //                }
 
-                                // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
-                                if (!checkEpScheduleAfterMsSummry(resultList[i]))
-                                {
-                                    //  開始日には保全活動が登録されたスケジュール以降の日付を設定してください。
-                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060005"), TMQUtil.ComReport.LongitudinalDirection));
-                                    errFlg = true;
-                                }
-                            }
-                        }
+        //            }
+        //            // 削除
+        //            else if (resultList[i].ProcessId == 9)
+        //            {
+        //                // 長期計画存在チェック
+        //                dynamic whereParam = null; // WHERE句パラメータ
+        //                string sql = string.Empty;
+        //                // 検索SQL文の取得
+        //                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetLongPlanSingle, out sql))
+        //                {
+        //                    // エラー終了
+        //                    this.Status = CommonProcReturn.ProcStatus.Error;
+        //                    return false;
+        //                }
+        //                whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+        //                // 総件数を取得
+        //                int cnt = db.GetCount(sql, whereParam);
+        //                if (cnt > 0)
+        //                {
+        //                    // 「 長期計画で使用されている為、削除できません。」
+        //                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141170002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                    errFlg = true;
+        //                }
 
-                    }
-                    // 削除
-                    else if (resultList[i].ProcessId == 9)
-                    {
-                        // 長期計画存在チェック
-                        dynamic whereParam = null; // WHERE句パラメータ
-                        string sql = string.Empty;
-                        // 検索SQL文の取得
-                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetLongPlanSingle, out sql))
-                        {
-                            // エラー終了
-                            this.Status = CommonProcReturn.ProcStatus.Error;
-                            return false;
-                        }
-                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
-                        // 総件数を取得
-                        int cnt = db.GetCount(sql, whereParam);
-                        if (cnt > 0)
-                        {
-                            // 「 長期計画で使用されている為、削除できません。」
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141170002"), TMQUtil.ComReport.LongitudinalDirection));
-                            errFlg = true;
-                        }
+        //                // 保全活動存在チェック
+        //                whereParam = null; // WHERE句パラメータ
+        //                sql = string.Empty;
+        //                // 検索SQL文の取得
+        //                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetMsSummarySingle, out sql))
+        //                {
+        //                    // エラー終了
+        //                    this.Status = CommonProcReturn.ProcStatus.Error;
+        //                    return false;
+        //                }
+        //                whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+        //                // 総件数を取得
+        //                cnt = db.GetCount(sql, whereParam);
+        //                if (cnt > 0)
+        //                {
+        //                    // 「 保全活動が作成されている為、削除できません。」
+        //                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141300004"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+        //                    errFlg = true;
+        //                }
+        //            }
+        //        }
+        //    }
 
-                        // 保全活動存在チェック
-                        whereParam = null; // WHERE句パラメータ
-                        sql = string.Empty;
-                        // 検索SQL文の取得
-                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetMsSummarySingle, out sql))
-                        {
-                            // エラー終了
-                            this.Status = CommonProcReturn.ProcStatus.Error;
-                            return false;
-                        }
-                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
-                        // 総件数を取得
-                        cnt = db.GetCount(sql, whereParam);
-                        if (cnt > 0)
-                        {
-                            // 「 保全活動が作成されている為、削除できません。」
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo(i + ExcelPortManagementStandardListInfo.StartRowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141300004"), TMQUtil.ComReport.LongitudinalDirection));
-                            errFlg = true;
-                        }
-                    }
-                }
-            }
+        //    // 全件問題無ければ登録処理
+        //    if (errFlg)
+        //    {
+        //        return false;
+        //    }
 
-            // 全件問題無ければ登録処理
-            if (errFlg)
-            {
-                return false;
-            }
+        //    return true;
 
-            return true;
+        //    // 同一機器、部位、保全項目重複チェック
+        //    bool checkEpContentDuplicate(Dao.excelPortManagementStandardResult result)
+        //    {
+        //        // 検索SQL文の取得
+        //        dynamic whereParam = null; // WHERE句パラメータ
+        //        string sql = string.Empty;
+        //        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetManagementStandardCountCheck, out sql))
+        //        {
+        //            this.Status = CommonProcReturn.ProcStatus.Error;
+        //            return false;
+        //        }
+        //        whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId = result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId = result.ManagementStandardsContentId };
+        //        // 総件数を取得
+        //        int cnt = db.GetCount(sql, whereParam);
+        //        if (cnt > 0)
+        //        {
+        //            return false;
+        //        }
 
-            // 同一機器、部位、保全項目重複チェック
-            bool checkEpContentDuplicate(Dao.excelPortManagementStandardResult result)
-            {
-                // 検索SQL文の取得
-                dynamic whereParam = null; // WHERE句パラメータ
-                string sql = string.Empty;
-                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetManagementStandardCountCheck, out sql))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return false;
-                }
-                whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId = result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId = result.ManagementStandardsContentId };
-                // 総件数を取得
-                int cnt = db.GetCount(sql, whereParam);
-                if (cnt > 0)
-                {
-                    return false;
-                }
+        //        return true;
+        //    }
 
-                return true;
-            }
+        //    // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+        //    bool checkEpScheduleAfterMsSummry(Dao.excelPortManagementStandardResult result)
+        //    {
+        //        // 検索SQL文の取得
+        //        dynamic whereParam = null; // WHERE句パラメータ
+        //        string sql = string.Empty;
+        //        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetScheduleMsSummryCountAfterCheck, out sql))
+        //        {
+        //            this.Status = CommonProcReturn.ProcStatus.Error;
+        //            return false;
+        //        }
+        //        whereParam = new { MaintainanceScheduleId = result.MaintainanceScheduleId, StartDate = result.StartDate };
+        //        // 総件数を取得
+        //        int cnt = db.GetCount(sql, whereParam);
+        //        if (cnt > 0)
+        //        {
+        //            return false;
+        //        }
 
-            // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
-            bool checkEpScheduleAfterMsSummry(Dao.excelPortManagementStandardResult result)
-            {
-                // 検索SQL文の取得
-                dynamic whereParam = null; // WHERE句パラメータ
-                string sql = string.Empty;
-                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetScheduleMsSummryCountAfterCheck, out sql))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return false;
-                }
-                whereParam = new { MaintainanceScheduleId = result.MaintainanceScheduleId, StartDate = result.StartDate };
-                // 総件数を取得
-                int cnt = db.GetCount(sql, whereParam);
-                if (cnt > 0)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-        }
+        //        return true;
+        //    }
+        //}
 
         /// <summary>
         /// ExcelPort機器別管理基準登録処理
         /// </summary>
         /// <returns>true:正常終了</returns>
-        private bool executeExcelPortManagementStandardRegist(List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList)
+        private bool executeExcelPortManagementStandardRegist(List<BusinessLogicDataClass_MC0001.excelPortManagementStandardResult> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
         {
+            // 全体エラー存在フラグ
+            bool errFlg = false;
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
             // 登録処理
             for (int i = 0; i < resultList.Count; i++)
             {
+                rowErrFlg = false;
+
                 // 送信時処理IDが設定されているもののみ
                 if (resultList[i].ProcessId != null)
                 {
@@ -3078,6 +3060,21 @@ namespace BusinessLogic_MC0001
                     // 新規登録
                     if (resultList[i].ProcessId == 1)
                     {
+                        // 同一機器、部位、保全項目重複チェック
+                        if (!checkEpContentDuplicate(resultList[i]))
+                        {
+                            // 入力された部位、保全項目の組み合わせは既に登録されています。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                            errFlg = true;
+                            rowErrFlg = true;
+                        }
+
+                        // エラー有りなら次へ
+                        if (rowErrFlg)
+                        {
+                            continue;
+                        }
+
                         resultList[i].InsertDatetime = now;
                         resultList[i].InsertUserId = int.Parse(this.UserId);
                         resultList[i].UpdateDatetime = now;
@@ -3114,6 +3111,51 @@ namespace BusinessLogic_MC0001
                     // 更新
                     else if (resultList[i].ProcessId == 2)
                     {
+                        // 同一機器、部位、保全項目重複チェック
+                        if (!checkEpContentDuplicate(resultList[i]))
+                        {
+                            // 入力された部位、保全項目の組み合わせは既に登録されています。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                            errFlg = true;
+                            rowErrFlg = true;
+                        }
+
+                        // 最新DBデータ取得
+                        IList<Dao.managementStandardResult> beforeResult = null;
+                        dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
+                        beforeResult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
+
+                        if (beforeResult != null && beforeResult.Count > 0)
+                        {
+                            // 周期または開始日が変更されている
+                            if (resultList[i].CycleYear != beforeResult[0].CycleYear || resultList[i].CycleMonth != beforeResult[0].CycleMonth || resultList[i].CycleDay != beforeResult[0].CycleDay || resultList[i].StartDate != beforeResult[0].StartDate)
+                            {
+                                // 開始日が過去日だった際はエラー
+                                if (resultList[i].StartDate < DateTime.Now.Date)
+                                {
+                                    // 過去日付は設定できません。
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060003"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                                    errFlg = true;
+                                    rowErrFlg = true;
+                                }
+
+                                // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+                                if (!checkEpScheduleAfterMsSummry(resultList[i]))
+                                {
+                                    //  開始日には保全活動が登録されたスケジュール以降の日付を設定してください。
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.StratDateColumnNo, null, GetResMessage("141060005"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                                    errFlg = true;
+                                    rowErrFlg = true;
+                                }
+                            }
+                        }
+
+                        // エラー有りなら次へ
+                        if (rowErrFlg)
+                        {
+                            continue;
+                        }
+
                         resultList[i].UpdateDatetime = now;
                         resultList[i].UpdateUserId = int.Parse(this.UserId);
 
@@ -3131,7 +3173,7 @@ namespace BusinessLogic_MC0001
 
                         IList<Dao.managementStandardResult> dbresult = null;
                         // 最新DBデータ取得
-                        dynamic whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
+                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId, ManagementStandardsContentId = resultList[i].ManagementStandardsContentId };
                         dbresult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
 
                         bool cycleChangeFlg = false;
@@ -3191,6 +3233,56 @@ namespace BusinessLogic_MC0001
                     // 削除
                     else if (resultList[i].ProcessId == 9)
                     {
+                        // 長期計画存在チェック
+                        dynamic whereParam = null; // WHERE句パラメータ
+                        string sql = string.Empty;
+                        // 検索SQL文の取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetLongPlanSingle, out sql))
+                        {
+                            // エラー終了
+                            this.Status = CommonProcReturn.ProcStatus.Error;
+                            return false;
+                        }
+                        whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+                        // 総件数を取得
+                        int cnt = db.GetCount(sql, whereParam);
+                        if (cnt > 0)
+                        {
+                            // 「 長期計画で使用されている為、削除できません。」
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141170002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                            errFlg = true;
+                            rowErrFlg = true;
+                        }
+                        else
+                        {
+                            // 保全活動存在チェック
+                            whereParam = null; // WHERE句パラメータ
+                            sql = string.Empty;
+                            // 検索SQL文の取得
+                            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetMsSummarySingle, out sql))
+                            {
+                                // エラー終了
+                                this.Status = CommonProcReturn.ProcStatus.Error;
+                                return false;
+                            }
+                            whereParam = whereParam = new { ManagementStandardsComponentId = resultList[i].ManagementStandardsComponentId };
+                            // 総件数を取得
+                            cnt = db.GetCount(sql, whereParam);
+                            if (cnt > 0)
+                            {
+                                // 「 保全活動が作成されている為、削除できません。」
+                                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141300004"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                                errFlg = true;
+                                rowErrFlg = true;
+                            }
+                        }
+
+                        // エラー有りなら次へ
+                        if (rowErrFlg)
+                        {
+                            continue;
+                        }
+
                         // 削除処理
                         // 削除SQL取得
                         if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.DeleteMaintainanceScheduleDetailSingle, out string sql1))
@@ -3263,7 +3355,57 @@ namespace BusinessLogic_MC0001
                 }
             }
 
+            // 全件問題無ければ登録処理
+            if (errFlg)
+            {
+                return false;
+            }
+
             return true;
+
+            // 同一機器、部位、保全項目重複チェック
+            bool checkEpContentDuplicate(Dao.excelPortManagementStandardResult result)
+            {
+                // 検索SQL文の取得
+                dynamic whereParam = null; // WHERE句パラメータ
+                string sql = string.Empty;
+                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetManagementStandardCountCheck, out sql))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+                whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId = result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId = result.ManagementStandardsContentId };
+                // 総件数を取得
+                int cnt = db.GetCount(sql, whereParam);
+                if (cnt > 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+            bool checkEpScheduleAfterMsSummry(Dao.excelPortManagementStandardResult result)
+            {
+                // 検索SQL文の取得
+                dynamic whereParam = null; // WHERE句パラメータ
+                string sql = string.Empty;
+                if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.GetScheduleMsSummryCountAfterCheck, out sql))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+                whereParam = new { MaintainanceScheduleId = result.MaintainanceScheduleId, StartDate = result.StartDate };
+                // 総件数を取得
+                int cnt = db.GetCount(sql, whereParam);
+                if (cnt > 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         /// <summary>

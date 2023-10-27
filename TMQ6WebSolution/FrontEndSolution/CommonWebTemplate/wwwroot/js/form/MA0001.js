@@ -69,7 +69,7 @@ const FormList = {
     },
     //フィルタ
     Filter: {
-        Id: "BODY_010_00_LST_0",
+        Id: "BODY_030_00_LST_0",
         Input: 1,
     },
     //一覧
@@ -1555,7 +1555,7 @@ function validDataPre(appPath, conductId, formNo, btn) {
                 + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.HistoryIndividual + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.Failure + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.FailureIndividual
                 + "']:not(.hide)," + getGroupId(FormRegist.FailureList.GroupNo) + ":not(.hide)");
             //作業計画・実施内容
-            var content = getCtrl(FormRegist.SummaryInfo.Id, FormRegist.SummaryInfo.Content, 1, CtrlFlag.TextBox);
+            var content = getCtrl(FormRegist.SummaryInfo.Id, FormRegist.SummaryInfo.Content, 1, CtrlFlag.Textarea);
             setRequired(content, tabs);
 
             //保全履歴情報タブまたは保全履歴情報（個別工場）タブの完了日に入力がある場合、MQ分類を必須にする
@@ -1748,7 +1748,7 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         // 現場機器の機番ID取得
         var currentMachineId = getValueByOtherForm(formNo, FormReplace.ReplaceList.CurrentInfo.Id, FormReplace.ReplaceList.CurrentInfo.MachineId, 0, CtrlFlag.Label);
         // 代替機器情報取得
-        var targetCtrl = getCtrlDataRow(FormReplace.ReplaceList.ReplaceInfo.Id, FormReplace.ReplaceList.ReplaceInfo.MachineId, 1, CtrlFlag.Label);
+        var targetCtrl = getCtrl(FormReplace.ReplaceList.ReplaceInfo.Id, FormReplace.ReplaceList.ReplaceInfo.MachineId, 0, CtrlFlag.Label);
         // 代替機器情報が取得できない場合、エラーメッセージを表示
         if (!targetCtrl) {
             // 「代替機器が選択されていません。」
@@ -2686,6 +2686,22 @@ function setDetailSearchConditionFromMP0001() {
     if (conditionData) {
         //詳細条件に値設定
         setDetailSearchCondition(conditionData);
+
+        //読込件数を「すべて」に更新し、非活性化
+        var define = $.grep(P_listDefines, function (define, idx) {
+            return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3 && define.CTRLID == FormList.List.Id);
+        });
+
+        // 読込件数コンボの取得
+        var select = getSelectCntCombo(FormList.List.Id);
+        // 詳細検索条件指定有りのため、読込件数を「すべて」に更新
+        var selectCnt = selectCntMaxDef.All;
+        $(select).find('option:selected').prop('selected', false);
+        $(select).find('option[exparam1="' + selectCnt + '"]').prop('selected', true);
+        define[0].VAL5 = selectCnt;
+
+        // 読込件数コンボとボタンの活性状態を設定
+        setSelectCntControlStatus(define[0].CTRLID, true);
     }
 }
 

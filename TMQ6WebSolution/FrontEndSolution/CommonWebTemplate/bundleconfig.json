@@ -108,7 +108,7 @@
       "wwwroot/js/common.util.table.js",
       "wwwroot/js/Site.js",
       "wwwroot/js/form/_template.js",
-      "wwwroot/js/tabulator.min.js",
+      //"wwwroot/js/tabulator.js", // tabulatorã‚¨ãƒ©ãƒ¼ã«ãªã‚‹ã®ã§ã¯min.jsã‚’ç›´æ¥å‚ç…§
       "wwwroot/js/jstree.min.js"
     ],
     // Optionally specify minification options
@@ -124,7 +124,7 @@
     // An array of relative input file paths. Globbing patterns supported
     "inputFiles": [
       "wwwroot/css/custom/custom.common.css"
-      // «ƒJƒXƒ^ƒ€ƒRƒ“ƒgƒ[ƒ‹—p‚Ìcssƒtƒ@ƒCƒ‹‚ğ’Ç‰Á‚µ‚Ä‚­‚¾‚³‚¢B«
+      // ï¿½ï¿½ï¿½Jï¿½Xï¿½^ï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½pï¿½ï¿½cssï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½Ç‰ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½
       //,"wwwroot/css/xxxxxx.css"
     ],
     // Optionally specify minification options
@@ -140,7 +140,7 @@
     // An array of relative input file paths. Globbing patterns supported
     "inputFiles": [
       "wwwroot/js/custom/custom.common.js",
-      // «ƒJƒXƒ^ƒ€ƒRƒ“ƒgƒ[ƒ‹—p‚Ìjsƒtƒ@ƒCƒ‹‚ğ’Ç‰Á‚µ‚Ä‚­‚¾‚³‚¢B«
+      // ï¿½ï¿½ï¿½Jï¿½Xï¿½^ï¿½ï¿½ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½pï¿½ï¿½jsï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½Ç‰ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Bï¿½ï¿½
       //,"wwwroot/js/custom/xxxxxx.js"
       "wwwroot/js/custom/YmPicker.js"
     ],
