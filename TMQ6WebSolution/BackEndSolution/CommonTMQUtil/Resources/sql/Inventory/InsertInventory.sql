@@ -15,9 +15,14 @@ INTO pt_inventory(
     , [currency_structure_id]                   -- 金額管理単位ID
     , [preparation_datetime]                    -- 棚卸準備日時
     , [inventory_datetime]                      -- 棚卸実施日時
-    , [difference_datetime ]                    -- 棚卸調整日時
+    , [temp_inventory_datetime]                 -- 棚卸実施日時取込値
+    , [difference_datetime]                     -- 棚差調整日時
     , [fixed_datetime]                          -- 棚卸確定日時
     , [creation_division_structure_id]          -- 作成区分
+    , [rftag_id]                                -- rfidタグ
+    , [temp_rftag_id]                           -- rfidタグ取込値
+    , [work_user_name]                          -- 作業者
+    , [temp_work_user_name]                     -- 作業者取込値
     , [update_serialid]                         -- 更新シリアルID
     , [delete_flg]                              -- 削除フラグ
     , [insert_datetime]                         -- 登録日時
@@ -41,9 +46,14 @@ VALUES (
     , @CurrencyStructureId                      -- 金額単位名称
     , @PreparationDatetime                      -- 棚卸準備日時
     , @InventoryDatetime                        -- 棚卸実施日時
+    , @TempInventoryDatetime                    -- 棚卸実施日時取込値
     , @DifferenceDatetime                       -- 棚卸調整日時
     , @FixedDatetime                            -- 棚卸確定日時
     , @CreationDivisionStructureId              -- 作成区分
+    , @RftagId                                  -- rfidタグ
+    , @TempRftagId                              -- rfidタグ取込値
+    , @WorkUserName                             -- 作業者
+    , @TempWorkUserName                         -- 作業者取込値
     , @UpdateSerialid                           -- 更新シリアルID
     , 0                                         -- 削除フラグ
     , @InsertDatetime                           -- 登録日時

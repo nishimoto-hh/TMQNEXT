@@ -17,6 +17,7 @@ using Dao = BusinessLogic_PT0003.BusinessLogicDataClass_PT0003;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
+using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 
 namespace BusinessLogic_PT0003
 {
@@ -77,11 +78,18 @@ namespace BusinessLogic_PT0003
                 return false;
             }
 
+            //棚IDより翻訳をまとめて取得しておく
+            List<long> partsLocationIdList = results.Select(x => x.PartsLocationId).Distinct().ToList();
+            List<STDData.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, this.LanguageId, db);
+
+            //工場ID棚番結合文字列を保持するDictionary
+            Dictionary<int, string> factoryJoinDic = new();
+
             //棚番、在庫数の設定
             foreach (var result in results)
             {
                 //棚番
-                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db);
+                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db, ref factoryJoinDic, partsLocationList);
 
                 //在庫数 単位結合
                 result.StockQuantityDisplay = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.StockQuantity.ToString(), result.UnitDigit, result.UnitRoundDivision), result.Unit, false);
@@ -354,6 +362,249 @@ namespace BusinessLogic_PT0003
         }
 
         /// <summary>
+        /// 棚卸準備表(CSV)出力
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private bool outputCsv()
+        {
+            // 棚卸一覧の選択行を取得
+            List<Dictionary<string, object>> inventoryList = getSelectedRowsByList(this.resultInfoDictionary, ConductInfo.FormList.List.InventoryList);
+            // 選択行が無ければエラー
+            if (inventoryList == null || inventoryList.Count == 0)
+            {
+                return false;
+            }
+            //選択行の棚卸ID
+            List<long> inventoryIdList = new();
+            foreach (Dictionary<string, object> selectData in inventoryList)
+            {
+                //データクラスに変換
+                Dao.searchInventoryResult inventory = new Dao.searchInventoryResult();
+                if (!SetExecuteConditionByDataClass<Dao.searchInventoryResult>(selectData, ConductInfo.FormList.List.InventoryList, inventory, DateTime.Now, this.UserId, this.UserId))
+                {
+                    return false;
+                }
+                inventoryIdList.Add(inventory.InventoryId ?? -1);
+            }
+            //ボタン押下時に棚卸データに登録した棚卸IDも追加
+            inventoryIdList.AddRange(addInventoryIdList);
+
+            // 検索条件を画面より取得してデータクラスへセット
+            Dao.searchCondition condition = getCondition(out List<string> listUnComment);
+            condition.PartsLocationId = condition.StorageLocationId;
+
+            // 工場名、予備品倉庫名を取得
+            IList<Dao.searchCondition> infoList = new List<Dao.searchCondition>();
+            infoList.Add(condition);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchCondition>(ref infoList, new List<StructureType> { StructureType.SpareLocation }, this.db, this.LanguageId);
+
+            // 出力データを取得する
+            List<Dao.CsvData> dataList = TMQUtil.SqlExecuteClass.SelectList<Dao.CsvData>(SqlName.GetCsvData, SqlName.SubDir, new { InventoryIds = string.Join(",", inventoryIdList.Distinct()), FactoryId = condition.FactoryId, LanguageId = this.LanguageId }, this.db);
+
+            // ユーザの本務工場を取得
+            List<int> factoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
+
+            // 列タイトル(2行目)の翻訳を取得する
+            List<Dao.CsvColTitleTransDataClass> transTextList = TMQUtil.SqlExecuteClass.SelectList<Dao.CsvColTitleTransDataClass>(SqlName.GetCsvColTitleTransLationText, SqlName.SubDir, new { FactoryIdList = factoryIdList, LanguageId = this.LanguageId }, this.db);
+            Dictionary<long, string> transList = new();
+            foreach (Dao.CsvColTitleTransDataClass transText in transTextList)
+            {
+                // 取得した翻訳ID、翻訳をディクショナリに追加
+                transList.Add(transText.TranslationId, transText.TranslationText);
+            }
+
+            // 出力対象データ配列
+            List<object[]> list = new();
+
+            // 出力するヘッダー行(1行目)
+            object[] firstRow = getHeaderRow();
+
+            // 出力する列タイトル行(2行目)
+            object[] secondRow = getColTitleRow();
+
+            // 出力するデータ行(3行目以降)
+            List<object[]> dataRow = getDataRow();
+
+            // 出力対象データ配列に追加
+            list.Add(firstRow);  // ヘッダー行(1行目)
+            list.Add(secondRow); // 列タイトル行(2行目)
+            list.AddRange(dataRow); // データ行
+
+            // CSV出力処理
+            if (!ComUtil.ExportCsvFileNotencircleDobleQuotes(list, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg))
+            {
+                this.MsgId = errMsg;
+                return false;
+            }
+
+            // 出力情報設定
+            this.OutputFileType = CommonConstants.REPORT.FILETYPE.CSV;
+            this.OutputFileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", UploadFile.CsvReportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.CSV;
+            this.OutputStream = outStream;
+
+            return true;
+
+            // 出力するヘッダー行(1行目)
+            object[] getHeaderRow()
+            {
+                string title = string.Empty;       // タイトル
+                string preperationDate = null;  // 棚卸準備日時
+                string targetMonth = string.Empty; // 対象年月
+                if (dataList == null || dataList.Count == 0)
+                {
+                    title = "[]" + transList[111380061];
+                }
+                else
+                {
+                    title = "[" + dataList[0].TargetMonth + "]" + transList[111380061];
+                    string[] preperationDateList = dataList[0].PreparationDatetime.Split('|');
+                    preperationDate = preperationDateList[0];
+                    targetMonth = dataList[0].TargetMonth;
+                }
+
+                // ヘッダー行(1行目)を作成
+                object[] firstRow = new object[]
+                {
+                title,                                         // [システム年月]予備品棚卸表
+                "",                                            // 空データ
+                "",                                            // 空データ
+                condition.FactoryName,                         // 工場名
+                condition.WarehouseName,                       // 予備品倉庫名
+                "",                                            // 空データ
+                "",                                            // 空データ
+                "",                                            // 空データ
+                "",                                            // 空データ
+                transList[111160041],                          // 棚卸準備日時(翻訳)
+                preperationDate,                               // 棚卸準備日時(値)
+                "",                                            // 空データ
+                "",                                            // 空データ
+                targetMonth,                                   // システム年月
+                condition.StorageLocationId,                   // 倉庫ID
+                string.Join("|", condition.DepartmentIdList)   // 部門ID
+                };
+
+                return firstRow;
+            }
+
+            // 出力する列タイトル行(2行目)
+            object[] getColTitleRow()
+            {
+                // タイトル行(2行目)を作成
+                object[] firstRow = new object[]
+                {
+                    transList[111160019], // 棚番
+                    transList[111380022], // 予備品No.
+                    transList[111380023], // 予備品名
+                    transList[111060075], // 型式(仕様)
+                    transList[111340003], // メーカー
+                    transList[111120068], // 新旧区分
+                    transList[111110025], // 在庫金額
+                    transList[111280034], // 部門コード
+                    transList[111060022], // 勘定科目
+                    transList[111110003], // 在庫数
+                    transList[111160042], // 棚卸数
+                    transList[111270027], // 備考
+                    transList[111010011], // RFIDタグ
+                    transList[111160059], // 棚卸ID
+                    transList[111110067], // 作業者
+                    transList[111160026]  // 棚卸日時
+                };
+
+                return firstRow;
+            }
+
+            // 出力するデータ行(3行目以降)
+            List<object[]> getDataRow()
+            {
+                // データ行を作成
+                List<object[]> dataRow = new();
+
+                if (dataList == null || dataList.Count == 0)
+                {
+                    return dataRow;
+                }
+
+                //棚IDより翻訳をまとめて取得しておく
+                List<string> list = dataList.Select(x => x.PartsLocation).Distinct().ToList();
+                List<string> ids = new();
+                foreach (string partsLocations in list)
+                {
+                    //「棚ID｜棚枝番」を「||」で連結して取得しているため分割
+                    List<string> splitList = partsLocations.Split("||").Distinct().ToList();
+                    // 棚IDを取得
+                    ids.AddRange(splitList.Select(x => x.Split("|")[0]));
+                }
+                List<STDData.VStructureItemEntity> partsLocationTransList = TMQUtil.GetpartsLocationList(ids, this.LanguageId, db);
+
+                //工場ID棚番結合文字列を保持するDictionary
+                Dictionary<int, string> factoryJoinDic = new();
+
+                foreach (Dao.CsvData data in dataList)
+                {
+                    List<string> standardPartsLocationNameList = new();
+                    List<string> partsLocationNameList = new();
+                    //「棚ID｜棚枝番」を「||」で連結して取得しているため分割
+                    List<string> partsLocationList = data.PartsLocation.Split("||").Distinct().ToList();
+                    // 標準棚IDを取得
+                    long standardPartsLocationId = data.StandardPartsLocationId;
+                    foreach (string partsLocation in partsLocationList)
+                    {
+                        string[] partsLocations = partsLocation.Split("|");
+                        //棚ID
+                        long partsLocationId = long.Parse(partsLocations[0]);
+                        //棚枝番
+                        string partsLocationDetailNo = partsLocations[1];
+                        if (string.IsNullOrWhiteSpace(partsLocationDetailNo))
+                        {
+                            partsLocationDetailNo = null;
+                        }
+                        //表示用の棚番を取得
+                        string partsLocationName = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, condition.FactoryId, this.LanguageId, db, ref factoryJoinDic, partsLocationTransList);
+                        if(standardPartsLocationId == partsLocationId)
+                        {
+                            standardPartsLocationNameList.Add(partsLocationName);
+                        }
+                        else
+                        {
+                            partsLocationNameList.Add(partsLocationName);
+                        }
+                    }
+                    //標準棚のソート
+                    standardPartsLocationNameList.Sort();
+                    //標準棚以外の棚のソート
+                    partsLocationNameList.Sort();
+                    //標準棚が先頭の昇順とする
+                    standardPartsLocationNameList.AddRange(partsLocationNameList);
+
+                    string stockAmount = TMQUtil.roundDigit(data.StockAmount.ToString(), data.CurrencyDigit, data.RoundDivision, true);    // 在庫金額
+                    string stockQuantity = TMQUtil.roundDigit(data.StockQuantity.ToString(), data.UnitDigit, data.RoundDivision, true);    // 在庫数
+
+                    dataRow.Add(new object[]
+                    {
+                        string.Join("|", standardPartsLocationNameList), // 棚番（パイプ区切り）
+                        data.PartsNo,           // 予備品No.
+                        data.PartsName,         // 予備品名
+                        data.ModelType,         // 型式(仕様)
+                        data.ManufacturerName,  // メーカー
+                        data.OldNewName,        // 新旧区分
+                        stockAmount,            // 在庫金額
+                        data.DepartmentCd,      // 部門コード
+                        data.AccountCd,         // 勘定科目
+                        stockQuantity,          // 在庫数
+                        "",                     // 棚卸数
+                        "",                     // 備考
+                        "",                     // RFIDタグ
+                        data.InventoryId,       // 棚卸ID（パイプ区切り）
+                        "",                     // 作業者
+                        ""                      // 棚卸日時
+                    });
+                }
+
+                return dataRow;
+            }
+        }
+
+        /// <summary>
         /// 作成区分の構成ID取得
         /// </summary>
         /// <param name="extensionData">拡張データ</param>
@@ -486,7 +737,7 @@ namespace BusinessLogic_PT0003
                 // ファイル読込
                 cmd = TMQUtil.FileOpen(file.OpenReadStream());
                 errorHeaderInfo = TMQUtil.ComUploadErrorCheck<Dao.searchCondition>(
-                    cmd, UploadFile.ReportId, UploadFile.SheetNo, UploadFile.HeaderId, ref uploadHeaderList, this.LanguageId, this.messageResources, this.db);
+                    cmd, UploadFile.ExcelReportId, UploadFile.SheetNo, UploadFile.HeaderId, ref uploadHeaderList, this.LanguageId, this.messageResources, this.db);
 
             }
             else if(extension == ComUtil.FileExtension.CSV)
@@ -495,7 +746,7 @@ namespace BusinessLogic_PT0003
 
                 // ファイル読込
                 uploadText = new TMQUtil.UploadText(file.OpenReadStream(), this.LanguageId, this.messageResources, this.db);
-                errorHeaderInfo = uploadText.ComUploadErrorCheck<Dao.searchCondition>(UploadFile.ReportId, UploadFile.SheetNo, UploadFile.HeaderId, ref uploadHeaderList);
+                errorHeaderInfo = uploadText.ComUploadErrorCheck<Dao.searchCondition>(UploadFile.CsvReportId, UploadFile.SheetNo, UploadFile.HeaderId, ref uploadHeaderList);
             }
             if (uploadHeaderList == null || uploadHeaderList.Count == 0)
             {
@@ -527,12 +778,12 @@ namespace BusinessLogic_PT0003
                 //Excel読み込み
                 // ファイル読込
                 errorListInfo = TMQUtil.ComUploadErrorCheck<Dao.searchInventoryResult>(
-                    cmd, UploadFile.ReportId, UploadFile.SheetNo, UploadFile.ListId, ref uploadDetailList, this.LanguageId, this.messageResources, this.db);
+                    cmd, UploadFile.ExcelReportId, UploadFile.SheetNo, UploadFile.ListId, ref uploadDetailList, this.LanguageId, this.messageResources, this.db);
             }
             else if (extension == ComUtil.FileExtension.CSV)
             {
                 //CSV読み込み
-                errorListInfo = uploadText.ComUploadErrorCheck<Dao.searchInventoryResult>(UploadFile.ReportId, UploadFile.SheetNo, UploadFile.ListId, ref uploadDetailList);
+                errorListInfo = uploadText.ComUploadErrorCheck<Dao.searchInventoryResult>(UploadFile.CsvReportId, UploadFile.SheetNo, UploadFile.ListId, ref uploadDetailList);
             }
             if (uploadDetailList == null || uploadDetailList.Count == 0)
             {
@@ -558,7 +809,7 @@ namespace BusinessLogic_PT0003
             }
 
             //棚卸取込値の登録
-            bool isError = registTempInventoryQuantity(uploadDetailList, targetInventoryIdList);
+            bool isError = registTempInventoryQuantity(uploadDetailList, targetInventoryIdList, extension == ComUtil.FileExtension.CSV);
 
             return isError;
 
@@ -632,7 +883,17 @@ namespace BusinessLogic_PT0003
             targetInventoryIdList = null;
 
             //棚卸数!=nullかつエラーがない行の棚卸IDを取得
-            List<long> inventoryIdList = uploadDetailList.Where(x => x.InventoryQuantity != null && !x.ErrorFlg).Select(x => x.InventoryId ?? -1).ToList();
+            List<long> inventoryIdList = new();
+            foreach (Dao.searchInventoryResult uploadData in uploadDetailList)
+            {
+                if(uploadData.InventoryQuantity == null || uploadData.ErrorFlg || uploadData.InventoryIds == null)
+                {
+                    continue;
+                }
+                //パイプ区切りで分割し棚卸IDを取得（CSVの場合、棚卸IDはパイプ区切り）
+                List<string> inventoryIds = uploadData.InventoryIds.Split("|").ToList();
+                inventoryIdList.AddRange(inventoryIds.ConvertAll(x => long.Parse(x)));
+            }
             if (inventoryIdList.Count == 0)
             {
                 // 「取込可能な棚卸データが１件も存在しません。」
@@ -687,8 +948,9 @@ namespace BusinessLogic_PT0003
         /// </summary>
         /// <param name="uploadDetailList">明細情報</param>
         /// <param name="targetInventoryIdList">取込対象の棚卸IDリスト</param>
+        /// <param name="isCsv">CSV取込の場合true</param>
         /// <returns>エラーの場合true</returns>
-        private bool registTempInventoryQuantity(List<Dao.searchInventoryResult> uploadDetailList, List<long> targetInventoryIdList)
+        private bool registTempInventoryQuantity(List<Dao.searchInventoryResult> uploadDetailList, List<long> targetInventoryIdList, bool isCsv)
         {
             if(targetInventoryIdList == null || targetInventoryIdList.Count == 0)
             {
@@ -696,19 +958,76 @@ namespace BusinessLogic_PT0003
                 return false;
             }
             bool chkUpd = int.TryParse(this.UserId, out int updUserId);
-            List<Dao.searchInventoryResult> targetList = uploadDetailList.Where(x => x.InventoryId != null && targetInventoryIdList.IndexOf(x.InventoryId ?? -1) >= 0 && x.InventoryQuantity != null).ToList();
-            foreach(Dao.searchInventoryResult target in targetList)
+            foreach(Dao.searchInventoryResult target in uploadDetailList)
             {
-                Dao.searchInventoryResult param = new Dao.searchInventoryResult();
-                param.InventoryId = target.InventoryId;
-                param.InventoryQuantity = target.InventoryQuantity;
-                // 共通の更新日時などを設定
-                setExecuteConditionByDataClassCommon<Dao.searchInventoryResult>(ref param, DateTime.Now, updUserId, -1);
-                //棚卸データの棚卸取込値に取り込んだ棚卸数を設定
-                bool returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.UpdateTempInventoryQuantity, SqlName.SubDir, param, db);
-                if (!returnFlag)
+                if(target.InventoryIds == null || target.InventoryQuantity == null)
                 {
-                    return true;
+                    continue;
+                }
+
+                //パイプ区切りで分割し棚卸IDを取得（CSVの場合、棚卸IDはパイプ区切り）
+                List<long> inventoryIdList = new();
+                List<string> inventoryIds = target.InventoryIds.Split("|").ToList();
+                foreach(string inventoryId in inventoryIds)
+                {
+                    if(targetInventoryIdList.IndexOf(long.Parse(inventoryId)) >= 0)
+                    {
+                        inventoryIdList.Add(long.Parse(inventoryId));
+                    }
+                }
+                if (inventoryIdList.Count == 0)
+                {
+                    continue;
+                }
+
+                //棚卸IDを条件に在庫数の合計値を取得
+                decimal stockQuantity = TMQUtil.SqlExecuteClass.SelectEntity<decimal>(SqlName.GetSumStockQuantity, SqlName.SubDir, new { InventoryIdList = inventoryIdList }, this.db);
+                //在庫数=棚卸数の場合true
+                bool isSameQuantity = stockQuantity == target.InventoryQuantity;
+
+                foreach (long inventoryId in inventoryIdList)
+                {
+                    //棚卸数
+                    decimal? inventoryQuantity = target.InventoryQuantity;
+                    //RFIDタグ(CSVのみ設定されている)
+                    string rftagId = target.RftagId;
+                    if (isCsv)
+                    {
+                        //CSVの場合
+                        if (isSameQuantity)
+                        {
+                            //棚番毎の在庫数も一致しているとみなすので、棚卸数に在庫数の値を設定
+                            ComDao.PtInventoryEntity result = new ComDao.PtInventoryEntity().GetEntity(inventoryId, this.db);
+                            inventoryQuantity = result.StockQuantity;
+                        }
+                        else
+                        {
+                            //すべての棚番で一致していないとみなすので、棚卸数に0を設定
+                            inventoryQuantity = 0;
+                        }
+                        if (!string.IsNullOrEmpty(target.RftagId))
+                        {
+                            //RFIDタグはパイプ区切りをカンマ区切りに変換する
+                            List<string> rftagIdList = target.RftagId.Split("|").ToList();
+                            rftagId = string.Join(',', rftagIdList);
+                        }
+                    }
+
+                    //取込値を設定
+                    Dao.searchInventoryResult param = new Dao.searchInventoryResult();
+                    param.InventoryId = inventoryId;
+                    param.InventoryQuantity = inventoryQuantity;
+                    param.InventoryDatetime = target.InventoryDatetime;
+                    param.RftagId = rftagId;
+                    param.WorkUserName = target.WorkUserName;
+                    // 共通の更新日時などを設定
+                    setExecuteConditionByDataClassCommon<Dao.searchInventoryResult>(ref param, DateTime.Now, updUserId, -1);
+                    //棚卸データの棚卸取込値に取り込んだ棚卸数を設定
+                    bool returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.UpdateTempInventoryQuantity, SqlName.SubDir, param, db);
+                    if (!returnFlag)
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -956,13 +1275,68 @@ namespace BusinessLogic_PT0003
             bool chkUpd = int.TryParse(this.UserId, out int updUserId);
             foreach (Dao.searchInventoryResult info in registList)
             {
-                //棚卸実施日時
-                info.InventoryDatetime = now;
+                //SQLでコメントアウト解除のリスト
+                List<string> listUnComment = new();
+                if (info.UploadFlg)
+                {
+                    //取込直後の一時登録の場合
+
+                    ComDao.PtInventoryEntity inventory = new ComDao.PtInventoryEntity().GetEntity(info.InventoryId ?? -1, this.db);
+                    if (inventory == null)
+                    {
+                        continue;
+                    }
+                    //棚卸実施日時
+                    if (info.InventoryDatetime != null && inventory.TempInventoryDatetime != null)
+                    {
+                        //CSVに設定された棚卸日時を登録する
+
+                        DateTime dispInventoryDatetime = info.InventoryDatetime ?? now;
+                        DateTime inventoryDatetime = inventory.TempInventoryDatetime ?? now;
+                        //棚卸実施日時取込値の秒以下を0に変換（画面表示がyyyy/MM/dd HH:mmのため）
+                        DateTime date = new DateTime(inventoryDatetime.Year, inventoryDatetime.Month, inventoryDatetime.Day, inventoryDatetime.Hour, inventoryDatetime.Minute, 0);
+                        if (dispInventoryDatetime.CompareTo(date) != 0)
+                        {
+                            //画面に表示していた棚卸日時と棚卸実施日時取込値が一致しない場合（EXCEL取込の場合）
+                            //システム日時を設定
+                            info.InventoryDatetime = now;
+                        }
+                    }
+                    else
+                    {
+                        //システム日時を設定
+                        info.InventoryDatetime = now;
+                    }
+
+                    //RFIDタグ(CSV取込後の一時登録の場合、CSVに設定されたRFIDタグを登録する)
+                    if (info.RftagId != inventory.TempRftagId)
+                    {
+                        //画面に表示していたRFIDタグとRFIDタグ取込値が一致しない場合（EXCEL取込の場合）
+                        //NULLを設定
+                        info.RftagId = null;
+                    }
+
+                    //作業者(CSV取込後の一時登録の場合、CSVに設定された作業者を登録する)
+                    if (info.WorkUserName != inventory.TempWorkUserName)
+                    {
+                        //画面に表示していた作業者と作業者取込値が一致しない場合（EXCEL取込の場合）
+                        //NULLを設定
+                        info.WorkUserName = null;
+                    }
+
+                    listUnComment.Add("UploadFlg");
+                }
+                else
+                {
+                    //棚卸実施日時
+                    info.InventoryDatetime = now;
+                }
+
                 // 共通の更新日時などを設定
                 info.UpdateDatetime = now;
                 info.UpdateUserId = updUserId;
                 // 更新SQL実行
-                bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.UpdateInventoryQuantity, SqlName.SubDir, info, this.db);
+                bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.UpdateInventoryQuantity, SqlName.SubDir, info, this.db, "", listUnComment);
                 if (!result)
                 {
                     return false;

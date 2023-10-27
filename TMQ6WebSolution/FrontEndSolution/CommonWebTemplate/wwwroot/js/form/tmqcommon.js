@@ -163,12 +163,29 @@ const RoundDivision =
     Floor: 3    // 切り捨て
 }
 
+// 変更管理 申請状況(拡張項目)
+const ApplicationStatus =
+{
+    Making: "10",  // 申請データ作成中
+    Request: "20", // 承認依頼中
+    Return: "30",  // 差戻中
+    Approved: "40" // 承認済み
+}
+
 // 変更管理 申請区分(拡張項目)
 const ApplicationDivision =
 {
     New: "10",    // 新規登録申請
     Update: "20", // 変更申請
     Delete: "30"  // 削除申請
+}
+
+// 申請区分に応じた背景色設定のCSSクラス名
+const BackGroundStyleInfo =
+{
+    10: "hmApplicationDivisionNew",    // 新規登録申請
+    20: "hmApplicationDivisionUpdate", // 変更申請
+    30: "hmApplicationDivisionDelete"  // 削除申請
 }
 
 /**
@@ -1430,11 +1447,11 @@ function getParamToPT0007FromPT0001(CtrlId, PartsId) {
  * @param {any} HistoryManagementId 変更管理ID
  * @param {any} MachineId           機番ID
  */
-function getParamToHM0001FormDetail(HistoryManagementId, MachineId) {
+function getParamToHM0001FormDetail(MachineId) {
     var conditionData = {};
     conditionData['CTRLID'] = HM0001_List_CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL41'] = HistoryManagementId;
+    conditionData['VAL41'] = 0;
     conditionData['VAL43'] = MachineId;
     return conditionData;
 }
@@ -3524,12 +3541,12 @@ function isChangeList(ctrlId) {
 
 /**
  * 変更管理 背景色変更共通処理
- * @param {any} tbl                        検索結果
- * @param {any} applicationDivisionCodeVal 申請区分の拡張項目を表示している列の項目番号
- * @param {any} valueChangedVal            変更のあった項目を表示している列の項目番号
- * @param {any} columnNoList               項目名と項目番号
+ * @param {any} tbl                        :検索結果
+ * @param {any} applicationDivisionCodeVal :申請区分の拡張項目を表示している列の項目番号
+ * @param {any} valueChangedVal            :変更のあった項目を表示している列の項目番号
+ * @param {any} columnNoList               :項目名と項目番号(検索結果の項目名をキーに、項目番号を値に定義した連想配列)
  */
-function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChangedVal, columnNoList) {
+function commonChangeBackGroundColorHistory(tbl, applicationDivisionCodeVal, valueChangedVal, columnNoList) {
 
     // 検索結果のレコードを取得
     var table = $(tbl.element).find(".tabulator-table").children();
@@ -3541,7 +3558,7 @@ function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChang
 
     var applicationDivisionCode; // 申請区分(拡張項目)
     var valueChanged;            // 変更のあった項目名
-    var colName;                 // 背景色を変更する項目名(列名と申請区分に分割)
+    var colName;                 // 背景色を変更する項目名(列名と申請区分に分割) ※JavaScriptで定義している項目名とSQLで取得する項目名は統一させる
 
     $.each($(table), function (idx, row) {
 
@@ -3552,13 +3569,13 @@ function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChang
         if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) {
 
             // 申請区分が「10：新規登録申請」、「30：削除申請」
-            changeBackGroundColorTabulator(row, applicationDivisionCode);
+            changeBackGroundColorTabulatorHistory(row, applicationDivisionCode);
 
         }
         else if (applicationDivisionCode == ApplicationDivision.Update) {
 
             // 申請区分が「20：変更申請」
-            // 変更のあった項目名を取得(「|」区切りになっているので分割)
+            // 変更のあった項目名を取得(「MachineNo_10|MachineName_30」 のようにパイプ「|」区切りになっているので分割)
             valueChanged = ($(row).find("div[tabulator-field='VAL" + valueChangedVal + "']")[0].innerText).split("|");
 
             valueChanged.forEach(function (columnDetail, colIdx) {
@@ -3571,13 +3588,12 @@ function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChang
 
                     if (columnNoList[colName[0]]) {
                         // 背景色変更処理
-                        changeBackGroundColorTabulator(row, colName[1], columnNoList[colName[0]]);
+                        changeBackGroundColorTabulatorHistory(row, colName[1], columnNoList[colName[0]]);
                     }
                 }
             }, row);
         }
     });
-
 }
 
 /**
@@ -3586,23 +3602,10 @@ function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChang
  * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
  * @param {any} val                     :項目番号
  */
-function changeBackGroundColorTabulator(row, applicationDivisionCode, val) {
-
-    // 背景色スタイル
-    var backGroundStyle;
+function changeBackGroundColorTabulatorHistory(row, applicationDivisionCode, val) {
 
     // 申請区分に応じて背景色スタイルを設定
-    switch (applicationDivisionCode) {
-        case ApplicationDivision.New: // 新規登録申請
-            backGroundStyle = "hmApplicationDivisionNew";
-            break;
-        case ApplicationDivision.Update: // 変更申請
-            backGroundStyle = "hmApplicationDivisionUpdate";
-            break;
-        case ApplicationDivision.Delete: // 削除申請
-            backGroundStyle = "hmApplicationDivisionDelete";
-            break;
-    }
+    var backGroundStyle = BackGroundStyleInfo[applicationDivisionCode];
 
     // 項目番号があれば指定のセル、無ければ行全体
     if (val) {
@@ -3623,27 +3626,105 @@ function changeBackGroundColorTabulator(row, applicationDivisionCode, val) {
  * @param {any} val                     :項目番号
  * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
  */
-function changeBackGroundColor(ctrlId, val, applicationDivisionCode) {
-
-    // 背景色スタイル
-    var backGroundStyle;
+function changeBackGroundColorHistory(ctrlId, val, applicationDivisionCode) {
 
     // 申請区分に応じて背景色スタイルを設定
-    switch (applicationDivisionCode) {
-        case ApplicationDivision.New: // 新規登録申請
-            backGroundStyle = "hmApplicationDivisionNew";
-            break;
-        case ApplicationDivision.Update: // 変更申請
-            backGroundStyle = "hmApplicationDivisionUpdate";
-            break;
-        case ApplicationDivision.Delete: // 削除申請
-            backGroundStyle = "hmApplicationDivisionDelete";
-            break;
-    }
+    var backGroundStyle = BackGroundStyleInfo[applicationDivisionCode];
 
     // 背景色変更対象のセルを取得
     var cell = getCtrl(ctrlId, val, 1, CtrlFlag.Label, false, false);
 
     // セルの背景色を変更
     $(cell).addClass(backGroundStyle);
+}
+
+
+/**
+ * 変更管理 詳細画面ボタン非表示 制御
+ * @param {any} isTransactionMode       :トランザクションモードの場合True、変更管理モードの場合False
+ * @param {any} applicationStatusCode   :申請状況(10：申請データ作成中、20：承認依頼中、30：差戻中、40：承認済み)
+ * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
+ * @param {any} isCertified             :申請の申請者またはシステム管理者の場合True、それ以外はFalse
+ * @param {any} isCertifiedFactory      :工場の承認ユーザの場合True
+ */
+function commonButtonHideHistory(isTransactionMode, applicationStatusCode, applicationDivisionCode, isCertified, isCertifiedFactory) {
+
+    // 複写申請
+    // ①変更管理モードの場合
+    if (!isTransactionMode) {
+        dispNoneElementHistory(getButtonCtrl("CopyRequest"));
+    }
+
+    // 変更申請・削除申請
+    // ①変更管理モードの場合
+    // ②仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
+    if (!isTransactionMode || (applicationStatusCode == ApplicationStatus.Making || applicationStatusCode == ApplicationStatus.Return)) {
+        dispNoneElementHistory(getButtonCtrl("ChangeRequest"));
+        dispNoneElementHistory(getButtonCtrl("DeleteRequest"));
+    }
+
+    // 承認依頼
+    // ①トランザクションモードの場合
+    // ②申請状況が「20：承認依頼中」の場合
+    // ③申請状況が「10：申請データ作成中」かつ、申請の申請者でない場合
+    // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
+    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Request ||
+        (applicationStatusCode == ApplicationStatus.Making && !isCertified) || (applicationStatusCode == ApplicationStatus.Return && !isCertified)) {
+        dispNoneElementHistory(getButtonCtrl("ChangeApplicationRequest"));
+    }
+
+    // 修正
+    // ①トランザクションモードの場合
+    // ②申請状況が「10：申請データ作成中」かつ、申請区分が「30：削除申請」の場合
+    // ③申請状況が「20：承認依頼中」の場合
+    // ④申請状況が「30：差戻中」かつ、申請区分が「30：削除申請」の場合
+    if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && applicationDivisionCode == ApplicationDivision.Delete) || applicationStatusCode == ApplicationStatus.Request ||
+        (applicationStatusCode == ApplicationStatus.Return && applicationDivisionCode == ApplicationDivision.Delete)) {
+        dispNoneElementHistory(getButtonCtrl("EditRequest"));
+    }
+
+    // 取消
+    // ①トランザクションモードの場合
+    // ②申請状況が「10：申請データ作成中」かつ、申請の申請者でない場合
+    // ③申請状況が「20：承認依頼中」の場合
+    // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
+    if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && !isCertified) || applicationStatusCode == ApplicationStatus.Request ||
+        (applicationStatusCode == ApplicationStatus.Return && !isCertified)) {
+        dispNoneElementHistory(getButtonCtrl("CancelRequest"));
+    }
+
+    // 引戻
+    // ①トランザクションモードの場合
+    // ②申請状況が「10：申請データ作成中」の場合
+    // ③申請状況が「20：承認依頼中」かつ、申請の申請者でない場合
+    // ④申請状況が「30：差戻中」の場合
+    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || (applicationStatusCode == ApplicationStatus.Request && !isCertified) ||
+        applicationStatusCode == ApplicationStatus.Return) {
+        dispNoneElementHistory(getButtonCtrl("PullBackRequest"));
+    }
+
+    // 承認・否認
+    // ①トランザクションモードの場合
+    // ②申請状況が「10：申請データ作成中」の場合
+    // ③工場の承認ユーザでない場合
+    // ④申請状況が「30：差戻中」の場合
+    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || !isCertifiedFactory || applicationStatusCode == ApplicationStatus.Return) {
+        dispNoneElementHistory(getButtonCtrl("ChangeApplicationApproval"));
+        dispNoneElementHistory(getButtonCtrl("ChangeApplicationDenial"));
+    }
+
+    // 変更前
+    if (isTransactionMode) {
+        dispNoneElementHistory(getButtonCtrl("BeforeChange"));
+    }
+}
+
+/**
+ * 変更管理 ボタンを非表示にする
+ * @param {any} button ボタン要素
+ */
+function dispNoneElementHistory(button) {
+
+    // ボタンの親要素を非表示にする
+    $(button).parent().css("display", "none");
 }

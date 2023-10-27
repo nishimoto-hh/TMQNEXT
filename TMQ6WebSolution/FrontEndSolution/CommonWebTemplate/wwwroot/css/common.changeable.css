@@ -10,18 +10,17 @@
 /*変更管理 申請区分が新規登録申請の場合*/
 .tabulator-row.tabulator-row-even.hmApplicationDivisionNew, .tabulator-row.tabulator-row-odd.hmApplicationDivisionNew, .hmApplicationDivisionNew {
     /*背景色：黄色*/
-    background-color: yellow !important;
+    background-color: #FFFF00 !important;
 }
 
 /*変更管理 申請区分削除申請の場合*/
 .tabulator-row.tabulator-row-even.hmApplicationDivisionDelete, .tabulator-row.tabulator-row-odd.hmApplicationDivisionDelete, .hmApplicationDivisionDelete {
     /*背景色：赤*/
-    background-color: red !important;
+    background-color: #FF0000 !important;
 }
 
 /*変更管理 申請区分が変更申請かつ値が変更されている場合*/
 .hmApplicationDivisionUpdate {
     /*背景色：緑*/
-    background-color: lightgreen !important;
+    background-color: #008000 !important;
 }
-

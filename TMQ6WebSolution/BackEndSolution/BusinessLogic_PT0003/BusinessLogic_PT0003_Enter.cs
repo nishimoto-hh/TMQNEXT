@@ -67,11 +67,18 @@ namespace BusinessLogic_PT0003
                 return false;
             }
 
+            //棚IDより翻訳をまとめて取得しておく
+            List<long> partsLocationIdList = results.Select(x => x.PartsLocationId).Distinct().ToList();
+            List<STDData.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, this.LanguageId, db);
+
+            //工場ID棚番結合文字列を保持するDictionary
+            Dictionary<int, string> factoryJoinDic = new();
+
             //棚番、単位結合
             foreach (var result in results)
             {
                 // コードと名称結合
-                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db);                                    // 棚番
+                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db, ref factoryJoinDic, partsLocationList); // 棚番
                 result.DepartmentNm = TMQUtil.CombineNumberAndUnit(result.DepartmentCd, result.DepartmentNm, true);                                                                                              // 部門
 
                 result.InoutQuantityDisplay = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.InoutQuantity.ToString(), result.UnitDigit, result.UnitRoundDivision), result.UnitName, false);             // 入庫数

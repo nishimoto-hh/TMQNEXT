@@ -186,6 +186,10 @@ namespace BusinessLogic_PT0001
 
             // 検索結果を配列に追加
             List<object[]> list = new();
+
+            // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+            Dictionary<int, string> factoryJoinDic = new();
+            string strJoin = string.Empty;
             foreach (var result in results)
             {
                 // 倉庫の場合は空にする
@@ -197,8 +201,12 @@ namespace BusinessLogic_PT0001
                 // 棚名称・枝番が空でないかつ、標準棚番の構成IDの階層番号が「3」の場合
                 if (!string.IsNullOrEmpty(result.ShedName) && !string.IsNullOrEmpty(result.PartsLocationDetailNo) && result.StructureLayerNo == 3)
                 {
+                    // 結合文字取得
+                    strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(result.PartsFactoryId, this.LanguageId, this.db, ref factoryJoinDic);
+
                     // 標準棚番 + 枝番
-                    result.ShedName = TMQUtil.GetDisplayPartsLocation(result.ShedName, result.PartsLocationDetailNo, result.PartsFactoryId, this.LanguageId, this.db);
+                    result.ShedName = TMQUtil.GetDisplayPartsLocation(result.ShedName, result.PartsLocationDetailNo, strJoin);
+
                 }
                 list.Add(new object[]
                 {

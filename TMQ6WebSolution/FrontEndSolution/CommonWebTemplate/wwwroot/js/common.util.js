@@ -624,6 +624,17 @@ function setDataForMultiSelect(td, msuls, value) {
     });
     checks = null;
 
+    if (aryVal.length > 0) {
+        //全ての項目がﾁｪｯｸon(＝ﾁｪｯｸoffの項目がない)場合、「すべて」にチェック(削除アイテムは除外する)
+        var checkes = $(msuls).find("li>ul>li:not(.hide):not(.deleteItem) :checkbox:not(.ctrloption):unchecked");
+        if (checkes == null || checkes.length == 0) {
+            //ｵﾌﾟｼｮﾝ項目ﾁｪｯｸﾎﾞｯｸｽをﾁｪｯｸ：on
+            var allchk = $(msuls).find("li:not(.hide) :checkbox.ctrloption");
+            if (allchk && allchk.length > 0) {
+                $(allchk).prop('checked', true);
+            }
+        }
+    }
     setAttrByNativeJs(msuls, "data-value", value);     //※再生成用に退避
 
     //ﾁｪｯｸ:onの表示名をｾｯﾄ

@@ -82,7 +82,11 @@ SELECT
         WHEN factory_name.factory_name IS NULL THEN '○'
         ELSE NULL
     END AS default_item,                                              -- 標準(=工場なし)
-    ms.structure_item_id,                                             -- アイテムID
+    CASE
+	WHEN ms.structure_group_id = 1040 and ms.structure_layer_no = 2			-- 予備品倉庫のとき
+	THEN 'AR'+RIGHT('          ' + CONVERT(NVARCHAR, ms.structure_item_id), 10)		-- structure_item_id標記変更　by　AEC
+	ELSE　CONVERT(NVARCHAR, ms.structure_item_id)
+    END　AS structure_item_id,                                             -- アイテムID
     mt.translation_text,                                              -- アイテム翻訳
     pms.structure_item_id AS parent_structure_item_id,                -- 親階層アイテムID
     pmt.translation_text AS parent_translation_text,                  -- 親階層アイテム翻訳
@@ -109,7 +113,8 @@ SELECT
     ex9.extension_data AS extension_data9,                            -- 拡張項目9
     ex10.extension_data AS extension_data10,                          -- 拡張項目10
     ms.factory_id,                                                    -- 工場ID(並び替え用)
-    mn.display_order as group_display_order                           -- 構成グループ表示順(並び替え用)
+    mn.display_order as group_display_order,                           -- 構成グループ表示順(並び替え用)
+    ms.structure_layer_no                                             -- 追加　by　AEC
 FROM
     ms_structure ms
     LEFT JOIN
@@ -215,5 +220,6 @@ AND ms.structure_group_id IN @StructureGroupId
 ) tbl
 ORDER BY
     group_display_order,
+    structure_layer_no,		-- 追加　by　AEC
     factory_id,
     display_order

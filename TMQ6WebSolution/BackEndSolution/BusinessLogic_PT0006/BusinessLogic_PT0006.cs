@@ -874,10 +874,13 @@ namespace BusinessLogic_PT0006
             // 丸め処理・数量と単位を結合
             result.ToList().ForEach(x => x.JoinStrAndRound());
 
+            // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+            Dictionary<int, string> factoryJoinDic = new();
+            string strJoin = string.Empty;
             foreach (var data in result)
             {
                 // 結合文字取得
-                string strJoin = TMQUtil.GetJoinStrOfPartsLocation(data.FactoryId, this.LanguageId, this.db);
+                strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(data.FactoryId, this.LanguageId, this.db, ref factoryJoinDic);
                 // 表示用棚番取得
                 data.PartsLocationDisplay = TMQUtil.GetDisplayPartsLocation(data.PartsLocationCd, data.PartsLocationDetailNo, strJoin);
             }

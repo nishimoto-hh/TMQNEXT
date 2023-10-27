@@ -57,6 +57,21 @@ namespace BusinessLogic_PT0003
             /// <summary>Gets or sets 部門ID(取込時に使用)</summary>
             /// <value>部門ID</value>
             public string DepartmentId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 倉庫ID</summary>
+            /// <value>倉庫ID</value>
+            public int WarehouseId { get; set; }
+            /// <summary>Gets or sets 倉庫名称</summary>
+            /// <value>倉庫名称</value>
+            public string WarehouseName { get; set; }
+            /// <summary>Gets or sets 予備品機能場所階層ID</summary>
+            /// <value>予備品機能場所階層ID</value>
+            public int PartsLocationId { get; set; }
         }
 
         /// <summary>
@@ -172,11 +187,23 @@ namespace BusinessLogic_PT0003
             /// <summary>Gets or sets 丸め処理区分(数量)</summary>
             /// <value>丸め処理区分(数量)</value>
             public int UnitRoundDivision { get; set; }
+            /// <summary>Gets or sets RFIDタグ</summary>
+            /// <value>RFIDタグ</value>
+            public string RftagId { get; set; }
+            /// <summary>Gets or sets 作業者</summary>
+            /// <value>作業者</value>
+            public string WorkUserName { get; set; }
 
             //下記は取込時に使用する
             /// <summary>Gets or sets エラーフラグ</summary>
             /// <value>エラーフラグ</value>
             public bool ErrorFlg { get; set; }
+            /// <summary>Gets or sets 棚卸ID（パイプ区切り）</summary>
+            /// <value>棚卸ID（パイプ区切り）</value>
+            public string InventoryIds { get; set; }
+            /// <summary>Gets or sets 取込後フラグ(取込後の一覧表示時はtrue)</summary>
+            /// <value>取込後フラグ</value>
+            public bool UploadFlg { get; set; }
 
         }
 
@@ -480,6 +507,86 @@ namespace BusinessLogic_PT0003
             /// <summary>Gets or sets 丸め処理区分</summary>
             /// <value>丸め処理区分</value>
             public string RoundDivision { get; set; }
+        }
+
+        /// <summary>
+        /// 棚卸準備表をCSV出力する際の列タイトル翻訳取得用
+        /// </summary>
+        public class CsvColTitleTransDataClass
+        {
+            /// <summary>Gets or sets 翻訳ID</summary>
+            /// <value>翻訳ID</value>
+            public long TranslationId { get; set; }
+            /// <summary>Gets or sets 翻訳名称</summary>
+            /// <value>翻訳名称</value>
+            public string TranslationText { get; set; }
+        }
+
+        /// <summary>
+        /// 棚卸準備表(CSV)のデータクラス
+        /// </summary>
+        public class CsvData : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets 対象年月</summary>
+            /// <value>対象年月</value>
+            public string TargetMonth { get; set; }
+            /// <summary>Gets or sets 棚卸準備日時（パイプ区切り）</summary>
+            /// <value>棚卸準備日時（パイプ区切り）</value>
+            public string PreparationDatetime { get; set; }
+            /// <summary>Gets or sets 棚と棚枝番を結合する文字列</summary>
+            /// <value>棚と棚枝番を結合する文字列</value>
+            public string JoinString { get; set; }
+            /// <summary>Gets or sets 棚番ID|棚枝番（パイプ2個区切り）</summary>
+            /// <value>棚番ID|棚枝番（パイプ2個区切り）</value>
+            public string PartsLocation { get; set; }
+            /// <summary>Gets or sets 標準棚ID</summary>
+            /// <value>標準棚ID</value>
+            public long StandardPartsLocationId { get; set; }
+            /// <summary>Gets or sets 棚番ID</summary>
+            /// <value>棚番ID</value>
+            public long PartsLocationId { get; set; }
+            /// <summary>Gets or sets 棚枝番</summary>
+            /// <value>棚枝番</value>
+            public string PartsLocationDetailNo { get; set; }
+            /// <summary>Gets or sets 予備品№</summary>
+            /// <value>予備品№</value>
+            public string PartsNo { get; set; }
+            /// <summary>Gets or sets 予備品名称</summary>
+            /// <value>予備品名称</value>
+            public string PartsName { get; set; }
+            /// <summary>Gets or sets 型式</summary>
+            /// <value>型式</value>
+            public string ModelType { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerName { get; set; }
+            /// <summary>Gets or sets 新旧区分</summary>
+            /// <value>新旧区分</value>
+            public string OldNewName { get; set; }
+            /// <summary>Gets or sets 在庫金額</summary>
+            /// <value>在庫金額</value>
+            public decimal StockAmount { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCd { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string AccountCd { get; set; }
+            /// <summary>Gets or sets 在庫数</summary>
+            /// <value>在庫数</value>
+            public decimal StockQuantity { get; set; }
+            /// <summary>Gets or sets 棚卸ID（パイプ区切り）</summary>
+            /// <value>棚卸ID（パイプ区切り）</value>
+            public string InventoryId { get; set; }
+            /// <summary>Gets or sets 小数点以下桁数(数量)</summary>
+            /// <value>小数点以下桁数(数量)</value>
+            public int UnitDigit { get; set; }
+            /// <summary>Gets or sets 小数点以下桁数(金額)</summary>
+            /// <value>小数点以下桁数(金額)</value>
+            public int CurrencyDigit { get; set; }
+            /// <summary>Gets or sets 丸め処理区分</summary>
+            /// <value>丸め処理区分</value>
+            public int RoundDivision { get; set; }
         }
     }
 }

@@ -65,7 +65,7 @@ namespace BusinessLogic_HM0001
             condition.UserId = int.Parse(this.UserId); // ログインユーザID
 
             // 変更管理IDの有無で処理モードを設定
-            if (condition.HistoryManagementId == null || condition.HistoryManagementId == 0)
+            if (condition.HistoryManagementId == 0)
             {
                 // 変更管理IDなし の場合、トランザクションモード
                 condition.ProcessMode = (int)processMode.transaction;
@@ -90,13 +90,14 @@ namespace BusinessLogic_HM0001
             string sqlName = string.Empty;
             string withSql = string.Empty;
 
+            // 処理モードを判定
             switch (condition.ProcessMode)
             {
-                case (int)processMode.transaction: // トランザクションデータ
+                case (int)processMode.transaction: // トランザクションモード
                     sqlName = SqlName.Detail.GetTransactionMachineInfo;
                     break;
 
-                case (int)processMode.history: // 変更管理データ
+                case (int)processMode.history: // 変更管理モード
                     sqlName = SqlName.List.GetHistoryMachineList;
 
                     // WITH句取得
@@ -124,12 +125,14 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);       // 変更管理データ
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, true); // トランザクションデータ
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定(変更管理データ・トランザクションデータ どちらも設定する)
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, true);
 
-            // 変更があった項目を取得
-            getValueChangedItem(results);
+            // 変更があった項目を取得(変更管理モードの場合)
+            if (condition.ProcessMode == (int)processMode.history)
+            {
+                TMQUtil.HistoryManagement.setValueChangedItem<Dao.searchResult>(results);
+            }
 
             // 処理モードを検索結果に設定
             results[0].ProcessMode = condition.ProcessMode;
@@ -171,6 +174,54 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
+        /// 保全項目一覧 検索処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool searchManagementStandardsList(Dao.detailSearchCondition condition)
+        {
+            // 表示するデータタイプに応じたSQLを取得
+            string sqlName = string.Empty; // SQLファイル名
+            string subDir = string.Empty;  // サブディレクトリ名
+
+            // 処理モードを判定
+            switch (condition.ProcessMode)
+            {
+                case (int)processMode.transaction: // トランザクションモード
+                    subDir = SqlName.SubDirMachine;
+                    sqlName = SqlName.Detail.GetManagementStandard;
+                    break;
+
+                case (int)processMode.history: // 変更管理モード
+                    subDir = SqlName.SubDir;
+                    sqlName = SqlName.Detail.GetHistoryManagementStandardsList;
+                    break;
+
+                default:
+                    // 該当しない場合はエラー
+                    return false;
+            }
+
+            // SQL取得
+            TMQUtil.GetFixedSqlStatement(subDir, sqlName, out string sql);
+
+            // SQL実行
+            IList<Dao.managementStandardsResult> results = db.GetListByDataClass<Dao.managementStandardsResult>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                return true;
+            }
+
+            // 検索結果を一覧にを設定
+            if (!SetFormByDataClass(ConductInfo.FormDetail.ControlId.ManagementStandardsList, results))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// ボタン表示/非表示フラグ取得
         /// </summary>
         /// <param name="result">検索結果</param>
@@ -190,51 +241,6 @@ namespace BusinessLogic_HM0001
             // 取得結果を設定
             result.IsCertified = isAble[0].IsCertified;               // 申請の申請者またはシステム管理者の場合「1」、それ以外は「0」
             result.IsCertifiedFactory = isAble[0].IsCertifiedFactory; // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」それ以外は「0」
-
-            return true;
-        }
-
-        /// <summary>
-        /// 保全項目一覧 検索処理
-        /// </summary>
-        /// <param name="condition">検索条件</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool searchManagementStandardsList(Dao.detailSearchCondition condition)
-        {
-            // 表示するデータタイプに応じたSQLを取得
-            string sqlName = string.Empty;
-            switch (condition.ProcessMode)
-            {
-                case (int)processMode.transaction: // トランザクションデータ
-                    sqlName = SqlName.Detail.GetTransactionManagementStandardsList;
-                    break;
-
-                case (int)processMode.history: // 変更管理データ
-                    sqlName = SqlName.Detail.GetHistoryManagementStandardsList;
-                    break;
-                default:
-                    // 該当しない場合はエラー
-                    return false;
-            }
-
-            return true;
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string sql);
-
-            // SQL実行
-            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, condition);
-            if (results == null || results.Count == 0)
-            {
-                return false;
-            }
-
-
-
-
-
-
-
-
 
             return true;
         }

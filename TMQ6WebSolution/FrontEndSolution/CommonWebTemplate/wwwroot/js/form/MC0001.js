@@ -124,7 +124,8 @@ const MachineDatail = {
         Update: "Update",
         Delete: "Delete",
         Back: "Back",
-        SpecUpdate: "SpecUpdate"
+        SpecUpdate: "SpecUpdate",
+        HistoryManagementDetail: "HistoryManagementDetail"
     },
     TabNo: {
         LongPlan: 4
@@ -771,6 +772,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
             // 共通処理
             conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.MpInfo, getValueDataRow(DetailMpInfo.MpInfoList.Id, DetailMpInfo.MpInfoList.MpInfoId, selectedRowNo, CtrlFlag.Label)));
+        }
+        else if (btn_ctrlId == MachineDatail.ButtonId.HistoryManagementDetail) {
+            // 変更管理(非表示の機番IDを取得し条件に設定)
+            conditionDataList.push(getParamToHM0001FormDetail(getValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false)));
         }
     } else if (formNo == MachineEditDetail.No) {
         // 参照画面

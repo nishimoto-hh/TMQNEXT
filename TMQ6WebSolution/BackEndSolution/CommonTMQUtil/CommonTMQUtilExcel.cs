@@ -816,7 +816,6 @@ namespace CommonTMQUtil
         /// <param name="condAccountReport">会計帳票出力条件クラス</param>
         /// <param name="summaryDataList">集計帳票集計データ</param>
         /// <param name="dicFixedValueForOutput">固定値出力用データ</param>
-        /// <param name="isRP0310ToCsv">棚卸準備リストのCSV出力の場合のみTrue</param>
         /// <returns>true:正常　false:エラー</returns>
         public static bool CommonOutputExcel(
         int factoryId,
@@ -840,8 +839,7 @@ namespace CommonTMQUtil
         Option option = null,
         CondAccountReport condAccountReport = null,
         Dictionary<int, IList<dynamic>> dicSummaryDataList = null,
-        Dictionary<string, string> dicFixedValueForOutput = null,
-        bool isRP0310ToCsv = false)
+        Dictionary<string, string> dicFixedValueForOutput = null)
         {
 
             //==========
@@ -982,15 +980,6 @@ namespace CommonTMQUtil
                                 break;
                             case ReportRP0310.ReportId: // 棚卸-棚卸準備表
                                 RP0310JoinStrAndRound(dataList, sheetDefine.SheetNo, languageId, db, dicFixedValueForOutput);
-
-                                if (isRP0310ToCsv)
-                                {
-                                    // CSV出力をして終了する
-                                    RP0310OutputCsv(userId, languageId, db, dataList, dicFixedValueForOutput, ref memoryStream, ref message);
-                                    // ダウンロードファイル名
-                                    fileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", reportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.CSV;
-                                    return true;
-                                }
                                 break;
                             default:
                                 break;
@@ -1772,6 +1761,8 @@ namespace CommonTMQUtil
             // 予備品一覧のデータを表示するシート
             if (sheetNo == 1)
             {
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
                 string joinStr = string.Empty;
                 foreach (dynamic result in results)
                 {
@@ -1779,7 +1770,7 @@ namespace CommonTMQUtil
                     if (!string.IsNullOrEmpty((result.rack_name).ToString()) && !string.IsNullOrEmpty((result.parts_location_detail_no).ToString()))
                     {
                         // 結合文字列を取得
-                        joinStr = TMQUtil.GetJoinStrOfPartsLocation((int)result.factory_id, languageId, db);
+                        joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate((int)result.factory_id, languageId, db, ref factoryJoinDic);
                         // 棚番 + 枝番
                         result.rack_name = TMQUtil.GetDisplayPartsLocation(result.rack_name, result.parts_location_detail_no, joinStr);
                     }
@@ -1817,6 +1808,17 @@ namespace CommonTMQUtil
             // 棚卸準備表のデータを表示するシート
             if (sheetNo == 1)
             {
+                if (results == null)
+                {
+                    return;
+                }
+                //棚IDより翻訳をまとめて取得しておく
+                List<dynamic> partsLocationIdList = results.Select(x => x.parts_location_id.ToString()).Distinct().ToList();
+                List<STDDao.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, languageId, db);
+
+                //工場ID棚番結合文字列を保持するDictionary
+                Dictionary<int, string> factoryJoinDic = new();
+
                 string joinStr = string.Empty;
                 foreach (dynamic result in results)
                 {
@@ -1836,7 +1838,7 @@ namespace CommonTMQUtil
                     }
                     int factoryId = int.Parse(result.factory_id.ToString());
 
-                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db);
+                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db, ref factoryJoinDic, partsLocationList);
 
                     // 固定出力データの埋め込み
                     if (dicFixedValueForOutput != null && dicFixedValueForOutput.Count > 0)
@@ -1851,6 +1853,14 @@ namespace CommonTMQUtil
                             if (result.department_id_list != null && nameof(result.department_id_list) == fixedValue.Key)
                             {
                                 result.department_id_list = fixedValue.Value;
+                            }
+                            if (result.factory_name != null && nameof(result.factory_name) == fixedValue.Key)
+                            {
+                                result.factory_name = fixedValue.Value;
+                            }
+                            if (result.warehouse_name != null && nameof(result.warehouse_name) == fixedValue.Key)
+                            {
+                                result.warehouse_name = fixedValue.Value;
                             }
                         }
                     }
@@ -1872,160 +1882,6 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
-        /// 棚卸準備表CSV出力
-        /// </summary>
-        /// <param name="userId">ユーザーID</param>
-        /// <param name="languageId">言語ID</param>
-        /// <param name="db">DBクラス</param>
-        /// <param name="results">出力データ</param>
-        /// <param name="conditionDic">出力条件</param>
-        /// <param name="RP0310OutStream">ストリーム</param>
-        /// <param name="RP0310ErrMsg">エラーメッセージ</param>
-        public static void RP0310OutputCsv(string userId, string languageId, ComDB db, IList<dynamic> results, Dictionary<string, string> conditionDic, ref MemoryStream RP0310OutStream, ref string RP0310ErrMsg)
-        {
-            // ヘッダーの翻訳を取得する        
-            TMQUtil.GetFixedSqlStatement(ExcelPath, "RP0310GetTransLationText", out string transSql); // SQLを取得
-            List<int> factoryIdList = TMQUtil.GetFactoryIdList(userId, db);                           // ユーザの本務工場を取得
-
-            // SQL実行
-            IList<RP0310TransDataClass> transTextList = db.GetListByDataClass<RP0310TransDataClass>(transSql.ToString(), new { FactoryIdList = factoryIdList, LanguageId = languageId });
-            Dictionary<long, string> transList = new();
-            foreach (RP0310TransDataClass transText in transTextList)
-            {
-                // 取得した翻訳ID、翻訳をディクショナリに追加
-                transList.Add(transText.TranslationId, transText.TranslationText);
-            }
-
-            // 出力対象データ配列
-            List<object[]> list = new();
-
-            // 出力するタイトル行
-            object[] firstRow = getFirstRow();
-
-            // 出力するヘッダー行
-            object[] secondRow = getSecondRow();
-
-            // 出力するデータ行
-            List<object[]> dataRow = getDataRow();
-
-            // 出力対象データ配列に追加
-            list.Add(firstRow);  // タイトル行
-            list.Add(secondRow); // ヘッダー行
-            foreach(object[] data in dataRow)
-            {
-                list.Add(data); // データ行
-            }
-
-            // CSV出力処理
-            CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFileNotencircleDobleQuotes(list, Encoding.GetEncoding("Shift-JIS"), out Stream outStream, out string errMsg);
-            // 出力情報設定
-            RP0310OutStream = (MemoryStream)outStream;
-            RP0310ErrMsg = errMsg;
-
-            return;
-
-            object[] getFirstRow()
-            {
-                string title = string.Empty;       // タイトル
-                DateTime? preperationDate = null;  // 棚卸準備日時
-                string targetMonth = string.Empty; // 対象年月
-                if (results == null || results.Count == 0)
-                {
-                    title = "[]" + transList[111380061];
-                }
-                else
-                {
-                    title = "[" + results[0].target_month + "]" + transList[111380061];
-                    preperationDate = results[0].preparation_datetime;
-                    targetMonth = results[0].target_month;
-                }
-
-                // タイトル行を作成
-                object[] firstRow = new object[]
-                {
-                title,                                                      // [システム年月]予備品棚卸表
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                transList[111160041],                                       // 棚卸準備日時(翻訳)
-                preperationDate,                                            // 棚卸準備日時(値)
-                "",                                                         // 空データ
-                "",                                                         // 空データ
-                targetMonth,                                                // システム年月
-                conditionDic["storage_location_id"],                        // 倉庫ID
-                conditionDic["department_id_list"]                          // 部門ID
-                };
-
-                return firstRow;
-            }
-
-            object[] getSecondRow()
-            {
-                // ヘッダー行を作成
-                object[] firstRow = new object[]
-                {
-                transList[111160019], // 棚番
-                transList[111380022], // 予備品No.
-                transList[111380023], // 予備品名
-                transList[111060075], // 型式(仕様)
-                transList[111340003], // メーカー
-                transList[111120068], // 新旧区分
-                transList[111110025], // 在庫金額
-                transList[111280034], // 部門コード
-                transList[111060022], // 勘定科目
-                transList[111110003], // 在庫数
-                transList[111160042], // 棚卸数
-                transList[111270027], // 備考
-                "",                   // 空データ
-                transList[111160059], // 棚卸ID
-                transList[111010011], // RFIDタグ
-                };
-
-                return firstRow;
-            }
-
-            List<object[]> getDataRow()
-            {
-                // データ行を作成
-                List<object[]> dataRow = new();
-
-                if(results == null || results.Count == 0)
-                {
-                    return dataRow;
-                }
-
-                foreach (dynamic result in results)
-                {
-                    dataRow.Add(new object[]
-                    {
-                  result.parts_location_name, // 棚番
-                  result.parts_no,            // 予備品No.
-                  result.parts_name,          // 予備品名
-                  result.model_type,          // 型式(仕様)
-                  result.manufacturer_name,   // メーカー
-                  result.old_new_name,        // 新旧区分
-                  result.stock_amount,        // 在庫金額
-                  result.department_cd,       // 部門コード
-                  result.account_cd,          // 勘定科目
-                  result.stock_quantity,      // 在庫数
-                  result.inventory_quantity,  // 棚卸数
-                  result.memo,                // 備考
-                  "",                         // 空データ
-                  result.inventory_id,        // 棚卸ID 
-                  result.rf_id_tag            // RFIDタグ
-                    });
-                }
-
-                return dataRow;
-            }
-        }
-
-        /// <summary>
         /// 会計帳票の出力データ取得後の個別処理
         /// </summary>
         /// <param name="results">取得結果</param>
@@ -2035,6 +1891,18 @@ namespace CommonTMQUtil
         /// <param name="dicFixedValueForOutput">固定出力データ</param>
         public static void AccountReportJoinStrAndRound(IList<dynamic> results, int sheetNo, string languageId, ComDB db, Dictionary<string, string> dicFixedValueForOutput = null)
         {
+            if (results == null)
+            {
+                return;
+            }
+
+            //棚IDより翻訳をまとめて取得しておく
+            List<dynamic> partsLocationIdList = results.Select(x => x.parts_location_id.ToString()).Distinct().ToList();
+            List<STDDao.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, languageId, db);
+
+            //工場ID棚番結合文字列を保持するDictionary
+            Dictionary<int, string> factoryJoinDic = new();
+
             string joinStr = string.Empty;
             foreach (dynamic result in results)
             {
@@ -2045,7 +1913,7 @@ namespace CommonTMQUtil
                     long partsLocationId = long.Parse(result.parts_location_id.ToString());
                     string partsLocationDetailNo = (result.parts_location_detail_no).ToString();
                     int factoryId = int.Parse(result.factory_id.ToString());
-                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db);
+                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db, ref factoryJoinDic, partsLocationList);
                 }
                 else
                 {
@@ -2055,7 +1923,7 @@ namespace CommonTMQUtil
                         long partsLocationId = long.Parse(result.parts_location_id.ToString());
                         string partsLocationDetailNo = String.Empty;
                         int factoryId = int.Parse(result.factory_id.ToString());
-                        result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db);
+                        result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db, ref factoryJoinDic, partsLocationList);
                     }
                 }
 

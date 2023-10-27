@@ -1,7 +1,10 @@
 UPDATE
     hm_history_management
 SET
+    /*@ApplicationStatusId
     [application_status_id] = @ApplicationStatusId,-- 申請状況ID
+    @ApplicationStatusId*/
+
     /*@ApprovalUserId
     [approval_user_id] = @ApprovalUserId,          -- 承認者ID
     [approval_user_name] = (

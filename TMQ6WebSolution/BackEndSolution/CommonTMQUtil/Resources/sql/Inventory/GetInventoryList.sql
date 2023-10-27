@@ -31,6 +31,9 @@ SELECT
     , unit_round_division                    --丸め処理区分(数量)
     , parts_factory_id                       --工場ID(ツリーの絞り込み用)
     , job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+    , rftag_id                               --RFIDタグ
+    , work_user_name                         --作業者
+    , @InventoryIdFlg AS upload_flg          --取込の場合true
     , ( 
         SELECT
             tra.translation_text 

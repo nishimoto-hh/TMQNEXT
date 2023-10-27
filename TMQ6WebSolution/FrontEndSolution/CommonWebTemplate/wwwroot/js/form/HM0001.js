@@ -160,13 +160,13 @@ const FormDetail = {
         Id: "BODY_080_00_LST_1" // コントロールグループID
     },
     Button: {                                                   // ボタンコントロールID
-        Copy: "Copy",                                           // 複写申請
-        Change: "Change",                                       // 変更申請
-        Delete: "Delete",                                       // 削除申請
+        CopyRequest: "CopyRequest",                             // 複写申請
+        ChangeRequest: "ChangeRequest",                         // 変更申請
+        DeleteRequest: "DeleteRequest",                         // 削除申請
         ChangeApplicationRequest: "ChangeApplicationRequest",   // 承認依頼
-        Edit: "Edit",                                           // 修正
-        Cancel: "Cancel",                                       // 取消
-        PullBack: "PullBack",                                   // 引戻
+        EditRequest: "EditRequest",                             // 修正
+        CancelRequest: "CancelRequest",                         // 取消
+        PullBackRequest: "PullBackRequest",                     // 引戻
         ChangeApplicationApproval: "ChangeApplicationApproval", // 承認
         ChangeApplicationDenial: "ChangeApplicationDenial",     // 否認
         BeforeChange: "BeforeChange"                            // 変更前
@@ -188,6 +188,9 @@ const JudgeFlg = {
     False: "0", // False
     True: "1"   // True
 }
+
+// 詳細画面の 変更前 ボタンクリック時に表示する機器台帳詳細画面(MC0001)のタブ番号
+const tabNoToMC0001 = 1;
 
 /**
  * 【オーバーライド用関数】
@@ -211,8 +214,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
-        // ボタン表示/非表示制御
-        changeButtonDisp();
+        // ボタン非表示
+        var condition = getConditionToHideButton();        
+        commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
 
         // 背景色変更処理
         changeBackGroundColorDetail();
@@ -276,8 +280,8 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         // クリックされたボタンを判定
         if (btn_ctrlId == FormDetail.Button.BeforeChange) { // 変更前
 
-            // 別タブで詳細画面を開くための検索条件を設定する(変更管理ID：0、機番ID：非表示項目を取得)
-            conditionDataList.push(getParamToHM0001FormDetail(0, getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false)));
+            // 別タブで機器台帳詳細画面(MC0001)を開くための検索条件を設定する(機番ID：非表示項目を取得、タブ番号：1)
+            conditionDataList = getParamToMC0001(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false), tabNoToMC0001);
         }
 
     }
@@ -296,36 +300,33 @@ function postBuiltTabulator(tbl, id) {
     if (id == "#" + FormList.List.Id + getAddFormNo()) { // 一覧画面 機器台帳一覧
 
         // 背景色変更処理
-        commonChangeBackGroundColor(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
+        commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
     }
 }
 
+
 /**
- * 詳細画面 ボタン表示/非表示
+ * 詳細画面 ボタン非表示処理の条件作成
  * */
-function changeButtonDisp() {
+function getConditionToHideButton() {
 
-    //処理モード(0:トランザクションモード,1:変更管理モード) を取得
-    var processMode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ProcessMode, 1, CtrlFlag.Label, false, false);
+    var condition = [];
+    // トランザクションモードの場合True、変更管理モードの場合False
+    condition.isTransactionMode = ProcessMode.Transaction == getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ProcessMode, 1, CtrlFlag.Label, false, false);
 
-    // 取得した処理モードを判定
-    if (processMode == ProcessMode.Transaction) { // トランザクションモード
+    // 申請状況(10：申請データ作成中、20：承認依頼中、30：差戻中、40：承認済み)
+    condition.applicationStatusCode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ApplicationStatusCode, 1, CtrlFlag.Label, false, false);
 
-        // ボタンを非表示
-        $(getButtonCtrl(FormDetail.Button.Edit)).parent().addClass(FormDetail.CssClass.displayNone);                      // 修正
-        $(getButtonCtrl(FormDetail.Button.Cancel)).parent().addClass(FormDetail.CssClass.displayNone);                    // 取消
-        $(getButtonCtrl(FormDetail.Button.PullBack)).parent().addClass(FormDetail.CssClass.displayNone);                  // 引戻
-        $(getButtonCtrl(FormDetail.Button.ChangeApplicationApproval)).parent().addClass(FormDetail.CssClass.displayNone); // 承認
-        $(getButtonCtrl(FormDetail.Button.ChangeApplicationDenial)).parent().addClass(FormDetail.CssClass.displayNone);   // 否認
+    // 申請区分(10：新規登録申請、20：変更申請、30：削除申請)
+    condition.applicationDivisionCode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ApplicationDivisionCode, 1, CtrlFlag.Label, false, false);
 
-    }
-    else { // 変更管理モード
+    // 申請の申請者またはシステム管理者の場合True、それ以外はFalse
+    condition.isCertified = JudgeFlg.True == getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertified, 1, CtrlFlag.Label, false, false);
 
-        // ボタンを非表示
-        $(getButtonCtrl(FormDetail.Button.Copy)).parent().addClass(FormDetail.CssClass.displayNone);   // 複写申請
-        $(getButtonCtrl(FormDetail.Button.Change)).parent().addClass(FormDetail.CssClass.displayNone); // 変更申請
-        $(getButtonCtrl(FormDetail.Button.Delete)).parent().addClass(FormDetail.CssClass.displayNone); // 削除申請
-    }
+    // 工場の承認ユーザの場合True
+    condition.isCertifiedFactory = JudgeFlg.True == getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertifiedFactory, 1, CtrlFlag.Label, false, false);
+
+    return condition;
 }
 
 /**
@@ -404,7 +405,7 @@ function changeBackGroundColorDetail() {
             }
 
             // 背景色変更処理
-            changeBackGroundColor(ctrlId, val, colName[1]);
+            changeBackGroundColorHistory(ctrlId, val, colName[1]);
         }
     });
 }

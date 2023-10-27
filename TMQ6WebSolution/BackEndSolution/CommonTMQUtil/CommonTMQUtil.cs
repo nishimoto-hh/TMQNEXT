@@ -50,6 +50,8 @@ namespace CommonTMQUtil
             public const string SelectTakeInventoryConfirmationDate = "Select_TakeInventoryConfirmationDate";
             /// <summary>シーケンスの値を進め、取得</summary>
             public const string GetNextSequence = "GetNextSequence";
+            /// <summary>棚IDより翻訳を取得</summary>
+            public const string GetPartsLocationTranslation = "GetPartsLocationTranslation";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
         }
@@ -2033,6 +2035,53 @@ namespace CommonTMQUtil
             STDDao.VStructureItemEntity item = new STDDao.VStructureItemEntity().GetEntity(Convert.ToInt32(partsLocationId), languageId, db);
             //棚番、結合文字、棚枝番より表示用棚番を取得
             return GetDisplayPartsLocation(item.TranslationText, partsLocationDetailNo, joinStr);
+        }
+
+        /// <summary>
+        /// 棚と棚枝番を結合する文字列を取得し、表示用棚番を取得（一覧用）
+        /// </summary>
+        /// <param name="partsLocation">棚ID</param>
+        /// <param name="partsLocationDetailNo">棚枝番</param>
+        /// <param name="factoryIdList">工場IDリスト</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB接続</param>
+        /// <param name="factoryJoinDic">工場IDと結合文字列の辞書、同じ工場で二度取得しないようにする</param>
+        /// <param name="partsLocationTranslationList">棚IDと翻訳の辞書、同じ棚で二度取得しないようにする</param>
+        /// <returns>表示用棚番</returns>
+        public static string GetDisplayPartsLocation(long partsLocationId, string partsLocationDetailNo, int factoryId, string languageId, ComDB db, ref Dictionary<int, string> factoryJoinDic, List<STDDao.VStructureItemEntity> partsLocationTranslationList = null)
+        {
+            //棚番の結合文字列を取得
+            string joinStr = GetJoinStrOfPartsLocationNoDuplicate(factoryId, languageId, db, ref factoryJoinDic);
+
+            //棚の翻訳を取得
+            string partsLocationText = "";
+            if (partsLocationTranslationList != null && partsLocationTranslationList.Count > 0 && partsLocationTranslationList.Exists(x => x.StructureId == partsLocationId))
+            {
+                partsLocationText = partsLocationTranslationList.Where(x => x.StructureId == partsLocationId).Select(x => x.TranslationText).FirstOrDefault();
+            }
+            else
+            {
+                //棚IDより棚の翻訳をDBより取得
+                STDDao.VStructureItemEntity item = new STDDao.VStructureItemEntity().GetEntity(Convert.ToInt32(partsLocationId), languageId, db);
+                partsLocationText = item.TranslationText;
+            }
+            //棚番、結合文字、棚枝番より表示用棚番を取得
+            return GetDisplayPartsLocation(partsLocationText, partsLocationDetailNo, joinStr);
+        }
+
+        /// <summary>
+        /// 棚IDリストより翻訳を取得
+        /// </summary>
+        /// <param name="partsLocationIdList">検索対象の棚IDのリスト</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB接続</param>
+        /// <returns>棚の翻訳リスト</returns>
+        public static List<STDDao.VStructureItemEntity> GetpartsLocationList<T>(List<T> partsLocationIdList, string languageId, ComDB db)
+        {
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', partsLocationIdList);
+            var param = new { StructureIdList = ids, LanguageId = languageId };
+            return SqlExecuteClass.SelectList<STDDao.VStructureItemEntity>(SqlName.GetPartsLocationTranslation, SqlName.SubDir, param, db);
         }
 
         /// <summary>

@@ -58,32 +58,6 @@ WITH
             ms.structure_group_id = 1740
         AND ms.delete_flg = 0
     )
-    ,rfid_tag AS( -- RFIDタグ
-    SELECT
-        tag_a.parts_id,
-        tag_a.department_structure_id,
-        tag_a.account_structure_id,
-        trim(
-            '|'
-            FROM
-                (
-                    SELECT
-                        tag_b.rftag_id + '|'
-                    FROM
-                        pt_rftag_parts_link tag_b
-                    WHERE
-                        tag_b.parts_id = tag_a.parts_id
-                    AND tag_b.department_structure_id = tag_a.department_structure_id
-                    AND tag_b.account_structure_id = tag_a.account_structure_id FOR XML PATH('')
-                )
-        ) AS rf_id_tag
-    FROM
-        pt_rftag_parts_link tag_a
-    GROUP BY
-        tag_a.parts_id,
-        tag_a.department_structure_id,
-        tag_a.account_structure_id
-    )
 
 SELECT 
     FORMAT(tbl.target_month,'yyyy/MM')  AS target_month, -- 対象年月
@@ -123,12 +97,13 @@ SELECT
     COALESCE(tbl.unit_digit, 0) AS unit_digit,                                    -- 小数点以下桁数(数量)
     COALESCE(tbl.unit_round_division, 1) AS unit_round_division,                  -- 丸め処理区分(数量)
     COALESCE(tbl.currency_digit, 0) AS currency_digit,                            -- 小数点以下桁数(金額)
-    COALESCE(tbl.currency_round_division, 1) AS currency_round_division,          -- 丸め処理区分(金額)
-    tbl.rf_id_tag                                                                  -- RFIDタグ
+    COALESCE(tbl.currency_round_division, 1) AS currency_round_division           -- 丸め処理区分(金額)
 
     -- 検索条件
     ,'' as storage_location_id -- 予備品倉庫ID（条件）
     ,'' as department_id_list -- 部門ID（条件）
+    ,'' as factory_name -- 工場名
+    ,'' as warehouse_name -- 予備品倉庫名
 FROM
 (
     SELECT
@@ -155,8 +130,7 @@ FROM
         unit.unit_digit,                    -- 小数点以下桁数(数量)
         unit_round.unit_round_division,     -- 丸め処理区分(数量)
         currency.currency_digit,            -- 小数点以下桁数(金額)
-        currency.currency_round_division,   -- 丸め処理区分(金額)
-        rt.rf_id_tag                        -- RFIDタグ
+        currency.currency_round_division    -- 丸め処理区分(金額)
     FROM
         #temp temp
         INNER JOIN pt_inventory pin 
@@ -164,13 +138,13 @@ FROM
         LEFT JOIN pt_parts pp
             ON pp.parts_id = pin.parts_id
             AND pp.delete_flg = 0        
-        LEFT JOIN pt_lot pl 
-        /*ロット情報 */
-            ON pp.parts_id = pl.parts_id 
-            AND pl.old_new_structure_id = pin.old_new_structure_id 
-            AND pl.old_new_structure_id = pin.old_new_structure_id 
-            AND pl.department_structure_id = pin.department_structure_id 
-            AND pl.account_structure_id = pin.account_structure_id 
+--        LEFT JOIN pt_lot pl 
+--        /*ロット情報 */
+--            ON pp.parts_id = pl.parts_id 
+--            AND pl.old_new_structure_id = pin.old_new_structure_id 
+--            AND pl.old_new_structure_id = pin.old_new_structure_id 
+--            AND pl.department_structure_id = pin.department_structure_id 
+--            AND pl.account_structure_id = pin.account_structure_id 
 --        LEFT JOIN pt_location_stock pls 
 --        /*在庫データ */
 --            ON pl.lot_control_id = pls.lot_control_id 
@@ -186,11 +160,6 @@ FROM
             unit_round --丸め処理区分(数量管理単位)
         -- ON  dbo.get_target_layer_id(pp.parts_location_id, 1) = unit_round.factory_id
         ON  pp.factory_id = unit_round.factory_id
-        LEFT JOIN
-            rfid_tag rt
-        ON  pin.parts_id = rt.parts_id
-        AND pin.department_structure_id = rt.department_structure_id
-        AND pin.account_structure_id = rt.account_structure_id
     WHERE 
         pin.delete_flg = 0
 
@@ -216,8 +185,7 @@ FROM
         unit.unit_digit,
         unit_round.unit_round_division,
         currency.currency_digit,
-        currency.currency_round_division,
-        rt.rf_id_tag
+        currency.currency_round_division
 ) tbl
 ORDER BY
     [dbo].[get_v_structure_item](tbl.parts_location_id, tbl.factoryId, tbl.languageId), -- 棚番

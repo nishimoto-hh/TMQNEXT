@@ -29,7 +29,6 @@ SELECT
     target.value_changed,                -- 値に変更のあった項目
     target.history_management_id,        -- 変更管理ID
     target.history_management_detail_id, -- 変更管理詳細ID
-    target.machine_history_management_detail_id, -- 変更管理詳細ID(機番情報変更管理テーブル)
     target.update_serialid,              -- 更新シリアルID(変更管理テーブル)
     target.old_location_structure_id,    -- 場所階層(トランザクションテーブル)
     target.old_job_structure_id,         -- 職種機種(トランザクションテーブル)

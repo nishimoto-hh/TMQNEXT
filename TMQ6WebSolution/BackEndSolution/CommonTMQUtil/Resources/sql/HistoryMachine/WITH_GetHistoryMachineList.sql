@@ -94,6 +94,8 @@ target AS(
         COALESCE(hequipment.equipment_note, cequipment.equipment_note) AS equipment_note,
         COALESCE(hequipment.circulation_target_flg, cequipment.circulation_target_flg) AS circulation_target_flg,
         COALESCE(hequipment.maintainance_kind_manage, cequipment.maintainance_kind_manage) AS maintainance_kind_manage,
+        COALESCE(machine.location_structure_id, cmachine.location_structure_id) AS old_location_structure_id,
+        COALESCE(machine.job_structure_id, cmachine.job_structure_id) AS old_job_structure_id,
         CASE
             WHEN hcomponent.hm_management_standards_component_id IS NOT NULL THEN 1
             ELSE 0
@@ -114,12 +116,9 @@ target AS(
         history.application_reason,
         history.rejection_reason,
         detail.history_management_detail_id,
-        hmachine.history_management_detail_id AS machine_history_management_detail_id,
         dbo.get_target_layer_id(hmachine.location_structure_id, 1) AS factory_id,
         division_ex.extension_data AS application_division_code,
         status_ex.extension_data AS application_status_code,
-        machine.location_structure_id AS old_location_structure_id,
-        machine.job_structure_id AS old_job_structure_id,
         ---------- 以下は値の変更があった項目(申請区分が「変更申請：20」のデータ)を取得 ----------
         CASE
             WHEN hmachine.history_management_detail_id IS NULL THEN 'Component_20' -- 機器別管理基準変更有無
@@ -127,112 +126,31 @@ target AS(
                 '|'
                 FROM
                     (
-                        CASE
-                             WHEN (hmachine.machine_no IS NOT NULL AND hmachine.machine_no <> '') AND (machine.machine_no IS NULL OR machine.machine_no = '') THEN 'MachineNo_10|' -- 値が追加された場合
-                             WHEN (hmachine.machine_no IS NULL OR hmachine.machine_no = '') AND (machine.machine_no IS NOT NULL AND machine.machine_no <> '') THEN 'MachineNo_30|' -- 値が削除された場合
-                             WHEN hmachine.machine_no <> machine.machine_no THEN 'MachineNo_20|' -- 値が変更された場合
-                            ELSE '' -- 機器番号
-                        END + CASE
-                             WHEN (hmachine.machine_name IS NOT NULL AND hmachine.machine_name <> '') AND (machine.machine_name IS NULL OR machine.machine_name = '') THEN 'MachineName_10|' -- 値が追加された場合
-                             WHEN (hmachine.machine_name IS NULL OR hmachine.machine_name = '') AND (machine.machine_name IS NOT NULL AND machine.machine_name <> '') THEN 'MachineName_30|' -- 値が削除された場合
-                             WHEN hmachine.machine_name <> machine.machine_name THEN 'MachineName_20|' -- 値が変更された場合
-                            ELSE '' -- 機器名称
-                        END + CASE
-                             WHEN hmachine.equipment_level_structure_id IS NOT NULL AND machine.equipment_level_structure_id IS NULL THEN 'EquipmentLevel_10|' -- 値が追加された場合
-                             WHEN hmachine.equipment_level_structure_id IS NULL AND machine.equipment_level_structure_id IS NOT NULL THEN 'EquipmentLevel_30|' -- 値が削除された場合
-                             WHEN hmachine.equipment_level_structure_id <> machine.equipment_level_structure_id THEN 'EquipmentLevel_20|' -- 値が変更された場合
-                            ELSE '' -- 機器レベル
-                        END + CASE
-                             WHEN hmachine.importance_structure_id IS NOT NULL AND (machine.importance_structure_id IS NULL OR machine.importance_structure_id = '') THEN 'Importance_10|' -- 値が追加された場合
-                             WHEN hmachine.importance_structure_id IS NULL AND machine.importance_structure_id IS NOT NULL THEN 'Importance_30|' -- 値が削除された場合
-                             WHEN hmachine.importance_structure_id <> machine.importance_structure_id THEN 'Importance_20|' -- 値が変更された場合
-                            ELSE '' -- 重要度
-                        END + CASE
-                             WHEN hmachine.conservation_structure_id IS NOT NULL AND machine.conservation_structure_id IS NULL THEN 'Conservation_10|' -- 値が追加された場合
-                             WHEN hmachine.conservation_structure_id IS NULL AND machine.conservation_structure_id IS NOT NULL THEN 'Conservation_30|' -- 値が削除された場合
-                             WHEN hmachine.conservation_structure_id <> machine.conservation_structure_id THEN 'Conservation_20|' -- 値が変更された場合
-                            ELSE '' -- 保全方式
-                        END + CASE
-                             WHEN (hmachine.installation_location IS NOT NULL AND hmachine.installation_location <> '') AND (machine.installation_location IS NULL OR machine.installation_location = '') THEN 'InstallationLocation_10|' -- 値が追加された場合
-                             WHEN (hmachine.installation_location IS NULL OR hmachine.installation_location = '') AND (machine.installation_location IS NOT NULL AND machine.installation_location <> '') THEN 'InstallationLocation_30|' -- 値が削除された場合
-                             WHEN hmachine.installation_location <> machine.installation_location THEN 'InstallationLocation_20|' -- 値が変更された場合
-                            ELSE '' -- 設置場所
-                        END + CASE
-                             WHEN hmachine.number_of_installation IS NOT NULL AND machine.number_of_installation IS NULL THEN 'NumberOfInstallation_10|' -- 値が追加された場合
-                             WHEN hmachine.number_of_installation IS NULL AND machine.number_of_installation IS NOT NULL THEN 'NumberOfInstallation_30|' -- 値が削除された場合
-                             WHEN hmachine.number_of_installation <> machine.number_of_installation THEN 'NumberOfInstallation_20|' -- 値が変更された場合
-                            ELSE '' -- 設置台数
-                        END + CASE
-                             WHEN (hmachine.date_of_installation IS NOT NULL AND hmachine.date_of_installation <> '') AND (machine.date_of_installation IS NULL OR machine.date_of_installation = '') THEN 'DateOfInstallation_10|' -- 値が追加された場合
-                             WHEN (hmachine.date_of_installation IS NULL OR hmachine.date_of_installation = '') AND (machine.date_of_installation IS NOT NULL AND machine.date_of_installation <> '') THEN 'DateOfInstallation_30|' -- 値が削除された場合
-                             WHEN hmachine.date_of_installation <> machine.date_of_installation THEN 'DateOfInstallation_20|' -- 値が変更された場合
-                            ELSE '' -- 設置日
-                        END + CASE
-                             WHEN hm_law.applicable_laws_structure_id IS NOT NULL AND law.applicable_laws_structure_id IS NULL THEN 'ApplicableLaws_10|' -- 値が追加された場合
-                             WHEN hm_law.applicable_laws_structure_id IS NULL AND law.applicable_laws_structure_id IS NOT NULL THEN 'ApplicableLaws_30|' -- 値が削除された場合
-                             WHEN hm_law.applicable_laws_structure_id <> law.applicable_laws_structure_id THEN 'ApplicableLaws_20|' -- 値が変更された場合
-                            ELSE '' -- 適用法規
-                        END + CASE
-                             WHEN (hmachine.machine_note IS NOT NULL AND hmachine.machine_note <> '') AND (machine.machine_note IS NULL OR machine.machine_note = '') THEN 'MachineNote_10|' -- 値が追加された場合
-                             WHEN (hmachine.machine_note IS NULL OR hmachine.machine_note = '') AND (machine.machine_note IS NOT NULL AND machine.machine_note <> '') THEN 'MachineNote_30|' -- 値が削除された場合
-                             WHEN hmachine.machine_note <> machine.machine_note THEN 'MachineNote_20|' -- 値が変更された場合
-                            ELSE '' -- 機番メモ
-                        END + CASE
-                             WHEN hequipment.manufacturer_structure_id IS NOT NULL AND equipment.manufacturer_structure_id IS NULL THEN 'Manufacturer_10|' -- 値が追加された場合
-                             WHEN hequipment.manufacturer_structure_id IS NULL AND equipment.manufacturer_structure_id IS NOT NULL THEN 'Manufacturer_30|' -- 値が削除された場合
-                             WHEN hequipment.manufacturer_structure_id <> equipment.manufacturer_structure_id THEN 'Manufacturer_20|' -- 値が変更された場合
-                            ELSE '' -- メーカー
-                        END + CASE
-                             WHEN (hequipment.manufacturer_type IS NOT NULL AND hequipment.manufacturer_type <> '') AND (equipment.manufacturer_type IS NULL OR equipment.manufacturer_type = '') THEN 'ManufacturerType_10|' -- 値が追加された場合
-                             WHEN (hequipment.manufacturer_type IS NULL OR hequipment.manufacturer_type = '') AND (equipment.manufacturer_type IS NOT NULL AND equipment.manufacturer_type <> '') THEN 'ManufacturerType_30|' -- 値が削除された場合
-                             WHEN hequipment.manufacturer_type <> equipment.manufacturer_type THEN 'ManufacturerType_20|' -- 値が変更された場合
-                            ELSE '' -- メーカー型式
-                        END + CASE
-                             WHEN (hequipment.model_no IS NOT NULL AND hequipment.model_no <> '') AND (equipment.model_no IS NULL OR equipment.model_no = '') THEN 'ModelNo_10|' -- 値が追加された場合
-                             WHEN (hequipment.model_no IS NULL OR hequipment.model_no = '') AND (equipment.model_no IS NOT NULL AND equipment.model_no <> '') THEN 'ModelNo_30|' -- 値が削除された場合
-                             WHEN hequipment.model_no <> equipment.model_no THEN 'ModelNo_20|' -- 値が変更された場合
-                            ELSE '' -- 型式コード
-                        END + CASE
-                             WHEN (hequipment.serial_no IS NOT NULL AND hequipment.serial_no <> '') AND (equipment.serial_no IS NULL OR equipment.serial_no = '') THEN 'SerialNo_10|' -- 値が追加された場合
-                             WHEN (hequipment.serial_no IS NULL OR hequipment.serial_no = '') AND (equipment.serial_no IS NOT NULL AND equipment.serial_no <> '') THEN 'SerialNo_30|' -- 値が削除された場合
-                             WHEN hequipment.serial_no <> equipment.serial_no THEN 'SerialNo_20|' -- 値が変更された場合
-                            ELSE '' -- 製造番号
-                        END + CASE
-                             WHEN (hequipment.date_of_manufacture IS NOT NULL AND hequipment.date_of_manufacture <> '') AND (equipment.date_of_manufacture IS NULL OR equipment.date_of_manufacture = '') THEN 'DateOfManufacture_10|' -- 値が追加された場合
-                             WHEN (hequipment.date_of_manufacture IS NULL OR hequipment.date_of_manufacture = '') AND (equipment.date_of_manufacture IS NOT NULL AND equipment.date_of_manufacture <> '') THEN 'DateOfManufacture_30|' -- 値が削除された場合
-                             WHEN hequipment.date_of_manufacture <> equipment.date_of_manufacture THEN 'DateOfManufacture_20|' -- 値が変更された場合
-                            ELSE '' -- 製造日
-                        END + CASE
-                             WHEN (hequipment.delivery_date IS NOT NULL AND hequipment.delivery_date <> '') AND (equipment.delivery_date IS NULL OR equipment.delivery_date = '') THEN 'DeliveryDate_10|' -- 値が追加された場合
-                             WHEN (hequipment.delivery_date IS NULL OR hequipment.delivery_date = '') AND (equipment.delivery_date IS NOT NULL AND equipment.delivery_date <> '') THEN 'DeliveryDate_30|' -- 値が削除された場合
-                             WHEN hequipment.delivery_date <> equipment.delivery_date THEN 'DeliveryDate_20|' -- 値が変更された場合
-                            ELSE '' -- 納期
-                        END + CASE
-                             WHEN hequipment.use_segment_structure_id IS NOT NULL AND equipment.use_segment_structure_id IS NULL THEN 'UseSegment_10|' -- 値が追加された場合
-                             WHEN hequipment.use_segment_structure_id IS NULL AND equipment.use_segment_structure_id IS NOT NULL THEN 'UseSegment_30|' -- 値が削除された場合
-                             WHEN hequipment.use_segment_structure_id <> equipment.use_segment_structure_id THEN 'UseSegment_20|' -- 値が変更された場合
-                            ELSE '' -- 使用区分
-                        END + CASE
-                             WHEN (hequipment.fixed_asset_no IS NOT NULL AND hequipment.fixed_asset_no <> '') AND (equipment.fixed_asset_no IS NULL OR equipment.fixed_asset_no = '') THEN 'FixedAssetNo_10|' -- 値が追加された場合
-                             WHEN (hequipment.fixed_asset_no IS NULL OR hequipment.fixed_asset_no = '') AND (equipment.fixed_asset_no IS NOT NULL AND equipment.fixed_asset_no <> '') THEN 'FixedAssetNo_30|' -- 値が削除された場合
-                             WHEN hequipment.fixed_asset_no <> equipment.fixed_asset_no THEN 'FixedAssetNo_20|' -- 値が変更された場合
-                            ELSE '' -- 固定資産番号
-                        END + CASE
-                             WHEN (hequipment.equipment_note IS NOT NULL AND hequipment.equipment_note <> '') AND (equipment.equipment_note IS NULL OR equipment.equipment_note = '') THEN 'EquipmentNote_10|' -- 値が追加された場合
-                             WHEN (hequipment.equipment_note IS NULL OR hequipment.equipment_note = '') AND (equipment.equipment_note IS NOT NULL AND equipment.equipment_note <> '') THEN 'EquipmentNote_30|' -- 値が削除された場合
-                             WHEN hequipment.equipment_note <> equipment.equipment_note THEN 'EquipmentNote_20|' -- 値が変更された場合
-                            ELSE '' -- 機器メモ
-                        END + CASE
-                             WHEN hequipment.circulation_target_flg IS NOT NULL AND equipment.circulation_target_flg IS NULL THEN 'CirculationTargetFlg_10|' -- 値が追加された場合
-                             WHEN hequipment.circulation_target_flg IS NULL AND equipment.circulation_target_flg IS NOT NULL THEN 'CirculationTargetFlg_30|' -- 値が削除された場合
-                             WHEN hequipment.circulation_target_flg <> equipment.circulation_target_flg THEN 'CirculationTargetFlg_20|' -- 値が変更された場合
-                            ELSE '' -- 循環対象
-                        END + CASE
-                             WHEN hequipment.maintainance_kind_manage IS NOT NULL AND equipment.maintainance_kind_manage IS NULL THEN 'MaintainanceKindManage_10|' -- 値が追加された場合
-                             WHEN hequipment.maintainance_kind_manage IS NULL AND equipment.maintainance_kind_manage IS NOT NULL THEN 'MaintainanceKindManage_30|' -- 値が削除された場合
-                             WHEN hequipment.maintainance_kind_manage <> equipment.maintainance_kind_manage THEN 'MaintainanceKindManage_20|' -- 値が変更された場合
-                            ELSE '' -- 点検種別毎管理
-                        END
+                       -- ①ファンクションを使用し、変更前後の値を比較する
+                       -- ②変更前後の値に差異がある場合は引数に渡した[項目名 + 背景色設定値]を返す(変更が無い場合は空文字が返ってくる)
+                       -- ③変更のあった項目をパイプ[|]区切りで連結させて、変更のあった項目 とする
+                       -- ※項目名(MachineNoやMachineName)はJavaScriptの背景色設定処理で使用するので統一させる
+                       dbo.compare_newVal_with_oldVal(hmachine.machine_no, machine.machine_no, 'MachineNo') +                                              -- 機器番号
+                       dbo.compare_newVal_with_oldVal(hmachine.machine_name, machine.machine_name, 'MachineName') +                                        -- 機器名称
+                       dbo.compare_newId_with_oldId(hmachine.equipment_level_structure_id, machine.equipment_level_structure_id, 'EquipmentLevel') +       -- 機器レベル
+                       dbo.compare_newId_with_oldId(hmachine.importance_structure_id, machine.importance_structure_id, 'Importance') +                     -- 重要度
+                       dbo.compare_newId_with_oldId(hmachine.conservation_structure_id, machine.conservation_structure_id, 'Conservation') +               -- 保全方式
+                       dbo.compare_newVal_with_oldVal(hmachine.installation_location, machine.installation_location, 'InstallationLocation') +             -- 設置場所
+                       dbo.compare_newId_with_oldId(hmachine.number_of_installation, machine.number_of_installation, 'NumberOfInstallation') +             -- 設置台数
+                       dbo.compare_newVal_with_oldVal(hmachine.date_of_installation, machine.date_of_installation, 'DateOfInstallation') +                 -- 設置日
+                       dbo.compare_newVal_with_oldVal(hm_law.applicable_laws_structure_id, law.applicable_laws_structure_id, 'ApplicableLaws') +           -- 適用法規
+                       dbo.compare_newVal_with_oldVal(hmachine.machine_note, machine.machine_note, 'MachineNote') +                                        -- 機番メモ
+                       dbo.compare_newId_with_oldId(hequipment.manufacturer_structure_id, equipment.manufacturer_structure_id, 'Manufacturer') +           -- メーカー
+                       dbo.compare_newVal_with_oldVal(hequipment.manufacturer_type, equipment.manufacturer_type, 'ManufacturerType') +                     -- メーカー型式
+                       dbo.compare_newVal_with_oldVal(hequipment.model_no, equipment.model_no, 'ModelNo') +                                                -- 型式コード
+                       dbo.compare_newVal_with_oldVal(hequipment.serial_no, equipment.serial_no, 'SerialNo') +                                             -- 製造番号
+                       dbo.compare_newVal_with_oldVal(hequipment.date_of_manufacture, equipment.date_of_manufacture, 'DateOfManufacture') +                -- 製造日
+                       dbo.compare_newVal_with_oldVal(hequipment.delivery_date, equipment.delivery_date, 'DeliveryDate') +                                 -- 納期
+                       dbo.compare_newId_with_oldId(hequipment.use_segment_structure_id, equipment.use_segment_structure_id, 'UseSegment') +               -- 使用区分
+                       dbo.compare_newVal_with_oldVal(hequipment.fixed_asset_no, equipment.fixed_asset_no, 'FixedAssetNo') +                               -- 固定資産番号
+                       dbo.compare_newVal_with_oldVal(hequipment.equipment_note, equipment.equipment_note, 'EquipmentNote') +                              -- 機器メモ
+                       dbo.compare_newId_with_oldId(hequipment.circulation_target_flg, equipment.circulation_target_flg, 'CirculationTargetFlg') +         -- 循環対象
+                       dbo.compare_newId_with_oldId(hequipment.maintainance_kind_manage, equipment.maintainance_kind_manage, 'MaintainanceKindManage_20')  -- 点検種別毎管理
                     )
             )
             ELSE ''
@@ -295,7 +213,7 @@ target AS(
 
         /*@DispOnlyMySubject
         -- 自分の件名のみ表示
-        AND (history.application_user_id = @UserId OR history.approval_user_id = @UserId)
+        AND history.application_user_id = @UserId
         @DispOnlyMySubject*/
 
         /*@IsDetail

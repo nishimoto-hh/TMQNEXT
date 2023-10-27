@@ -3342,6 +3342,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 棚卸実施日時</summary>
             /// <value>棚卸実施日時</value>
             public DateTime? InventoryDatetime { get; set; }
+            /// <summary>Gets or sets 棚卸実施日時取込値</summary>
+            /// <value>棚卸実施日時取込値</value>
+            public DateTime? TempInventoryDatetime { get; set; }
             /// <summary>Gets or sets 棚卸調整日時</summary>
             /// <value>棚卸調整日時</value>
             public DateTime? DifferenceDatetime { get; set; }
@@ -3351,6 +3354,18 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 作成区分</summary>
             /// <value>作成区分</value>
             public long? CreationDivisionStructureId { get; set; }
+            /// <summary>Gets or sets RFIDタグ</summary>
+            /// <value>RFIDタグ</value>
+            public string RftagId { get; set; }
+            /// <summary>Gets or sets RFIDタグ取込値</summary>
+            /// <value>RFIDタグ取込値</value>
+            public string TempRftagId { get; set; }
+            /// <summary>Gets or sets 作業者</summary>
+            /// <value>作業者</value>
+            public string WorkUserName { get; set; }
+            /// <summary>Gets or sets 作業者取込値</summary>
+            /// <value>作業者取込値</value>
+            public string TempWorkUserName { get; set; }
 
             /// <summary>
             /// プライマリーキー

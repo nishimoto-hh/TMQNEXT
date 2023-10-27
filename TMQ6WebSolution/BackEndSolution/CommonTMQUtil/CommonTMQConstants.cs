@@ -415,6 +415,21 @@
                     /// </summary>
                     Delete = 30
                 }
+
+                /// <summary>
+                /// 変更管理 申請機能
+                /// </summary>
+                public enum ApplicationConduct
+                {
+                    /// <summary>
+                    /// 機器台帳
+                    /// </summary>
+                    HM0001 = 1,
+                    /// <summary>
+                    /// 長期計画
+                    /// </summary>
+                    HM0002 = 2
+                }
             }
         }
 

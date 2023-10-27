@@ -63,6 +63,9 @@ namespace BusinessLogic_PT0002
                 // 移庫先倉庫IDリスト
                 List<int> destinationLocationIdList = new List<int>();
 
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
+                string joinStr = string.Empty;
                 foreach (var result in results)
                 {
                     // 移庫元棚ID追加
@@ -70,9 +73,21 @@ namespace BusinessLogic_PT0002
                     // 移庫元棚ID追加
                     destinationLocationIdList.Add(result.ToStorageLocationId);
 
-                    //棚IDと棚枝番結合
-                    result.LocationId = CommonTMQUtil.CommonTMQUtil.GetDisplayPartsLocation(result.LocationId, result.PartsLocationDetailNo, result.PartsFactoryId, this.LanguageId, db);
-                    result.ToLocationId = CommonTMQUtil.CommonTMQUtil.GetDisplayPartsLocation(result.ToLocationId, result.ToPartsLocationDetailNo, result.PartsFactoryId, this.LanguageId, db);
+                    // 結合文字列を取得
+                    joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(result.PartsFactoryId, this.LanguageId, db, ref factoryJoinDic);
+
+                    // 棚番と枝番が存在する場合
+                    if (!string.IsNullOrEmpty(result.LocationId) && !string.IsNullOrEmpty(result.PartsLocationDetailNo))
+                    {
+                        // 棚番 + 枝番
+                        result.LocationId = TMQUtil.GetDisplayPartsLocation(result.LocationId, result.PartsLocationDetailNo, joinStr);
+                    }
+
+                    if(!string.IsNullOrEmpty(result.ToLocationId) && !string.IsNullOrEmpty(result.ToPartsLocationDetailNo))
+                    {
+                        // 棚番 + 枝番
+                        result.ToLocationId = TMQUtil.GetDisplayPartsLocation(result.ToLocationId, result.ToPartsLocationDetailNo, joinStr);
+                    }
 
                     // 数と単位結合
                     result.TransferCount = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.TransferCount, result.UnitDigit, result.UnitRoundDivision), result.UnitName);

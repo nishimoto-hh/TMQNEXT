@@ -118,10 +118,17 @@ namespace BusinessLogic_PT0003
                 return false;
             }
 
+            //棚IDより翻訳をまとめて取得しておく
+            List<long> partsLocationIdList = results.Select(x => x.PartsLocationId).Distinct().ToList();
+            List<STDData.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, this.LanguageId, db);
+
+            //工場ID棚番結合文字列を保持するDictionary
+            Dictionary<int, string> factoryJoinDic = new();
+
             foreach (var result in results)
             {
                 // 棚＋棚番
-                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db);
+                result.PartsLocationDisp = TMQUtil.GetDisplayPartsLocation(result.PartsLocationId, result.PartsLocationDetailNo, result.FactoryId, this.LanguageId, this.db, ref factoryJoinDic, partsLocationList);
 
                 // 金額・単位結合
                 result.UnitPriceDisplay = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.UnitPrice.ToString(), result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName, false);          // 入庫単価

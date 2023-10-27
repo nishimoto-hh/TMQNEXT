@@ -212,7 +212,11 @@ WITH stock AS (
             ELSE pi.stock_quantity 
             END AS stock_quantity                   --在庫数
         , pi.preparation_datetime                   --棚卸準備日時
-        , pi.inventory_datetime                     --棚卸日時
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.inventory_datetime 
+            ELSE pi.temp_inventory_datetime 
+            END AS inventory_datetime               --棚卸日時
         , pi.difference_datetime                    --棚卸調整日時
         , CASE 
             WHEN @InventoryIdFlg = 0  
@@ -259,6 +263,16 @@ WITH stock AS (
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
         , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
         , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.rftag_id 
+            ELSE pi.temp_rftag_id 
+            END AS rftag_id                         --RFIDタグ
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.work_user_name 
+            ELSE pi.temp_work_user_name 
+            END AS work_user_name                   --作業者
     FROM
         pt_parts pp 
         LEFT JOIN pt_lot pl                         --ロット情報
@@ -343,7 +357,11 @@ WITH stock AS (
             END AS inventory_diff_flg               --棚差あり
         , pi.stock_quantity                         --在庫数
         , pi.preparation_datetime                   --棚卸準備日時
-        , pi.inventory_datetime                     --棚卸日時
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.inventory_datetime 
+            ELSE pi.temp_inventory_datetime 
+            END AS inventory_datetime               --棚卸日時
         , pi.difference_datetime                    --棚卸調整日時
         , CASE 
             WHEN @InventoryIdFlg = 0  
@@ -390,6 +408,16 @@ WITH stock AS (
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
         , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
         , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.rftag_id 
+            ELSE pi.temp_rftag_id 
+            END AS rftag_id                         --RFIDタグ
+        , CASE 
+            WHEN @InventoryIdFlg = 0  
+                THEN pi.work_user_name 
+            ELSE pi.temp_work_user_name 
+            END AS work_user_name                   --作業者
     FROM
         pt_parts pp 
         LEFT JOIN pt_inventory pi                   --棚卸データ

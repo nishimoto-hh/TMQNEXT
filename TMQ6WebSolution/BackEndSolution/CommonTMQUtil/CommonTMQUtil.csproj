@@ -83,7 +83,13 @@
     <None Remove="Resources\sql\Common\CreateTableTempJob.sql" />
     <None Remove="Resources\sql\Common\CreateTableTempLocation.sql" />
     <None Remove="Resources\sql\Common\GetNextSequence.sql" />
+    <None Remove="Resources\sql\Common\GetPartsLocationTranslation.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetApplicationStatus.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetApprovalUserId.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetAuthLevel.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetAuthLevelByUserId.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetCntBeforeUpdateApplicationStatus.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetIsSystemAdministratorByUserId.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatusApproval.sql" />
     <None Remove="Resources\sql\Common\InsertTempJob.sql" />
@@ -243,6 +249,8 @@
     <None Remove="Resources\sql\Inventory\GetCountCheckInventory.sql" />
     <None Remove="Resources\sql\Inventory\GetCountDuplicationData.sql" />
     <None Remove="Resources\sql\Inventory\GetCountRegistInventory.sql" />
+    <None Remove="Resources\sql\Inventory\GetCsvColTitleTransLationText.sql" />
+    <None Remove="Resources\sql\Inventory\GetCsvData.sql" />
     <None Remove="Resources\sql\Inventory\GetEnterInput.sql" />
     <None Remove="Resources\sql\Inventory\GetEnterInputNew.sql" />
     <None Remove="Resources\sql\Inventory\GetEnterList.sql" />
@@ -256,6 +264,7 @@
     <None Remove="Resources\sql\Inventory\GetIssueList.sql" />
     <None Remove="Resources\sql\Inventory\GetLotStock.sql" />
     <None Remove="Resources\sql\Inventory\GetParts.sql" />
+    <None Remove="Resources\sql\Inventory\GetSumStockQuantity.sql" />
     <None Remove="Resources\sql\Inventory\InsertInventory.sql" />
     <None Remove="Resources\sql\Inventory\InsertInventoryDifference.sql" />
     <None Remove="Resources\sql\Inventory\Select_InventryCount.sql" />
@@ -765,6 +774,9 @@
     <EmbeddedResource Include="Resources\sql\Attachment\InsertLocationStructureIdToTemp.sql" />
     <EmbeddedResource Include="Resources\sql\Common\CreateTableTempJob.sql" />
     <EmbeddedResource Include="Resources\sql\Common\CreateTableTempLocation.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetApplicationStatus.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetApprovalUserId.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetAuthLevel.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempJob.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempLocation.sql" />
@@ -795,6 +807,7 @@
     <EmbeddedResource Include="Resources\sql\Common\PartsInventory\UpdateStock.sql" />
     <EmbeddedResource Include="Resources\sql\Common\PartsInventory\UpdateStockDelete.sql" />
     <EmbeddedResource Include="Resources\sql\Common\Select_InventryGetCount.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\GetPartsLocationTranslation.sql" />
     <EmbeddedResource Include="Resources\sql\Common\Structure_GetLowerList.sql" />
     <EmbeddedResource Include="Resources\sql\Common\Structure_GetPartsLocationList.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\GetLongPlanIdList.sql" />
@@ -819,7 +832,6 @@
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetIsAbleToClickBtn.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
-    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitAccountStructureId.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitOldNewStructureId.sql" />
@@ -846,7 +858,10 @@
     <EmbeddedResource Include="Resources\sql\InventoryFirm\UpdateStockConfirm.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\WITH_GetInventoryFirmList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetCountDuplicationData.sql" />
+    <EmbeddedResource Include="Resources\sql\Inventory\GetCsvColTitleTransLationText.sql" />
+    <EmbeddedResource Include="Resources\sql\Inventory\GetCsvData.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetFixedTargetMonth.sql" />
+    <EmbeddedResource Include="Resources\sql\Inventory\GetSumStockQuantity.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\WITH_GetIssueChildList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetParts.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetInoutQuantity.sql" />

@@ -104,7 +104,10 @@ namespace BusinessLogic_PT0002
                 return false;
             }
 
-            foreach(var result in results)
+            // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+            Dictionary<int, string> factoryJoinDic = new();
+            string strJoin = string.Empty;
+            foreach (var result in results)
             {
                 // 金額と単位結合
                 result.UnitPrice = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.UnitPrice, result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName);
@@ -112,7 +115,7 @@ namespace BusinessLogic_PT0002
                 result.IssueMonney = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.AmountMoney, result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName);
 
                 // 結合文字取得
-                string strJoin = TMQUtil.GetJoinStrOfPartsLocation(result.PartsFactoryId, this.LanguageId, this.db);
+                strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(result.PartsFactoryId, this.LanguageId, this.db, ref factoryJoinDic);
 
                 // コードと名称結合
                 result.PartsLocationName = TMQUtil.GetDisplayPartsLocation(result.PartsLocationName, result.PartsLocationDetailNo, strJoin);

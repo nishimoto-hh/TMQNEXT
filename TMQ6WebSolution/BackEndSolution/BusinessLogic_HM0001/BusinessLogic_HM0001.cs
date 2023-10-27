@@ -15,6 +15,7 @@ using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_HM0001
 {
@@ -59,6 +60,8 @@ namespace BusinessLogic_HM0001
         {
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"HistoryMachine";
+            /// <summary>機器台帳(MC0001)のSQL格納先サブディレクトリ名</summary>
+            public const string SubDirMachine = @"Machine";
 
             /// <summary>
             /// 一覧画面SQL
@@ -77,8 +80,8 @@ namespace BusinessLogic_HM0001
             {
                 /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
                 public const string GetTransactionMachineInfo = "GetTransactionMachineInfo";
-                /// <summary>保全項目一覧(トランザクション)取得SQL</summary>
-                public const string GetTransactionManagementStandardsList = "GetTransactionManagementStandardsList";
+                /// <summary>保全項目一覧取得(機器台帳：MC0001のSQLを使用)</summary>
+                public const string GetManagementStandard = "GetManagementStandard";
                 /// <summary>保全項目一覧(変更管理)取得SQL</summary>
                 public const string GetHistoryManagementStandardsList = "GetHistoryManagementStandardsList";
                 /// <summary>ボタンクリック権限取得SQL(ボタン表示/非表示用)</summary>
@@ -160,7 +163,10 @@ namespace BusinessLogic_HM0001
                 /// </summary>
                 public static class ControlId
                 {
-
+                    /// <summary>
+                    /// 保全項目一覧
+                    /// </summary>
+                    public const string ManagementStandardsList = "BODY_080_00_LST_1";
                 }
                 /// <summary>
                 /// ボタンコントロールID
@@ -254,10 +260,6 @@ namespace BusinessLogic_HM0001
                 // 削除処理実行
                 return Delete();
             }
-            else if (compareId.IsStartId("Test"))
-            {
-                // Testボタンの場合(画面で独自の処理)
-            }
             // 他の処理がある場合、else if 節に条件を追加する
             // この部分は到達不能なので、エラーを返す
             return ComConsts.RETURN_RESULT.NG;
@@ -270,8 +272,8 @@ namespace BusinessLogic_HM0001
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int RegistImpl()
         {
-            bool resultRegist = false;  // 登録処理戻り値、エラーならFalse
-
+            bool resultRegist = false;             // 登録処理戻り値、エラーならFalse
+            string processName = setProcessName(); // 処理名称
             //画面番号で分岐
             switch (this.FormNo)
             {
@@ -291,18 +293,32 @@ namespace BusinessLogic_HM0001
                 // 未設定時にエラーメッセージを設定
                 if (string.IsNullOrEmpty(this.MsgId))
                 {
-                    // 「登録処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
+                    // 「○○処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, processName });
                 }
                 return ComConsts.RETURN_RESULT.NG;
             }
 
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            //「登録処理に成功しました。」
-            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911200003 });
+            //「○○処理に成功しました。」
+            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, processName });
 
             return ComConsts.RETURN_RESULT.OK;
+
+            string setProcessName()
+            {
+                if (this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll)
+                {
+                    return ComRes.ID.ID111020051; // 一括承認
+                }
+                else if (this.CtrlId == ConductInfo.FormList.ButtonId.DenialAll)
+                {
+                    return ComRes.ID.ID111020052; // 一括否認
+                }
+
+                return ComRes.ID.ID911200003;
+            }
         }
 
         /// <summary>
@@ -352,81 +368,7 @@ namespace BusinessLogic_HM0001
         #endregion
 
         #region privateメソッド
-        /// <summary>
-        /// 変更があった項目を取得
-        /// </summary>
-        private void getValueChangedItem(IList<Dao.searchResult> results)
-        {
-            // 変更のあった項目を取得して非表示列に追加(変更が無ければ空)
-            foreach (Dao.searchResult result in results)
-            {
-                // 変更管理詳細ID(機番情報変更管理テーブル)が0の場合は何もしない
-                if (result.MachineHistoryManagementDetailId == 0)
-                {
-                    continue;
-                }
 
-                // 末尾の文字が「|」でなければ追加
-                if (!string.IsNullOrEmpty(result.ValueChanged) && result.ValueChanged[result.ValueChanged.Length - 1].ToString() != "|")
-                {
-                    result.ValueChanged += "|";
-                }
-
-                result.ValueChanged += getColumnName(result.DistrictId, result.OldDistrictId, "District");                     // 地区
-                result.ValueChanged += getColumnName(result.FactoryId, result.OldFactoryId, "Factory");                        // 工場
-                result.ValueChanged += getColumnName(result.PlantId, result.OldPlantId, "Plant");                              // プラント
-                result.ValueChanged += getColumnName(result.SeriesId, result.OldSeriesId, "Series");                           // 系列
-                result.ValueChanged += getColumnName(result.StrokeId, result.OldStrokeId, "Stroke");                           // 工程
-                result.ValueChanged += getColumnName(result.FacilityId, result.OldFacilityId, "Facility");                     // 設備
-                result.ValueChanged += getColumnName(result.JobStructureId, result.OldJobStructureId, "Job");                  // 職種
-                result.ValueChanged += getColumnName(result.LargeClassficationId, result.OldLargeClassficationId, "Large");    // 機種大分類
-                result.ValueChanged += getColumnName(result.MiddleClassficationId, result.OldMiddleClassficationId, "Middle"); // 機種中分類
-                result.ValueChanged += getColumnName(result.SmallClassficationId, result.OldSmallClassficationId, "Small");    // 機種小分類
-
-                // 末尾の文字が「|」ならば削除
-                if (!string.IsNullOrEmpty(result.ValueChanged) && result.ValueChanged[result.ValueChanged.Length - 1].ToString() == "|")
-                {
-                    result.ValueChanged = result.ValueChanged.Remove(result.ValueChanged.Length - 1);
-                }
-            }
-        }
-
-        /// <summary>
-        /// トランザクションデータと変更管理データの差異に応じて背景色を設定
-        /// </summary>
-        /// <param name="newId">変更後の値</param>
-        /// <param name="oldId">変更前の値</param>
-        /// <param name="itemName">項目名</param>
-        /// <returns>項目名+_+背景色設定値</returns>
-        private string getColumnName(int? newId, int? oldId, string itemName)
-        {
-            // 申請区分
-            int applicationDivision = 0;
-
-            // 値の変更パターンに応じて申請区分を設定
-            if (newId != null && oldId == null)
-            {
-                // 値が追加された場合
-                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.New;
-            }
-            else if (newId == null && oldId != null)
-            {
-                // 値が削除された場合
-                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.Delete;
-            }
-            else if (newId != oldId)
-            {
-                // 値が変更された場合
-                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.Update;
-            }
-            else
-            {
-                // 変更が無い場合
-                return string.Empty;
-            }
-
-            return itemName + "_" + applicationDivision.ToString() + "|";
-        }
 
 
 

@@ -34,12 +34,26 @@
     if (Model == null || Model.Count > 1)
     {
         string conductGroup = Model[0].CONDUCTMST.CONDUCTGRP;
-        foreach (CommonConductMst child in Model[1].CHILDCONDUCTMST)
-        {
-            if (child.CONDUCTMST.CONDUCTID == conductGroup)
-            {
-                groupName = child.CONDUCTMST.NAME;
-                break;
+        // 2022.11.22 add ATTS 階層分けされている機能名が正しく表示されるように修正
+        //foreach (CommonConductMst child in Model[1].CHILDCONDUCTMST)
+        //{
+        //    if (child.CONDUCTMST.CONDUCTID == conductGroup)
+        //    {
+        //        groupName = child.CONDUCTMST.NAME;
+        //        break;
+        //    }
+        //}
+        for(int i = 0;i < Model.Count;i++){
+            // 子の機能が存在 かつ 子の機能が複数存在する場合に親機能名設定
+            if(Model[i].CHILDCONDUCTMST is not null && Model[i].CHILDCONDUCTMST[0].CHILDCONDUCTMST.Count > 1) {
+                foreach (CommonConductMst child in Model[i].CHILDCONDUCTMST)
+                {
+                    if (child.CONDUCTMST.CONDUCTID == conductGroup)
+                    {
+                        groupName = child.CONDUCTMST.NAME;
+                        break;
+                    }
+                }
             }
         }
     }

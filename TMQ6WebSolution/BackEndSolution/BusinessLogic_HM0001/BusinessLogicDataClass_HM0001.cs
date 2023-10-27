@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ComDao = CommonSTDUtil.CommonDataBaseClass;
 using TmqDao = CommonTMQUtil.TMQCommonDataClass;
+using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_HM0001
 {
@@ -24,9 +25,31 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
+        /// 詳細画面の検索条件
+        /// </summary>
+        public class detailSearchCondition
+        {
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long MachineId { get; set; }
+            /// <summary>Gets or sets 処理モード(0:トランザクションモード,1:変更管理モード)</summary>
+            /// <value>処理モード(0:トランザクションモード,1:変更管理モード)</value>
+            public int ProcessMode { get; set; }
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
+            /// <summary>Gets or sets ログインユーザID</summary>
+            /// <value>ログインユーザID</value>
+            public int UserId { get; set; }
+        }
+
+        /// <summary>
         /// 一覧画面・詳細画面の検索結果
         /// </summary>
-        public class searchResult : TmqDao.HmMcMachineEntity
+        public class searchResult : TmqDao.HmMcMachineEntity, HistoryManagementDao.IHistoryManagementCommon
         {
             /// <summary>Gets or sets メーカー</summary>
             /// <value>メーカー</value>
@@ -103,15 +126,12 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 申請状況(拡張項目)</summary>
             /// <value>申請状況(拡張項目)</value>
             public string ApplicationStatusCode { get; set; }
-            /// <summary>Gets or sets 変更のあった項目</summary>
-            /// <value>変更のあった項目</value>
+            /// <summary>Gets or sets 変更のあった項目(District_10|Series_30...)</summary>
+            /// <value>変更のあった項目(District_10|Series_30...)</value>
             public string ValueChanged { get; set; }
             /// <summary>Gets or sets 変更管理ID</summary>
             /// <value>変更管理ID</value>
             public long HistoryManagementId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID(機番情報変更管理テーブル)</summary>
-            /// <value>変更管理詳細ID(機番情報変更管理テーブル)</value>
-            public long MachineHistoryManagementDetailId { get; set; }
             /// <summary>Gets or sets 処理モード(0：トランザクションモード、1：変更管理モード)</summary>
             /// <value>処理モード(0：トランザクションモード、1：変更管理モード)</value>
             public int ProcessMode { get; set; }
@@ -286,25 +306,106 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// 詳細画面の検索条件
+        /// 保全項目一覧のデータクラス
         /// </summary>
-        public class  detailSearchCondition
+        public class managementStandardsResult : ComDao.CommonTableItem
         {
-            /// <summary>Gets or sets 変更管理ID</summary>
-            /// <value>変更管理ID</value>
-            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
-            public long MachineId { get; set; }
-            /// <summary>Gets or sets 処理モード(0:トランザクションモード,1:変更管理モード)</summary>
-            /// <value>処理モード(0:トランザクションモード,1:変更管理モード)</value>
-            public int ProcessMode { get; set; }
-            /// <summary>Gets or sets 言語ID</summary>
-            /// <value>言語ID</value>
-            public string LanguageId { get; set; }
-            /// <summary>Gets or sets ログインユーザID</summary>
-            /// <value>ログインユーザID</value>
-            public int UserId { get; set; }
+            public long? MachineId { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public int? EquipmentLevelStructureId { get; set; }
+            /// <summary>Gets or sets 機器番号</summary>
+            /// <value>機器番号</value>
+            public string MachineNo { get; set; }
+            /// <summary>Gets or sets 機器名称</summary>
+            /// <value>機器名称</value>
+            public string MachineName { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public bool MaintainanceKindManage { get; set; }
+            /// <summary>Gets or sets 部位ID</summary>
+            /// <value>部位ID</value>
+            public int? InspectionSiteStructureId { get; set; }
+            /// <summary>Gets or sets 部位重要度</summary>
+            /// <value>部位重要度</value>
+            public int? InspectionSiteImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 部位保全方式</summary>
+            /// <value>部位保全方式</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準フラグ</summary>
+            /// <value>機器別管理基準フラグ</value>
+            public bool? IsManagementStandardConponent { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 点検内容ID</summary>
+            /// <value>点検内容ID</value>
+            public int? InspectionContentStructureId { get; set; }
+            /// <summary>Gets or sets 保全区分</summary>
+            /// <value>保全区分</value>
+            public int? MaintainanceDivision { get; set; }
+            /// <summary>Gets or sets 点検種別</summary>
+            /// <value>点検種別</value>
+            public int? MaintainanceKindStructureId { get; set; }
+            /// <summary>Gets or sets 予算金額</summary>
+            /// <value>予算金額</value>
+            public decimal? BudgetAmount { get; set; }
+            /// <summary>Gets or sets 準備期間(日)</summary>
+            /// <value>準備期間(日)</value>
+            public int? PreparationPeriod { get; set; }
+            /// <summary>Gets or sets 長計件名ID</summary>
+            /// <value>長計件名ID</value>
+            public int? LongPlanId { get; set; }
+            /// <summary>Gets or sets 並び順</summary>
+            /// <value>並び順</value>
+            public int? OrderNo { get; set; }
+            /// <summary>Gets or sets スケジュール管理基準ID</summary>
+            /// <value>スケジュール管理基準ID</value>
+            public int? ScheduleTypeStructureId { get; set; }
+            /// <summary>Gets or sets 保全スケジュールID</summary>
+            /// <value>保全スケジュールID</value>
+            public long MaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 周期ありフラグ</summary>
+            /// <value>周期ありフラグ</value>
+            public bool? IsCyclic { get; set; }
+            /// <summary>Gets or sets 周期(年)</summary>
+            /// <value>周期(年)</value>
+            public int? CycleYear { get; set; }
+            /// <summary>Gets or sets 周期(月)</summary>
+            /// <value>周期(月)</value>
+            public int? CycleMonth { get; set; }
+            /// <summary>Gets or sets 周期(日)</summary>
+            /// <value>周期(日)</value>
+            public int? CycleDay { get; set; }
+            /// <summary>Gets or sets 表示周期</summary>
+            /// <value>表示周期</value>
+            public string DispCycle { get; set; }
+            /// <summary>Gets or sets 開始日</summary>
+            /// <value>開始日</value>
+            public DateTime? StartDate { get; set; }
+            /// <summary>Gets or sets 添付ファイル</summary>
+            /// <value>添付ファイル</value>
+            public string AttachmentFile { get; set; }
+            /// <summary>Gets or sets 最大更新日時</summary>
+            /// <value>最大更新日時</value>
+            public DateTime? MaxUpdateDatetime { get; set; }
+            /// <summary>Gets or sets 添付ファイル削除用キーID</summary>
+            /// <value>添付ファイル削除用キーID</value>
+            public int? KeyId { get; set; }
+            /// <summary>Gets or sets 機能タイプID</summary>
+            /// <value>機能タイプID</value>
+            public int? FunctionTypeId { get; set; }
+            /// <summary>Gets or sets 申請状況(拡張項目)</summary>
+            /// <value>申請状況(拡張項目)</value>
+            public string ApplicationStatusCode { get; set; }
+            /// <summary>Gets or sets 変更のあった項目</summary>
+            /// <value>変更のあった項目</value>
+            public string ValueChanged { get; set; }
         }
     }
 }

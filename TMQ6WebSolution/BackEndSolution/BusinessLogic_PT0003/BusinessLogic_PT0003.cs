@@ -15,6 +15,7 @@ using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_PT0003.BusinessLogicDataClass_PT0003;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 
 namespace BusinessLogic_PT0003
 {
@@ -107,6 +108,12 @@ namespace BusinessLogic_PT0003
             public const string GetInoutHistryForwardList = "GetInoutHistryForwardList";
             /// <summary>SQL名：入出庫履歴一覧を表示する</summary>
             public const string GetInoutHistryList = "GetInoutHistryList";
+            /// <summary>SQL名：棚卸準備表（CSV）の列タイトルを取得</summary>
+            public const string GetCsvColTitleTransLationText = "GetCsvColTitleTransLationText";
+            /// <summary>SQL名：棚卸準備表（CSV）の出力データを取得</summary>
+            public const string GetCsvData = "GetCsvData";
+            /// <summary>SQL名：棚卸データの在庫数合計値を取得</summary>
+            public const string GetSumStockQuantity = "GetSumStockQuantity";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"Inventory";
@@ -350,8 +357,10 @@ namespace BusinessLogic_PT0003
         /// </summary>
         private static class UploadFile
         {
-            /// <summary>帳票ID</summary>
-            public const string ReportId = "RP0310";
+            /// <summary>棚卸準備表(EXCEL)の帳票ID</summary>
+            public const string ExcelReportId = "RP0310";
+            /// <summary>棚卸準備表(CSV)の帳票ID</summary>
+            public const string CsvReportId = "RP0410";
             /// <summary>シート番号</summary>
             public const int SheetNo = 1;
             /// <summary>ヘッダー情報のコントロールグループID</summary>
@@ -433,6 +442,10 @@ namespace BusinessLogic_PT0003
             public const string StorageLocationId = "storage_location_id";
             /// <summary>棚卸一覧 棚卸ID</summary>
             public const string DepartmentIdList = "department_id_list";
+            /// <summary>工場名</summary>
+            public const string FactoryName = "factory_name";
+            /// <summary>予備品倉庫名</summary>
+            public const string WarehouseName = "warehouse_name";
             /// <summary>棚枝番</summary>
             public const string PartsLocationDetailNo = "PartsLocationDetailNo";
             /// <summary>棚卸一覧 棚卸ID</summary>
@@ -666,7 +679,6 @@ namespace BusinessLogic_PT0003
             switch (this.CtrlId)
             {
                 case ConductInfo.FormList.Button.Output:
-                case ConductInfo.FormList.Button.OutputCsv:
 
                     //棚卸準備リスト
                     // private変数初期化
@@ -688,7 +700,7 @@ namespace BusinessLogic_PT0003
 
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
                     int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, UploadFile.ReportId, this.db) ? userFactoryId : 0;
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, UploadFile.ExcelReportId, this.db) ? userFactoryId : 0;
 
                     // ページ情報取得
                     var pageInfo = GetPageInfo(
@@ -706,7 +718,7 @@ namespace BusinessLogic_PT0003
                     var sheetDefineList = TMQUtil.SqlExecuteClass.SelectList<ReportDao.MsOutputReportSheetDefineEntity>(
                         TMQUtil.ComReport.GetReportSheetDefine,
                         TMQUtil.ExcelPath,
-                        new { FactoryId = reportFactoryId, ReportId = UploadFile.ReportId },
+                        new { FactoryId = reportFactoryId, ReportId = UploadFile.ExcelReportId },
                         db);
                     if (sheetDefineList == null)
                     {
@@ -761,12 +773,20 @@ namespace BusinessLogic_PT0003
                     // 固定出力データのセット
                     // 検索条件を画面より取得してデータクラスへセット
                     Dao.searchCondition condition = getCondition(out List<string> listUnComment);
+                    condition.PartsLocationId = condition.StorageLocationId;
+
+                    // 工場名、予備品倉庫名を取得
+                    IList<Dao.searchCondition> infoList = new List<Dao.searchCondition>();
+                    infoList.Add(condition);
+                    TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchCondition>(ref infoList, new List<StructureType> { StructureType.SpareLocation }, this.db, this.LanguageId);
 
                     int storageLocationId = condition.StorageLocationId;
                     string departmentIdList = string.Join("|", condition.DepartmentIdList);
                     Dictionary<string, string> dicFixedValue = new Dictionary<string, string>();
                     dicFixedValue.Add(KeyNameReport.StorageLocationId, storageLocationId.ToString());
                     dicFixedValue.Add(KeyNameReport.DepartmentIdList, departmentIdList);
+                    dicFixedValue.Add(KeyNameReport.FactoryName, condition.FactoryName);
+                    dicFixedValue.Add(KeyNameReport.WarehouseName, condition.WarehouseName);
 
                     // エクセル出力共通処理
                     TMQUtil.CommonOutputExcel(
@@ -774,7 +794,7 @@ namespace BusinessLogic_PT0003
                         this.PgmId,                  // プログラムID
                         dicSelectKeyDataList,        // 選択キー情報リスト
                         searchCondition,             // 検索条件
-                        UploadFile.ReportId,         // 帳票ID
+                        UploadFile.ExcelReportId,         // 帳票ID
                         1,                           // テンプレートID
                         1,                           // 出力パターンID
                         this.UserId,                 // ユーザID
@@ -791,19 +811,10 @@ namespace BusinessLogic_PT0003
                         null,
                         null,
                         null,
-                        dicFixedValue,
-                        this.CtrlId == ConductInfo.FormList.Button.OutputCsv);
+                        dicFixedValue);
 
                     // OUTPUTパラメータに設定
-                    if(this.CtrlId == ConductInfo.FormList.Button.Output)
-                    {
-                        this.OutputFileType = ComConsts.REPORT.FILETYPE.EXCEL;
-                    }
-                    else
-                    {
-                        this.OutputFileType = ComConsts.REPORT.FILETYPE.CSV;
-                    }
-
+                    this.OutputFileType = ComConsts.REPORT.FILETYPE.EXCEL;
                     this.OutputFileName = fileName;
                     this.OutputStream = memStream;
 
@@ -812,6 +823,31 @@ namespace BusinessLogic_PT0003
                     return ComConsts.RETURN_RESULT.OK;
                     break;
 
+                case ConductInfo.FormList.Button.OutputCsv:
+                    //棚卸準備リスト(CSV)
+                    // private変数初期化
+                    addInventoryIdList = new List<long>();
+
+                    if (!registInventory())
+                    {
+                        // 棚卸データの登録に失敗した場合
+
+                        //「登録処理に失敗しました。」
+                        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                        break;
+                    }
+                    //棚卸準備リスト(CSV)出力
+                    if (!outputCsv())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    return ComConsts.RETURN_RESULT.OK;
+                    break;
                 default:
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     // 「コントロールIDが不正です。」

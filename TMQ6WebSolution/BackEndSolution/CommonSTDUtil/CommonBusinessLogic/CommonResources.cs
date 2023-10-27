@@ -1499,6 +1499,14 @@
             /// 選択された{0}を{1}する権限がありません。
             /// </summary>
             public const string ID141140003 = "141140003";
+            /// <summary>
+            /// 一括承認
+            /// </summary>
+            public const string ID111020051 = "111020051";
+            /// <summary>
+            /// 一括否認
+            /// </summary>
+            public const string ID111020052 = "111020052";
         }
     }
 }
