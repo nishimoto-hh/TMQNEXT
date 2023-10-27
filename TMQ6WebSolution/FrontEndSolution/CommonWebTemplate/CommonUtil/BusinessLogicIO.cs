@@ -120,9 +120,9 @@ namespace CommonWebTemplate.CommonUtil
         /// </summary>
         const string dllProcName_GetDecryptedData = "GetDecryptedData";
         /// <summary>
-        /// 起動処理名（共通処理DLL：ログインID取得）
+        /// 起動処理名（共通処理DLL：ユーザID取得）
         /// </summary>
-        const string dllProcName_GetLoginIdByMailAdress = "GetLoginIdByMailAdress";
+        const string dllProcName_GetUserIdByMailAdress = "GetUserIdByMailAdress";
         #endregion
 
         #region === メンバ変数 ===
@@ -688,6 +688,7 @@ namespace CommonWebTemplate.CommonUtil
         /// </summary>
         /// <param name="loginId">ﾛｸﾞｲﾝID</param>
         /// <param name="loginPassword">ﾛｸﾞｲﾝﾊﾟｽﾜｰﾄﾞ</param>
+        /// <param name="userId">ユーザID</param>
         /// <param name="isPasswordCheck">true：ﾊﾟｽﾜｰﾄﾞﾁｪｯｸする/false：しない</param>
         /// <param name="isNewLogin">true：新規ログイン/false：ログイン済み</param>
         /// <param name="isCheckOK">(OUT)true：認証OK/false：認証NG</param>
@@ -698,7 +699,7 @@ namespace CommonWebTemplate.CommonUtil
         /// <param name="retGuid">(OUT)GUID</param>
         /// <param name="retFactoryIdList">(OUT)工場IDリスト</param>
         /// <returns></returns>
-        public CommonProcReturn CallDllBusinessLogic_LoginCheck(string loginId, string loginPassword, bool isPasswordCheck, bool isNewLogin,
+        public CommonProcReturn CallDllBusinessLogic_LoginCheck(string loginId, string loginPassword, string userId, bool isPasswordCheck, bool isNewLogin,
             out bool isCheckOK, out UserInfoDef userInfo, out List<string> retConductIds)
         {
             //初期化
@@ -710,6 +711,7 @@ namespace CommonWebTemplate.CommonUtil
             // - 登録者ID
             // - 新規ログインフラグ
             this.inParam.LoginId = loginId;
+            this.inParam.UserId = userId;
             this.inParam.IsNewLogin = isNewLogin;
 
             //INパラメータ
@@ -1460,16 +1462,16 @@ namespace CommonWebTemplate.CommonUtil
         }
 
         /// <summary>
-        /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※ログインID取得用）
+        /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※ユーザID取得用）
         /// </summary>
         /// <param name="procData">業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ</param>
         /// <param name="mailAdress">メールアドレス</param>
-        /// <param name="loginId">ログインID</param>
+        /// <param name="userId">ユーザID</param>
         /// <returns></returns>
-        public CommonProcReturn CallDllBusinessLogic_GetLoingIdByMailAdress(CommonProcData procData, string mailAdress, out string loginId)
+        public CommonProcReturn CallDllBusinessLogic_GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out string userId)
         {
             // 初期化
-            loginId = "";
+            userId = "";
 
             //INパラメータ
             // - 実行条件(JSON文字列)
@@ -1483,8 +1485,8 @@ namespace CommonWebTemplate.CommonUtil
             //業務ロジックDLLコール
             // - DLL名：BusinessLogic_Common.dll
             // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
-            // - 起動処理名：GetLoginIdByMailAdress
-            CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_GetLoginIdByMailAdress, conditionList, out object results);
+            // - 起動処理名：GetUserIdByMailAdress
+            CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_GetUserIdByMailAdress, conditionList, out object results);
 
             // 実行結果より戻り値を取得
             if (results == null)
@@ -1505,10 +1507,10 @@ namespace CommonWebTemplate.CommonUtil
             if (dicResults != null && dicResults.Count > 0)
             {
                 var dicResult = dicResults[0];
-                // ログインIDが取得できる場合、戻り値に設定する
-                if (dicResult.ContainsKey("LoginId") && dicResult["LoginId"] != null)
+                // ユーザIDが取得できる場合、戻り値に設定する
+                if (dicResult.ContainsKey("UserId") && dicResult["UserId"] != null)
                 {
-                    loginId = dicResult["LoginId"].ToString();
+                    userId = dicResult["UserId"].ToString();
                 }
             }
 

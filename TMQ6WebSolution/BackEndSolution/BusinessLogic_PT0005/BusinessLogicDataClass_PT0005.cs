@@ -106,6 +106,9 @@ namespace BusinessLogic_PT0005
             /// <summary>Gets or sets 丸め処理区分</summary>
             /// <value>丸め処理区分</value>
             public int RoundDivision { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerName { get; set; }
         }
 
         /// <summary>
@@ -218,6 +221,9 @@ namespace BusinessLogic_PT0005
             /// <summary>Gets or sets 棚番・棚枝番の結合文字列</summary>
             /// <value>棚番・棚枝番の結合文字列</value>
             public string JoinString { get; set; }
+            /// <summary>Gets or sets 管理工場ID</summary>
+            /// <value>管理工場ID</value>
+            public long PartsFactoryId { get; set; }
         }
     }
 }

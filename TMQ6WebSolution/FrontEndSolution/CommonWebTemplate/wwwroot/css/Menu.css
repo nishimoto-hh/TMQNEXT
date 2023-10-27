@@ -153,6 +153,12 @@ section#container.login {
     box-sizing: border-box;
     text-align: left;
 }
+/*シングルサインオン時のログインエリア*/
+#login_area.sso {
+    padding: 0;
+    background-color:transparent;
+}
+
 #login_area label {
     font-size: 14px;
     font-weight: normal;

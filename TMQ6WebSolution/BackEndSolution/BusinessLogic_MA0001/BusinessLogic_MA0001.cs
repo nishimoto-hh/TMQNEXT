@@ -160,6 +160,10 @@ namespace BusinessLogic_MA0001
                 public const string GetCountTargetSchedule = "GetCountTargetSchedule";
                 /// <summary>SQL名：保全スケジュール詳細 スケジュール日更新</summary>
                 public const string UpdateScheduleDate = "UpdateScheduleDate";
+                /// <summary>SQL名：件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値検索</summary>
+                public const string GetScheduleFromLongPlan = "GetScheduleFromLongPlan";
+                /// <summary>SQL名：件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の対象機器一覧初期値検索</summary>
+                public const string GetMachineListFromLongPlan = "GetMachineListFromLongPlan";
             }
 
             /// <summary>
@@ -228,6 +232,17 @@ namespace BusinessLogic_MA0001
                     public const string NewInspection = "NewInspection";
                     /// <summary>故障情報登録</summary>
                     public const string NewFailure = "NewFailure";
+                }
+
+                /// <summary>
+                /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の情報
+                /// </summary>
+                public static class ParamFromLongPlan
+                {
+                    /// <summary>タブ番号(遷移元で設定される値)</summary>
+                    public const int TabNo = -1;
+                    /// <summary>グローバル変数に格納する際のキー</summary>
+                    public const string GlobalKey = "MakeScheduleFromLongPlan";
                 }
             }
 
@@ -373,6 +388,10 @@ namespace BusinessLogic_MA0001
                     /// 故障分析情報(個別工場)タブ 故障状況、故障原因、復旧処置、再発防止対策の画面項目定義テーブルのコントロールID
                     /// </summary>
                     public static ReadOnlyCollection<string> FailureAnalyzeIndividualInfoIds { get; } = new[] { "BODY_330_00_LST_2", "BODY_340_00_LST_2", "BODY_350_00_LST_2", "BODY_360_00_LST_2", "BODY_370_00_LST_2", "BODY_380_00_LST_2", "BODY_390_00_LST_2" }.ToList().AsReadOnly();
+                    /// <summary>
+                    /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際に初期値を設定するコントロールID
+                    /// </summary>
+                    public static ReadOnlyCollection<string> MakeMaintenanceFromLongPlan { get; } = new[] { "BODY_010_00_LST_2", "BODY_020_00_LST_2",  "BODY_110_00_LST_2", "BODY_170_00_LST_2", "BODY_190_00_LST_2" }.ToList().AsReadOnly();
                 }
                 /// <summary>
                 /// グループ番号

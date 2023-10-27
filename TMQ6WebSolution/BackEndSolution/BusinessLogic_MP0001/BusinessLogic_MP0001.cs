@@ -445,8 +445,9 @@ namespace BusinessLogic_MP0001
                             // データクラスに地区及び職種の階層情報を設定する処理
                             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureLocationInfoEx>(ref bottomLayerAll, new List<StructureType> { StructureType.Location }, this.db, this.LanguageId);
 
-                            foreach(var bottomLayer in distinctData(bottomLayerAll).OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId)
-                                            .ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId))
+                            var loopTarget = bottomLayerAll.OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId).ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId).ToList();
+                            loopTarget = distinctData(loopTarget);
+                            foreach (var bottomLayer in loopTarget)
                             {
                                 if (string.IsNullOrEmpty(bottomLayer.FactoryName) == false && factoryNameList.IndexOf(bottomLayer.FactoryName) < 0)
                                 {
@@ -612,7 +613,7 @@ namespace BusinessLogic_MP0001
                             targetMonth = conditionObj.BeginningMonth;
 
                             //出力テンプレートIDを上期、下期で変更する
-                            if(conditionObj.TargetYear.Month >= 4 && conditionObj.TargetYear.Month <= 9)
+                            if (conditionObj.TargetYear.Month >= 4 && conditionObj.TargetYear.Month <= 9)
                             {
                                 // 上期用テンプレートを使用
                                 templateId = ReportDefine.TemplateId1;
@@ -798,7 +799,7 @@ namespace BusinessLogic_MP0001
             }
 
             // データクラスに地区及び職種の階層情報を設定する処理
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureLocationInfoEx>(ref bottomLayerAll, new List<StructureType> {StructureType.Location }, this.db, this.LanguageId);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<StructureLocationInfoEx>(ref bottomLayerAll, new List<StructureType> { StructureType.Location }, this.db, this.LanguageId);
 
             // 画面上で重複しているように見えるため、機能場所階層IDを一括0で上書き
             bottomLayerAll.Where(x => x.LocationStructureId != null).Select(x => x.LocationStructureId = 0).ToList();
@@ -806,9 +807,9 @@ namespace BusinessLogic_MP0001
             // 地区、工場、プラント、系列、工程、設備の順に並び替え(場所階層ツリーの表示順に合わせる)
             var sortList = bottomLayerAll.OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId)
                                             .ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId).ToList();
-
+            var setList = distinctData(sortList);
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<StructureLocationInfoEx>(hierarchyInfo, distinctData(sortList), distinctData(sortList).Count(), true))
+            if (SetSearchResultsByDataClass<StructureLocationInfoEx>(hierarchyInfo, setList, setList.Count(), true))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -831,13 +832,13 @@ namespace BusinessLogic_MP0001
             bool previousFlg = true;
 
             // 前行の地区・工場・プラント・系列・工程・設備
-            int[] preLacation = new int[] { 0, 0, 0, 0, 0, 0 };
+            int[] preLocation = new int[] { 0, 0, 0, 0, 0, 0 };
 
             // 後行の地区・工場・プラント・系列・工程・設備
-            int[] backLacation = new int[] { 0, 0, 0, 0, 0, 0 };
+            int[] nextLocation = new int[] { 0, 0, 0, 0, 0, 0 };
 
             StringBuilder previousSb = new StringBuilder();
-            StringBuilder backSb = new StringBuilder();
+            StringBuilder nextSb = new StringBuilder();
 
             // 地区から順に比較する
             foreach (var list in sortList)
@@ -847,21 +848,22 @@ namespace BusinessLogic_MP0001
                     // 初期化
                     previousSb = new StringBuilder();
 
-                    preLacation[0] = list.DistrictId ?? 0;  //地区
-                    preLacation[1] = list.FactoryId ?? 0;   //工場
-                    preLacation[2] = list.PlantId ?? 0;     //プラント
-                    preLacation[3] = list.SeriesId ?? 0;    //系列
-                    preLacation[4] = list.StrokeId ?? 0;    //工程
-                    preLacation[5] = list.FacilityId ?? 0;  //設備
+                    preLocation[0] = list.DistrictId ?? 0;  //地区
+                    preLocation[1] = list.FactoryId ?? 0;   //工場
+                    preLocation[2] = list.PlantId ?? 0;     //プラント
+                    preLocation[3] = list.SeriesId ?? 0;    //系列
+                    preLocation[4] = list.StrokeId ?? 0;    //工程
+                    preLocation[5] = list.FacilityId ?? 0;  //設備
 
                     // 地区～設備までの値を繋げる
-                    foreach (var data in preLacation)
+                    foreach (var data in preLocation)
                     {
                         previousSb.Append(data.ToString());
+                        previousSb.Append(",");
                     }
 
                     // 同一データでなく、工場までのデータでなければリスト追加
-                    if (previousSb.ToString() != backSb.ToString() && previousSb.ToString().Substring(previousSb.ToString().Length - 4) != "0000")
+                    if (previousSb.ToString() != nextSb.ToString() && !compareLocationIdNoPlant(preLocation))
                     {
                         distinctList.Add(list); //リスト追加
                         previousFlg = false;
@@ -870,29 +872,43 @@ namespace BusinessLogic_MP0001
                 }
 
                 // 初期化
-                backSb = new StringBuilder();
+                nextSb = new StringBuilder();
 
-                backLacation[0] = list.DistrictId ?? 0;  //地区
-                backLacation[1] = list.FactoryId ?? 0;   //工場
-                backLacation[2] = list.PlantId ?? 0;     //プラント
-                backLacation[3] = list.SeriesId ?? 0;    //系列
-                backLacation[4] = list.StrokeId ?? 0;    //工程
-                backLacation[5] = list.FacilityId ?? 0;  //設備
+                nextLocation[0] = list.DistrictId ?? 0;  //地区
+                nextLocation[1] = list.FactoryId ?? 0;   //工場
+                nextLocation[2] = list.PlantId ?? 0;     //プラント
+                nextLocation[3] = list.SeriesId ?? 0;    //系列
+                nextLocation[4] = list.StrokeId ?? 0;    //工程
+                nextLocation[5] = list.FacilityId ?? 0;  //設備
 
                 // 地区～設備までの値を繋げる
-                foreach (var data in backLacation)
+                foreach (var data in nextLocation)
                 {
-                    backSb.Append(data.ToString());
+                    nextSb.Append(data.ToString());
+                    nextSb.Append(",");
                 }
 
                 // 同一データでなく、工場までのデータでなければリスト追加
-                if (previousSb.ToString() != backSb.ToString() && previousSb.ToString().Substring(backSb.ToString().Length - 4) != "0000")
+                if (previousSb.ToString() != nextSb.ToString() && !compareLocationIdNoPlant(preLocation))
                 {
                     distinctList.Add(list); //リスト追加
                     previousFlg = true;
                 }
             }
             return distinctList;
+
+            // 工場までのデータであるか判定
+            bool compareLocationIdNoPlant(int[] locationIds)
+            {
+                if (locationIds.Length == 6)
+                {
+                    if (locationIds[2] == 0 && locationIds[3] == 0 && locationIds[4] == 0 && locationIds[5] == 0)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         /// <summary>
@@ -1643,7 +1659,7 @@ namespace BusinessLogic_MP0001
             * {4,5,6} {7,8,9} {10,11,12} {1,2,3}より期の開始月は4。
             */
 
-            int[] monthArray = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}; //12か月 基本の並び順
+            int[] monthArray = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }; //12か月 基本の並び順
             int[] sortMonthArray = new int[12];
 
             int loopCnt = 0;   // ループ回数
@@ -1672,7 +1688,7 @@ namespace BusinessLogic_MP0001
             int ternLoopCnt = (12 + term - 1) / term;
 
             // 12の約数
-            int[] divisor = {1, 2, 3, 4, 6, 12};
+            int[] divisor = { 1, 2, 3, 4, 6, 12 };
 
             // 配列番号
             int arrayNo = 0;

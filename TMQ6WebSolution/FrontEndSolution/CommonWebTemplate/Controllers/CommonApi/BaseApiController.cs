@@ -57,5 +57,14 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 procData.UserAuthConducts = userInfo.UserAuthConducts;
             }
         }
+
+        /// <summary>
+        /// ブラウザの言語を取得
+        /// </summary>
+        /// <returns>ブラウザの言語</returns>
+        protected string GetBrowserLanguage()
+        {
+            return Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+        }
     }
 }

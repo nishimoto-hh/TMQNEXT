@@ -1138,11 +1138,12 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// ログイン認証
         /// </summary>
         /// <param name="loginId">ログインID</param>
+        /// <param name="userId">ユーザID</param>
         /// <param name="conditionDictionary">実行条件</param>
         /// <param name="rootPath">ルート物理パス</param>
         /// <param name="outList">返却値(機能IDのリスト)</param>
         /// <returns></returns>
-        public static int GetLoginAuthentication(ComDB db, string loginId, List<Dictionary<string, object>> conditionDictionary, ref List<Dictionary<string, object>> outList, bool isNewLogin)
+        public static int GetLoginAuthentication(ComDB db, string loginId, string userId, List<Dictionary<string, object>> conditionDictionary, ref List<Dictionary<string, object>> outList, bool isNewLogin)
         {
             var dicList = new Dictionary<string, object> { { "result", "0" } }; // 認証失敗で初期化
             string loginUserId = string.Empty;
@@ -1172,7 +1173,14 @@ namespace CommonSTDUtil.CommonSTDUtil
 
                 // ユーザマスタからユーザ情報を取得
                 dynamic param = new ExpandoObject();
-                param.LoginId = loginId;
+                if (!string.IsNullOrEmpty(loginId))
+                {
+                    param.LoginId = loginId;
+                }
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    param.UserId = Convert.ToInt32(userId);
+                }
                 if (passwordCheckFlg == "1")
                 {
                     param.Password = Password.GetNewPassWord(userPassword);

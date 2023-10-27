@@ -999,7 +999,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     if (transTarget == InoutList.No)
     {
         // 対象年月取得
-        var targetDate = getValue(FormList.Condition.Id, FormList.Condition.TargetYearMonth, FormList.Condition.TargetYearMonth, CtrlFlag.TextBox, false, false);
+        var targetDate = getValue(FormList.Condition.Id, FormList.Condition.TargetYearMonth, 0, CtrlFlag.TextBox, false, false);
         // 検索条件をセット
         conditionDataList.push(getParamToPT0003_1(targetDate));
     }

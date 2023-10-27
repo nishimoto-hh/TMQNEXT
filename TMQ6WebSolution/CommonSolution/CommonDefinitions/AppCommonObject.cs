@@ -104,12 +104,32 @@ namespace CommonWebTemplate
         /// </remarks>
         public string SiteMinderURL { get; set; }
 
+        /// <summary>AzureADからのログインかどうか</summary>
+        public bool AzureADLogin { get; set; }
+
+        /// <summary>AzureADの指定URL</summary>
+        /// <remarks>
+        /// AzureADLoginが"true"の場合に有効
+        /// ～設定されている場合、指定URLからのアクセスのみ許可。
+        /// ～未設定の場合、すべてのURLをアクセスのみ許可。
+        /// </remarks>
+        public string AzureADEntityId { get; set; }
+        public string AzureADSingleSignOnServiceUrl { get; set; }
+        public string AzureADSingleLogoutServiceUrl { get; set; }
+
         /// <summary>ログアウト後に遷移するURL</summary>
         /// <remarks>
         /// SiteMinderLoginが"true"の場合に有効
         /// ～設定されている場合、ログイン時に取得したURLよりも優先される
         /// </remarks>
         public string LogOutURL { get; set; }
+
+        /// <summary>AzureAD連携時にSPとして利用するURL</summary>
+        public string TMQEntityId { get; set; }
+
+        public string TMQReturnUrl { get; set; }
+
+        public string TMQPublicOrigin { get; set; }
 
         /// <summary>公開モード</summary>
         /// <remarks>「test」:メンテナンスモード、「prot」:プロトタイプ作成モード、「debug」：デバッグモード、その他：Releaseモード</remarks>

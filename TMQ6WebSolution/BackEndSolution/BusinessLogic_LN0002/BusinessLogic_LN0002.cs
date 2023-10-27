@@ -108,7 +108,7 @@ namespace BusinessLogic_LN0002
                 /// <summary>参照画面</summary>
                 public const int Detail = 1;
                 /// <summary>新規登録</summary>
-                public const int New = 2;
+                public const int New = 0;
             }
             /// <summary>タブなしの場合のタブNo</summary>
             public const int TabNoNone = 0;
@@ -120,6 +120,8 @@ namespace BusinessLogic_LN0002
                 public const int History = 3;
                 /// <summary>依頼タブ</summary>
                 public const int Request = 1;
+                /// <summary>参照画面でなく、新規登録</summary>
+                public const int New = -1;
             }
         }
 

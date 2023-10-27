@@ -140,6 +140,7 @@ SELECT
     , pih.work_no                               --作業No
     , pih.inout_history_id                      --受払履歴ID
     , pih.update_serialid                       --更新シリアルID
+    , pp.factory_id AS parts_factory_id         --管理工場
 FROM
     pt_inout_history AS pih
     LEFT JOIN pt_lot AS pl

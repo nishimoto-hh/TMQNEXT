@@ -270,19 +270,23 @@ function getCtrlDataRow(ctrlId, val, dataRowNo, flg, isModal) {
     if ($(trs).hasClass('vertical_tbl')) {
         return getCtrl(ctrlId, val, dataRowNo, flg, isModal);
     } else {
-        var td = $(trs).find("tbody tr[data-rowno='" + dataRowNo + "']:not([class^='base_tr'])").find("td[data-name='VAL" + val + "']");
-        if (flg == CtrlFlag.TextBox) {
-            return $(td).find("input[type='text']")[0];
-        } else if (flg == CtrlFlag.Label) {
-            return $(td)[0];
-        } else if (flg == CtrlFlag.Combo) {
-            return $(td).find("select")[0];
-        } else if (flg == CtrlFlag.Link) {
-            return $(td).find("a")[0];
-        } else if (flg == CtrlFlag.Input) {
-            return $(td).find("input")[0];
-        }
+        var td = $(trs).find("input[data-rowno='" + dataRowNo + "']").closest(".tabulator-row").find("div[tabulator-field='VAL" + val + "']")
+        return getChildCtrlByFlg(td, flg);
     }
+}
+
+/**
+ * data-rownoにより対象値を取得し、返す。
+ * @param ctrlId コントロールID
+ * @param val VAL値
+ * @param dataRowNo 行のdata-rowno
+ * @param flg=0:テキストボックス、1:ラベル、2:コンボボックス、3:チェックボックス、4:リンク、5:入力項目
+ * @param isModal モーダルのコントロールの場合True
+ * @return 取得した値
+ */
+function getValueDataRow(ctrlId, val, dataRowNo, flg, isModal) {
+    var target = getCtrlDataRow(ctrlId, val, dataRowNo, flg, isModal);
+    return getValueByCtrl(target, flg);
 }
 
 /**

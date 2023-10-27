@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Sustainsys.Saml2;
+using Sustainsys.Saml2.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,6 +85,32 @@ namespace CommonWebTemplate
 
             //↓↓.NET5版ではプッシュ通知は未実装↓↓
             //services.AddSignalR();
+
+            // シングルサインオン機能の有効化
+            if (AppCommonObject.Config.AppSettings.AzureADLogin)
+            {
+                services.AddAuthentication("scheme")
+                    .AddSaml2(options =>
+                    {
+                        options.SPOptions.EntityId = new EntityId(AppCommonObject.Config.AppSettings.TMQEntityId);
+                        options.SPOptions.PublicOrigin = new Uri(AppCommonObject.Config.AppSettings.TMQPublicOrigin);
+
+                    //使用する証明書の設定（本来はローカルファイルではなく証明書ストアを利用する）
+                    //options.SPOptions.ServiceCertificates.Add(new X509Certificate2("Sustainsys.Saml2.Tests.pfx"));
+
+                    //Idp設定
+                    IdentityProvider idp = new IdentityProvider(
+                                new EntityId(AppCommonObject.Config.AppSettings.AzureADEntityId), options.SPOptions)
+                        {
+                            LoadMetadata = true,
+                            SingleSignOnServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl),
+                            SingleLogoutServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleLogoutServiceUrl),
+                            MetadataLocation = "次期TMQ_GSRなし.xml",
+                        };
+                        options.IdentityProviders.Add(idp);
+                    }
+                ).AddCookie("scheme");
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -103,36 +131,25 @@ namespace CommonWebTemplate
 
             app.UseRouting();
 
-            app.Use(async (context, next) =>
-            {
-                bool addToken = false;
-                if (AppCommonObject.Config.AppSettings.SiteMinderLogin)
-                {
-                    string sourceURL = context.Request.Headers.Referer.ToString();
-                    string azureADEntityID = AppCommonObject.Config.AppSettings.SiteMinderURL;
-                    if (!string.IsNullOrEmpty(sourceURL) && azureADEntityID.StartsWith(sourceURL))
-                    {
-                        // 遷移元がシングルサインオン用URLの場合、偽造防止トークンをCookieへセット
-                        addToken = true;
-                    }
-                }
+            //app.Use(async (context, next) =>
+            //{
+            //    string path = context.Request.Path.Value;
+            //    if (path != null && path.ToLower().Contains("/api"))
+            //    {
+            //        // WebAPIのリクエストの場合、偽造防止トークンをCookieへセット
+            //        var tokens = antiforgery.GetAndStoreTokens(context);
+            //        context.Response.Cookies.Append("XSRF-TOKEN",
+            //          tokens.RequestToken, new CookieOptions
+            //          {
+            //              HttpOnly = false,
+            //              Secure = true
+            //          }
+            //        );
+            //    }
+            //    await next();
+            //});
 
-                if (addToken)
-                {
-                    // 偽造防止トークンをCookieへセット
-                    var tokens = antiforgery.GetAndStoreTokens(context);
-                    context.Response.Cookies.Append("XSRF-TOKEN",
-                      tokens.RequestToken, new CookieOptions
-                      {
-                          HttpOnly = true,
-                          Secure = true
-                      }
-                    );
-                }
-
-                await next();
-            });
-
+            app.UseAuthentication();
             app.UseAuthorization();
             app.UseSession();
             app.UseCookiePolicy(new CookiePolicyOptions

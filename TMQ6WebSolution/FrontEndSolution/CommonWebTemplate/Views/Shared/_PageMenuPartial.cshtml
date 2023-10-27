@@ -70,10 +70,15 @@ new { id = "formTop", enctype = "multipart/form-data" } // その他の属性
     <li><a href="#" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911120002", ViewBag.TransDictionary)</a></li>
     @*ヘルプ*@
     <li><a href="@manualUrl" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911290001", ViewBag.TransDictionary)</a></li>
-    @*パスワード変更*@
-    <li><a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComPassChangeForm">@blogic.ConvertResourceName("911260001", ViewBag.TransDictionary)</a></li>
-
     @{
+        var isSSOLogin = AppCommonObject.Config.AppSettings.AzureADLogin;
+        if (!isSSOLogin)
+        {
+            @*シングルサインオンの場合はパスワード変更を表示しない*@
+            @*パスワード変更*@
+            @:<li><a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComPassChangeForm">@blogic.ConvertResourceName("911260001", ViewBag.TransDictionary)</a></li>
+        }
+
         var isSiteMinder = AppCommonObject.Config.AppSettings.SiteMinderLogin;
         if (isSiteMinder)
         {

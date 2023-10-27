@@ -685,6 +685,10 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
                 postRegistProcessForMS1010(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
             }
         }
+        else {
+            // コンボボックスの再作成
+            refreshComboBox(appPath, grpId);
+        }
     } else {
         // コンボボックスの再作成
         refreshComboBox(appPath, grpId);

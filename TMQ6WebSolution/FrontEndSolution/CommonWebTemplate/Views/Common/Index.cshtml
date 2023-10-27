@@ -284,6 +284,10 @@
             @*initSignalR('@ViewBag.AppRoutePath', '@Model[0].CONDUCTMST.CONDUCTID');*@
             @*↑↑.NET5版ではプッシュ通知は未実装↑↑*@
 
+            @*(2022/11/01) 構成マスタデータをセッションストレージには保存しないため、ここのクリアは不要*@
+            @* コンボボックスデータのクリア*@
+            @*clearSavedComboBoxData();*@
+
             @*翻訳辞書設定*@
             @* retainCommonMessages内でﾃﾞｰﾀを取得して処理するよう修正 *@
             @*var transDic = new Array();

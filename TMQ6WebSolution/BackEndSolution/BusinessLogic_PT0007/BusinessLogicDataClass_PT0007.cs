@@ -78,6 +78,9 @@ namespace BusinessLogic_PT0007
             /// <summary>Gets or sets 部門別在庫一覧の件数</summary>
             /// <value>部門別在庫一覧の件数</value>
             public int DepartmentDataCnt { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerName { get; set; }
             /// <summary>
             /// 丸め処理・数量と単位の結合
             /// </summary>

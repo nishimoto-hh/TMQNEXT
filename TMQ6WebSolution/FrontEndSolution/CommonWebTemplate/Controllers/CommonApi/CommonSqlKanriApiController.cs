@@ -122,11 +122,10 @@ namespace CommonWebTemplate.Controllers.CommonApi
             // ユーザIDが空の場合、ログインエラー
             if (string.IsNullOrEmpty(procData.LoginUserId))
             {
-                //ブラウザの言語を取得
-                var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
                 if (procData.LanguageId == null)
                 {
-                    procData.LanguageId = languageId;
+                    //ブラウザの言語を取得
+                    procData.LanguageId = GetBrowserLanguage();
                 }
 
                 //メッセージ取得

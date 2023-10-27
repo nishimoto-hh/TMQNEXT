@@ -18,7 +18,8 @@ SELECT
     dbo.get_translation_text_all(mscn.maintainance_kind_structure_id,machine.location_structure_id,1240,@LanguageId) AS maintainance_kind_char,
     msd.summary_id,
     -- スケジュールマークグループ用
-    CONCAT_WS('|',machine.machine_id,ie.extension_data ) AS same_mark_key
+    CONCAT_WS('|',machine.machine_id,ie.extension_data ) AS same_mark_key,
+    msd.maintainance_schedule_detail_id AS new_maintainance_key
 FROM
     base
     INNER JOIN

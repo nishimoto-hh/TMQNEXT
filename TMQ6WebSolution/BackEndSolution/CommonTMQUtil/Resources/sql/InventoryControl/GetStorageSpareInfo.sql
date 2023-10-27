@@ -33,6 +33,15 @@ WITH number_unit AS (
         ms.structure_group_id = 2050 
         --AND ms.delete_flg = 0
 ) 
+,structure_factory as( SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1150) 
+        AND language_id = @LanguageId
+)
 SELECT
     pp.parts_location_id                        --標準棚ID
     , pp.parts_location_detail_no               --標準棚枝番
@@ -46,6 +55,43 @@ SELECT
     , pp.factory_id                             --工場ID
     , COALESCE(number_unit.unit_digit, 0) AS unit_digit     --小数点以下桁数(数量)
     , COALESCE(unit_round.round_division, 0) AS round_division  --丸め処理区分
+    , COALESCE(
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = pp.manufacturer_structure_id
+              AND st_f.factory_id IN(0, pp.factory_id)
+           )
+      AND tra.structure_id = pp.manufacturer_structure_id
+    ) ,
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MIN(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = pp.manufacturer_structure_id
+              AND st_f.factory_id NOT IN(0, pp.factory_id)
+           )
+      AND tra.structure_id = pp.manufacturer_structure_id
+    )) AS manufacturer_name                    -- メーカー
 FROM
     pt_parts AS pp 
     LEFT JOIN v_pt_parts_inventory AS ppi 

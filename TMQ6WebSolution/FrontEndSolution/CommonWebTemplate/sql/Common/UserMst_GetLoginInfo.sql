@@ -21,7 +21,12 @@ WHERE
     mu.delete_flg != 1 
 AND ml.delete_flg != 1 
 AND ms.delete_flg != 1 
+/*IF LoginId != null*/
 AND mu.login_id = /*LoginId*/'demo' 
+/*END*/
+/*IF UserId != null*/
+AND mu.user_id = /*UserId*/1001 
+/*END*/
 /*IF Password != null*/
     AND CONVERT(NVARCHAR, DECRYPTBYPASSPHRASE(/*EncryptKey*/'key',ml.login_password)) = /*Password*/'demo'
 /*END*/

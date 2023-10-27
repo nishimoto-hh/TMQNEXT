@@ -443,7 +443,7 @@ namespace BusinessLogic_LN0001
                 /// <summary>参照画面</summary>
                 public const int Detail = 1;
                 /// <summary>新規登録</summary>
-                public const int New = 2;
+                public const int New = 0;
             }
             /// <summary>タブなしの場合のタブNo</summary>
             public const int TabNoNone = 0;
@@ -455,6 +455,8 @@ namespace BusinessLogic_LN0001
                 public const int History = 3;
                 /// <summary>依頼タブ</summary>
                 public const int Request = 1;
+                /// <summary>参照画面でなく、新規登録</summary>
+                public const int New = -1;
             }
         }
         #endregion
@@ -1574,6 +1576,11 @@ namespace BusinessLogic_LN0001
             result.Add(ScheduleStatus.Complete, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.History));
             // ◎：保全活動参照画面(依頼タブ)
             result.Add(ScheduleStatus.Created, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.Request));
+            // TODO:この行をコメントアウトすればリンクしなくなる
+            // ○：保全活動新規登録画面
+            result.Add(ScheduleStatus.NoCreate, new(MA0001.ConductId, MA0001.FormNo.New, MA0001.TabNoDetail.New));
+            // ▲：保全活動参照画面(履歴タブ)
+            result.Add(ScheduleStatus.UpperComplete, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.History));
             return result;
         }
 

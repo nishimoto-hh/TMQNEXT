@@ -482,12 +482,14 @@
     <None Remove="Resources\sql\Maintenance\GetHistoryInspectionSiteInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetHistoryMachineInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetInspectionMachineList.sql" />
+    <None Remove="Resources\sql\Maintenance\GetMachineListFromLongPlan.sql" />
     <None Remove="Resources\sql\Maintenance\GetMaintenanceList.sql" />
     <None Remove="Resources\sql\Maintenance\GetOutputFileInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetPlanInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetReplaceMachineInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetRequestInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetRequestNumberingForLock.sql" />
+    <None Remove="Resources\sql\Maintenance\GetScheduleFromLongPlan.sql" />
     <None Remove="Resources\sql\Maintenance\GetSearchMachineList.sql" />
     <None Remove="Resources\sql\Maintenance\GetSummaryInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetUserRole.sql" />
@@ -859,7 +861,9 @@
     <EmbeddedResource Include="Resources\sql\Machine\UpdateMaintainanceScheduleLankDetail.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\UpdateManagementStandardsContentSchedule.sql" />
     <EmbeddedResource Include="Resources\sql\MaintenancePerformance\GetRepMqActualEvaluation.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetMachineListFromLongPlan.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetOutputFileInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetScheduleFromLongPlan.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ComLayers\DeleteLayersStructureOrder.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ComLayers\GetCountLayersTranslation.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ComLayers\GetChildStructureIdList.sql" />

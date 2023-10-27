@@ -39,6 +39,9 @@ const NewSummaryId = "-1";
 //系停止：なし
 const StopSystemVal = 0;
 
+//件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際にグローバル変数に値を格納するキー
+const KeyNameFromScheduleLink = "MakeScheduleFromLongPlan";
+
 // 個別工場表示対象フラグ(非表示：0、表示：1)
 const IndividualFlg = {
     Hide: "0",
@@ -684,6 +687,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
         //保全実績評価から遷移してきた場合、詳細検索条件を設定する
         setDetailSearchConditionFromMP0001();
+
+        // 件名別長期計画・機器別長期計画で白丸「○」がクリックされて遷移してきた場合、新規登録画面(点検情報)を表示する
+        dispFormEditFromScheduleLink();
+
     } else if (formNo == FormDetail.No) {
         //詳細画面
 
@@ -908,6 +915,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         //フォーカス設定
         setFocusDelay(FormRegist.SummaryInfo.Id, FormRegist.SummaryInfo.Subject, 1, CtrlFlag.TextBox);
 
+        // 指定のキーでグローバル変数から値を削除
+        delete P_dicIndividual[KeyNameFromScheduleLink];
+
     } else if (formNo == FormReplace.No) {
         // 機器交換画面
 
@@ -1121,7 +1131,7 @@ function prevInitFormData(appPath, formNo, btnCtrlId, conditionDataList, listDef
             // 場所階層ツリーラベルまたは職種機種ツリーラベルの一覧の場合
             if ((conditionData.FORMNO == FormSearch.No || conditionData.FORMNO == FormSelectMachine.No)
                 && ((conditionData.CTRLID == FormSearch.StructureCondition.Id || conditionData.CTRLID == FormSearch.JobCondition.Id)
-                || (conditionData.CTRLID == FormSelectMachine.StructureCondition.Id || conditionData.CTRLID == FormSelectMachine.JobCondition.Id))) {
+                    || (conditionData.CTRLID == FormSelectMachine.StructureCondition.Id || conditionData.CTRLID == FormSelectMachine.JobCondition.Id))) {
                 // 一覧の定義情報に格納
                 listDefines.push(conditionData);
             }
@@ -1228,7 +1238,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
     //詳細画面で件名添付ボタン、修正ボタン、機器交換ボタン、略図添付ボタン、故障原因分析書添付ボタン押下時
     if (formNo == FormDetail.No && (btn_ctrlId == FormDetail.ButtonId.AddSubject || btn_ctrlId == FormDetail.ButtonId.Edit || btn_ctrlId == FormDetail.ButtonId.EquipReplace || btn_ctrlId == FormDetail.ButtonId.AddFailureDiagram || btn_ctrlId == FormDetail.ButtonId.AddFailureAnalyze)) {
-        
+
         //完了日の値取得
         var completionDate = getValue(FormDetail.HideInfo.Id, FormDetail.HideInfo.CompletionDate, 1, CtrlFlag.Label);
         var key = "MA0001_isSkipConfirm_" + btn_ctrlId;
@@ -1860,7 +1870,7 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
 
     // 機能IDが「帳票出力」の場合
     RM0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
-    
+
     // 共通-文書管理詳細画面の画面再表示前処理
     // 共通-文書管理詳細画面を閉じたときの再表示処理はこちらで行うので、各機能での呼出は不要
     DM0002_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
@@ -1871,6 +1881,16 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     if (formNo == FormDetail.No) {
         //戻る・閉じるボタンの表示制御
         setDisplayCloseBtn(transPtn);
+    }
+    else if (formNo == FormRegist.No) {
+        if (KeyNameFromScheduleLink in P_dicIndividual == true) {
+
+            // 件名別長期計画・機器別長期計画の白丸「○」で遷移してきた際のキーがグローバルリストに存在する場合
+            setDisplayCloseBtn(transPtnDef.OtherTab);
+        }
+        else {
+            setDisplayCloseBtn(transPtn);
+        }
     }
 
     if (formNo == FormRegist.No && btnCtrlId == FormSelectMachine.ButtonId.Cancel) {
@@ -2455,7 +2475,7 @@ function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrl
 function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
     //担当者項目の制御
     if (!data && $(ctrl).val() != "") {
-            //ユーザマスタに紐づくユーザが取得できない場合、トランザクションテーブルに登録されている名前を表示する
+        //ユーザマスタに紐づくユーザが取得できない場合、トランザクションテーブルに登録されている名前を表示する
         if (formNo == FormDetail.No) {
             //詳細画面
             setPersonnelName(ctrl, formNo);
@@ -2732,4 +2752,31 @@ function beforeTreeViewSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, 
 function beforeDetailSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
     //保全実績評価から遷移時に保存した検索条件を破棄する
     delete P_dicIndividual[MA0001_DetailSearchCondition];
+}
+
+/**
+ * 件名別長期計画・機器別長期計画で白丸「○」がクリックされて遷移してきた場合、新規登録画面(点検情報)を表示する
+ * */
+function dispFormEditFromScheduleLink() {
+
+    // 件名別長期計画・機器別長期計画の白丸「○」で遷移してきた際のキーがグローバルリストに存在するか判定
+    if (KeyNameFromScheduleLink in P_dicIndividual == false) {
+        //存在しなければ何もしない
+        return;
+    }
+
+    var button;
+
+    // 「点検情報登録」ボタン、「新規」ボタンのうち、表示されている方をクリック
+    if (!isUnAvailableButton(FormList.ButtonId.NewInspection)) {
+        // 「点検情報登録」ボタン
+        button = getButtonCtrl(FormList.ButtonId.NewInspection);
+    }
+    else {
+        // 「新規」ボタン
+        button = getButtonCtrl(FormList.ButtonId.New);
+    }
+
+    // ボタンをクリック
+    $(button).click();
 }

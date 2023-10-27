@@ -1043,7 +1043,7 @@ namespace CommonTMQUtil
                 ScheduleDisplayUnit unit = condition.DisplayUnit;
 
                 // 構成マスタをグループIDで検索してスケジュールステータス(1860)の優先順位を取得(アイテムの表示順の昇順で並び変え)
-                IList<int> priorityList = GetStructureCommonExDataOrdererdItemOrder<int>(Const.MsStructure.GroupId.StatusList, db, true);
+                IList<int> priorityList = GetStructureCommonExDataOrdererdItemOrder<int>(Const.MsStructure.GroupId.StatusList, db);
 
                 // 戻り値　画面表示用データリスト セル単位にデータを管理
                 List<Dao.ScheduleList.Display> displayList = new();
@@ -1095,6 +1095,7 @@ namespace CommonTMQUtil
                         int statusPriority = priorityList.First(x => x == (int)status); // ステータスの優先度
                         // 追加 (点検種別でソートされているので先頭を渡す)
                         Dao.ScheduleList.Display cellInfo = makeDisplayInfo(keyId, keyDate, status, dataListByKeyIdDate.First(), setIsLink, linkInfo, statusPriority);
+                        cellInfo.GroupKey = groupKey; // リンク表示用に設定
                         displayList.Add(cellInfo);
 
                         if (isExecuteSameMark())
@@ -1104,7 +1105,27 @@ namespace CommonTMQUtil
                         }
                     }
                 }
+
+                // △▲のリンク表示用
+                setUpperLink(ref displayList);
+
                 return displayList;
+
+                // △と▲のリンクを上位のものと同じ内容に変更する
+                void setUpperLink(ref List<Dao.ScheduleList.Display> displayList)
+                {
+                    var upperList = displayList
+                        .Where(x => x.StatusId == ScheduleStatus.UpperComplete || x.StatusId == ScheduleStatus.UpperScheduled)
+                        .Where(x => x.LinkInfo != null).ToList();
+                    foreach (var upper in upperList)
+                    {
+                        // 自身の上位を取得
+                        // グループキーが同一でキーIDが異なり、年月が同じ
+                        var upperTarget = displayList.Where(x => x.GroupKey == upper.GroupKey && x.KeyId != upper.KeyId && x.KeyDate == upper.KeyDate).First();
+                        upper.LinkInfo = upperTarget.LinkInfo;
+                        upper.SummaryId = upperTarget.SummaryId;
+                    }
+                }
             }
 
             /// <summary>
@@ -1143,10 +1164,10 @@ namespace CommonTMQUtil
                         // 処理対象年月日を単位に合わせて集計
                         DateTime keyDate = convertDateByUnit(unit, schedule.ScheduleDate, monthStartNendo, halfPeriodFlag);
                         // 画面表示用データリストにデータがある場合
-                        if (displayList.Count > 0) 
+                        if (displayList.Count > 0)
                         {
                             // キーIDと対象年月日が同じ場合
-                            if(displayList[displayList.Count -1].KeyId == keyId && displayList[displayList.Count - 1].KeyDate == keyDate)
+                            if (displayList[displayList.Count - 1].KeyId == keyId && displayList[displayList.Count - 1].KeyDate == keyDate)
                             {
                                 // 予算金額と実績金額を加算し、次のデータへ
                                 if (schedule.BudgetAmount != null)
@@ -1256,13 +1277,18 @@ namespace CommonTMQUtil
                 // 帳票用に予算と実績を設定
                 cellInfo.BudgetAmount = firstData.BudgetAmount;
                 cellInfo.Expenditure = firstData.Expenditure;
-                if (setIsLink)
+                if (setIsLink && linkInfo.ContainsKey(cellInfo.StatusId))
                 {
                     // リンク有の場合
-                    if (linkInfo.ContainsKey(cellInfo.StatusId) && firstData.SummaryId != null)
+                    // 対象ステータスでリンクがある場合のみリンク(遷移先がある場合のみ)
+                    cellInfo.LinkInfo = linkInfo[cellInfo.StatusId];
+                    if (cellInfo.StatusId == ScheduleStatus.NoCreate)
                     {
-                        // 対象ステータスでリンクがある場合のみリンク(遷移先がある場合のみ)
-                        cellInfo.LinkInfo = linkInfo[cellInfo.StatusId];
+                        // ○の場合は保全活動IDでなく新規登録で必要なキー(スケジュール詳細)を設定
+                        cellInfo.SummaryId = firstData.NewMaintainanceKey;
+                    }
+                    else if (firstData.SummaryId != null)
+                    {
                         cellInfo.SummaryId = firstData.SummaryId;
                     }
 

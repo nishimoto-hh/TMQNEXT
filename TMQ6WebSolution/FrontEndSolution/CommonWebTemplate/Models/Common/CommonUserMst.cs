@@ -26,6 +26,11 @@ namespace CommonWebTemplate.Models.Common
         /// </summary>
         public string GetUserName { get; set; }
 
+        /// <summary>
+        /// ユーザID
+        /// </summary>
+        public string UserId;
+
         #region === ｺﾝｽﾄﾗｸﾀ ===
         /// <summary>
         /// ｺﾝｽﾄﾗｸﾀ
@@ -36,11 +41,12 @@ namespace CommonWebTemplate.Models.Common
         /// <summary>
         /// ｺﾝｽﾄﾗｸﾀ
         /// </summary>
-        public CommonUserMst(string loginUser, string loginPassword = "", string userName = "")
+        public CommonUserMst(string loginUser, string loginPassword = "", string userName = "", string userId = "")
         {
             LoginUser = loginUser;
             LoginPassword = loginPassword;
             GetUserName = userName;
+            UserId = userId;
         }
         #endregion
 

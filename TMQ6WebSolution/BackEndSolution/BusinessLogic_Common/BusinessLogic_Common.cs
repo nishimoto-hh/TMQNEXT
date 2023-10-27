@@ -134,7 +134,7 @@ namespace BusinessLogic_Common
                         // ログイン認証処理
                         case "LoginAuthentication":
                             //result = this.LoginAuthentication(inParam.UserId);
-                            result = this.LoginAuthentication(inParam.LoginId, inParam.IsNewLogin);
+                            result = this.LoginAuthentication(inParam.LoginId, inParam.UserId, inParam.IsNewLogin);
                             break;
                         // ボタン権限チェック処理
                         case "CheckAuthority":
@@ -176,13 +176,13 @@ namespace BusinessLogic_Common
                         case "GetImageFileInfo":
                             result = this.GetImageFileInfo();
                             break;
-                        //復号化データ取得
+                        // 復号化データ取得
                         case "GetDecryptedData":
                             result = this.GetDecryptedData();
                             break;
-                        // ログインID取得処理
-                        case "GetLoginIdByMailAdress":
-                            result = this.GetLoginIdByMailAdress();
+                        // ユーザID取得処理
+                        case "GetUserIdByMailAdress":
+                            result = this.GetUserIdByMailAdress();
                             break;
                         default:
                             break;
@@ -319,10 +319,11 @@ namespace BusinessLogic_Common
         /// ログイン認証
         /// </summary>
         /// <param name="loginId">ログインID</param>
+        /// <param name="userId">ユーザID</param>
         /// <param name="isNewLogin">true:新規ログイン/false:ログイン済み</param>
         /// <returns></returns>
         //private int LoginAuthentication(string userId)
-        private int LoginAuthentication(string loginId, bool isNewLogin)
+        private int LoginAuthentication(string loginId, string userId, bool isNewLogin)
         {
             try
             {
@@ -340,7 +341,7 @@ namespace BusinessLogic_Common
 
                 if (this.searchConditionDictionary != null && this.searchConditionDictionary.Count > 0)
                 {
-                    int result = ComUtil.GetLoginAuthentication(this.db, loginId, this.searchConditionDictionary, ref list, isNewLogin);
+                    int result = ComUtil.GetLoginAuthentication(this.db, loginId, userId, this.searchConditionDictionary, ref list, isNewLogin);
                     if (result < 0)
                     {
                         this.Status = CommonProcReturn.ProcStatus.Error;
@@ -1101,12 +1102,12 @@ namespace BusinessLogic_Common
         }
         #endregion
 
-        #region ログインID取得
+        #region ユーザID取得
         /// <summary>
-        /// メールアドレスからログインID取得処理
+        /// メールアドレスからユーザID処理
         /// </summary>
         /// <returns>正常終了：0、異常終了：-1</returns>
-        private int GetLoginIdByMailAdress()
+        private int GetUserIdByMailAdress()
         {
             try
             {
@@ -1126,7 +1127,7 @@ namespace BusinessLogic_Common
 
                     List<Dictionary<string, object>> resultList = new();
                     Dictionary<string, object> dicList = new();
-                    dicList.Add("LoginId", result.LoginId);
+                    dicList.Add("UserId", result.UserId);
                     resultList.Add(dicList);
 
                     this.resultInfoDictionary = resultList;

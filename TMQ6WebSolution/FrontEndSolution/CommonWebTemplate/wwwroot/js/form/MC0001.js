@@ -737,7 +737,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             var selectedRowNo = getRowNoByList(DatailManagementStandard.ManagementStandardList.Id);
 
             // 共通処理
-            conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.Content, getValue(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.ManagementStandardContId, selectedRowNo, CtrlFlag.Label)));
+            conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.Content, getValueDataRow(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.ManagementStandardContId, selectedRowNo, CtrlFlag.Label)));
 
 
         } else if (btn_ctrlId == null && ctrlId == DatailLongPlan.LongPlanList.Id) {
@@ -770,7 +770,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             var selectedRowNo = getRowNoByList(DetailMpInfo.MpInfoList.Id);
 
             // 共通処理
-            conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.MpInfo, getValue(DetailMpInfo.MpInfoList.Id, DetailMpInfo.MpInfoList.MpInfoId, selectedRowNo, CtrlFlag.Label)));
+            conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.MpInfo, getValueDataRow(DetailMpInfo.MpInfoList.Id, DetailMpInfo.MpInfoList.MpInfoId, selectedRowNo, CtrlFlag.Label)));
         }
     } else if (formNo == MachineEditDetail.No) {
         // 参照画面
@@ -1750,14 +1750,15 @@ function getRowNoByList(ctrlId) {
             // 検索結果一覧を参照し、選択チェックボックスが選択されているデータの行番号(rowNo)を返す
             $(trs).each(function (i, tr) {
                 var ele = tr.getElement();
-                if ($($(ele).find("div[tabulator-field='SELTAG'] input[type='checkbox']")[0]).prop('checked')) {
-                    rowNo = i;
+                var chkbox = $(ele).find("div[tabulator-field='SELTAG'] input[type='checkbox']");
+                if ($(chkbox[0]).prop('checked')) {
+                    rowNo = $(chkbox).data("rowno");
                     return;
                 }
             });
         }
     }
-    return rowNo;
+    return rowNo-0;
 }
 
 /** 

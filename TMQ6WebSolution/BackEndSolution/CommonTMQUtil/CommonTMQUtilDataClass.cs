@@ -67,6 +67,11 @@ namespace CommonTMQUtil
                 /// <value>予算金額(k円)</value>
                 public decimal? BudgetAmount { get; set; }
 
+                /// <summary>Gets or sets 保全活動画面新規登録表示用キー</summary>
+                /// <value>保全活動画面新規登録表示用キー</value>
+                /// <remarks>保全スケジュール詳細画面のキー</remarks>
+                public long? NewMaintainanceKey { get; set; }
+
                 /// <summary>
                 /// 完了済みかどうか判定
                 /// </summary>
@@ -145,6 +150,11 @@ namespace CommonTMQUtil
                 /// <summary>Gets or sets 予算金額(k円)</summary>
                 /// <value>予算金額(k円)</value>
                 public decimal? BudgetAmount { get; set; }
+
+                /// <summary>Gets or sets 集計単位ID</summary>
+                /// <value>集計単位ID</value>
+                /// <remarks>点検種別が違うとき上位ランクとして検索する範囲で同一の値を設定する(Getと同じ値、△▲のリンク表示用)</remarks>
+                public long? GroupKey { get; set; }
 
                 /// <summary>
                 /// リンク情報

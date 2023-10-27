@@ -36,6 +36,9 @@ namespace BusinessLogic_MA0001
         /// <returns>エラーの場合False</returns>
         private bool searchList()
         {
+            // 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた場合は値をグローバル変数に格納する
+            setValFromScheduleLink();
+
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.HiddenItemId, this.pageInfoList);
             Dao.userRole role = new Dao.userRole();
@@ -117,7 +120,7 @@ namespace BusinessLogic_MA0001
                     var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
                     if (dic != null && dic.ContainsKey(keyName))
                     {
-                        if(ids.ToString() == jobAll || ids.ToString() == "")
+                        if (ids.ToString() == jobAll || ids.ToString() == "")
                         {
                             //職種の指定なし
                             this.searchConditionDictionary.Where(x => x.ContainsKey(STRUCTURE_CONSTANTS.CONDITION_KEY.Job)).FirstOrDefault()[STRUCTURE_CONSTANTS.CONDITION_KEY.Job] = new List<int>();
@@ -129,6 +132,38 @@ namespace BusinessLogic_MA0001
                         }
                     }
                 }
+            }
+
+            // 保全スケジュール詳細IDをグローバル変数に格納
+            void setValFromScheduleLink()
+            {
+                // パラメータに遷移元の情報が存在しない場合は何もしない
+                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey("CTRLID")).FirstOrDefault();
+                if (dic == null)
+                {
+                    return;
+                }
+
+                // ページ情報取得
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
+                //選択行のデータを取得
+                Dao.searchCondition conditionObj = new Dao.searchCondition();
+                SetSearchConditionByDataClass(this.searchConditionDictionary, ConductInfo.FormList.ControlId.SearchResult, conditionObj, pageInfo);
+
+                // タブ番号が数値に変換できない場合は何もしない
+                if (!int.TryParse(conditionObj.TabNo.ToString(), out int tabNo))
+                {
+                    return;
+                }
+
+                // タブ番号が「-1」でない場合は何もしない
+                if (tabNo != ConductInfo.FormList.ParamFromLongPlan.TabNo)
+                {
+                    return;
+                }
+
+                // グルーバル変数に値を格納
+                SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey, conditionObj.SummaryId);
             }
         }
 

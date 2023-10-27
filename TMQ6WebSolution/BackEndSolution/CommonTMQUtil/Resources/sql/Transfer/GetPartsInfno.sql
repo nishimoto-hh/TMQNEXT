@@ -1,7 +1,6 @@
 SELECT
     parts.parts_no,                                                                                      -- 予備品No.
     parts.parts_name,                                                                                    -- 予備品名
-    parts.manufacturer_structure_id,                                                                     -- メーカー
     parts.model_type,                                                                                    -- 型式
     parts.standard_size,                                                                                 -- 規格・寸法
     coalesce(inv.stock_quantity, 0) AS stock_quantity,                                                   -- 在庫数
@@ -26,7 +25,44 @@ SELECT
               AND st_f.factory_id IN(0, parts.factory_id)
            )
       AND tra.structure_id = parts.unit_structure_id
-    ) AS unit_name                                                                                       -- 数量管理単位
+    ) AS unit_name,                                                                                      -- 数量管理単位
+    COALESCE(
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.manufacturer_structure_id
+              AND st_f.factory_id IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.manufacturer_structure_id
+    ) ,
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MIN(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = parts.manufacturer_structure_id
+              AND st_f.factory_id NOT IN(0, parts.factory_id)
+           )
+      AND tra.structure_id = parts.manufacturer_structure_id
+    )) AS manufacturer_name                                                                              -- メーカー
 FROM
     pt_parts parts
     LEFT JOIN

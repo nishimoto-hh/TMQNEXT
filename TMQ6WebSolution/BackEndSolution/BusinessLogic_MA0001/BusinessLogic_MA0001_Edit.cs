@@ -43,7 +43,7 @@ namespace BusinessLogic_MA0001
                 //故障情報登録
                 result.ActivityDivision = MaintenanceDivision.Failure;
             }
-            else if(ctrlId.IsStartId(ConductInfo.FormList.Button.NewInspection) || ctrlId.IsNew())
+            else if (ctrlId.IsStartId(ConductInfo.FormList.Button.NewInspection) || ctrlId.IsNew())
             {
                 //点検情報登録、新規登録
                 result.ActivityDivision = MaintenanceDivision.Inspection;
@@ -53,6 +53,19 @@ namespace BusinessLogic_MA0001
             {
                 //フォロー計画の場合、計画元の保全活動件名IDを設定
                 getFollowCondition(result);
+            }
+
+            // 長期計画の白丸「○」リンクから遷移してきた場合はTrue、通常起動はFalse
+            bool isFromLongPlan = this.IndividualDictionary.ContainsKey(ConductInfo.FormList.ParamFromLongPlan.GlobalKey);
+            Dao.searchResultFromLongPlan resultFromLongPlan = new();
+            if (isFromLongPlan)
+            {
+                // 初期表示項目取得
+                if (!getDataFromLongPlan(out Dao.searchResultFromLongPlan outResultFromLongPlan))
+                {
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+                resultFromLongPlan = outResultFromLongPlan;
             }
 
             //MQ分類：設備工事、撤去工事の構成IDをカンマ区切りで設定
@@ -67,8 +80,12 @@ namespace BusinessLogic_MA0001
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailSummaryInfo>(ref structureLayerList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.StructureId, this.pageInfoList);
-            // 場所階層、職種の設定
-            SetSearchResultsByDataClass<Dao.detailSummaryInfo>(pageInfo, structureLayerList, 1);
+
+            // 場所階層、職種の設定(長期計画の白丸「○」リンクから遷移してこなかった場合)
+            if (!isFromLongPlan)
+            {
+                SetSearchResultsByDataClass<Dao.detailSummaryInfo>(pageInfo, structureLayerList, 1);
+            }
 
             // 保全履歴個別表示制御に使用するフラグを設定
             string historyIndividualFlg = getItemExData(HistoryIndividualDivision.Seq, HistoryIndividualDivision.DataType, structureLayer.FactoryId);
@@ -83,6 +100,14 @@ namespace BusinessLogic_MA0001
 
             // ページ情報取得
             pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.DetailInfoIds[0], this.pageInfoList);
+
+            // 長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
+            if (isFromLongPlan)
+            {
+                // 保全スケジュール詳細ID
+                result.MaintainanceScheduleDetailId = resultFromLongPlan.MaintainanceScheduleDetailId;
+            }
+
             // 保全活動区分、MQ分類(非表示)、ユーザ役割の設定
             SetSearchResultsByDataClass<Dao.detailSummaryInfo>(pageInfo, new List<Dao.detailSummaryInfo> { result }, 1);
 
@@ -106,12 +131,26 @@ namespace BusinessLogic_MA0001
             stopSystemInfo.ActivityDivision = result.ActivityDivision;
             // ページ情報取得
             pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.WorkInfoId, this.pageInfoList);
-            // 系停止の設定
-            if (SetSearchResultsByDataClass<Dao.StopSystemInfo>(pageInfo, new List<Dao.StopSystemInfo> { stopSystemInfo }, 1))
+
+            // 長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
+            if (isFromLongPlan)
             {
-                // 正常終了
-                this.Status = CommonProcReturn.ProcStatus.Valid;
+                stopSystemInfo.BudgetPersonalityStructureId = resultFromLongPlan.BudgetPersonalityStructureId; // 予算性格区分
+                stopSystemInfo.BudgetManagementStructureId = resultFromLongPlan.BudgetManagementStructureId;   // 予算性格区分
             }
+
+            // 系停止の設定
+            SetSearchResultsByDataClass<Dao.StopSystemInfo>(pageInfo, new List<Dao.StopSystemInfo> { stopSystemInfo }, 1);
+
+            // 長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
+            if (!setDataFromLongPlan(isFromLongPlan, resultFromLongPlan))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+                this.Status = CommonProcReturn.ProcStatus.Error;
+            }
+
+            // 正常終了
+            this.Status = CommonProcReturn.ProcStatus.Valid;
 
             return ComConsts.RETURN_RESULT.OK;
 
@@ -142,6 +181,88 @@ namespace BusinessLogic_MA0001
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を取得する
+        /// </summary>
+        /// <param name="result">検索結果</param>
+        /// <returns>エラーの場合False</returns>
+        private bool getDataFromLongPlan(out Dao.searchResultFromLongPlan result)
+        {
+            result = new();
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetScheduleFromLongPlan, out string sql);
+
+            // 検索条件を設定
+            Dao.searchResultFromLongPlan condition = new();
+            // 保全スケジュール詳細ID
+            condition.MaintainanceScheduleDetailId = long.Parse(GetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey).ToString());
+
+            // SQL実行
+            IList<Dao.searchResultFromLongPlan> results = db.GetListByDataClass<Dao.searchResultFromLongPlan>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            results[0].MaintainanceScheduleDetailId = condition.MaintainanceScheduleDetailId; // 保全スケジュール詳細ID
+            results[0].IssueDate = DateTime.Now;                                              // 発行日
+
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResultFromLongPlan>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+
+            result = results[0];
+            return true;
+        }
+
+        /// <summary>
+        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
+        /// </summary>
+        /// <param name="isFromLongPlan">長期計画の白丸「○」リンクから遷移してきた場合はTrue</param>
+        /// <param name="result">検索結果</param>
+        /// <returns>エラーの場合False</returns>
+        private bool setDataFromLongPlan(bool isFromLongPlan, Dao.searchResultFromLongPlan result)
+        {
+            if(!isFromLongPlan)
+            {
+                return true;
+            }
+
+            // 取得している値を一覧に設定
+            foreach (string ctrlId in ConductInfo.FormRegist.ControlId.MakeMaintenanceFromLongPlan)
+            {
+                if (!SetFormByDataClass(ctrlId, new List<Dao.searchResultFromLongPlan> { result }))
+                {
+                    return false;
+                }
+            }
+
+            // 対象機器一覧検索
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMachineListFromLongPlan, out string sql);
+
+            // SQL実行
+            IList<Dao.detailMachine> resultMachineList = db.GetListByDataClass<Dao.detailMachine>(sql, result);
+            if(resultMachineList == null || resultMachineList.Count == 0)
+            {
+                return false;
+            }
+
+            // 職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailMachine>(ref resultMachineList, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.MachineList, this.pageInfoList);
+
+            // 検索結果の設定
+            if(!SetSearchResultsByDataClass<Dao.detailMachine>(pageInfo, resultMachineList, resultMachineList.Count))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -199,7 +320,7 @@ namespace BusinessLogic_MA0001
             //保全活動件名
             List<short> grpNoList = new List<short>() { ConductInfo.FormRegist.GroupNo.SummaryInfo, ConductInfo.FormRegist.GroupNo.WorkPersonalityInfo };
             //表示している履歴タブの情報をセットする
-            if(historyIndividualFlg != IndividualDivision.Show)
+            if (historyIndividualFlg != IndividualDivision.Show)
             {
                 //保全履歴タブ
                 grpNoList.Add(ConductInfo.FormRegist.GroupNo.HistoryInfo);
@@ -333,7 +454,7 @@ namespace BusinessLogic_MA0001
             //保全スケジュール詳細更新
             bool updateSchedule()
             {
-                if(isRegist || registSummaryInfo.CompletionDate == null)
+                if (isRegist || registSummaryInfo.CompletionDate == null)
                 {
                     //完了日が設定されていない場合、更新なし
                     return true;
@@ -435,7 +556,7 @@ namespace BusinessLogic_MA0001
                         return true;
                     }
                     //追加行の排他チェックは行わない
-                    if(machine.HistoryMachineId != null)
+                    if (machine.HistoryMachineId != null)
                     {
                         //保全履歴機器、保全履歴機器部位、保全履歴点検内容の排他チェック
                         if (!checkExclusiveSingle(ctrlId, target))
@@ -501,7 +622,7 @@ namespace BusinessLogic_MA0001
         {
             //対象機器のデータ取得（削除行は含まない）
             List<Dictionary<string, object>> machineDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormRegist.ControlId.MachineList);
-            if(machineDicList == null || machineDicList.Count == 0)
+            if (machineDicList == null || machineDicList.Count == 0)
             {
                 //データがない場合、終了
                 return false;
@@ -896,7 +1017,7 @@ namespace BusinessLogic_MA0001
                     //保全履歴機器
                     //機器使用期間の設定
                     int days = setUsedDaysMachine(registSummaryInfo, machine);
-                    if(days >= 0)
+                    if (days >= 0)
                     {
                         historyMachine.UsedDaysMachine = days;
                     }
@@ -994,13 +1115,13 @@ namespace BusinessLogic_MA0001
             //削除行の削除
             bool deleteRow(Dao.detailMachine machine, Dictionary<string, object> machineDic)
             {
-                if(machine.HistoryMachineId == null)
+                if (machine.HistoryMachineId == null)
                 {
                     //追加後、削除した行のため、処理なし
                     return true;
                 }
 
-                if(machine.HistoryInspectionContentId != null)
+                if (machine.HistoryInspectionContentId != null)
                 {
                     //保全履歴点検内容の削除
                     if (!deleteInspectionTable<ComDao.MaHistoryInspectionContentEntity>(ConductInfo.FormRegist.ControlId.MachineList, "history_inspection_content_id", SqlName.Detail.DeleteHistoryInspectionContent, machineDic))
@@ -1010,7 +1131,7 @@ namespace BusinessLogic_MA0001
 
                 }
 
-                if(machine.HistoryInspectionSiteId != null)
+                if (machine.HistoryInspectionSiteId != null)
                 {
                     //保全履歴機器部位に紐づく保全履歴点検内容の存在チェック
                     //SQL文の取得
@@ -1024,7 +1145,7 @@ namespace BusinessLogic_MA0001
 
                     // 件数を取得
                     int cnt = db.GetCount(execSql.ToString(), machine);
-                    if(cnt > 0)
+                    if (cnt > 0)
                     {
                         //保全履歴機器部位に紐づく保全履歴点検内容が存在するため、保全履歴機器部位は削除しない
                         return true;
@@ -1037,7 +1158,7 @@ namespace BusinessLogic_MA0001
                     }
                 }
 
-                if(machine.HistoryMachineId != null)
+                if (machine.HistoryMachineId != null)
                 {
                     //保全履歴機器に紐づく保全履歴機器部位の存在チェック
                     //SQL文の取得
@@ -1072,7 +1193,7 @@ namespace BusinessLogic_MA0001
             bool updateRow(Dao.detailMachine machine)
             {
                 //保全履歴機器
-                if(machine.HistoryMachineId != null)
+                if (machine.HistoryMachineId != null)
                 {
                     //機器使用期間の取得
                     int days = setUsedDaysMachine(registSummaryInfo, machine);
@@ -1170,7 +1291,7 @@ namespace BusinessLogic_MA0001
 
             //保全履歴故障情報が登録済みかチェック
             Dao.historyFailure historyFailure = TMQUtil.SqlExecuteClass.SelectEntity<Dao.historyFailure>(SqlName.Regist.GetFailureInfoForHistoryId, SqlName.SubDir, registFailureInfo, this.db);
-            if(historyFailure != null)
+            if (historyFailure != null)
             {
                 //更新SQL
                 sqlFile = SqlName.Regist.UpdateHistoryFailure;
@@ -1217,7 +1338,7 @@ namespace BusinessLogic_MA0001
         {
             List<short> grpNoList = new List<short>();
             //表示しているタブの情報を登録する
-            if(historyIndividualFlg != IndividualDivision.Show)
+            if (historyIndividualFlg != IndividualDivision.Show)
             {
                 //保全履歴タブ
                 grpNoList = new List<short>() { ConductInfo.FormRegist.GroupNo.HistoryInfo, ConductInfo.FormRegist.GroupNo.WorkTimeInfo, ConductInfo.FormRegist.GroupNo.CostInfo };

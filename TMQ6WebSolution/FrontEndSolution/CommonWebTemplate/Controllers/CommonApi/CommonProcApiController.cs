@@ -693,11 +693,11 @@ namespace CommonWebTemplate.Controllers.CommonApi
 
             //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
             SetRequestInfo(ref procData);
-            //ブラウザの言語を取得
-            var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+
             if (procData.LanguageId == null)
             {
-                procData.LanguageId = languageId;
+                //ブラウザの言語を取得
+                procData.LanguageId = GetBrowserLanguage();
             }
 
             //ﾘｸｴｽﾄﾊﾟﾗﾒｰﾀのﾃﾞｰﾀ検証

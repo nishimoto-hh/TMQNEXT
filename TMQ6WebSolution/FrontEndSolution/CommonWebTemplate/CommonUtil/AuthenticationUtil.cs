@@ -91,7 +91,7 @@ namespace CommonWebTemplate.CommonUtil
             BusinessLogicIO logicIO = new BusinessLogicIO(procData);
             UserInfoDef loginUserInfo;
             List<string> retConductIds = null;
-            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_LoginCheck(loginData.LoginUser, loginPassword, isPasswordCheck, isNewLogin,
+            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_LoginCheck(loginData.LoginUser, loginPassword, loginData.UserId, isPasswordCheck, isNewLogin,
                 out isCheckOK, out loginUserInfo, out retConductIds);
             if (returnInfo.IsProcEnd())
             {

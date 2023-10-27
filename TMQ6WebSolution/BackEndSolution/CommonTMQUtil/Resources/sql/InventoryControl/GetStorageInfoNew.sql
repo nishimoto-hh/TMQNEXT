@@ -92,6 +92,7 @@ SELECT
     , COALESCE(number_unit.unit_digit, 0) AS currency_digit --小数点以下桁数(金額)
     , COALESCE(unit_round.round_division, 0) AS round_division  --丸め処理区分
     , pp.factory_id                             --工場ID
+    , pp.factory_id AS parts_factory_id         --管理工場
 FROM
     pt_parts AS pp 
     LEFT JOIN number_unit 

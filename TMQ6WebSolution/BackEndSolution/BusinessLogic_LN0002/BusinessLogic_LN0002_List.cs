@@ -116,6 +116,9 @@ namespace BusinessLogic_LN0002
                 result.Add(ScheduleStatus.Complete, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.History));
                 // ◎：保全活動参照画面(依頼タブ)
                 result.Add(ScheduleStatus.Created, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.Request));
+                // TODO:この行をコメントアウトすればリンクしなくなる
+                // ○：保全活動新規登録画面
+                result.Add(ScheduleStatus.NoCreate, new(MA0001.ConductId, MA0001.FormNo.New, MA0001.TabNoDetail.New));
                 return result;
             }
 

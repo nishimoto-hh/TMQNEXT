@@ -74,6 +74,9 @@ var P_SelectedFactoryIdList = null;
 /**Public変数：本務工場ID*/
 var P_DutyFactoryId = 0;
 
+/**Public変数：階層ツリーJSONデータ辞書
+ * [コンボデータキー]:[JSONデータ]*/
+var P_ComboBoxJsonList = {};
 /**Public変数：コンボボックスデータ取得中リスト*/
 var P_GettingComboBoxDataList = [];
 
@@ -1894,6 +1897,33 @@ function getComboBoxDataFromSessionStorage(appPath, param) {
 }
 
 /**
+ * コンボボックスデータの取得
+ * @param {string} param    ：コンボデータ取得用パラメータ
+ * @return {Array.<object>} 取得結果(0:成功/1:取得中/-1:失敗)、コンボボックスデータ配列
+ */
+function getComboBoxLocalData(param) {
+    var savedData = P_ComboBoxJsonList[param];
+    if (savedData != null && savedData.length > 0) {
+        // グローバル変数に存在する場合
+        return [false, savedData];
+    }
+
+    var params = param.split(',');
+    if (!params[0] || params[0] == '-') {
+        // SQLIDが空の場合、取得対象外
+        return [false, []];
+    }
+
+    if (P_GettingComboBoxDataList.indexOf(param) >= 0) {
+        // データ取得中の場合
+        return [false, null];
+    }
+
+    // データ取得実行が必要
+    return [true, null];
+}
+
+/**
  * 構成マスタデータの工場IDによる絞り込み
  * @param {Array.<object>} data             ：構成マスタデータ配列
  * @param {Array.<number>} factoryIdList    ：工場ID配列
@@ -2303,7 +2333,9 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
 
     // コンボボックスデータの取得
     const paramKey = sqlId + "," + paramStr;
-    var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+    // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+    //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+    var [requiredGetData, data] = getComboBoxLocalData(paramKey);
 
     // データ設定処理
     const eventFunc = function () {
@@ -2536,8 +2568,11 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
         // データ取得中の場合、データ取得中リストから消えるまで待機
         var timer = setInterval(function () {
             if (P_GettingComboBoxDataList.indexOf(paramKey) < 0) {
-                // データ取得中リストから消えた場合、セッションストレージから取得
-                data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                //// データ取得中リストから消えた場合、セッションストレージから取得
+                //data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                // データ取得中リストから消えた場合、グローバル変数から取得
+                data = P_ComboBoxJsonList[paramKey];
                 // 待機を解除する
                 clearInterval(timer);
                 // データ設定処理実行
@@ -2566,8 +2601,10 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
                 //結果データ - Dictionary<string,object>
                 //結果データからdataを取得
                 data = separateDicReturn(datas);
-                // セッションストレージへ保存
-                setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
+                // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                //// セッションストレージへ保存
+                //setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
+                P_ComboBoxJsonList[paramKey] = data;
                 // データ設定処理実行
                 eventFunc();
             },
@@ -2939,7 +2976,9 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
     }
 
     const paramKey = sqlId + "," + param;
-    var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+    // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+    //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+    var [requiredGetData, data] = getComboBoxLocalData(paramKey);
 
     // データ設定処理
     const eventFunc = function () {
@@ -3006,8 +3045,11 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
         // データ取得中の場合、データ取得中リストから消えるまで待機
         var timer = setInterval(function () {
             if (P_GettingComboBoxDataList.indexOf(paramKey) < 0) {
-                // データ取得中リストから消えた場合、セッションストレージから取得
-                data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                //// データ取得中リストから消えた場合、セッションストレージから取得
+                //data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                // データ取得中リストから消えた場合、グローバル変数から取得
+                data = P_ComboBoxJsonList[paramKey];
                 // 待機を解除する
                 clearInterval(timer);
                 // データ設定処理実行
@@ -3037,8 +3079,10 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
                 //結果データ - Dictionary<string,object>
                 //結果データからdataを取得
                 data = separateDicReturn(datas);
-                // セッションストレージへ保存
-                setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey);
+                // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                //// セッションストレージへ保存
+                //setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
+                P_ComboBoxJsonList[paramKey] = data;
 
                 // データ設定処理実行
                 eventFunc();
@@ -16173,7 +16217,9 @@ function dispHonyakuSelectCol(data, selector, appPath, sqlId, param) {
                 });
 
                 const paramKey = sqlId + "," + paramStr;
-                var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+                // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
+                var [requiredGetData, data] = getComboBoxLocalData(paramKey);
 
                 // データ設定処理
                 const eventFunc = function () {
@@ -16207,8 +16253,11 @@ function dispHonyakuSelectCol(data, selector, appPath, sqlId, param) {
                     // データ取得中の場合、データ取得中リストから消えるまで待機
                     var timer = setInterval(function () {
                         if (P_GettingComboBoxDataList.indexOf(paramKey) < 0) {
-                            // データ取得中リストから消えた場合、セッションストレージから取得
-                            data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                            // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                            //// データ取得中リストから消えた場合、セッションストレージから取得
+                            //data = getSavedDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+                            // データ取得中リストから消えた場合、グローバル変数から取得
+                            data = P_ComboBoxJsonList[paramKey];
                             // 待機を解除する
                             clearInterval(timer);
                             // データ設定処理実行
@@ -16237,8 +16286,10 @@ function dispHonyakuSelectCol(data, selector, appPath, sqlId, param) {
                             //※正常時
                             //結果データ - Dictionary<string, object>※結果ﾃﾞｰﾀ："Result"、個別実装用ﾃﾞｰﾀ："Individual"
                             var data = separateDicReturn(datas);
-                            // セッションストレージへ保存
-                            setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
+                            // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+                            //// セッションストレージへ保存
+                            //setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
+                            P_ComboBoxJsonList[paramKey] = data;
                             // データ設定処理実行
                             eventFunc();
                         },
@@ -16547,7 +16598,8 @@ function initTreeView(appPath, conductId, structureGrpIdList, factoryIdList, tre
             for (var key in resultList) {
                 var jsonData = resultList[key];
                 const grpId = parseInt(key, 10);
-                setSaveDataToSessionStorage(jsonData, sessionStorageCode.TreeView, grpId);
+                // (2022/11/01) SessionStorageには保存しない
+                //setSaveDataToSessionStorage(jsonData, sessionStorageCode.TreeView, grpId);
 
                 P_TreeViewJsonList[grpId] = deepCopyObjectArray(jsonData);
                 if (treeViewType.Val != treeViewDef.TreeMenu.Val || grpId != structureGroupDef.Job) {
@@ -16574,12 +16626,16 @@ function initTreeView(appPath, conductId, structureGrpIdList, factoryIdList, tre
  * @param {number} grpId        ：構成グループID
  */
 function getTreeViewLocalData(grpId) {
-    // SessionStorageから構成マスタデータを取得
-    var jsonData = getSavedDataFromSessionStorage(sessionStorageCode.TreeView, grpId);
-    if (jsonData == null && Array.isArray(P_TreeViewJsonList[grpId])) {
-        // SessionStorageに存在しない場合、グローバル変数から取得
-        jsonData = deepCopyObjectArray(P_TreeViewJsonList[grpId]);
-    }
+
+    // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+    //// SessionStorageから構成マスタデータを取得
+    //var jsonData = getSavedDataFromSessionStorage(sessionStorageCode.TreeView, grpId);
+    //if (jsonData == null && Array.isArray(P_TreeViewJsonList[grpId])) {
+    //    // SessionStorageに存在しない場合、グローバル変数から取得
+    //    jsonData = deepCopyObjectArray(P_TreeViewJsonList[grpId]);
+    //}
+    // グローバル変数から取得
+    jsonData = deepCopyObjectArray(P_TreeViewJsonList[grpId]);
     return jsonData
 }
 
@@ -17546,8 +17602,9 @@ function setStorageTreeData(grpId, code, selector, isMerged) {
  * @param {string} grpId    :構成グループID
  */
 function refreshTreeView(appPath, conductId, grpId) {
-    // セッションストレージデータを削除
-    removeSaveDataFromSessionStorage(sessionStorageCode.TreeView, grpId);
+    // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+    //// セッションストレージデータを削除
+    //removeSaveDataFromSessionStorage(sessionStorageCode.TreeView, grpId);
     // グローバル変数のデータを削除
     P_TreeViewJsonList[grpId] = null;
     delete P_TreeViewJsonList[grpId];
@@ -17580,16 +17637,38 @@ function refreshComboBox(appPath, grpId) {
 }
 
 /**
- * セッションストレージに保持しているコンボボックスデータのクリア
+ * 保持しているコンボボックスデータのクリア
  * @param {number} grpId:構成グループID(未指定の場合は全コンボボックスデータ)
  */
 function clearSavedComboBoxData(grpId) {
-    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, grpId ? (',' + grpId) : null);
+    // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
+//    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, grpId ? (',' + grpId) : null);
+//    $.each(keys, function (idx, key) {
+//        // セッションストレージデータを削除
+//        removeSaveDataFromSessionStorageByKey(key);
+//    });
+    var keys = findObjectDataKeys(P_ComboBoxJsonList, ',' + grpId);
     $.each(keys, function (idx, key) {
-        // セッションストレージデータを削除
-        removeSaveDataFromSessionStorageByKey(key);
+        // グローバル変数データを削除
+        P_ComboBoxJsonList[key] = null;
+        delete P_ComboBoxJsonList[key];
     });
 }
+
+/**
+ * Object配列のキーを取得
+ * @param {string} keyword  :検索キーワード
+ * @return Array.<string> 検索条件に一致したキー
+ */
+function findObjectDataKeys(objectList, keyword) {
+    var keys = [];
+    const objectKeys = Object.keys(objectList);
+    keys = objectKeys.filter(function (key) {
+        return key.indexOf(keyword) >= 0;
+    });
+    return keys;
+}
+
 
 /**
  *  タブ切替の初期化処理

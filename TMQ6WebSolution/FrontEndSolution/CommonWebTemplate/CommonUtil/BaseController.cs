@@ -261,6 +261,15 @@ namespace CommonWebTemplate.CommonUtil
             return AppCommonObject.Config.AppSettings.SiteMinderLogin;
         }
         /// <summary>
+        /// AzureADからのLoginか？
+        /// </summary>
+        /// <returns>treu:AzureADからのﾛｸﾞｲﾝ</returns>
+        protected bool isAzureAD()
+        {
+            //AzureADからのLoginか？
+            return AppCommonObject.Config.AppSettings.AzureADLogin;
+        }
+        /// <summary>
         /// ｻｲﾄ内ｱｸｾｽ可能か検証する
         ///  - ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得する
         ///  - ﾘｸｴｽﾄﾊﾟﾗﾒｰﾀのﾃﾞｰﾀ検証を行う
@@ -293,11 +302,10 @@ namespace CommonWebTemplate.CommonUtil
 
             //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
             SetRequestInfo(ref procData);
-            //ブラウザの言語を取得
-            var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
             if (procData.LanguageId == null)
             {
-                procData.LanguageId = languageId;
+                //ブラウザの言語を取得
+                procData.LanguageId = GetBrowserLanguage();
             }
 
             //ﾘｸｴｽﾄﾊﾟﾗﾒｰﾀを検証
@@ -426,11 +434,10 @@ namespace CommonWebTemplate.CommonUtil
             CommonProcData procData = new CommonProcData();
             BusinessLogicUtil blogic = new BusinessLogicUtil();
             SetRequestInfo(ref procData);
-            //ブラウザの言語を取得
-            var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
             if (procData.LanguageId == null)
             {
-                procData.LanguageId = languageId;
+                //ブラウザの言語を取得
+                procData.LanguageId = GetBrowserLanguage();
             }
             //メッセージ取得
             //システムエラーが発生しました。管理者に問い合わせて下さい。
@@ -573,11 +580,11 @@ namespace CommonWebTemplate.CommonUtil
             CommonProcData procData = new CommonProcData();
             BusinessLogicUtil blogic = new BusinessLogicUtil();
             SetRequestInfo(ref procData);
-            //ブラウザの言語を取得
-            var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+
             if (procData.LanguageId == null)
             {
-                procData.LanguageId = languageId;
+                //ブラウザの言語を取得
+                procData.LanguageId = GetBrowserLanguage();
             }
 
             IDictionary<string, string> resources = null;
@@ -822,6 +829,28 @@ namespace CommonWebTemplate.CommonUtil
             }
         }
 
+        /// <summary>
+        /// ブラウザの言語を取得
+        /// </summary>
+        /// <returns>ブラウザの言語</returns>
+        protected string GetBrowserLanguage()
+        {
+            return Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 遷移元URLを取得
+        /// </summary>
+        /// <returns>遷移元URL</returns>
+        protected string GetSourceURL()
+        {
+            string sourceURL = string.Empty;
+            if (Request.Headers.ContainsKey("UrlReferrer"))
+            {
+                sourceURL = Request.Headers["UrlReferrer"].ToString();
+            }
+            return sourceURL;
+        }
         #endregion
 
         #region === private処理 ===

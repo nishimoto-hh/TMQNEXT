@@ -419,6 +419,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets タブ番号</summary>
             /// <value>タブ番号</value>
             public int? TabNo { get; set; }
+            /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
+            /// <value>保全スケジュール詳細ID</value>
+            public long? MaintainanceScheduleDetailId { get; set; }
         }
 
         /// <summary>
@@ -560,6 +563,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 活動区分ID</summary>
             /// <value>活動区分ID</value>
             public int? ActivityDivision { get; set; }
+            /// <summary>Gets or sets 予算性格区分ID</summary>
+            /// <value>予算性格区分ID</value>
+            public int? BudgetPersonalityStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理区分ID</summary>
+            /// <value>予算管理区分ID</value>
+            public int? BudgetManagementStructureId { get; set; }
         }
 
         /// <summary>
@@ -992,6 +1001,103 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全活動件名ID</summary>
             /// <value>保全活動件名ID</value>
             public string SummaryId { get; set; }
+        }
+
+        /// <summary>
+        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移時の初期値のデータクラス
+        /// </summary>
+        public class searchResultFromLongPlan
+        {
+            /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
+            /// <value>保全スケジュール詳細ID</value>
+            public long? MaintainanceScheduleDetailId { get; set; }
+            /// <summary>Gets or sets 件名</summary>
+            /// <value>件名</value>
+            public string Subject { get; set; }
+            /// <summary>Gets or sets 件名メモ</summary>
+            /// <value>件名メモ</value>
+            public string SubjectNote { get; set; }
+            /// <summary>Gets or sets 予算性格区分ID</summary>
+            /// <value>予算性格区分ID</value>
+            public int? BudgetPersonalityStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理区分ID</summary>
+            /// <value>予算管理区分ID</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 発行日</summary>
+            /// <value>発行日</value>
+            public DateTime? IssueDate { get; set; }
+            /// <summary>Gets or sets 保全時期ID</summary>
+            /// <value>保全時期ID</value>
+            public int? MaintenanceSeasonStructureId { get; set; }
+
+            #region 場所・職種情報
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? LargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string LargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? MiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string MiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? SmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string SmallClassficationName { get; set; }
+            #endregion
         }
     }
 }

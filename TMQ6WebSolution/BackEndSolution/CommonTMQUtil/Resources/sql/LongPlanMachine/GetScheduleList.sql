@@ -9,6 +9,7 @@ SELECT
     ,ie.extension_data AS maintainance_kind_level
     ,dbo.get_translation_text_all(mscn.maintainance_kind_structure_id,lp.location_structure_id,1240,@LanguageId) AS maintainance_kind_char
     ,msd.summary_id
+    ,msd.maintainance_schedule_detail_id AS new_maintainance_key
 FROM
     ln_long_plan AS lp
     INNER JOIN

@@ -14,6 +14,10 @@
     //パスワード
     var password = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911260003, browserLang);
 
+    // シングルサインオンのログイン画面かどうか
+    var isSSOLogin = AppCommonObject.Config.AppSettings.AzureADLogin;
+    var className = isSSOLogin ? "sso" : "";
+
     ViewBag.Title = login;
     Layout = "~/Views/Shared/_LayoutSub.cshtml";
 
@@ -44,7 +48,7 @@
     </section>
 
     @*=====ログイン情報入力エリア=====*@
-    <section id="login_area">
+    <section id="login_area" class="@className">
         @using (Html.BeginForm(
                null,      // アクション名
                null,    // コントローラー名
@@ -60,6 +64,7 @@
             <input name="LoginPassword" type="hidden" value="">
             <input name="AccessKey" type="hidden" value="@ViewBag.AccessKey">
 
+            @if (!isSSOLogin) {
             @*<div class="mark_required">ログインID</div>*@
             <div class="required">
                 <label for="user login">@loginId</label>
@@ -67,10 +72,10 @@
             </div>
             <div>
                 @Html.TextBox(
-                "LoginUser_text",       // 要素名
-                Model.LoginUser,        // 値（value属性）
-                new { id = "LoginUser_text", data_type = "text", data_colname = loginId, data_maxlength = 10, @class = "validate_required" } // そのほかの属性
-            )
+                     "LoginUser_text",       // 要素名
+                     Model.LoginUser,        // 値（value属性）
+                     new { id = "LoginUser_text", data_type = "text", data_colname = loginId, data_maxlength = 10, @class = "validate_required" } // そのほかの属性
+                 )
             </div>
 
             @*<div class="mark_required">パスワード</div>*@
@@ -80,14 +85,15 @@
             </div>
             <div>
                 @Html.Password(
-                "LoginPassword_text",   // 要素名
-                Model.LoginPassword,    // 値（value属性）
-                new { id = "LoginPassword_text", data_type = "text", data_colname = password, data_maxlength = 8, @class = "validate_required" } // そのほかの属性
-            )
+                     "LoginPassword_text",   // 要素名
+                     Model.LoginPassword,    // 値（value属性）
+                     new { id = "LoginPassword_text", data_type = "text", data_colname = password, data_maxlength = 8, @class = "validate_required" } // そのほかの属性
+                 )
                 @*フォームのオートコンプリートを無効にする対策*@
                 <input type="password" name="dummy1" value="" style="display:none;" disabled>
                 <input type="password" name="dummy1" value="" style="display:none;" disabled>
             </div>
+            }
 
             @*=====ログインボタンエリア=====*@
             @*<div>*@
@@ -103,11 +109,10 @@
 @*=====Script=====*@
 @section Scripts{
     @{
-        //var actionUrl = ViewBag.AppRoutePath + @"Home/Login";
         var actionUrl = Url.Action("Login", "Home");
     }
 
-    <script>
+<script>
         $(function () {
 
             @* 閉じるﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
@@ -163,5 +168,5 @@
 
         });
 
-    </script>
+</script>
 }

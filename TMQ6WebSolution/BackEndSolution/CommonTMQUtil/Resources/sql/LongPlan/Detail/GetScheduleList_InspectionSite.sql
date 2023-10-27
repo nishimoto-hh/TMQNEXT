@@ -24,7 +24,8 @@ SELECT
     mscn.maintainance_kind_structure_id,
     ie.extension_data AS maintainance_kind_level,
     dbo.get_translation_text_all(mscn.maintainance_kind_structure_id,machine.location_structure_id,1240,@LanguageId) AS maintainance_kind_char,
-    msd.summary_id
+    msd.summary_id,
+    msd.maintainance_schedule_detail_id AS new_maintainance_key
 FROM
     base_group
     INNER JOIN
