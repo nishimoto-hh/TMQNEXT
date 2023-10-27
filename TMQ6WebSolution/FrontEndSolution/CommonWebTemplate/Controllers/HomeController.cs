@@ -87,10 +87,29 @@ namespace CommonWebTemplate.Controllers
 
                     //=== ﾘｸｴｽﾄ情報からﾛｸﾞｲﾝﾕｰｻﾞｰIDを取り出し ===
                     string userId = "";
-                    if (Request.Headers.ContainsKey(RequestManageUtil.RequestKey.SM_USER))
-                    {
-                        userId = Request.Headers[RequestManageUtil.RequestKey.SM_USER].ToString();
-                    }
+                    //if (Request.Headers.ContainsKey(RequestManageUtil.RequestKey.SM_USER))
+                    //{
+                    //    userId = Request.Headers[RequestManageUtil.RequestKey.SM_USER].ToString();
+                    //}
+
+                    // ★AzureADからのログイン時にメールアドレスからユーザIDを取得する場合、以下の処理を有効にしてください
+                    // ↓↓↓ここから↓↓↓
+                    ////ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                    //CommonProcData procData = new CommonProcData();
+                    //SetRequestInfo(ref procData);
+
+                    ////IdpのAttributeからユーザ情報を取得する
+                    //// ClaimTypes.Name : http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+                    //string email = HttpContent.User.FindFirst(ClaimTypes.Name).Value;
+
+                    //// メールアドレスをTMQのDBと照合し、取得できれば認証OKとする
+                    //BusinessLogicUtil blogic = new BusinessLogicUtil();
+                    //blogic.GetUserIdByMailAdress(procData, email, out string userId);
+                    //if (string.IsNullOrEmpty(userId))
+                    //{
+                    //    // 認証NG⇒ログイン画面表示？
+                    //}
+                    // ↑↑↑ここまで↑↑↑
 
                     //=== ﾛｸﾞｲﾝ処理 ===
                     return Login(userId, null, string.Empty, true, sourceURL);

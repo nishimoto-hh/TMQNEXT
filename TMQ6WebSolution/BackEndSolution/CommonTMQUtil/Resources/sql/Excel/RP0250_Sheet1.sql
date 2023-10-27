@@ -96,11 +96,6 @@ AND
     pp.factory_id = @FactoryId
 @FactoryId*/
 
-/*@JobId
-AND
-    pp.job_structure_id = @JobId
-@JobId*/
-
 /*@PartsNo
 AND
     pp.parts_no = @PartsNo

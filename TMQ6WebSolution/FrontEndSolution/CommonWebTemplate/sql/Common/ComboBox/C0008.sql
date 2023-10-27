@@ -25,7 +25,7 @@ from
       inner join v_structure_item_all b
         on a.factory_id = b.factory_id
         and b.structure_layer_no = 1 
-        and b.structure_group_id = 1040
+        and b.structure_group_id = 1000
         and b.language_id = /*languageId*/'ja' 
 /*IF factoryIdList != null && factoryIdList.Count > 0*/
         and a.factory_id in /*factoryIdList*/(0)
@@ -42,7 +42,7 @@ from
       inner join v_structure_item_all b
         on a.factory_id = b.factory_id
         and b.structure_layer_no = 1 
-        and b.structure_group_id = 1040
+        and b.structure_group_id = 1000
         and b.language_id = /*languageId*/'ja' 
     where a.report_id = /*param1*/''
       and a.delete_flg = 0

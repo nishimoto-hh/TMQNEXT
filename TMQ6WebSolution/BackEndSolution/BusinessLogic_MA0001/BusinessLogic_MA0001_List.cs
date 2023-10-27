@@ -37,7 +37,15 @@ namespace BusinessLogic_MA0001
         private bool searchList()
         {
             // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.HiddenItemId, this.pageInfoList);
+            Dao.userRole role = new Dao.userRole();
+            // ユーザ役割の設定（新規登録ボタンの表示制御に使用）
+            setUserRole<Dao.userRole>(role);
+            // ユーザ役割の設定
+            SetSearchResultsByDataClass<Dao.userRole>(pageInfo, new List<Dao.userRole>() { role }, 1);
+
+            // ページ情報取得
+            pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
 
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql);
@@ -61,6 +69,10 @@ namespace BusinessLogic_MA0001
             // 総件数のチェック
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
+                //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
                 return false;
             }
@@ -90,14 +102,6 @@ namespace BusinessLogic_MA0001
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
-
-            // ページ情報取得
-            pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.HiddenItemId, this.pageInfoList);
-            Dao.userRole role = new Dao.userRole();
-            // ユーザ役割の設定（新規登録ボタンの表示制御に使用）
-            setUserRole<Dao.userRole>(role);
-            // ユーザ役割の設定
-            SetSearchResultsByDataClass<Dao.userRole>(pageInfo, new List<Dao.userRole>() { role }, 1);
 
             return true;
 

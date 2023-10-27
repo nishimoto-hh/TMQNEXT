@@ -327,7 +327,8 @@ namespace BusinessLogic_PT0002
                     this.conditionSheetValueList.Add(globalData);
 
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                    int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // 帳票定義取得
                     // 出力帳票シート定義のリストを取得
@@ -488,7 +489,8 @@ namespace BusinessLogic_PT0002
                     //購入明細書出力
                     reportId = OutputReportDefine.ReportId.OutputPurchaseDetails;
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                    userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // 帳票定義取得
                     // 出力帳票シート定義のリストを取得

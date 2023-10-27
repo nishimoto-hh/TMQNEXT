@@ -18,6 +18,7 @@ SELECT
     SUBSTRING(hf.failure_status, 101, 20) AS failure_status_6,                            -- 故障状況６
     SUBSTRING(hf.failure_status, 121, 20) AS failure_status_7,                            -- 故障状況７
     SUBSTRING(hf.failure_status, 141, 20) AS failure_status_8,                            -- 故障状況８
+    hf.failure_status AS failure_status,                                                  -- 故障状況
 
     SUBSTRING(hf.failure_cause_addition_note,   1, 20) AS failure_cause_addition_note_1,  -- 故障原因１
     SUBSTRING(hf.failure_cause_addition_note,  21, 20) AS failure_cause_addition_note_2,  -- 故障原因２
@@ -27,6 +28,7 @@ SELECT
     SUBSTRING(hf.failure_cause_addition_note, 101, 20) AS failure_cause_addition_note_6,  -- 故障原因６
     SUBSTRING(hf.failure_cause_addition_note, 121, 20) AS failure_cause_addition_note_7,  -- 故障原因７
     SUBSTRING(hf.failure_cause_addition_note, 141, 20) AS failure_cause_addition_note_8,  -- 故障原因８
+    hf.failure_cause_addition_note AS failure_cause_addition_note_all,                        -- 故障原因
 
     SUBSTRING(hf.previous_situation,   1, 20) AS previous_situation_1,                    -- 故障前の保全実施状況１
     SUBSTRING(hf.previous_situation,  21, 20) AS previous_situation_2,                    -- 故障前の保全実施状況２
@@ -34,6 +36,7 @@ SELECT
     SUBSTRING(hf.previous_situation,  61, 20) AS previous_situation_4,                    -- 故障前の保全実施状況４
     SUBSTRING(hf.previous_situation,  81, 20) AS previous_situation_5,                    -- 故障前の保全実施状況５
     SUBSTRING(hf.previous_situation, 101, 20) AS previous_situation_6,                    -- 故障前の保全実施状況６
+    hf.previous_situation AS previous_situation,                                          -- 故障前の保全実施状況
 
     SUBSTRING(hf.recovery_action,   1, 20) AS recovery_action_1,                          -- 復旧処置１
     SUBSTRING(hf.recovery_action,  21, 20) AS recovery_action_2,                          -- 復旧処置２
@@ -43,6 +46,7 @@ SELECT
     SUBSTRING(hf.recovery_action, 101, 20) AS recovery_action_6,                          -- 復旧処置６
     SUBSTRING(hf.recovery_action, 121, 20) AS recovery_action_7,                          -- 復旧処置７
     SUBSTRING(hf.recovery_action, 141, 20) AS recovery_action_8,                          -- 復旧処置８
+    hf.recovery_action AS recovery_action,                                                -- 復旧処置
 
     SUBSTRING(hf.improvement_measure,   1, 20) AS improvement_measure_1,                  -- 改善対策１
     SUBSTRING(hf.improvement_measure,  21, 20) AS improvement_measure_2,                  -- 改善対策２
@@ -52,10 +56,12 @@ SELECT
     SUBSTRING(hf.improvement_measure, 101, 20) AS improvement_measure_6,                  -- 改善対策６
     SUBSTRING(hf.improvement_measure, 121, 20) AS improvement_measure_7,                  -- 改善対策７
     SUBSTRING(hf.improvement_measure, 141, 20) AS improvement_measure_8,                  -- 改善対策８
+    hf.improvement_measure AS improvement_measure,                                        -- 改善対策
 
     SUBSTRING(hf.system_feed_back,   1, 20) AS system_feed_back_1,                        -- 保全システムへのフィードバック１
     SUBSTRING(hf.system_feed_back,  21, 20) AS system_feed_back_2,                        -- 保全システムへのフィードバック２
     SUBSTRING(hf.system_feed_back,  41, 20) AS system_feed_back_3,                        -- 保全システムへのフィードバック３
+    hf.system_feed_back AS system_feed_back,                                              -- 保全システムへのフィードバック
 
     hf.lesson,                         -- 教訓
     mc.date_of_installation,           -- 設置年月
@@ -78,6 +84,7 @@ SELECT
     
     SUBSTRING(hf.failure_note,   1, 12) AS failure_note_1,                        -- 特記(メモ)１
     SUBSTRING(hf.failure_note,  13, 12) AS failure_note_2,                        -- 特記(メモ)２
+    hf.failure_note AS failure_note,                                              -- 特記(メモ)
     
     '' AS factory_name2,               -- 工場名(機器)
     '' AS job_name2,                   -- 職種名(機器)

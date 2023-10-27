@@ -816,16 +816,9 @@ namespace BusinessLogic_LN0001
             {
                 reportId = "RP0070";
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
-
-                //// キー情報を設定
-                //Key keyInfo = new Key("LongPlanId"); // 長期計画件名ID
-
-                //List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport<Dao.Detail.List>(
-                //    ConductInfo.FormList.ControlId.List, // 一覧のコントールID
-                //    keyInfo,                               // 設定したキー情報
-                //    this.resultInfoDictionary,             // 画面データ
-                //    true);                                 // 選択フラグ
+                // ユーザの本務工場取得
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                 // ページ情報取得
                 var pageInfo = GetPageInfo(
@@ -903,16 +896,8 @@ namespace BusinessLogic_LN0001
 
                 reportId = "RP0090";
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
-
-                //// キー情報を設定
-                //Key keyInfo = new Key("LongPlanId"); // 長期計画件名ID
-
-                //List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport<Dao.Detail.List>(
-                //    ConductInfo.FormList.ControlId.List, // 一覧のコントールID
-                //    keyInfo,                               // 設定したキー情報
-                //    this.resultInfoDictionary,             // 画面データ
-                //    true);                                 // 選択フラグ
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                 // ページ情報取得
                 var pageInfo = GetPageInfo(
@@ -1031,16 +1016,8 @@ namespace BusinessLogic_LN0001
 
                 reportId = "RP0090";
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
-
-                //// キー情報を設定
-                //Key keyInfo = new Key("LongPlanId"); // 長期計画件名ID
-
-                //List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport<Dao.Detail.List>(
-                //    ConductInfo.FormBudgetOutput.ControlId.LongPlanId, // 一覧のコントールID
-                //    keyInfo,                               // 設定したキー情報
-                //    this.resultInfoDictionary,             // 画面データ
-                //    false);                                 // 選択フラグ
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                 // ページ情報取得
                 var pageInfo = GetPageInfo(

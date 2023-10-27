@@ -208,7 +208,8 @@ namespace BusinessLogic_PT0009
                 // 帳票ごとの情報を取得
                 reportId = condition.ReportId;
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
                 pgmId = this.PgmId; // PT0009
 
                 templateId = TemplateDefaultValue.TemplateId;

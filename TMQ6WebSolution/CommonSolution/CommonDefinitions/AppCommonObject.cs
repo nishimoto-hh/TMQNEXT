@@ -168,6 +168,8 @@ namespace CommonWebTemplate
         public int? AutoCompleteRowLimit { get; set; }
         /// <summary>マニュアルのページ番号</summary>
         public Dictionary<string, int> ManualPageNo { get; set; }
+        /// <summary>ダウンロードファイルフォルダパス（アプリフォルダからの参照パス）</summary>
+        public string DownloadFileDir { get; set; }
 
     }
     #endregion

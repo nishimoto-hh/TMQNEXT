@@ -1,6 +1,14 @@
+WITH FILE_LIST AS(
+    SELECT
+        dbo.get_file(1620, content.management_standards_content_id) AS file_info
+    FROM
+        mc_management_standards_content AS content
+    WHERE
+        content.long_plan_id = @LongPlanId
+)
 SELECT
-    dbo.get_file(1620, content.management_standards_content_id) AS file_info
+    file_info
 FROM
-    mc_management_standards_content as content
+    FILE_LIST
 WHERE
-    content.long_plan_id = @LongPlanId
+    file_info IS NOT NULL

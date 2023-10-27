@@ -4,7 +4,8 @@
  */
 
 select a.factory_id as factoryId,
-       b.location_structure_id as translationFactoryId,
+       a.factory_id as translationFactoryId,
+--       b.location_structure_id as translationFactoryId,
        a.report_id as 'values',
        b.translation_text as labels
   from ms_output_report_define a

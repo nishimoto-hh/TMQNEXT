@@ -93,6 +93,8 @@ namespace CommonSTDUtil.CommonSTDUtil
             public const string GetPartsFactoryId = "C0018";
             /// <summary>工場と職種取得</summary>
             public const string GetFactoryAndJob = "Structure_GetFactoryAndJob";
+            /// <summary>ユーザマスタからユーザ情報の取得</summary>
+            public const string UserMstGetUserInfo = "UserMst_GetUserInfo";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
@@ -5072,5 +5074,30 @@ namespace CommonSTDUtil.CommonSTDUtil
                 return plaintext;
             }
         }
+
+        /// <summary>
+        /// ユーザ情報取得処理
+        /// </summary>
+        /// <param name="mailAdress">メールアドレス</param>
+        /// <param name="db">DB接続</param>
+        /// <returns></returns>
+        public static Dao.MsUserEntity GetUserInfoByMailAdress(Dictionary<string, object> condition, ComDB db)
+        {
+            Dao.MsUserEntity userInfo = null;
+
+            const string condKey = "MailAdress";
+            if (condition.ContainsKey(condKey) && !IsNullOrEmpty(condition[condKey]))
+            {
+                // ユーザマスタからメールアドレスをキーにユーザIDを取得
+                var resultList = db.GetListByOutsideSql<Dao.MsUserEntity>(SqlName.UserMstGetUserInfo, SqlName.SubDir, new { MailAdress = condition[condKey] });
+                if (resultList != null && resultList.Count > 0)
+                {
+                    // ユーザ情報
+                    userInfo = resultList[0];
+                }
+            }
+            return userInfo;
+        }
+
     }
 }

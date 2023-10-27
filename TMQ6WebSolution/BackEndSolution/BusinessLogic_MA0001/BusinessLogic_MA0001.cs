@@ -720,6 +720,23 @@ namespace BusinessLogic_MA0001
         /// 保全実績評価から保全活動への遷移時の検索条件(職種)に設定する文字列
         /// </summary>
         private static string jobAll = "All";
+
+        /// <summary>
+        /// 帳票情報
+        /// </summary>
+        private static class ReportInfo
+        {
+            // 処理対象帳票ID 依頼表
+            public const string ReportIdRP0130 = "RP0130";
+            // 処理対象帳票ID 予実算情報
+            public const string ReportIdRP0150 = "RP0150";
+            // 処理対象帳票ID 故障原因分析書
+            public const string ReportIdRP0160 = "RP0160";
+            // 指示検収票 ファイルパス
+            public const string templateFilePath = "MA0001";
+            // 指示検収票 ファイル名
+            public const string templateFileName = "MaintenanceInstructInspection.xlsx";
+        }
         #endregion
 
         #region コンストラクタ
@@ -981,28 +998,15 @@ namespace BusinessLogic_MA0001
             switch (this.CtrlId)
             {
                 case ConductInfo.FormDetail.Button.AcceptanceSlipOutput:
-                    //指示検収票出力
-                    //TODO:実装
+                    return executeDownload(ReportInfo.templateFilePath, ReportInfo.templateFileName);
                     break;
                 case ConductInfo.FormDetail.Button.RequestSlipOutput:
                     //依頼票出力
-                    reportId = "RP0130";
+                    reportId = ReportInfo.ReportIdRP0130;
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
-
-                    //// キー情報を設定
-                    //Key keyInfo = new Key("RequestId"); // 依頼Id
-                    //// 一覧選択データのキーを取得
-                    //List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport<Dao.requestReport>(
-                    //    ConductInfo.FormDetail.ControlId.RequestInfoIds[0],     // 依頼情報のコントールID
-                    //    keyInfo,                     // 設定したキー情報
-                    //    this.resultInfoDictionary,   // 画面データ
-                    //    false);  // 選択フラグ
-
-                    //// ページ情報取得
-                    //var pageInfo = GetPageInfo(
-                    //    ConductInfo.FormDetail.ControlId.DetailInfoIds[0],     // 一覧のコントールID
-                    //    this.pageInfoList);          // ページ情報リスト
+                    // ユーザの本務工場取得
+                    int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // 帳票定義取得
                     // 出力帳票シート定義のリストを取得
@@ -1039,7 +1043,6 @@ namespace BusinessLogic_MA0001
                     }
 
                     //// 検索条件データ取得
-                    //getSearchConditionForReport(pageInfo, out dynamic searchCondition);
                     TMQUtil.CommonOutputExcel(
                         reportFactoryId,             // 工場ID
                         this.PgmId,                  // プログラムID
@@ -1071,19 +1074,10 @@ namespace BusinessLogic_MA0001
                     break;
 
                 case "Report":
-                    reportId = "RP0150";
+                    reportId = ReportInfo.ReportIdRP0150;
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
-
-                    //// エクセル出力テスト
-                    //// キー情報を設定
-                    //Key keyInfo1 = new Key("SummaryId"); // 依頼Id
-                    //// 一覧選択データのキーを取得
-                    //List<SelectKeyData> selectKeyDataList1 = getSelectKeyDataForReport<Dao.searchResult>(
-                    //    ConductInfo.FormList.ControlId.SearchResult,     // 一覧のコントールID
-                    //    keyInfo1,                     // 設定したキー情報
-                    //    this.resultInfoDictionary,   // 画面データ
-                    //    true);  // 選択フラグ
+                    userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // ページ情報取得
                     var pageInfo = GetPageInfo(
@@ -1157,9 +1151,10 @@ namespace BusinessLogic_MA0001
                 case ConductInfo.FormDetail.Button.FailureAnalyzeOutput:
                 case ConductInfo.FormDetail.Button.FailureAnalyzeIndividualOutput:
                     //故障原因分析書出力
-                    reportId = "RP0160";
+                    reportId = ReportInfo.ReportIdRP0160;
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                    userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // 帳票定義取得
                     // 出力帳票シート定義のリストを取得
@@ -1235,118 +1230,6 @@ namespace BusinessLogic_MA0001
                     return ComConsts.RETURN_RESULT.NG;
             }
 
-            //bool outputExcel = false;
-            //bool outputPdf = false;
-
-            //// ファイル名
-            //string baseFileName = string.Format("{0:yyyyMMddHHmmss}_{1}_{2}", DateTime.Now, this.ConductId, this.CtrlId);
-
-            //// データ検索
-            //var resultList = searchListForReport();
-            //if (resultList == null || resultList.Count == 0)
-            //{
-            //    // 警告メッセージで終了
-            //    this.Status = CommonProcReturn.ProcStatus.Warning;
-            //    // 「該当データがありません。」
-            //    this.MsgId = GetResMessage(ComRes.ID.ID941060001);
-            //    return result;
-            //}
-
-            //string msg = string.Empty;
-            //if (outputExcel)
-            //{
-            //    // Excel出力が必要な場合
-
-            //    // マッピング情報生成
-            //    // 以下はA列から順番にカラム名リストに一致するデータを行単位でマッピングする
-            //    List<CommonExcelPrtInfo> prtInfoList = CommonExcelUtil.CommonExcelUtil.CreateMappingList(resultList, "Sheet1", 2, "A");
-
-            //    // コマンド情報生成
-            //    // セルの結合や罫線を引く等のコマンド実行が必要な場合はここでセットする。不要な場合はnullでOK
-            //    List<CommonExcelCmdInfo> cmdInfoList = null;
-
-            //    // Excel出力実行
-            //    var excelStream = new MemoryStream();
-            //    if (!CommonExcelUtil.CommonExcelUtil.CreateExcelFile(TemplateName.Report, this.UserId, prtInfoList, cmdInfoList, ref excelStream, ref msg))
-            //    {
-            //        this.Status = CommonProcReturn.ProcStatus.Error;
-            //        // 「Excel出力に失敗しました。」
-            //        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911040001 });
-
-            //        // エラーログ出力
-            //        logger.Error(this.MsgId);
-            //        logger.Error(msg);
-
-            //        return ComConsts.RETURN_RESULT.NG;
-            //    }
-
-            //    if (outputPdf)
-            //    {
-            //        // PDF出力の場合
-
-            //        // PDF出力実行
-            //        var pdfStream = new MemoryStream();
-            //        try
-            //        {
-            //            if (!CommonExcelUtil.CommonExcelUtil.CreatePdfFile(excelStream, ref pdfStream, ref msg))
-            //            {
-            //                pdfStream.Close();
-
-            //                this.Status = CommonProcReturn.ProcStatus.Error;
-            //                // 「PDF出力に失敗しました。」
-            //                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911270004 });
-
-            //                // エラーログ出力
-            //                logger.Error(this.MsgId);
-            //                logger.Error(msg);
-
-            //                return ComConsts.RETURN_RESULT.NG;
-            //            }
-            //        }
-            //        finally
-            //        {
-            //            // ExcelファイルのStreamは閉じる
-            //            excelStream.Close();
-            //        }
-            //        this.OutputFileType = "3";  // PDF
-            //        this.OutputFileName = baseFileName + ".pdf";
-            //        this.OutputStream = pdfStream;
-            //    }
-            //    else
-            //    {
-            //        // Excel出力の場合
-            //        this.OutputFileType = "1";  // Excel
-            //        this.OutputFileName = baseFileName + ".xlsx";
-            //        this.OutputStream = excelStream;
-            //    }
-            //}
-            //else
-            //{
-            //    // CSV出力の場合
-
-            //    // CSV出力実行
-            //    Stream csvStream = new MemoryStream();
-            //    if (!CommonSTDUtil.CommonSTDUtil.CommonSTDUtil.ExportCsvFile(
-            //        resultList, Encoding.GetEncoding("Shift-JIS"), out csvStream, out msg))
-            //    {
-            //        this.Status = CommonProcReturn.ProcStatus.Error;
-            //        // 「CSV出力に失敗しました。」
-            //        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911120007 });
-
-            //        // エラーログ出力
-            //        logger.Error(this.MsgId);
-            //        logger.Error(msg);
-
-            //        return ComConsts.RETURN_RESULT.NG;
-            //    }
-            //    this.OutputFileType = "2";  // CSV
-            //    this.OutputFileName = baseFileName + ".csv";
-            //    this.OutputStream = csvStream;
-            //}
-
-            //// 正常終了
-            //this.Status = CommonProcReturn.ProcStatus.Valid;
-
             return result;
 
         }
@@ -1385,7 +1268,53 @@ namespace BusinessLogic_MA0001
             }
             return new Key(keyParam1, keyParam2, keyParam3);
         }
-#endregion
+
+        #region ファイルダウンロード
+        /// <summary>
+        /// 編集画面　ファイルダウンロード処理
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private int executeDownload(string templateFilePath, string templateFileName)
+        {
+            int result = 0;
+            try
+            {
+                // ファイルをダウンロードさせる
+                var fileStream = new MemoryStream();
+
+                // 実行パス取得
+                string appPath = AppDomain.CurrentDomain.BaseDirectory;
+                string templateFolder = Path.Combine(appPath, CommonWebTemplate.AppCommonObject.Config.AppSettings.DownloadFileDir);
+                templateFolder = Path.Combine(templateFolder, templateFilePath);
+
+                var filePath = string.Format(templateFolder + "\\{0}", templateFileName);
+
+                using (FileStream file = new(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    file.CopyTo(fileStream);
+                }
+                // 画面の出力へ設定
+                this.OutputFileType = CommonConstants.REPORT.FILETYPE.EXCEL;
+                this.OutputFileName = templateFileName;
+                this.OutputStream = fileStream;
+            }
+            catch (Exception ex)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                // 「ダウンロード処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { "941220002", "111160052" });
+                this.LogNo = string.Empty;
+
+                writeErrorLog(this.MsgId, ex);
+                return -1;
+            }
+
+            return result;
+
+        }
+        #endregion
+
+        #endregion
 
     }
 }

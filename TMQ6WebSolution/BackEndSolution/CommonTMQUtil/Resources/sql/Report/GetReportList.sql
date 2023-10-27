@@ -7,7 +7,7 @@ SELECT
 /*@NoConditionOutputPatternId
     1 AS display_order,
 @NoConditionOutputPatternId*/
-    tr.translation_text AS item_name,
+    [dbo].[get_rep_translation_text](rsd.factory_id, rid.control_id , @LanguageId) AS item_name,
     rid.factory_id AS factory_id,
     rid.report_id AS report_id,
     rd.output_item_type AS output_item_type,
@@ -54,11 +54,6 @@ FROM
     INNER JOIN ms_output_report_define rd
         ON rd.factory_id = rsd.factory_id
         AND rd.report_id = rsd.report_id
-    INNER JOIN
-        ms_translation tr
-        ON  rid.control_id = tr.translation_id
-        AND tr.language_id = @LanguageId
-        AND tr.location_structure_id = rsd.factory_id
 -- テンプレート名指定時のみ
 /*@TemplateId
     LEFT OUTER JOIN ms_output_template ot
@@ -85,8 +80,6 @@ AND
 AND 
     rid.delete_flg = 0
 AND
-    tr.delete_flg = 0
-AND
     rsd.factory_id = @FactoryId
 AND
     rsd.report_id = @ReportId
@@ -101,7 +94,7 @@ GROUP BY
     oi.display_order,
 @OutputPatternId*/
 
-    tr.translation_text,
+    [dbo].[get_rep_translation_text](rsd.factory_id, rid.control_id , @LanguageId),
     rid.factory_id,
     rid.report_id,
     rd.output_item_type, 

@@ -118,7 +118,11 @@ namespace CommonWebTemplate.CommonUtil
         /// <summary>
         /// 起動処理名（共通処理DLL：復号化データ取得）
         /// </summary>
-        const string dllProcName_GetDecryptedData = "GetDecryptedData";       
+        const string dllProcName_GetDecryptedData = "GetDecryptedData";
+        /// <summary>
+        /// 起動処理名（共通処理DLL：ユーザID取得）
+        /// </summary>
+        const string dllProcName_GetUserIdByMailAdress = "GetUserIdByMailAdress";
         #endregion
 
         #region === メンバ変数 ===
@@ -1448,6 +1452,63 @@ namespace CommonWebTemplate.CommonUtil
                 if (dicResult.ContainsKey("DecryptedData") && dicResult["DecryptedData"] != null)
                 {
                     decryptedData = dicResult["DecryptedData"].ToString();
+                }
+            }
+
+            //実行ステータスを返却
+            return returnInfo;
+        }
+
+        /// <summary>
+        /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※ユーザID取得用）
+        /// </summary>
+        /// <param name="procData">業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ</param>
+        /// <param name="encryptedData">暗号化データ</param>
+        /// <param name="decryptedData">復号化データ</param>
+        /// <returns></returns>
+        public CommonProcReturn CallDllBusinessLogic_GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out string userId)
+        {
+            // 初期化
+            userId = "";
+
+            //INパラメータ
+            // - 実行条件(JSON文字列)
+            // encryptedData：暗号化データ
+            var conditionList = new List<Dictionary<string, object>>();
+            var condition = new Dictionary<string, object>(){
+                { "MailAdress", mailAdress }
+            };
+            conditionList.Add(condition);
+
+            //業務ロジックDLLコール
+            // - DLL名：BusinessLogic_Common.dll
+            // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
+            // - 起動処理名：GetUserIdByMailAdress
+            CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_GetUserIdByMailAdress, conditionList, out object results);
+
+            // 実行結果より戻り値を取得
+            if (results == null)
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+            Dictionary<string, object> dictionaryResult = results as Dictionary<string, object>;
+            if (!dictionaryResult.ContainsKey("Result"))
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+
+            var dicResults = dictionaryResult["Result"] as List<Dictionary<string, object>>;
+            if (dicResults != null && dicResults.Count > 0)
+            {
+                var dicResult = dicResults[0];
+                // ユーザIDが取得できる場合、戻り値に設定する
+                if (dicResult.ContainsKey("UserId") && dicResult["UserId"] != null)
+                {
+                    userId = dicResult["UserId"].ToString();
                 }
             }
 

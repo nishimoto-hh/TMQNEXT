@@ -150,11 +150,9 @@ facatory_max AS(
     WHERE
         item.structure_group_id = 1760
     AND item.location_structure_id IN (
-                                       SELECT  item.factory_id
-                                       UNION
                                        SELECT 0
                                        UNION
-                                       SELECT dbo.get_target_layer_id(mub.location_structure_id, 1) from ms_user_belong mub where mub.duty_flg = 1 AND mub.user_id = /*userId*/1001 )
+                                       SELECT f.factoryId FROM factory f)
     GROUP BY
         item.structure_id
 )
@@ -192,7 +190,7 @@ FROM
                 /*IF param2 != null && param2 != ''*/
                     /*IF !getNameFlg */
                     -- コードで検索
-                    AND (ex.extension_data LIKE /*param2*/'%') 
+                    AND (ex.extension_data LIKE '%'+/*param2*/'%') 
                     /*END*/
                 /*END*/
                 /*IF getNameFlg */

@@ -66,6 +66,7 @@ const FormList = {
     EnterHistory: {
         Id: "BODY_080_00_LST_0",
         Filter: "BODY_060_00_LST_0",
+        FilterInput: 1,
         TabNo: 2,
         InventoryDifferenceId: 13,
         ControlFlag: 14
@@ -75,6 +76,7 @@ const FormList = {
         ParentId: "BODY_090_00_LST_0",
         Filter: "BODY_070_00_LST_0",
         ChildId: "BODY_100_00_LST_0",
+        FilterInput: 1,
         KeyValueParent: 10,
         KeyValueChild:11
     },
@@ -927,8 +929,23 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     var conditionDataList = [];
 
     // 一覧フィルタ処理実施
-    if (executeListFilter(transTarget, FormList.InventoryList.Id, FormList.Filter.Id, FormList.Filter.Input)) {
-        return [false, conditionDataList];
+    if (ctrlId == FormList.Filter.Id) {
+        //棚卸データ
+        if (executeListFilter(transTarget, FormList.InventoryList.Id, FormList.Filter.Id, FormList.Filter.Input)) {
+            return [false, conditionDataList];
+        }
+    }
+    if (ctrlId == FormList.EnterHistory.Filter) {
+        //棚卸調整データ　入庫一覧
+        if (executeListFilter(transTarget, FormList.EnterHistory.Id, FormList.EnterHistory.Filter, FormList.EnterHistory.FilterInput)) {
+            return [false, conditionDataList];
+        }
+    }
+    if (ctrlId == FormList.IssueHistory.Filter) {
+        //棚卸調整データ　出庫一覧
+        if (executeListFilter(transTarget, FormList.IssueHistory.ParentId, FormList.IssueHistory.Filter, FormList.IssueHistory.FilterInput)) {
+            return [false, conditionDataList];
+        }
     }
 
     if (btn_ctrlId == FormList.ButtonId.IngestNew) {

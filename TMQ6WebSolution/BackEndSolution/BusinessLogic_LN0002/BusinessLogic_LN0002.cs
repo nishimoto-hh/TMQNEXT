@@ -230,7 +230,8 @@ namespace BusinessLogic_LN0002
             {
                 reportId = "RP0090";
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                 //// キー情報を設定
                 //Key keyInfo = new Key("MachineId"); // 長期計画件名ID
@@ -355,7 +356,8 @@ namespace BusinessLogic_LN0002
 
                 reportId = "RP0090";
                 // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                 //// キー情報を設定
                 //Key keyInfo = new Key("LongPlanId"); // 長期計画件名ID

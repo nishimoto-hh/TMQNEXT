@@ -180,6 +180,10 @@ namespace BusinessLogic_Common
                         case "GetDecryptedData":
                             result = this.GetDecryptedData();
                             break;
+                        // 機能ID取得処理
+                        case "GetUserIdByMailAdress":
+                            result = this.GetUserIdByMailAdress();
+                            break;
                         default:
                             break;
                     }
@@ -1096,5 +1100,48 @@ namespace BusinessLogic_Common
             return 0;
         }
         #endregion
+
+        #region ユーザID取得
+        /// <summary>
+        /// メールアドレスからユーザID処理
+        /// </summary>
+        /// <returns>正常終了：0、異常終了：-1</returns>
+        private int GetUserIdByMailAdress()
+        {
+            try
+            {
+                // DB接続
+                this.db = new CommonDBManager(this.rootPath, logger, this.FactoryId, this.UserId);
+                if (!this.db.Connect())
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    // DB接続エラーログ＆メッセージ設定
+                    setDBConnectionErrorLogAndMessage();
+                    return -1;
+                }
+                if (this.searchConditionDictionary != null && this.searchConditionDictionary.Count > 0)
+                {
+                    // 処理呼び出し
+                    var result = ComUtil.GetUserInfoByMailAdress(this.searchConditionDictionary[0], this.db);
+
+                    List<Dictionary<string, object>> resultList = new();
+                    Dictionary<string, object> dicList = new();
+                    dicList.Add("UserId", result.UserId);
+                    resultList.Add(dicList);
+
+                    this.resultInfoDictionary = resultList;
+                }
+            }
+            finally
+            {
+                if (this.db != null)
+                {
+                    this.db.Close();
+                }
+            }
+
+            return 0;
+            #endregion
+        }
     }
 }

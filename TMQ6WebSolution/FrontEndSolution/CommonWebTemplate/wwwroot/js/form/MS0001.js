@@ -661,7 +661,7 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     // 更新対象の構成グループID
     const grpId = parseInt(getValueByOtherForm(MasterFormList.No, MasterFormList.HiddenList.Id, MasterFormList.HiddenList.StructureGroupId, 1, CtrlFlag.Label), 10);
 
-    if (conductId == ConductIdMS1000 || conductId == ConductIdMS1001 || conductId == ConductIdMS1010) {
+    if (conductId == ConductIdMS1000 || conductId == ConductIdMS1001 || conductId == ConductIdMS1010 || conductId == ConductIdMS1020) {
         // 地区/工場、場所階層、職種・機種の場合
 
         // ツリービューの再作成
@@ -670,20 +670,23 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     //// コンボボックスの再作成
     //refreshComboBox(appPath, grpId);
 
-    var btnName = $(btn).attr("name");
-    if (btnName == MasterFormList.ButtonId.Delete) {
-        //  行削除アイコン押下時
-        var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, ',' + grpId);
-        $.each(keys, function (idx, key) {
-            // セッションストレージデータを削除
-            removeSaveDataFromSessionStorageByKey(key);
-        });
-        if (conductId == ConductIdMS1001) {
-            // 実行正常終了後処理（場所階層用）
-            postRegistProcessForMS1001(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
-        } else if (conductId == ConductIdMS1010) {
-            // 実行正常終了後処理（職種・機種用）
-            postRegistProcessForMS1010(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+    if (conductId == ConductIdMS1001 || conductId == ConductIdMS1010) {
+        // 場所階層、職種・機種の場合
+        var btnName = $(btn).attr("name");
+        if (btnName == MasterFormList.ButtonId.Delete) {
+            //  行削除アイコン押下時
+            var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, ',' + grpId);
+            $.each(keys, function (idx, key) {
+                // セッションストレージデータを削除
+                removeSaveDataFromSessionStorageByKey(key);
+            });
+            if (conductId == ConductIdMS1001) {
+                // 実行正常終了後処理（場所階層用）
+                postRegistProcessForMS1001(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+            } else if (conductId == ConductIdMS1010) {
+                // 実行正常終了後処理（職種・機種用）
+                postRegistProcessForMS1010(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+            }
         }
     } else {
         // コンボボックスの再作成

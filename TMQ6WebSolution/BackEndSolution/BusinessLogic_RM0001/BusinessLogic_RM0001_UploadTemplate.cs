@@ -35,7 +35,7 @@ namespace BusinessLogic_RM0001
 
             // TODO
             // アップロード時の工場について選択できるようにする
-            factoryId = int.Parse(this.FactoryId);
+            // factoryId = int.Parse(this.FactoryId);
 
             // テンプレートが未選択の場合
             if (templateId <= 0)
@@ -55,12 +55,12 @@ namespace BusinessLogic_RM0001
             uploadFile(uploadPath, out string filePath, out string fileName);
 
             // 帳票定義の複写登録（テンプレート新規登録時、且つ定義情報未登録時のみ）
-            if(isInsertTemplate == true) {
-                if(!registReportDefineInfo(factoryId, programId, reportId))
-                {
-                    return false;
-                }
-            }
+            //if(isInsertTemplate == true) {
+            //    if(!registReportDefineInfo(factoryId, programId, reportId))
+            //    {
+            //        return false;
+            //    }
+            //}
 
             // テンプレート情報登録処理
             if (!registTemplateInfno(factoryId, programId, reportId, templateId, fileName, isInsertTemplate))
@@ -554,7 +554,7 @@ namespace BusinessLogic_RM0001
             // SQL実行
             var maxTemplateId = db.GetEntity(outSql, getMaxOutputPatternIdParam);
 
-            return maxTemplateId.max_template_id;
+            return maxTemplateId.max_template_id == null ? 0 : maxTemplateId.max_template_id;
         }
         #endregion
     }

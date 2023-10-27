@@ -354,6 +354,107 @@ namespace CommonSTDUtil.CommonSTDUtil
         }
 
         /// <summary>
+        /// ユーザマスタ
+        /// </summary>
+        public class MsUserEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public MsUserEntity()
+            {
+                TableName = "ms_user";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets ユーザID</summary>
+            /// <value>ユーザID</value>
+            public int UserId { get; set; }
+            /// <summary>Gets or sets ログインID</summary>
+            /// <value>ログインID</value>
+            public string LoginId { get; set; }
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
+            /// <summary>Gets or sets 権限レベルID</summary>
+            /// <value>権限レベルID</value>
+            public int AuthorityLevelId { get; set; }
+            /// <summary>Gets or sets ユーザ表示名</summary>
+            /// <value>ユーザ表示名</value>
+            public string DisplayName { get; set; }
+            /// <summary>Gets or sets ユーザ姓</summary>
+            /// <value>ユーザ姓</value>
+            public string FamilyName { get; set; }
+            /// <summary>Gets or sets ユーザ名</summary>
+            /// <value>ユーザ名</value>
+            public string FirstName { get; set; }
+            /// <summary>Gets or sets メールアドレス</summary>
+            /// <value>メールアドレス</value>
+            public string MailAddress { get; set; }
+
+            ///// <summary>
+            ///// プライマリーキー
+            ///// </summary>
+            //public class PrimaryKey
+            //{
+            //    /// <summary>Gets or sets ユーザID</summary>
+            //    /// <value>ユーザID</value>
+            //    public int UserId { get; set; }
+            //    /// <summary>
+            //    /// コンストラクタ
+            //    /// </summary>
+            //    public PrimaryKey(int pUserId)
+            //    {
+            //        UserId = pUserId;
+            //    }
+            //}
+
+            ///// <summary>
+            ///// プライマリーキー情報
+            ///// </summary>
+            ///// <returns>プライマリーキー情報</returns>
+            //public PrimaryKey PK()
+            //{
+            //    PrimaryKey pk = new PrimaryKey(this.UserId);
+            //    return pk;
+            //}
+
+            ///// <summary>
+            ///// エンティティ
+            ///// </summary>
+            ///// <returns>該当のデータを返す</returns>
+            //public MsUserEntity GetEntity(int pUserId, ComDB db)
+            //{
+            //    PrimaryKey condition = new PrimaryKey(pUserId);
+            //    // SQL文生成
+            //    string getEntitySql = getEntity(this.TableName, condition, db);
+            //    if (string.IsNullOrEmpty(getEntitySql))
+            //    {
+            //        return null;
+            //    }
+            //    return db.GetEntityByDataClass<MsUserEntity>(getEntitySql);
+            //}
+            ///// <summary>
+            ///// 主キーを指定してDELETE実行
+            ///// </summary>
+            ///// <returns>エラーの場合False</returns>
+            //public bool DeleteByPrimaryKey(int pUserId, ComDB db)
+            //{
+            //    PrimaryKey condition = new PrimaryKey(pUserId);
+            //    // SQL文生成
+            //    string deleteSql = getDeleteSql(this.TableName, condition, db);
+            //    if (string.IsNullOrEmpty(deleteSql))
+            //    {
+            //        return false;
+            //    }
+            //    int result = db.Regist(deleteSql);
+            //    return result > 0;
+            //}
+        }
+
+
+        /// <summary>
         /// 所属マスタ
         /// </summary>
         public class BelongEntity

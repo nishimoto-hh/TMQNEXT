@@ -76,7 +76,7 @@ main AS(
         /*IF param2 != null && param2 != ''*/
 	        /*IF !getNameFlg */
 	            -- コードで検索
-	            AND (ex.extension_data LIKE /*param2*/'%')
+	            AND (ex.extension_data LIKE '%'+/*param2*/'%')
 	        /*END*/
         /*END*/
 

@@ -198,6 +198,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="DownloadFile\MA0001\MaintenanceInstructInspection.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Template\0\RP0010\1\template_RP0010.xlsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

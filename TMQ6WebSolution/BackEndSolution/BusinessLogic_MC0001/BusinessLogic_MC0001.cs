@@ -19,6 +19,8 @@ using Dao = BusinessLogic_MC0001.BusinessLogicDataClass_MC0001;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_MC0001
 {
@@ -274,6 +276,12 @@ namespace BusinessLogic_MC0001
             public const string BtnDelete = "Delete";
             /// <summary>機器別管理基準 保全項目一覧削除ボタン(非表示)</summary>
             public const string BtnDeleteManagementStandard = "DeleteManagementStandard";
+            /// <summary>出力（様式１）</summary>
+            public const string BtnOutput = "Output";
+            /// <summary>出力（スケジューリング）</summary>
+            public const string BtnOutputSchedule = "OutputSchedule";
+            /// <summary>出力（スケジューリング）</summary>
+            public const string BtnOutputLankSchedule = "OutputLankSchedule";
         }
 
         /// <summary>
@@ -333,6 +341,28 @@ namespace BusinessLogic_MC0001
         /// </summary>
         private bool flgMaintainanceKindManage = false;
 
+        /// <summary>
+        /// スケジュール帳票情報
+        /// </summary>
+        private static class ReportScheduleInfo
+        {
+            // 処理対象帳票ID 長期スケジュール表
+            public const string ReportIdRP0090 = "RP0090";
+            // 処理対象帳票ID 年度スケジュール表
+            public const string ReportIdRP0100 = "RP0100";
+            // 機能ID 機器別長期計画
+            public const string PgmIdLN0002 = "LN0002";
+            // VAL1:表示単位
+            public const string ScheduleCondType = "1";
+            // VAL2:表示年度
+            public const string ScheduleCondYear = "2";
+            // VAL3:表示期間
+            public const string ScheduleCondSpan = "3";
+            // VAL4:月度表示ID
+            public const string ScheduleCondMondStructureId = "4";
+            // スケジュール表示単位 汎用項目SEQ
+            public const int SeqNo = 1;
+        }
         #endregion
 
         #region コンストラクタ
@@ -666,25 +696,20 @@ namespace BusinessLogic_MC0001
 
             int reportFactoryId = 0;
             string reportId = "";
-
-            //// キー情報を設定
-            //Key keyInfo = new Key("MachineId");
-            //List<SelectKeyData> selectKeyDataList = new List<SelectKeyData>();
+            string pgmId = string.Empty;
 
             dynamic searchCondition = null;
 
             Dictionary<int, List<CommonSTDUtil.CommonBusinessLogic.SelectKeyData>> dicSelectKeyDataList = new Dictionary<int, List<SelectKeyData>>();
             string taretListCtrlId = string.Empty;
 
+            // 長期スケジュール用オプションの設定
+            TMQUtil.Option option = null;
+
             switch (this.CtrlId)
             {
                 // エクセル出力テスト
                 case "Report":
-                    //// 一覧選択データのキーを取得
-                    //selectKeyDataList = getSelectKeyDataForReport<Dao.searchResult>(
-                    //    TargetCtrlId.SearchList,     // 一覧のコントールID
-                    //    keyInfo,                     // 設定したキー情報
-                    //    this.resultInfoDictionary);  // 画面データ
                     taretListCtrlId = TargetCtrlId.SearchList;     // 一覧のコントールID
                     // ページ情報取得
                     var pageInfo = GetPageInfo(
@@ -695,27 +720,88 @@ namespace BusinessLogic_MC0001
                     getSearchConditionForReport(pageInfo, out searchCondition);
 
                     reportId = "RP0010";
-
+                    pgmId = this.PgmId;
                     break;
 
                 // 機器別管理基準
-                case "Output":
-                    //TargetCtrlIdManagementStandard.DetailForma1List120,       // 一覧のコントールID
-
-                    //// 一覧選択データのキーを取得
-                    //selectKeyDataList = getSelectKeyDataForReport<Dao.mpInfoHideList>(
-                    //    TargetCtrlId.Detail00,
-                    //    keyInfo,                     // 設定したキー情報
-                    //    this.resultInfoDictionary,
-                    //    false);  // 画面データ
+                case buttonName.BtnOutput:
                     taretListCtrlId = TargetCtrlId.Detail00;     // 一覧のコントールID
 
                     reportId = "RP0060";
+                    pgmId = this.PgmId;
+                    break;
+                // スケジューリング
+                case buttonName.BtnOutputLankSchedule:
+                case buttonName.BtnOutputSchedule:
+                    taretListCtrlId = TargetCtrlId.Detail00;     // 一覧のコントールID
+
+                    // 画面の内容
+                    var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailScheduleConditionList140);
+
+                    // オプションデータを抽出して条件クラスにセットする
+                    TMQDao.ScheduleList.Condition target = new();
+                    string[] values = targetDic["VAL" + ReportScheduleInfo.ScheduleCondSpan].ToString().Split(ComUtil.FromToDelimiter);
+                    target.ExtensionData = getItemExData((int)TMQConst.MsStructure.GroupId.ScheduleDisp,
+                                                        ReportScheduleInfo.SeqNo,
+                                                        int.Parse(targetDic["VAL" + ReportScheduleInfo.ScheduleCondType].ToString()));
+                    target.ScheduleStartYear = int.Parse(targetDic["VAL" + ReportScheduleInfo.ScheduleCondYear].ToString());
+                    target.ScheduleUnit = int.Parse(targetDic["VAL" + ReportScheduleInfo.ScheduleCondType].ToString());
+                    target.ScheduleYear = "";
+                    target.ScheduleYearFrom = int.Parse(values[0]);
+                    target.ScheduleYearTo = int.Parse(values[1]);
+
+                    // 長期スケジュール用オプションの設定
+                    option = new TMQUtil.Option();
+
+                    // 年度開始月
+                    int monthStartNendo = getYearStartMonth();
+                    Dao.Schedule.SearchCondition cond = new(target, monthStartNendo, this.LanguageId);
+                    cond.FactoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
+
+                    // スケジュール表示単位 1:月度、2:年度
+                    if (cond.DisplayUnit == CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.ScheduleDisplayUnit.Month)
+                    {
+                        // 年度スケジュール表の場合、1:月度
+                        option.DisplayUnit = (int)TMQConst.MsStructure.StructureId.ScheduleDisplayUnit.Month;
+                        cond.DisplayUnit = TMQConst.MsStructure.StructureId.ScheduleDisplayUnit.Month;
+                        reportId = ReportScheduleInfo.ReportIdRP0100;
+                    }
+                    else
+                    {
+                        // 長期スケジュール表、2:年度
+                        option.DisplayUnit = (int)TMQConst.MsStructure.StructureId.ScheduleDisplayUnit.Year;
+                        cond.DisplayUnit = TMQConst.MsStructure.StructureId.ScheduleDisplayUnit.Year;
+                        reportId = ReportScheduleInfo.ReportIdRP0090;
+                    }
+                    // 開始年月日
+                    option.StartDate = cond.ScheduleStart;
+                    // 終了年月日
+                    if (reportId == ReportScheduleInfo.ReportIdRP0100)
+                    {
+                        // 年度スケジュールの場合
+                        option.EndDate = ComUtil.GetNendoLastDay(cond.ScheduleStart, monthStartNendo);
+                        cond.ScheduleEnd = ComUtil.GetNendoLastDay(cond.ScheduleStart, monthStartNendo);
+                    }
+                    else
+                    {
+                        option.EndDate = cond.ScheduleEnd;
+                    }
+
+                    // 出力方式 1:件名別、2:機番別、3:予算別
+                    option.OutputMode = TMQUtil.ComReport.OutputMode2;
+                    // 年度開始月
+                    option.MonthStartNendo = monthStartNendo;
+                    // 検索条件クラス
+                    option.Condition = cond;
+                    // 固定で機器別長期計画のプログラムIDを指定
+                    pgmId = ReportScheduleInfo.PgmIdLN0002;
+
                     break;
             }
 
             // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-            reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(int.Parse(this.FactoryId), this.PgmId, reportId, this.db) ? int.Parse(this.FactoryId) : 0;
+            int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+            reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
             // 帳票定義取得
             // 出力帳票シート定義のリストを取得
@@ -753,7 +839,7 @@ namespace BusinessLogic_MC0001
             // エクセル出力共通処理
             TMQUtil.CommonOutputExcel(
                 reportFactoryId,             // 工場ID
-                this.PgmId,                  // プログラムID
+                pgmId,                  // プログラムID
                 dicSelectKeyDataList,        // シートごとのパラメータでの選択キー情報リスト
                 searchCondition,             // 検索条件
                 reportId,                    // 帳票ID
@@ -769,7 +855,8 @@ namespace BusinessLogic_MC0001
                 out string fileName,         // ファイル名
                 out MemoryStream memStream,  // メモリストリーム
                 out string message,          // メッセージ
-                db);
+                db,
+                option);
 
             // OUTPUTパラメータに設定
             this.OutputFileType = fileType;
@@ -779,6 +866,33 @@ namespace BusinessLogic_MC0001
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return ComConsts.RETURN_RESULT.OK;
+            /// <summary>
+            /// アイテム拡張マスタから拡張データを取得する
+            /// </summary>>
+            /// <param name="structureGroupId">構成グループID</param>
+            /// <param name="seq">連番</param
+            /// <param name="structureId">構成ID</param>
+            /// <returns>拡張データ</returns>
+            string getItemExData(short structureGroupId, short seq, int structureId)
+            {
+                string result = null;
+
+                // 構成アイテムを取得するパラメータ設定
+                TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+                // 構成グループID
+                param.StructureGroupId = (int)structureGroupId;
+                // 連番
+                param.Seq = seq;
+                // 構成アイテム、アイテム拡張マスタ情報取得
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
+                if (list != null)
+                {
+                    // 取得情報から拡張データを取得
+                    result = list.Where(x => x.StructureId == structureId).Select(x => x.ExData).FirstOrDefault();
+                }
+                return result;
+            }
+
         }
 
         #endregion
