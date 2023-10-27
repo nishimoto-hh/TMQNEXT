@@ -56,6 +56,10 @@ namespace BusinessLogic_MC0001
             /// </summary>
             public const string SpecDetail70 = "BODY_070_00_LST_1";
             /// <summary>
+            /// 機種別仕様一覧
+            /// </summary>
+            public const string SpecEdit00 = "BODY_000_00_LST_4";
+            /// <summary>
             /// 機種別仕様隠し一覧(詳細画面)
             /// </summary>
             public const string SpecDetail75 = "BODY_075_00_LST_1";
@@ -202,6 +206,24 @@ namespace BusinessLogic_MC0001
             numColumns.Add(info.getValName("numColumn2"));
             numColumns.Add(info.getValName("numColumn3"));
             ConvertResultBigValueAvaible(ctrlId, numColumns);
+
+            //// 2023.09 選択項目表示不具合対応 strat
+            //// 隠し一覧に対して工場IDをセットしコンボ用SQL(C0032)にパラメータとして渡す
+            // ページ情報取得
+            pageInfo = GetPageInfo(this.FormNo == FormType.Detail ? TargetCtrlIdSpec.SpecDetail70 : TargetCtrlIdSpec.SpecEdit00, this.pageInfoList);
+            Dao.searchResult r = new Dao.searchResult();
+            r.FactoryId = (int)factoryId;
+            IList<Dao.searchResult> rs = new List<Dao.searchResult>();
+            rs.Add(r);
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, rs, rs.Count))
+            {
+                // 異常終了
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+            //// 2023.09 選択項目表示不具合対応 end
+
             return true;
         }
 

@@ -52,13 +52,13 @@ SELECT
     ISNULL(pl.unit_price, 0) as unit_price, -- 入庫単価
     SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)) as amount_money,
     FORMAT(pih.inout_datetime,'yyyy/MM') as inout_datetime, -- 検収年月
-    pl.account_structure_id, -- 勘定項目
-    [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,
-    pl.department_structure_id, -- 部門ID
-    [dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, @LanguageId, 1) AS department_cd,
+    pih.account_structure_id, -- 勘定項目
+    [dbo].[get_rep_extension_data](pih.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,
+    pih.department_structure_id, -- 部門ID
+    [dbo].[get_rep_extension_data](pih.department_structure_id, pp.factory_id, @LanguageId, 1) AS department_cd,
 
-    pl.management_no, -- 管理No
-    pl.management_division, -- 管理区分
+    pih.management_no, -- 管理No
+    pih.management_division, -- 管理区分
     '1' AS output_report_location_name_got_flg,                            -- 機能場所名称情報取得済フラグ（帳票用）
     '1' AS output_report_job_name_got_flg                                 -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM pt_inout_history pih -- 受払履歴
@@ -207,17 +207,17 @@ AND
 
 /*@DepartmentIdList
 AND
-    pl.department_structure_id IN @DepartmentIdList 
+    pih.department_structure_id IN @DepartmentIdList 
 @DepartmentIdList*/
 
 /*@ManagementDivision
 AND
-    pl.management_division = @ManagementDivision
+    pih.management_division = @ManagementDivision
 @ManagementDivision*/
 
 /*@ManagementNo
 AND
-    pl.management_no = @ManagementNo
+    pih.management_no = @ManagementNo
 @ManagementNo*/
 
 GROUP BY
@@ -232,10 +232,10 @@ GROUP BY
     ,pl.old_new_structure_id
     ,pl.unit_price
     ,FORMAT(pih.inout_datetime,'yyyy/MM')
-    ,pl.account_structure_id
-    ,pl.department_structure_id
-    ,pl.management_no
-    ,pl.management_division
+    ,pih.account_structure_id
+    ,pih.department_structure_id
+    ,pih.management_no
+    ,pih.management_division
     ,pp.factory_id
 ORDER BY
     -- 棚番、予備品ｺｰﾄﾞNo.、新旧区分、出庫年月、勘定科目、部門コード、管理No、管理区分
@@ -280,8 +280,8 @@ ORDER BY
         AND tra.structure_id = pl.old_new_structure_id
     )
     ,FORMAT(pih.inout_datetime,'yyyy/MM')
-    ,[dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1)
-    ,[dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, @LanguageId, 1)
-    ,pl.management_no
-    ,pl.management_division
+    ,[dbo].[get_rep_extension_data](pih.account_structure_id, pp.factory_id, @LanguageId, 1)
+    ,[dbo].[get_rep_extension_data](pih.department_structure_id, pp.factory_id, @LanguageId, 1)
+    ,pih.management_no
+    ,pih.management_division
 
