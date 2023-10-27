@@ -849,10 +849,12 @@ namespace CommonTMQUtil
                 // IDを取得してリストに追加する処理
                 void addIdList(ref List<int> addList, PropertyInfo prop, T targetRow)
                 {
-                    var structureId = prop.GetValue(targetRow);
-                    if (structureId != null)
+                    var structureIds = prop.GetValue(targetRow);
+                    if (structureIds != null)
                     {
-                        addList.Add(int.Parse(structureId.ToString()));
+                        //カンマ区切りのIDの場合、分割
+                        string[] structureIdList = structureIds.ToString().Split(',');
+                        addList.AddRange(structureIdList.Select(int.Parse).ToList());
                     }
                 }
 
@@ -922,21 +924,39 @@ namespace CommonTMQUtil
                             {
                                 continue;
                             }
-                            // 構成階層ID(地区or職種)
-                            int structureId = int.Parse(value.ToString());
-                            // 取得した階層情報リストの検索元構成IDで絞り込み
-                            StructureGetInfo narrowByStructureId = narrowByProperty.FirstOrDefault(x => x.OrgStructureId == structureId);
-                            if (narrowByStructureId == null)
+
+                            //カンマ区切りのIDの場合、分割
+                            List<string> structureIdList = value.ToString().Split(',').ToList();
+                            List<int> idList = new();
+                            List<string> textList = new();
+                            foreach (string structureIdStr in structureIdList)
                             {
-                                continue;
-                            }
-                            if (!isId && treeViewFlg)
-                            {
-                                //ツリー選択ラベルの場合、[表示文字列]と[構成ID]を「|」区切りで設定
-                                narrowByStructureId.TranslationText = narrowByStructureId.TranslationText + "|" + narrowByStructureId.StructureId;
+                                // 構成階層ID(地区or職種)
+                                int structureId = int.Parse(structureIdStr.ToString());
+                                // 取得した階層情報リストの検索元構成IDで絞り込み
+                                StructureGetInfo narrowByStructureId = narrowByProperty.FirstOrDefault(x => x.OrgStructureId == structureId);
+                                if (narrowByStructureId == null)
+                                {
+                                    continue;
+                                }
+                                if (!isId && treeViewFlg)
+                                {
+                                    //ツリー選択ラベルの場合、[表示文字列]と[構成ID]を「|」区切りで設定
+                                    narrowByStructureId.TranslationText = narrowByStructureId.TranslationText + "|" + narrowByStructureId.StructureId;
+                                }
+                                if (isId)
+                                {
+                                    //構成ID
+                                    idList.Add(narrowByStructureId.StructureId);
+                                }
+                                else
+                                {
+                                    //表示文字列
+                                    textList.Add(narrowByStructureId.TranslationText);
+                                }
                             }
                             // IDor名称を設定
-                            ComUtil.SetPropertyValue<T>(prop, targetRow, isId ? narrowByStructureId.StructureId : narrowByStructureId.TranslationText);
+                            ComUtil.SetPropertyValue<T>(prop, targetRow, isId ? string.Join(',', idList.Distinct().ToList()) : string.Join(',', textList.Distinct().ToList()));
                         }
                     }
                 }
@@ -1937,6 +1957,27 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
+        /// 棚と棚枝番を結合する文字列を取得(重複取得なし)
+        /// </summary>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB接続</param>
+        /// <param name="factoryJoinDic">工場IDと結合文字列の辞書、同じ工場で二度取得しないようにする</param>
+        /// <returns>結合文字列</returns>
+        public static string GetJoinStrOfPartsLocationNoDuplicate(int factoryId, string languageId, ComDB db, ref Dictionary<int, string> factoryJoinDic)
+        {
+            // すでに取得済みなら辞書から値を返す
+            if (factoryJoinDic.ContainsKey(factoryId))
+            {
+                return factoryJoinDic[factoryId];
+            }
+            // 未取得の場合取得し、辞書に追加
+            string joinStr = ComUtil.GetPropertiesMessage(ComRes.ID.ID141260001, languageId, null, db, new List<int> { factoryId });
+            factoryJoinDic.Add(factoryId, joinStr);
+            return joinStr;
+        }
+
+        /// <summary>
         /// 棚番、結合文字、棚枝番より表示用棚番を取得
         /// </summary>
         /// <param name="partsLocation">棚番</param>
@@ -1948,7 +1989,11 @@ namespace CommonTMQUtil
             if (!string.IsNullOrEmpty(partsLocationDetailNo))
             {
                 //棚番＋結合文字＋棚枝番
-                return partsLocation + joinStr + partsLocationDetailNo;
+                StringBuilder sb = new();
+                sb.Append(partsLocation);
+                sb.Append(joinStr);
+                sb.Append(partsLocationDetailNo);
+                return sb.ToString();
             }
             //棚番(棚枝番がNULLまたは空文字の場合)
             return partsLocation;

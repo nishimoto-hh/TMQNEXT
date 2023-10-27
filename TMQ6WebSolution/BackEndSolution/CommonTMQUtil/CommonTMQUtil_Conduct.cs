@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using ComDB = CommonSTDUtil.CommonDBManager.CommonDBManager;
+using ComRes = CommonSTDUtil.CommonResources;
 using TMQDataClass = CommonTMQUtil.TMQCommonDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
@@ -1015,47 +1016,8 @@ namespace CommonTMQUtil
             {
                 /// <summary>SQLファイル格納フォルダ</summary>
                 public const string SubDir = @"Common\HistoryManagement";
-                /// <summary>申請状況を更新する前の入力チェック用SQL</summary>
-                public const string GetCntBeforeUpdateApplicationStatus = "GetCntBeforeUpdateApplicationStatus";
                 /// <summary>申請状況更新SQL</summary>
                 public const string UpdateApplicationStatus = "UpdateApplicationStatus";
-            }
-
-
-
-
-
-
-
-
-            /// <summary>
-            /// 変更管理テーブルの申請状況更新処理前の入力チェック
-            /// </summary>
-            /// <param name="historyManagementId">変更管理ID</param>
-            /// <returns>エラーの場合はTrue</returns>
-            public bool IsErrorBeforeUpdateApplicationStatus(long historyManagementId)
-            {
-                // SQLを取得
-                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetCntBeforeUpdateApplicationStatus, out string chechSql);
-
-                // 検索条件を設定
-                ComDao.HmHistoryManagementEntity condition = new();
-                condition.HistoryManagementId = historyManagementId; // 変更管理
-                condition.ApprovalUserId = this.UserId;              // 承認者ID(ログインユーザーID)
-
-                // ①変更管理データが承認依頼中か判定
-                // ②ログインユーザがシステム管理者か判定
-                // ③変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDか判定
-                // ①・②・③のエラー件数を取得する
-                int? errCnt = this.Db.GetEntity<int?>(chechSql, condition);
-
-                // エラー件数がNULLか1以上の場合はエラー
-                if (errCnt == null || errCnt > 0)
-                {
-                    return true;
-                }
-
-                return false;
             }
 
             /// <summary>
@@ -1117,6 +1079,7 @@ namespace CommonTMQUtil
                             break;
 
                         default:
+                            condition.ApprovalUserId = null;   // 承認者ID
                             break;
                     }
 

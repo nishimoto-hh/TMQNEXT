@@ -20,12 +20,12 @@ SELECT
     target.fixed_asset_no,               -- 固定資産番号
     target.equipment_note,               -- 機器メモ
     target.is_changed_component,         -- 機器別管理基準変更有無
-    'shinsei_conduct' AS conduct_name,   -- 申請機能
     target.application_user_name,        -- 申請者
     target.approval_user_name,           -- 承認者
     target.application_date,             -- 申請日
     target.approval_date,                -- 承認日
     target.application_division_code,    -- 申請区分(拡張項目)
+    target.application_status_code,      -- 申請状況(拡張項目)
     target.value_changed,                -- 値に変更のあった項目
     target.history_management_id,        -- 変更管理ID
     target.history_management_detail_id, -- 変更管理詳細ID
@@ -33,7 +33,18 @@ SELECT
     target.update_serialid,              -- 更新シリアルID(変更管理テーブル)
     target.old_location_structure_id,    -- 場所階層(トランザクションテーブル)
     target.old_job_structure_id,         -- 職種機種(トランザクションテーブル)
-    target.data_type,                    -- 表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)
+
+    ---------- 以下は詳細画面で使用 ----------
+    target.equipment_level_structure_id, -- 機器レベル
+    target.importance_structure_id,      -- 重要度
+    target.conservation_structure_id AS inspection_site_conservation_structure_id, -- 保全方式
+    target.use_segment_structure_id,     -- 使用区分
+    target.circulation_target_flg,       -- 循環対象
+    target.manufacturer_structure_id,    -- メーカー
+    target.maintainance_kind_manage,     -- 点検種別毎管理
+    target.application_reason,           -- 申請理由
+    target.rejection_reason,             -- 否認理由
+
     ---------- 以下は翻訳を取得 ----------
     (
         SELECT
@@ -146,7 +157,7 @@ SELECT
                 AND target.history_management_detail_id = laws.history_management_detail_id FOR XML PATH('')
             )
     ) 
-    END AS applicable_laws_name, -- 適用法規(表示しているデータの種類(data_type)に応じて翻訳を表示する)
+    END AS applicable_laws_name, -- 適用法規 表示しているデータの種類(0:変更管理のデータがない,1:変更管理のデータがある)
     (
         SELECT
             tra.translation_text

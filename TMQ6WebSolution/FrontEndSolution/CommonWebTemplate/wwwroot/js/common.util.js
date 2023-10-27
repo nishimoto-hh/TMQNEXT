@@ -624,6 +624,8 @@ function setDataForMultiSelect(td, msuls, value) {
     });
     checks = null;
 
+    setAttrByNativeJs(msuls, "data-value", value);     //※再生成用に退避
+
     //ﾁｪｯｸ:onの表示名をｾｯﾄ
     var txt = setMutiSelectCheckOnText(td);
 

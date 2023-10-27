@@ -88,10 +88,12 @@ target AS(
         COALESCE(hequipment.date_of_manufacture, cequipment.date_of_manufacture) AS date_of_manufacture,
         COALESCE(hequipment.delivery_date, cequipment.delivery_date) AS delivery_date,
         COALESCE(hequipment.use_segment_structure_id, cequipment.use_segment_structure_id) AS use_segment_structure_id,
-        dbo.get_file_download_info(1610, hequipment.equipment_id) AS file_link_equipment,
-        dbo.get_file_download_info(1600, hmachine.machine_id) AS file_link_machine,
+        COALESCE(dbo.get_file_download_info(1610, hequipment.equipment_id), dbo.get_file_download_info(1610, cequipment.equipment_id)) AS file_link_equipment,
+        COALESCE(dbo.get_file_download_info(1600, hmachine.machine_id), dbo.get_file_download_info(1600, cmachine.machine_id)) AS file_link_machine,
         COALESCE(hequipment.fixed_asset_no, cequipment.fixed_asset_no) AS fixed_asset_no,
         COALESCE(hequipment.equipment_note, cequipment.equipment_note) AS equipment_note,
+        COALESCE(hequipment.circulation_target_flg, cequipment.circulation_target_flg) AS circulation_target_flg,
+        COALESCE(hequipment.maintainance_kind_manage, cequipment.maintainance_kind_manage) AS maintainance_kind_manage,
         CASE
             WHEN hcomponent.hm_management_standards_component_id IS NOT NULL THEN 1
             ELSE 0
@@ -109,10 +111,13 @@ target AS(
         history.approval_date,
         history.history_management_id,
         history.update_serialid,
+        history.application_reason,
+        history.rejection_reason,
         detail.history_management_detail_id,
         hmachine.history_management_detail_id AS machine_history_management_detail_id,
         dbo.get_target_layer_id(hmachine.location_structure_id, 1) AS factory_id,
         division_ex.extension_data AS application_division_code,
+        status_ex.extension_data AS application_status_code,
         machine.location_structure_id AS old_location_structure_id,
         machine.job_structure_id AS old_job_structure_id,
         ---------- 以下は値の変更があった項目(申請区分が「変更申請：20」のデータ)を取得 ----------
@@ -217,6 +222,16 @@ target AS(
                              WHEN (hequipment.equipment_note IS NULL OR hequipment.equipment_note = '') AND (equipment.equipment_note IS NOT NULL AND equipment.equipment_note <> '') THEN 'EquipmentNote_30|' -- 値が削除された場合
                              WHEN hequipment.equipment_note <> equipment.equipment_note THEN 'EquipmentNote_20|' -- 値が変更された場合
                             ELSE '' -- 機器メモ
+                        END + CASE
+                             WHEN hequipment.circulation_target_flg IS NOT NULL AND equipment.circulation_target_flg IS NULL THEN 'CirculationTargetFlg_10|' -- 値が追加された場合
+                             WHEN hequipment.circulation_target_flg IS NULL AND equipment.circulation_target_flg IS NOT NULL THEN 'CirculationTargetFlg_30|' -- 値が削除された場合
+                             WHEN hequipment.circulation_target_flg <> equipment.circulation_target_flg THEN 'CirculationTargetFlg_20|' -- 値が変更された場合
+                            ELSE '' -- 循環対象
+                        END + CASE
+                             WHEN hequipment.maintainance_kind_manage IS NOT NULL AND equipment.maintainance_kind_manage IS NULL THEN 'MaintainanceKindManage_10|' -- 値が追加された場合
+                             WHEN hequipment.maintainance_kind_manage IS NULL AND equipment.maintainance_kind_manage IS NOT NULL THEN 'MaintainanceKindManage_30|' -- 値が削除された場合
+                             WHEN hequipment.maintainance_kind_manage <> equipment.maintainance_kind_manage THEN 'MaintainanceKindManage_20|' -- 値が変更された場合
+                            ELSE '' -- 点検種別毎管理
                         END
                     )
             )
@@ -271,11 +286,20 @@ target AS(
             ms_item_extension division_ex -- アイテムマスタ拡張(申請区分)
         ON  division_ms.structure_item_id = division_ex.item_id
         AND division_ex.sequence_no = 1
+
     WHERE
         -- 「申請データ作成中」「承認依頼中」「差戻中」のデータのみ
         status_ex.extension_data IN('10', '20', '30')
+        -- 「1：機器台帳」のデータのみ
+        AND history.application_conduct_id = 1
+
         /*@DispOnlyMySubject
         -- 自分の件名のみ表示
         AND (history.application_user_id = @UserId OR history.approval_user_id = @UserId)
         @DispOnlyMySubject*/
+
+        /*@IsDetail
+        -- 詳細画面の場合、変更管理IDを指定
+        AND history.history_management_id = @HistoryManagementId
+        @IsDetail*/
 )

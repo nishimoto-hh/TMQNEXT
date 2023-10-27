@@ -2839,6 +2839,7 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
 
     if (isInitallize) {
         //ﾁｪｯｸﾎﾞｯｸｽ選択時ｲﾍﾞﾝﾄ処理を設定
+        $(optioncheck).off('change');
         $(optioncheck).on('change', function () {
             if ($(this).prop('checked')) {
                 //ﾁｪｯｸ：onの場合
@@ -2877,8 +2878,12 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
                     }
                 }
             }
-            //ﾁｪｯｸ:onの表示名をｾｯﾄ
             var td = $(this).closest("td");
+
+            // 保持している選択値を更新
+            var selectVal = getCellVal(td);
+            setAttrByNativeJs(selector, "data-value", selectVal);
+            //ﾁｪｯｸ:onの表示名をｾｯﾄ
             setMutiSelectCheckOnText(td);
         });
     }
@@ -2932,17 +2937,21 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
 
             } else if ($(factoryTd).data('type') == 'treeLabel') {
                 //ツリー選択ラベル
-                paramList.push($(factoryTd).data('structureid'));
+                var factoryId = $(factoryTd).data('structureid');
+                if (factoryId) {
+                    paramList.push(factoryId);
+                }
 
                 //ｲﾍﾞﾝﾄ付与
                 $(factoryTd).get(0).addEventListener('change', function () {
-                    var factoryId = $(this).data('structureid');
+                    factoryId = $(this).data('structureid');
                     var cmbFactoryId = $(selector).data('factoryid');
                     if (cmbFactoryId == null || factoryId != cmbFactoryId) {
                         // 工場IDが変更されたら複数選択チェックボックスの初期化処理を実行する
-                        paramList.push($(factoryTd).data('structureid'));
-                        //選択されている値を取得
-                        var selectVal = getCellVal($(selector).closest("td"));
+                        paramList = [factoryId];
+                        //選択されている値を取得⇒data-value属性から取得する
+                        //var selectVal = getCellVal($(selector).closest("td"));
+                        var selectVal = $(selector).data("value");
                         setAttrByNativeJs(selector, "data-value", selectVal);
                         initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, paramList)
                     }
@@ -2991,6 +3000,9 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
                 }
                 data = filterStructureItemByFactory(data, factoryIdList);
             }
+
+            vals = $(selector).data("value") + '';   //縦棒区切り
+            aryVal = vals.split('|');
             $.each(data, function () {
                 var childli = baseli.clone(true);
 
@@ -3033,6 +3045,10 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
         //ﾁｪｯｸ:onの表示名をｾｯﾄ
         var td = $(selector).closest("td");
         setMutiSelectCheckOnText(td);
+
+        //ﾗﾍﾞﾙ表示用spanﾀｸﾞに表示文字列ｾｯﾄ
+        setLabelingSpan(td, $(td).find(".multisel-text").text());
+
     };
 
     if (data != null) {
@@ -3110,6 +3126,7 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
 
     //ｸﾘｯｸｲﾍﾞﾝﾄを追加
     var text = $(selector).closest("td").find(".multisel-text");
+    $(text).off('click');
     $(text).on('click', function () {
         var td = $(this).closest("td");
         var icon = $(td).find('.multisel-icon');
@@ -3166,6 +3183,7 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
 
     // ｱｲｺﾝｸﾘｯｸで複数選択ﾘｽﾄ展開
     var icon = $(selector).closest("td").find(".multisel-icon");
+    $(icon).off('click');
     $(icon).on('click', function () {
         var text = $(this).closest("td").find(".multisel-text");
         $(text)[0].click();
@@ -7891,6 +7909,7 @@ function dispDataVertical(appPath, data, formNo, isEdit) {
                             //複数選択ﾘｽﾄ(※inoutﾀｸﾞと間違えないように先頭で実施)
                             var msuls = $(td).find('ul.multiSelect');
                             if (msuls != null && msuls.length > 0) {
+                                resetMultiSelectBox(appPath, msuls);
                                 setDataForMultiSelect(td, msuls, value);    //値ｾｯﾄ（複数選択ﾘｽﾄ）
                                 return true;
                             }
@@ -8140,7 +8159,7 @@ function dispDataVertical(appPath, data, formNo, isEdit) {
     });
 
     //連動ｺﾝﾎﾞの選択ﾘｽﾄを再生成
-    var selects = $(tbl).find('tbody select.dynamic')
+    var selects = $(tbl).find('tbody select.dynamic');
     resetComboBox(appPath, selects);
     selects = null;
 
@@ -16349,6 +16368,30 @@ function resetComboBox(appPath, selects, factoryIdList) {
 
 }
 
+/**
+ *  複数選択チェックボックスの選択ﾘｽﾄを再生成
+ *  @param {string} appPath                 ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {Array.<Element>} msuls          ：複数選択チェックボックス
+ */
+function resetMultiSelectBox(appPath, msuls) {
+    if (!msuls || msuls.length == 0) { return; }
+
+    $.each(msuls, function () {
+         // 要素が参照モードなら処理を行わない
+        if ($(this).closest(".ctrlId").data("referencemode") == 1) {
+            return true; // continue
+        }
+        const selector = '#' + $(this).attr('id');
+        const sqlId = $(this).data('sqlid');
+        const param = $(this).data('param');
+        const option = $(this).data('option');
+        const nullCheck = $(this).data('nullcheck');
+
+        initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck);
+    });
+
+}
+
 //★del
 ///**
 // *  検索条件ﾃﾞｰﾀ中間ﾃｰﾌﾞﾙ保存処理（取込用）
@@ -16964,15 +17007,15 @@ function getFactoryIdList(target) {
     var factoryIdList = [];
     var factoryCtrl = null;
     factoryCtrl = $(target).find('[data-factoryctrl="True"]');
-    if (factoryCtrl) {
-        if (factoryCtrl.data('type') == 'treeLabel') {
+    if (factoryCtrl && factoryCtrl.length > 0) {
+        if ($(factoryCtrl).data('type') == 'treeLabel') {
             if ($(factoryCtrl).data('structureid')) {
                 var structureId = parseInt($(factoryCtrl).data('structureid'), 10);
                 if (factoryIdList.indexOf(structureId) < 0) {
                     factoryIdList.push(structureId);
                 }
             }
-            if (factoryCtrl.parents('.addTreeLabel')) {
+            if (factoryCtrl.parents('.addTreeLabel').length > 0) {
                 // 複数ある場合、追加
                 $.each(factoryCtrl, function (idx, ele) {
                     if ($(ele).data('structureid')) {

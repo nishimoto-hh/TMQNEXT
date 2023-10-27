@@ -40,14 +40,14 @@ namespace BusinessLogic_HM0001
         /// <summary>
         /// 表示しているデータの種類
         /// </summary>
-        private enum dataType
+        private enum processMode
         {
             /// <summary>
-            /// トランザクションデータの表示
+            /// トランザクションモード
             /// </summary>
             transaction,
             /// <summary>
-            /// 変更管理データの表示
+            /// 変更管理モード
             /// </summary>
             history
         }
@@ -67,6 +67,8 @@ namespace BusinessLogic_HM0001
             {
                 /// <summary>一覧情報取得SQL</summary>
                 public const string GetHistoryMachineList = "GetHistoryMachineList";
+                /// <summary>申請状況を更新する前の入力チェック用SQL</summary>
+                public const string GetCntBeforeUpdateApplicationStatus = "GetCntBeforeUpdateApplicationStatus";
             }
             /// <summary>
             /// 詳細画面SQL
@@ -75,12 +77,12 @@ namespace BusinessLogic_HM0001
             {
                 /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
                 public const string GetTransactionMachineInfo = "GetTransactionMachineInfo";
-                /// <summary>機番・機器情報(変更管理)取得SQL</summary>
-                public const string GetHistoryMachineInfo = "GetHistoryMachineInfo";
                 /// <summary>保全項目一覧(トランザクション)取得SQL</summary>
                 public const string GetTransactionManagementStandardsList = "GetTransactionManagementStandardsList";
                 /// <summary>保全項目一覧(変更管理)取得SQL</summary>
                 public const string GetHistoryManagementStandardsList = "GetHistoryManagementStandardsList";
+                /// <summary>ボタンクリック権限取得SQL(ボタン表示/非表示用)</summary>
+                public const string GetIsAbleToClickBtn = "GetIsAbleToClickBtn";
             }
             /// <summary>
             /// 編集画面SQL
@@ -350,8 +352,6 @@ namespace BusinessLogic_HM0001
         #endregion
 
         #region privateメソッド
-
-
         /// <summary>
         /// 変更があった項目を取得
         /// </summary>
@@ -391,7 +391,6 @@ namespace BusinessLogic_HM0001
             }
         }
 
-
         /// <summary>
         /// トランザクションデータと変更管理データの差異に応じて背景色を設定
         /// </summary>
@@ -428,7 +427,6 @@ namespace BusinessLogic_HM0001
 
             return itemName + "_" + applicationDivision.ToString() + "|";
         }
-
 
 
 

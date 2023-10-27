@@ -2,34 +2,6 @@
  *  機能名　    ：   【MS0010】ユーザーメンテナンスマスタ
  * ======================================================================== */
 
-/**
- * 自身の相対パスを取得
- */
-//function getPath() {
-//    var root;
-//    var scripts = document.getElementsByTagName("script");
-//    var i = scripts.length;
-//    while (i--) {
-//        var match = scripts[i].src.match(/(^|.*\/)MS0010\.js$/);
-//        if (match) {
-//            root = match[1];
-//            break;
-//        }
-//    }
-//    return root;
-//}
-//// tmqcommon.jsが二重に呼び出されると定数の宣言などでエラーとなるので、既に呼び出されている場合は読み込まないように対応
-//var isExistsTmqCommon = false;
-//$.each(document.scripts, function (idx, value) {
-//    if (value.src.indexOf('tmqcommon') > 0) {
-//        isExistsTmqCommon = true;
-//    }
-//});
-//if (!isExistsTmqCommon) {
-//    document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
-//}
-//document.write("<script src=\"" + getPath() + "/tmqmaster.js\"></script>");
-
 // 機能ID
 const ConductId_MS0010 = "MS0010";
 
@@ -47,6 +19,7 @@ const MS0010_FormList = {
         UserId: 1,                              // ユーザーID
         LoginId: 3,                             // ログインID
         AuthLevel: 4,                           // 権限レベル
+        PassWord: 5,                            // パスワード
         Language: 6,                            // 言語
         Delete: 10,                             // 削除
         ExData: 13,                             // 拡張データ
@@ -160,6 +133,10 @@ function initFormOriginalForMS0010(appPath, conductId, formNo, articleForm, curP
 
         // 状況に合わせたタイトルの変更
         changeTittle();
+
+        // パスワードの項目設定
+        var password = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.PassWord, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
+        setAttrByNativeJs(password, "type", "password");
     }
 }
 
@@ -341,7 +318,7 @@ function registCheckPre(appPath, conductId, formNo, btn) {
                 // 『削除してよろしいですか？』
                 setAttrByNativeJs(btn, 'data-message', P_ComMsgTranslated[941110001]);
             }
-       }
+        }
     }
     return true;
 }

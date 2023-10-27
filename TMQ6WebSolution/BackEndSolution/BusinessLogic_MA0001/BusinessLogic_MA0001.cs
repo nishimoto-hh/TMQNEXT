@@ -46,6 +46,8 @@ namespace BusinessLogic_MA0001
             {
                 /// <summary>SQL名：一覧取得</summary>
                 public const string GetList = "GetMaintenanceList";
+                /// <summary>SQL名：一覧取得(件名単位に取得するSQL)</summary>
+                public const string AddGetList = "ADD_GetMaintenanceList";
                 /// <summary>SQL名：ユーザ役割取得</summary>
                 public const string GetUserRole = "GetUserRole";
             }

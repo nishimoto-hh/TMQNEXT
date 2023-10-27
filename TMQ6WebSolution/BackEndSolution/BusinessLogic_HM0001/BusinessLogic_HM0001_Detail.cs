@@ -41,7 +41,7 @@ namespace BusinessLogic_HM0001
             }
 
             //　保全項目一覧
-            if(!searchManagementStandardsList(condition))
+            if (!searchManagementStandardsList(condition))
             {
                 return false;
             }
@@ -60,8 +60,21 @@ namespace BusinessLogic_HM0001
             var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormList.ControlId.List);
 
             // 変更管理ID、機番ID、データタイプ(トランザクションのデータか変更管理のデータか)を取得
-            SetDataClassFromDictionary(targetDic, ConductInfo.FormList.ControlId.List, condition, new List<string> { "HistoryManagementId", "MachineId", "DataType" });
-            condition.LanguageId = this.LanguageId; // 言語ID
+            SetDataClassFromDictionary(targetDic, ConductInfo.FormList.ControlId.List, condition, new List<string> { "HistoryManagementId", "MachineId" });
+            condition.LanguageId = this.LanguageId;    // 言語ID
+            condition.UserId = int.Parse(this.UserId); // ログインユーザID
+
+            // 変更管理IDの有無で処理モードを設定
+            if (condition.HistoryManagementId == null || condition.HistoryManagementId == 0)
+            {
+                // 変更管理IDなし の場合、トランザクションモード
+                condition.ProcessMode = (int)processMode.transaction;
+            }
+            else
+            {
+                // 変更管理IDあり の場合、変更管理モード
+                condition.ProcessMode = (int)processMode.history;
+            }
 
             return condition;
         }
@@ -75,14 +88,20 @@ namespace BusinessLogic_HM0001
         {
             // 表示するデータタイプに応じたSQLを取得
             string sqlName = string.Empty;
-            switch (condition.DataType)
+            string withSql = string.Empty;
+
+            switch (condition.ProcessMode)
             {
-                case (int)dataType.transaction: // トランザクションデータ
+                case (int)processMode.transaction: // トランザクションデータ
                     sqlName = SqlName.Detail.GetTransactionMachineInfo;
                     break;
 
-                case (int)dataType.history: // 変更管理データ
-                    sqlName = SqlName.Detail.GetHistoryMachineInfo;
+                case (int)processMode.history: // 変更管理データ
+                    sqlName = SqlName.List.GetHistoryMachineList;
+
+                    // WITH句取得
+                    TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string outWithSql, new List<string>() { "IsDetail" });
+                    withSql = outWithSql;
                     break;
                 default:
                     // 該当しない場合はエラー
@@ -93,8 +112,14 @@ namespace BusinessLogic_HM0001
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string sql);
 
             // SQL実行
-            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, condition);
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(withSql + sql, condition);
             if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            // ボタン表示/非表示フラグを取得
+            if (!GetIsAbleToClickBtn(results[0], condition))
             {
                 return false;
             }
@@ -106,6 +131,9 @@ namespace BusinessLogic_HM0001
             // 変更があった項目を取得
             getValueChangedItem(results);
 
+            // 処理モードを検索結果に設定
+            results[0].ProcessMode = condition.ProcessMode;
+
             // 検索結果の設定(機番情報)
             if (!setSearchResult(ConductInfo.FormDetail.GroupNoMachine))
             {
@@ -113,7 +141,7 @@ namespace BusinessLogic_HM0001
             }
 
             // 検索結果の設定(機器情報)
-            if(!setSearchResult(ConductInfo.FormDetail.GroupNoEquipment))
+            if (!setSearchResult(ConductInfo.FormDetail.GroupNoEquipment))
             {
                 return false;
             }
@@ -142,9 +170,32 @@ namespace BusinessLogic_HM0001
             }
         }
 
+        /// <summary>
+        /// ボタン表示/非表示フラグ取得
+        /// </summary>
+        /// <param name="result">検索結果</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool GetIsAbleToClickBtn(Dao.searchResult result, Dao.detailSearchCondition condition)
+        {
+            // SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetIsAbleToClickBtn, out string sql);
+
+            // SQL実行
+            IList<Dao.searchResult> isAble = db.GetListByDataClass<Dao.searchResult>(sql, condition);
+            if (isAble == null || isAble.Count == 0)
+            {
+                return false;
+            }
+
+            // 取得結果を設定
+            result.IsCertified = isAble[0].IsCertified;               // 申請の申請者またはシステム管理者の場合「1」、それ以外は「0」
+            result.IsCertifiedFactory = isAble[0].IsCertifiedFactory; // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」それ以外は「0」
+
+            return true;
+        }
 
         /// <summary>
-        /// 保全項目一覧 検索処理 
+        /// 保全項目一覧 検索処理
         /// </summary>
         /// <param name="condition">検索条件</param>
         /// <returns>エラーの場合はFalse</returns>
@@ -152,13 +203,13 @@ namespace BusinessLogic_HM0001
         {
             // 表示するデータタイプに応じたSQLを取得
             string sqlName = string.Empty;
-            switch (condition.DataType)
+            switch (condition.ProcessMode)
             {
-                case (int)dataType.transaction: // トランザクションデータ
+                case (int)processMode.transaction: // トランザクションデータ
                     sqlName = SqlName.Detail.GetTransactionManagementStandardsList;
                     break;
 
-                case (int)dataType.history: // 変更管理データ
+                case (int)processMode.history: // 変更管理データ
                     sqlName = SqlName.Detail.GetHistoryManagementStandardsList;
                     break;
                 default:
@@ -166,6 +217,7 @@ namespace BusinessLogic_HM0001
                     return false;
             }
 
+            return true;
             // SQL取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string sql);
 

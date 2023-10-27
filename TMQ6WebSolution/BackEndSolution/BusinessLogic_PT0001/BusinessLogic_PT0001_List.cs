@@ -102,12 +102,14 @@ namespace BusinessLogic_PT0001
             {
                 // 棚番と枝番がある場合は結合
                 string joinStr = string.Empty;
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
                 foreach (Dao.searchResult result in results)
                 {
                     if (!string.IsNullOrEmpty(result.RackName) && !string.IsNullOrEmpty(result.PartsLocationDetailNo))
                     {
                         // 結合文字列を取得
-                        joinStr = TMQUtil.GetJoinStrOfPartsLocation((int)result.DefaultFactoryId, this.LanguageId, db);
+                        joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate((int)result.DefaultFactoryId, this.LanguageId, db, ref factoryJoinDic);
                         // 棚番 + 枝番
                         result.RackName = TMQUtil.GetDisplayPartsLocation(result.RackName, result.PartsLocationDetailNo, joinStr);
                     }

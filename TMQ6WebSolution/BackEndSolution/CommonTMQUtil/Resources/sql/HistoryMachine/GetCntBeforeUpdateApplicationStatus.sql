@@ -1,12 +1,8 @@
----------- ①+②+③の結果の合計値をエラー件数とする ----------
 SELECT
+    ---------- ①変更管理データの申請区分の拡張項目を取得 ----------
     (
-    ---------- ①変更管理データが承認依頼中か判定 ----------
         SELECT
-            CASE
-                WHEN ex.extension_data = '20' THEN 0
-                ELSE 1
-            END AS cnt
+            ex.extension_data
         FROM
             hm_history_management history
             LEFT JOIN
@@ -19,8 +15,9 @@ SELECT
             AND ex.sequence_no = 1
         WHERE
             history.history_management_id = @HistoryManagementId
-    ) + (
-    ---------- ②ログインユーザがシステム管理者か判定 ----------
+    ) AS application_status,
+    (
+        ---------- ②ログインユーザがシステム管理者か判定 ----------
         SELECT
             CASE
                 WHEN ex.extension_data = '99' THEN 0
@@ -39,10 +36,10 @@ SELECT
         WHERE
             mu.user_id = @ApprovalUserId
     ) + (
-    ---------- ③変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDか判定 ----------
+        ---------- ③変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDか判定 ----------
         SELECT
             CASE
-                WHEN ex.extension_data = 1001 THEN 0
+                WHEN ex.extension_data = @ApprovalUserId THEN 0
                 ELSE 1
             END AS cnt
         FROM

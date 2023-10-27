@@ -100,6 +100,9 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 申請区分(拡張項目)</summary>
             /// <value>申請区分(拡張項目)</value>
             public string ApplicationDivisionCode { get; set; }
+            /// <summary>Gets or sets 申請状況(拡張項目)</summary>
+            /// <value>申請状況(拡張項目)</value>
+            public string ApplicationStatusCode { get; set; }
             /// <summary>Gets or sets 変更のあった項目</summary>
             /// <value>変更のあった項目</value>
             public string ValueChanged { get; set; }
@@ -109,9 +112,18 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 変更管理詳細ID(機番情報変更管理テーブル)</summary>
             /// <value>変更管理詳細ID(機番情報変更管理テーブル)</value>
             public long MachineHistoryManagementDetailId { get; set; }
-            /// <summary>Gets or sets 表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</summary>
-            /// <value>表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</value>
-            public int DataType { get; set; }
+            /// <summary>Gets or sets 処理モード(0：トランザクションモード、1：変更管理モード)</summary>
+            /// <value>処理モード(0：トランザクションモード、1：変更管理モード)</value>
+            public int ProcessMode { get; set; }
+            /// <summary>Gets or sets 承認者フラグ(0：承認権限無し、承認権限有り)</summary>
+            /// <value>承認者フラグ(0：承認権限無し、承認権限有り)</value>
+            public int AbleApproval { get; set; }
+            /// <summary>Gets or sets ボタン表示制御フラグ(申請の申請者かシステム管理者の場合は「1」)</summary>
+            /// <value>ボタン表示制御フラグ(申請の申請者かシステム管理者の場合は「1」)</value>
+            public int IsCertified { get; set; }
+            /// <summary>Gets or sets ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」)</summary>
+            /// <value>ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」)</value>
+            public int IsCertifiedFactory { get; set; }
 
             #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
@@ -284,12 +296,15 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long MachineId { get; set; }
-            /// <summary>Gets or sets 表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</summary>
-            /// <value>表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</value>
-            public int DataType { get; set; }
+            /// <summary>Gets or sets 処理モード(0:トランザクションモード,1:変更管理モード)</summary>
+            /// <value>処理モード(0:トランザクションモード,1:変更管理モード)</value>
+            public int ProcessMode { get; set; }
             /// <summary>Gets or sets 言語ID</summary>
             /// <value>言語ID</value>
             public string LanguageId { get; set; }
+            /// <summary>Gets or sets ログインユーザID</summary>
+            /// <value>ログインユーザID</value>
+            public int UserId { get; set; }
         }
     }
 }

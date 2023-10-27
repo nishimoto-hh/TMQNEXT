@@ -103,30 +103,30 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 設備名称</summary>
             /// <value>設備名称</value>
             public string FacilityName { get; set; }
-            /// <summary>Gets or sets 職種機種階層ID</summary>
-            /// <value>職種機種階層ID</value>
-            public int JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID(カンマ区切り)</summary>
+            /// <value>職種機種階層ID(カンマ区切り)</value>
+            public string JobStructureId { get; set; }
             /// <summary>Gets or sets 職種ID</summary>
             /// <value>職種ID</value>
-            public int? JobId { get; set; }
+            public string JobId { get; set; }
             /// <summary>Gets or sets 職種名称</summary>
             /// <value>職種名称</value>
             public string JobName { get; set; }
             /// <summary>Gets or sets 機種大分類ID</summary>
             /// <value>機種大分類ID</value>
-            public int? LargeClassficationId { get; set; }
+            public string LargeClassficationId { get; set; }
             /// <summary>Gets or sets 機種大分類名称</summary>
             /// <value>機種大分類名称</value>
             public string LargeClassficationName { get; set; }
             /// <summary>Gets or sets 機種中分類ID</summary>
             /// <value>機種中分類ID</value>
-            public int? MiddleClassficationId { get; set; }
+            public string MiddleClassficationId { get; set; }
             /// <summary>Gets or sets 機種中分類名称</summary>
             /// <value>機種中分類名称</value>
             public string MiddleClassficationName { get; set; }
             /// <summary>Gets or sets 機種小分類ID</summary>
             /// <value>機種小分類ID</value>
-            public int? SmallClassficationId { get; set; }
+            public string SmallClassficationId { get; set; }
             /// <summary>Gets or sets 機種小分類名称</summary>
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }

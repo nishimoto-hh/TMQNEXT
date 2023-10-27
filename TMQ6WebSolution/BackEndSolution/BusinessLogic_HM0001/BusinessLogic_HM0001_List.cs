@@ -180,7 +180,6 @@ namespace BusinessLogic_HM0001
             }
         }
         #endregion
-
         #region 登録
 
         /// <summary>
@@ -220,8 +219,11 @@ namespace BusinessLogic_HM0001
                 SetDeleteConditionByDataClass(selectedRow, ConductInfo.FormList.ControlId.List, condition, new List<string> { "HistoryManagementId" });
 
                 // 入力チェック
-                if(historyManagement.IsErrorBeforeUpdateApplicationStatus(condition.HistoryManagementId))
+                if (isErrorBeforeUpdateApplicationStatus(condition, this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll, out string[] errMsg))
                 {
+                    // エラーメッセージを設定
+                    this.MsgId = GetResMessage(errMsg);
+                    this.Status = CommonProcReturn.ProcStatus.Error;
                     return false;
                 }
 
@@ -233,12 +235,53 @@ namespace BusinessLogic_HM0001
             }
 
             // 一覧の再検索
-            if(!searchList(false))
+            if (!searchList(false))
             {
                 return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 変更管理テーブルの申請状況更新処理前の入力チェック
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="isApproval">承認の場合はTrue、否認の場合はFalse</param>
+        /// <param name="errMsg">エラーの場合のエラーメッセージ</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isErrorBeforeUpdateApplicationStatus(ComDao.HmHistoryManagementEntity condition, bool isApproval, out string[] errMsg)
+        {
+            errMsg = null;
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetCntBeforeUpdateApplicationStatus, out string checkSql);
+
+            // 検索条件を設定
+            condition.ApprovalUserId = int.Parse(this.UserId); // 承認者ID(ログインユーザーID)
+
+            // ①変更管理データの申請区分の拡張項目を取得
+            // ②-1「ログインユーザがシステム管理者か判定」
+            // ②-2「変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDか判定」
+            var errInfo = this.db.GetEntity(checkSql, condition);
+
+            // 申請状況が「承認依頼中」以外の場合はエラー
+            if (errInfo.application_status != ((int)TMQConst.MsStructure.StructureId.ApplicationStatus.Request).ToString())
+            {
+                // 承認依頼中でない変更管理が選択されています。
+                errMsg = new string[] { ComRes.ID.ID141190002, ComRes.ID.ID131120042, ComRes.ID.ID111290002 };
+                return true;
+            }
+
+            // エラー件数がNULLか1以上の場合はエラー
+            if (errInfo.errCnt == null || errInfo.errCnt > 0)
+            {
+                // 選択された変更管理を(承認・否認)する権限がありません。
+                errMsg = new string[] { ComRes.ID.ID141140003, ComRes.ID.ID111290002, isApproval ? ComRes.ID.ID111120228 : ComRes.ID.ID111270036 };
+                return true;
+            }
+
+            return false;
         }
         #endregion
     }

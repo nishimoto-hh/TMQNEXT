@@ -74,6 +74,9 @@ const PT0007_SubjectList_CtrlId = "BODY_070_00_LST_0";
 // 予備品一覧▶移庫入力(部門移庫)
 const PT0007_DepartmentList_CtrlId = "BODY_090_00_LST_0";
 
+// 機器台帳変更管理一覧
+const HM0001_List_CtrlId = "BODY_040_00_LST_0";
+
 /**
  * スケジュール表示の表示単位
  */
@@ -1419,6 +1422,20 @@ function getParamToPT0007FromPT0001(CtrlId, PartsId) {
     conditionData['CTRLID'] = CtrlId;
     conditionData['FORMNO'] = 0;
     conditionData['VAL34'] = PartsId;
+    return conditionData;
+}
+
+/**
+ * 機器台帳変更管理 詳細画面への遷移パラメータを作成する
+ * @param {any} HistoryManagementId 変更管理ID
+ * @param {any} MachineId           機番ID
+ */
+function getParamToHM0001FormDetail(HistoryManagementId, MachineId) {
+    var conditionData = {};
+    conditionData['CTRLID'] = HM0001_List_CtrlId;
+    conditionData['FORMNO'] = 0;
+    conditionData['VAL41'] = HistoryManagementId;
+    conditionData['VAL43'] = MachineId;
     return conditionData;
 }
 
@@ -3502,6 +3519,65 @@ function isChangeList(ctrlId) {
         table = null;
     }
     return flg;
+}
+
+
+/**
+ * 変更管理 背景色変更共通処理
+ * @param {any} tbl                        検索結果
+ * @param {any} applicationDivisionCodeVal 申請区分の拡張項目を表示している列の項目番号
+ * @param {any} valueChangedVal            変更のあった項目を表示している列の項目番号
+ * @param {any} columnNoList               項目名と項目番号
+ */
+function commonChangeBackGroundColor(tbl, applicationDivisionCodeVal, valueChangedVal, columnNoList) {
+
+    // 検索結果のレコードを取得
+    var table = $(tbl.element).find(".tabulator-table").children();
+
+    // 取得できなければ何もしない
+    if (!$(table).length) {
+        return;
+    }
+
+    var applicationDivisionCode; // 申請区分(拡張項目)
+    var valueChanged;            // 変更のあった項目名
+    var colName;                 // 背景色を変更する項目名(列名と申請区分に分割)
+
+    $.each($(table), function (idx, row) {
+
+        // 申請区分(拡張項目)の値を取得
+        applicationDivisionCode = $(row).find("div[tabulator-field='VAL" + applicationDivisionCodeVal + "']")[0].innerText;
+
+        // 背景色を変更
+        if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) {
+
+            // 申請区分が「10：新規登録申請」、「30：削除申請」
+            changeBackGroundColorTabulator(row, applicationDivisionCode);
+
+        }
+        else if (applicationDivisionCode == ApplicationDivision.Update) {
+
+            // 申請区分が「20：変更申請」
+            // 変更のあった項目名を取得(「|」区切りになっているので分割)
+            valueChanged = ($(row).find("div[tabulator-field='VAL" + valueChangedVal + "']")[0].innerText).split("|");
+
+            valueChanged.forEach(function (columnDetail, colIdx) {
+
+                // 変更のあった項目の列名が存在する場合
+                if ((columnDetail.trim()).length) {
+
+                    // 列名と申請区分に分割
+                    colName = columnDetail.split("_");
+
+                    if (columnNoList[colName[0]]) {
+                        // 背景色変更処理
+                        changeBackGroundColorTabulator(row, colName[1], columnNoList[colName[0]]);
+                    }
+                }
+            }, row);
+        }
+    });
+
 }
 
 /**

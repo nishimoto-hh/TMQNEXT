@@ -71,7 +71,7 @@ namespace BusinessLogic_MA0001
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
             // SQL、WHERE句、WITH句より件数取得SQLを作成
-            string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
+            //string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
             //// 総件数を取得
             //int cnt = db.GetCount(executeSql, whereParam);
             //// 総件数のチェック
@@ -86,11 +86,15 @@ namespace BusinessLogic_MA0001
             //}
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            // 件名単位に集約するSQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.AddGetList, out string addSql);
             var selectSql = new StringBuilder(executeSql);
+            selectSql.AppendLine(addSql);
             selectSql.AppendLine("ORDER BY");
             selectSql.AppendLine("occurrence_date desc");
             selectSql.AppendLine(",summary_id desc");
+
             // 一覧検索実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
@@ -106,11 +110,8 @@ namespace BusinessLogic_MA0001
             // 地区～設備、職種～機種小分類、原因性格1、原因性格2を設定
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.FailureCause }, this.db, this.LanguageId);
 
-            //一覧表示は件名単位にするため、集約する（SQLで集約すると詳細検索ができない項目が発生する為、ここで行う）
-            IList<Dao.searchResult> displayList = createDisplayList(results);
-
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, displayList, results.Count, isDetailConditionApplied))
+            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -178,80 +179,6 @@ namespace BusinessLogic_MA0001
                 // グルーバル変数に値を格納(遷移時は「SummaryId」に保全スケジュール詳細IDが入っている)
                 SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey, conditionObj.SummaryId);
             }
-        }
-
-        /// <summary>
-        /// 一覧に表示するデータを件名単位に集約する
-        /// </summary>
-        /// <param name="results">検索結果</param>
-        /// <returns>集約したデータ</returns>
-        private IList<Dao.searchResult> createDisplayList(IList<Dao.searchResult> results)
-        {
-            IList<Dao.searchResult> displayList = new List<Dao.searchResult>();
-            List<long> summaryIdList = results.Select(x => x.SummaryId).Distinct().ToList();
-            foreach (long summaryId in summaryIdList)
-            {
-                //集約対象の行を取得
-                IList<Dao.searchResult> targetList = results.Where(x => x.SummaryId == summaryId).ToList();
-                if (targetList.Count() == 1)
-                {
-                    if (targetList[0].FollowPlanDate != null)
-                    {
-                        //フォロー予定年月 表示用項目に値設定
-                        DateTime date = targetList[0].FollowPlanDate ?? DateTime.Now;
-                        targetList[0].FollowPlanDateDisp = date.ToString(GetResMessage(ComRes.ID.ID150000002));
-                    }
-                    displayList.Add(targetList[0]);
-                    continue;
-                }
-                //機器番号
-                List<string> machineNoList = targetList.Where(x => x.MachineNo != null).Select(x => x.MachineNo).Distinct().ToList();
-                string machineNo = string.Join(",", machineNoList);
-                //機器名称
-                List<string> machineNameList = targetList.Where(x => x.MachineName != null).Select(x => x.MachineName).Distinct().ToList();
-                string machineName = string.Join(",", machineNameList);
-                //職種
-                List<string> jobNameList = targetList.Where(x => x.JobName != null).Select(x => x.JobName).Distinct().ToList();
-                string jobName = string.Join(",", jobNameList);
-                //機種大分類
-                List<string> largeClassficationNameList = targetList.Where(x => x.LargeClassficationName != null).Select(x => x.LargeClassficationName).Distinct().ToList();
-                string largeClassficationName = string.Join(",", largeClassficationNameList);
-                //機種中分類
-                List<string> middleClassficationNameList = targetList.Where(x => x.MiddleClassficationName != null).Select(x => x.MiddleClassficationName).Distinct().ToList();
-                string middleClassficationName = string.Join(",", middleClassficationNameList);
-                //機種小分類
-                List<string> smallClassficationNameList = targetList.Where(x => x.SmallClassficationName != null).Select(x => x.SmallClassficationName).Distinct().ToList();
-                string smallClassficationName = string.Join(",", smallClassficationNameList);
-                //保全部位
-                List<string> maintenanceSiteList = targetList.Where(x => x.MaintenanceSiteName != null).Select(x => x.MaintenanceSiteName).Distinct().ToList();
-                string maintenanceSite = string.Join(",", maintenanceSiteList);
-                //保全内容
-                List<string> maintenanceContentList = targetList.Where(x => x.MaintenanceContentName != null).Select(x => x.MaintenanceContentName).Distinct().ToList();
-                string maintenanceContent = string.Join(",", maintenanceContentList);
-                //フォロー有無(trueのものが1件以上ある場合、true)
-                bool followFlg = targetList.Where(x => x.FollowFlg != null && (x.FollowFlg ?? false)).Select(x => x.FollowFlg).Count() > 0;
-                //フォロー予定年月
-                List<string> followPlanDateList = targetList.Where(x => x.FollowPlanDate != null).Select(x => (x.FollowPlanDate ?? DateTime.Now).ToString(GetResMessage(ComRes.ID.ID150000002))).Distinct().ToList();
-                string followPlanDate = string.Join(",", followPlanDateList);
-                //フォロー内容
-                List<string> followContentList = targetList.Where(x => x.FollowContent != null).Select(x => x.FollowContent).Distinct().ToList();
-                string followContent = string.Join(",", followContentList);
-
-                Dao.searchResult info = targetList[0];
-                info.MachineNo = machineNo;
-                info.MachineName = machineName;
-                info.JobName = jobName;
-                info.LargeClassficationName = largeClassficationName;
-                info.MiddleClassficationName = middleClassficationName;
-                info.SmallClassficationName = smallClassficationName;
-                info.MaintenanceSiteName = maintenanceSite;
-                info.MaintenanceContentName = maintenanceContent;
-                info.FollowFlg = followFlg;
-                info.FollowPlanDateDisp = followPlanDate;
-                info.FollowContent = followContent;
-                displayList.Add(info);
-            }
-            return displayList;
         }
 
         /// <summary>

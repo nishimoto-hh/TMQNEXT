@@ -47,7 +47,8 @@ SELECT
     parts.parts_location_detail_no,                                                                          -- 棚枝番
     COALESCE(parts.lead_time, 0) AS lead_time,                                                               -- 発注点
     COALESCE(parts.order_quantity, 0) AS order_quantity,                                                     -- 発注量
-    parts.parts_no + ' ' + label.department_code + ' ' + label.subject_code AS qrc,                          -- QRコード
+    'YN'+RIGHT('     ' + CONVERT(NVARCHAR, parts.parts_no), 5) 
+    + ' ' + label.department_code + ' ' + label.subject_code AS qrc,                                         -- QRコード(parts_no標記変更 by AEC)	
             ---------------------------------- 以下は翻訳を取得 ----------------------------------
     (
       SELECT

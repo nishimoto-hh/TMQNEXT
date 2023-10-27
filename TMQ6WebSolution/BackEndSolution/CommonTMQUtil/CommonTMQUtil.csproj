@@ -173,9 +173,11 @@
     <None Remove="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <None Remove="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0360_Sheet1.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetCntBeforeUpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetIsAbleToClickBtn.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <None Remove="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
@@ -468,6 +470,7 @@
     <None Remove="Resources\sql\MaintenancePerformance\GetWorkPersonalityDetail.sql" />
     <None Remove="Resources\sql\MaintenancePerformance\GetWorkPlan1Detail.sql" />
     <None Remove="Resources\sql\MaintenancePerformance\GetWorkPlan2Detail.sql" />
+    <None Remove="Resources\sql\Maintenance\ADD_GetMaintenanceList.sql" />
     <None Remove="Resources\sql\Maintenance\DeleteAttachment.sql" />
     <None Remove="Resources\sql\Maintenance\DeleteHistory.sql" />
     <None Remove="Resources\sql\Maintenance\DeleteHistoryFailure.sql" />
@@ -762,7 +765,6 @@
     <EmbeddedResource Include="Resources\sql\Attachment\InsertLocationStructureIdToTemp.sql" />
     <EmbeddedResource Include="Resources\sql\Common\CreateTableTempJob.sql" />
     <EmbeddedResource Include="Resources\sql\Common\CreateTableTempLocation.sql" />
-    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetCntBeforeUpdateApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempJob.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempLocation.sql" />
@@ -812,9 +814,10 @@
     <EmbeddedResource Include="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0360_Sheet1.sql" />
-    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryMachineInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetCntBeforeUpdateApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetIsAbleToClickBtn.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
@@ -902,6 +905,7 @@
     <EmbeddedResource Include="Resources\sql\Machine\UpdateMaintainanceScheduleLankDetail.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\UpdateManagementStandardsContentSchedule.sql" />
     <EmbeddedResource Include="Resources\sql\MaintenancePerformance\GetRepMqActualEvaluation.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\ADD_GetMaintenanceList.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetLongPlanIdByScheduleDetailId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetMachineListFromLongPlan.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetMaxUpdateDateByScheduleDetailId.sql" />

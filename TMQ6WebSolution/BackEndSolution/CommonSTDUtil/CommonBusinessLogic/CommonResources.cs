@@ -1451,7 +1451,6 @@
             /// 移庫数
             /// </summary>
             public const string ID111020027 = "111020027";
-
             /// <summary>
             /// 発注点
             /// </summary>
@@ -1464,7 +1463,6 @@
             /// 標準単価
             /// </summary>
             public const string ID111270009 = "111270009";
-
             /// <summary>
             /// アイテム翻訳
             /// </summary>
@@ -1477,6 +1475,30 @@
             /// エラーが発生しました。システム管理者に問い合わせてください。
             /// </summary>
             public const string ID941040004 = "941040004";
+            /// <summary>
+            /// 変更管理
+            /// </summary>
+            public const string ID111290002 = "111290002";
+            /// <summary>
+            /// 承認依頼中
+            /// </summary>
+            public const string ID131120042 = "131120042";
+            /// <summary>
+            /// 承認
+            /// </summary>
+            public const string ID111120228 = "111120228";
+            /// <summary>
+            /// 否認
+            /// </summary>
+            public const string ID111270036 = "111270036";
+            /// <summary>
+            /// {0}でない{1}が選択されています。
+            /// </summary>
+            public const string ID141190002 = "141190002";
+            /// <summary>
+            /// 選択された{0}を{1}する権限がありません。
+            /// </summary>
+            public const string ID141140003 = "141140003";
         }
     }
 }
