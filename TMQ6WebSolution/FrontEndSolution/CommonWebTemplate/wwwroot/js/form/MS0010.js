@@ -22,6 +22,7 @@ const MS0010_FormList = {
         AuthLevel: 4,                           // 権限レベル
         PassWord: 5,                            // パスワード
         Language: 6,                            // 言語
+        UserName: 7,                            // ユーザ名
         Delete: 10,                             // 削除
         ExData: 13,                             // 拡張データ
         Flg: 14                                 // 制御用フラグ
@@ -141,8 +142,33 @@ function initFormOriginalForMS0010(appPath, conductId, formNo, articleForm, curP
         // パスワードの項目設定
         var password = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.PassWord, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
         setAttrByNativeJs(password, "type", "password");
+
         // パスワードテキストボックスに無効なキーワードチェックのルールを追加
         addValidatorRuleForInvalidKeyword(password);
+
+        // ブラウザに記憶させたパスワードとログインユーザIDの自動補完を無効にする
+        $(password).attr("autocomplete", "new-password");
+
+        // ※autocomplete="new-password"が効かない場合、readonlyをセットすることにより自動表示を回避できる
+        //$(password).attr("readonly", true);
+        //$(password).off('focus');
+        //$(password).on('focus',
+        //    function () {
+        //        // フォーカスが当たった際にreadonlyを外す
+        //        $(password).attr("readonly", false);
+        //    }
+        //);
+
+        //var userName = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.UserName, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
+        //$(userName).attr("autocomplete", "off");
+        //$(userName).attr("readonly", true);
+        //$(userName).off('focus');
+        //$(userName).on('focus',
+        //    function () {
+        //        // フォーカスが当たった際にreadonlyを外す
+        //        $(userName).attr("readonly", false);
+        //    }
+        //);
 
         // メールアドレステキストボックスに無効なキーワードチェックのルールを追加
         var mailAddress = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.MailAddress, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);

@@ -11,6 +11,7 @@ WITH master_name AS(
 SELECT
     @FactoryId AS target_factory_id                                                                         -- 並び順対象工場ID 
     ,@ProcessId AS process_id                                                                               -- 送信時処理ID 
+    ,pn.translation_text as process_name                                                                    -- 送信時処理名
     ,st.structure_id                                                                                        -- 構成ID
     ,st.structure_group_id                                                                                  -- 構成グループID
     ,master_name.master_name                                                                                -- マスタ種類
@@ -67,6 +68,22 @@ FROM
     LEFT JOIN
         master_name
     ON  1 = 1　-- 結合条件はない
+    LEFT JOIN
+        (
+            SELECT
+                item.translation_text
+            FROM
+                v_structure_item item
+                LEFT JOIN
+                    ms_item_extension ex
+                ON  item.structure_item_id = ex.item_id
+                AND ex.sequence_no = 1
+            WHERE
+                item.structure_group_id = 2120
+            AND ex.extension_data = @ProcessId
+            AND item.language_id = @LanguageId
+        ) pn
+    ON  1 = 1 -- 結合条件はない
 WHERE
     st.structure_group_id = @StructureGroupId
 AND st.structure_layer_no IN @LayerIdList

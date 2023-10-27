@@ -269,50 +269,50 @@ namespace CommonTMQUtil
                 /// </summary>
                 public static List<int> NormalMasterSheetNoList = new()
                 {
-                    TreatmentMeasureSheetNo,
-                    BudgetPersonalitySheetNo,
-                    UrgencySheetNo,
-                    DiscoveryMethodsSheetNo,
-                    ChangeManagementSheetNo,
-                    EnvSafetyManagementSheetNo,
-                    StopSystemSheetNo,
-                    ActualResultSheetNo,
-                    ManufacturerSheetNo,
-                    ApplicableLawsSheetNo,
-                    MachineLevelSheetNo,
-                    SiteMasterSheetNo,
-                    ImportanceSheetNo,
-                    UseSegmentSheetNo,
-                    InspectionDetailsSheetNo,
-                    MaintainanceDivisionSeetNo,
-                    WorkItemSeetNo,
-                    PurposeSeetNo,
-                    BudgetManagementSeetNo,
-                    TreatmentSeetNo,
-                    FacilitySeetNo,
-                    SeasonSeetNo,
-                    RepairCostClassSeetNo,
-                    WorkClassSeetNo,
-                    RequestDepartmentClerkSeetNo,
-                    ConstructionDivisionSeetNo,
-                    ResponsibilitySeetNo,
-                    CompanySeetNo,
-                    FailurePersonalityClassSeetNo,
-                    FailurePersonalityFactorSeetNo,
-                    RequestNumberingPatternSeetNo,
-                    WorkFailureDivisionSeetNo,
-                    WorkFailureDivisionSeetNo,
-                    VenderSeetNo,
-                    UnitSeetNo,
-                    CurrencySeetNo,
-                    DepartmentSeetNo,
-                    AccountSeetNo,
-                    MeasureClass1SeetNo,
-                    MeasureClass2SeetNo,
-                    MaintenanceDepartmentClerkSeetNo,
-                    OldNewDivitionSeetNo,
-                    BeginningMonthSeetNo,
-                    RoundDivisionSeetNo
+                    TreatmentMeasureSheetNo,          // 処置対策
+                    BudgetPersonalitySheetNo,         // 予算性格区分
+                    UrgencySheetNo,                   // 緊急度
+                    DiscoveryMethodsSheetNo,          // 発見方法
+                    ChangeManagementSheetNo,          // 変更管理
+                    EnvSafetyManagementSheetNo,       // 環境安全管理
+                    StopSystemSheetNo,                // 系停止
+                    ActualResultSheetNo,              // 実績結果
+                    ManufacturerSheetNo,              // メーカー
+                    ApplicableLawsSheetNo,            // 適用法規
+                    MachineLevelSheetNo,              // 機器レベル
+                    SiteMasterSheetNo,                // 部位マスタ
+                    ImportanceSheetNo,                // 重要度
+                    UseSegmentSheetNo,                // 使用区分
+                    InspectionDetailsSheetNo,         // 保全項目(点検内容)
+                    MaintainanceDivisionSeetNo,       // 保全区分
+                    WorkItemSeetNo,                   // 作業項目
+                    PurposeSeetNo,                    // 作業目的
+                    BudgetManagementSeetNo,           // 予算管理区分
+                    TreatmentSeetNo,                  // 処置区分
+                    FacilitySeetNo,                   // 設備区分
+                    SeasonSeetNo,                     // 時期
+                    RepairCostClassSeetNo,            // 修繕費分類
+                    WorkClassSeetNo,                  // 作業区分
+                    RequestDepartmentClerkSeetNo,     // 依頼部課係
+                    ConstructionDivisionSeetNo,       // 工事区分
+                    ResponsibilitySeetNo,             // 自・他責
+                    CompanySeetNo,                    // 施工会社
+                    FailurePersonalityClassSeetNo,    // 故障性格分類
+                    FailurePersonalityFactorSeetNo,   // 故障性格要因
+                    RequestNumberingPatternSeetNo,    // 依頼番号採番パターン
+                    WorkFailureDivisionSeetNo,        // 作業/故障区分
+                    FailureAnalysisSeetNo,            // 故障分析
+                    VenderSeetNo,                     // 仕入先
+                    UnitSeetNo,                       // 数量管理単位
+                    CurrencySeetNo,                   // 金額管理単位
+                    DepartmentSeetNo,                 // 部門(工場・部門)
+                    AccountSeetNo,                    // 勘定科目
+                    MeasureClass1SeetNo,              // 対策分類１
+                    MeasureClass2SeetNo,              // 対策分類２
+                    MaintenanceDepartmentClerkSeetNo, // 保全部課係
+                    OldNewDivitionSeetNo,             // 新旧区分
+                    BeginningMonthSeetNo,             // 工場毎年度期首月
+                    RoundDivisionSeetNo               // 丸め処理区分
                 };
             }
 
@@ -3195,6 +3195,16 @@ namespace CommonTMQUtil
                                         continue;
                                     }
 
+                                }
+                            }
+                            else
+                            {
+                                //型チェックのみ行う（データクラスへの設定時にエラーとならないようにする）
+                                string error = string.Empty;
+                                if (!checkCellType(reportInfo, val, languageId, msgResources, ref error))
+                                {
+                                    // 型が異なる場合、スキップ
+                                    continue;
                                 }
                             }
 

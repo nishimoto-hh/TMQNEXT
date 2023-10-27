@@ -4846,7 +4846,7 @@ namespace CommonTMQUtil
         /// <param name="msgResources">メッセージリソース</param>
         /// <param name="error">エラー情報</param>
         /// <returns>true:正常、false:異常</returns>
-        private static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
+        public static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
         {
             // データタイプによって処理を分岐
             int dataType = reportInfo.DataType;
