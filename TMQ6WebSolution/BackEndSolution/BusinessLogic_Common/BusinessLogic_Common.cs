@@ -180,9 +180,9 @@ namespace BusinessLogic_Common
                         case "GetDecryptedData":
                             result = this.GetDecryptedData();
                             break;
-                        // 機能ID取得処理
-                        case "GetUserIdByMailAdress":
-                            result = this.GetUserIdByMailAdress();
+                        // ログインID取得処理
+                        case "GetLoginIdByMailAdress":
+                            result = this.GetLoginIdByMailAdress();
                             break;
                         default:
                             break;
@@ -1101,12 +1101,12 @@ namespace BusinessLogic_Common
         }
         #endregion
 
-        #region ユーザID取得
+        #region ログインID取得
         /// <summary>
-        /// メールアドレスからユーザID処理
+        /// メールアドレスからログインID取得処理
         /// </summary>
         /// <returns>正常終了：0、異常終了：-1</returns>
-        private int GetUserIdByMailAdress()
+        private int GetLoginIdByMailAdress()
         {
             try
             {
@@ -1126,7 +1126,7 @@ namespace BusinessLogic_Common
 
                     List<Dictionary<string, object>> resultList = new();
                     Dictionary<string, object> dicList = new();
-                    dicList.Add("UserId", result.UserId);
+                    dicList.Add("LoginId", result.LoginId);
                     resultList.Add(dicList);
 
                     this.resultInfoDictionary = resultList;

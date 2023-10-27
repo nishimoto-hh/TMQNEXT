@@ -257,6 +257,8 @@ WITH stock AS (
         , pi.update_serialid                        --棚卸データ.更新シリアルID
         , COALESCE(number_unit.unit_digit, 0) AS unit_digit --小数点以下桁数(数量)
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
+        , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
+        , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_parts pp 
         LEFT JOIN pt_lot pl                         --ロット情報
@@ -296,12 +298,6 @@ WITH stock AS (
     WHERE
         pls.parts_location_id IN @PartsLocationIdList --棚番
         AND pl.department_structure_id IN @DepartmentIdList --部門
-    /*@FactoryIdList
-        AND pp.factory_id IN @FactoryIdList
-    @FactoryIdList*/
-    /*@JobIdList
-        AND pp.job_structure_id IN @JobIdList
-    @JobIdList*/
     /*@Created
         AND pi.preparation_datetime IS NOT NULL
     @Created*/
@@ -392,6 +388,8 @@ WITH stock AS (
         , pi.update_serialid                        --棚卸データ.更新シリアルID
         , COALESCE(number_unit.unit_digit, 0) AS unit_digit --小数点以下桁数(数量)
         , COALESCE(unit_round.unit_round_division, 0) AS unit_round_division --丸め処理区分(数量)
+        , pp.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
+        , pp.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_parts pp 
         LEFT JOIN pt_inventory pi                   --棚卸データ
@@ -415,12 +413,6 @@ WITH stock AS (
     WHERE
         pi.parts_location_id IN @PartsLocationIdList --棚番
         AND pi.department_structure_id IN @DepartmentIdList --部門
-    /*@FactoryIdList
-        AND pp.factory_id IN @FactoryIdList
-    @FactoryIdList*/
-    /*@JobIdList
-        AND pp.job_structure_id IN @JobIdList
-    @JobIdList*/
     /*@Created
         AND pi.preparation_datetime IS NOT NULL
     @Created*/

@@ -37,11 +37,17 @@ namespace BusinessLogic_PT0003
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetEnterList, out string baseSql, listUnComment);
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetEnterList, out string withSql, listUnComment);
 
-            // 総件数取得SQL文の取得
-            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, null, withSql);
-
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.EnterList.List, this.pageInfoList);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            {
+                return false;
+            }
+
+            // 総件数取得SQL文の取得
+            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
             // 総件数を取得
             int cnt = db.GetCount(execSql, condition);
@@ -52,7 +58,7 @@ namespace BusinessLogic_PT0003
             }
 
             // 一覧検索SQL文の取得
-            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
+            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
 
             // 一覧検索実行
             var results = db.GetListByDataClass<Dao.inoutList>(execSql, condition);

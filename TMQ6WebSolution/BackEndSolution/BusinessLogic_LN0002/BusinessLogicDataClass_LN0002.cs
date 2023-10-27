@@ -117,6 +117,10 @@ namespace BusinessLogic_LN0002
                 public string CycleDayDisplay { get; set; }
                 #endregion
 
+                /// <summary>Gets or sets ヘッダフラグ</summary>
+                /// <value>ヘッダフラグ</value>
+                public bool HeaderFlg { get; set; }
+
                 /// <summary>
                 /// このクラスを元にしたグループヘッダ行を作成する処理
                 /// </summary>
@@ -132,6 +136,7 @@ namespace BusinessLogic_LN0002
                     rtn.MachineName = this.MachineName;
                     rtn.MachineNo = this.MachineNo;
                     rtn.LongPlanId = this.LongPlanId;
+                    rtn.HeaderFlg = true;
                     return rtn;
                 }
             }

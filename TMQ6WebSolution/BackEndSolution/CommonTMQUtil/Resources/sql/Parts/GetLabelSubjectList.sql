@@ -1,3 +1,4 @@
+--location_structure_id(ツリーで選択されたアイテムを取得する為に記載しています)
 SELECT * 
 FROM
 (
@@ -18,7 +19,7 @@ SELECT
                 WHERE
                     item2.structure_group_id = 1770
                 AND item2.language_id = @LanguageId
-                AND item2.location_structure_id IN @LocationIdList
+                ReplaceLocationIdList
                 AND ex.extension_data = ex2.extension_data FOR XML PATH('')
             )
     ) AS subject_nm -- 勘定科目コード + 勘定科目名

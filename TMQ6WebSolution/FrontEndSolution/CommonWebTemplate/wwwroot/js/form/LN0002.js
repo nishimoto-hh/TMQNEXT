@@ -26,7 +26,7 @@ const ConductId_LN0002 = "LN0002";
 // 一覧画面の定義
 const FormList = {
     No: 0
-    , List: { Id: "BODY_040_00_LST_0", MachineNo: 1, MachineName: 2, ComponentId: 3, ImpotanceId: 4, ConversationId: 5, ContentId: 6, GroupKey: 51, MachineId: 52, KeyId: 53 }
+    , List: { Id: "BODY_040_00_LST_0", MachineNo: 1, MachineName: 2, ComponentId: 3, ImpotanceId: 4, ConversationId: 5, ContentId: 6, GroupKey: 51, MachineId: 52, KeyId: 53, HeaderFlg: 57 }
     , Filter: { Id: "BODY_010_00_LST_0", Input: 1 }
     , Condition: { Id: "BODY_020_00_LST_0", Schedule: { Unit: 1, Year: 2, Month: 3, Ext: 4 } } // スケジュール表示条件※共通
     , Button: { Output: "btnOutPut" }
@@ -224,10 +224,12 @@ function setListGroupStyleCall(id) {
     var rows = getRows(table, 'SELTAG').find("input"); // 選択行のチェックボックスのリスト
     $(rows).each(function (index, chk) { // 繰り返し
         var row = $(chk).closest('.tabulator-row'); // チェックボックスの行
-        var rowno = getRows(row, "ROWNO").find("a"); // 行番号の列のリンク
-        if (rowno.length == 0) {
+        var isHeader = getRows(row, "VAL" + FormList.List.HeaderFlg).text();
+        if (isHeader == "false") {
             // 子の行は行番号リンクが無いので、選択を非表示にする
             setHide($(chk), true);
+            var rowno = getRows(row, "ROWNO").find("a"); // 行番号の列のリンク
+            setHide($(rowno), true);
         }
     });
 }
@@ -258,7 +260,7 @@ function prevCreateTabulator(appPath, id, options, header, dispData) {
 
     if (id == "#" + FormList.List.Id + getAddFormNo()) {
         var copyVals = [FormList.List.MachineId, FormList.List.KeyId];
-        convertTabulatorListToGroup(options, FormList.List.GroupKey, ListMachineGroups, copyVals);
+        convertTabulatorListToGroup(options, FormList.List.GroupKey, ListMachineGroups, copyVals, FormList.List.HeaderFlg);
     }
 }
 

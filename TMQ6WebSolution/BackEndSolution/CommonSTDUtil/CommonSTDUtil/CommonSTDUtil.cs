@@ -989,7 +989,22 @@ namespace CommonSTDUtil.CommonSTDUtil
                         foreach (var item in resultNamesPair)
                         {
                             object value = t.GetProperty(item.Key).GetValue(result);
-                            dicList.Add(item.Value, !CommonUtil.IsNullOrEmpty(value) ? value : "");
+                            //dicList.Add(item.Value, !CommonUtil.IsNullOrEmpty(value) ? value : "");
+                            if (CommonUtil.IsNullOrEmpty(value))
+                            {
+                                // 値が空の場合
+                                if (item.Value.StartsWith("EXPARAM"))
+                                {
+                                    // 拡張項目の場合は結果リストに格納しない
+                                    continue;
+                                }
+                                else
+                                {
+                                    // 拡張項目以外の場合は空文字をセットして返す
+                                    value = "";
+                                }
+                            }
+                            dicList.Add(item.Value, value);
                         }
                         list.Add(dicList);
                     }
@@ -5088,7 +5103,7 @@ namespace CommonSTDUtil.CommonSTDUtil
             const string condKey = "MailAdress";
             if (condition.ContainsKey(condKey) && !IsNullOrEmpty(condition[condKey]))
             {
-                // ユーザマスタからメールアドレスをキーにユーザIDを取得
+                // ユーザマスタからメールアドレスをキーにユーザ情報を取得
                 var resultList = db.GetListByOutsideSql<Dao.MsUserEntity>(SqlName.UserMstGetUserInfo, SqlName.SubDir, new { MailAdress = condition[condKey] });
                 if (resultList != null && resultList.Count > 0)
                 {
@@ -5099,5 +5114,35 @@ namespace CommonSTDUtil.CommonSTDUtil
             return userInfo;
         }
 
+        /// <summary>
+        /// 条件のor句を生成する
+        /// </summary>
+        /// <typeparam name="T">型</typeparam>
+        /// <param name="colum">カラム名</param>
+        /// <param name="list">パラメータ</param>
+        /// <returns>or句の文字列</returns>
+        public static string GetWhereSqlString<T>(string colum, List<T> list)
+        {
+            //where句の条件を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+            var paramWhere = new StringBuilder();
+            List<T> paramList = list.Distinct().ToList();
+            foreach (T param in paramList)
+            {
+                if (paramWhere.Length > 0)
+                {
+                    paramWhere.Append("OR ");
+                }
+                //例：structure_id = 123
+                paramWhere.Append(colum).Append(" = ").AppendLine(param.ToString());
+            }
+            if(paramWhere.Length > 0)
+            {
+                //括弧で囲む
+                paramWhere.Insert(0, "(");
+                paramWhere.Append(")");
+            }
+            //例：structure_id = 123 or structure_id = 456...
+            return paramWhere.ToString();
+        }
     }
 }

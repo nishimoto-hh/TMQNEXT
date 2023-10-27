@@ -21,6 +21,7 @@ using Dao = BusinessLogic_MP0001.BusinessLogicDataClass_MP0001;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// 保全実績評価
@@ -403,12 +404,23 @@ namespace BusinessLogic_MP0001
                             List<string> jobNameList = new List<string>();
 
                             // 地区／工場階層で選択されている工場、プラント、工程、職種名を取得する
+                            List<int> structureIdList = this.conditionSheetLocationList;
+
+                            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+                            string orParam = ComUtil.GetWhereSqlString("st.structure_id", structureIdList);
+
+                            // SQL取得
+                            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out string sqlText);
+
+                            // 生成した条件文字列をSQLに設定する
+                            Regex paramReplace = new Regex("@StructureIdList");
+                            sqlText = paramReplace.Replace(sqlText, orParam);
                             // IDのリストより全ての階層を検索し、階層情報のリストを取得
-                            var param = new { StructureIdList = this.conditionSheetLocationList, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
-                            List<Dao.StructureGetInfo> structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
+                            var param = new { LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
+                            IList<Dao.StructureGetInfo> structureInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sqlText, param);
 
                             // 場所階層ツリーが選択されていなければエラー
-                            if (structureInfoList == null)
+                            if (structureInfoList == null || structureInfoList.Count == 0)
                             {
                                 return ComConsts.RETURN_RESULT.NG;
                             }
@@ -453,11 +465,22 @@ namespace BusinessLogic_MP0001
                             plantName = plantNameList.Count > 0 ? string.Join(",", plantNameList) : string.Empty;
                             strokeName = strokeNameList.Count > 0 ? string.Join(",", strokeNameList) : string.Empty;
 
-                            param = new { StructureIdList = this.conditionSheetJobList, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
-                            List<Dao.StructureGetInfo> structureJobInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
+                            structureIdList = this.conditionSheetLocationList;
+
+                            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+                            orParam = ComUtil.GetWhereSqlString("st.structure_id", structureIdList);
+
+                            // SQL取得
+                            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out sqlText);
+
+                            // 生成した条件文字列をSQLに設定する
+                            paramReplace = new Regex("@StructureIdList");
+                            sqlText = paramReplace.Replace(sqlText, orParam);
+                            // 選択された構成IDリストから配下の構成IDをすべて取得
+                            IList<Dao.StructureGetInfo> structureJobInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sqlText, param);
 
                             // 職種階層ツリーが選択されていれば職種名を取得
-                            if (structureJobInfoList != null)
+                            if (structureJobInfoList != null && structureJobInfoList.Count > 0)
                             {
                                 // 親構成IDリスト
                                 List<int> jobParentIdList = structureJobInfoList.Select(x => x.ParentStructureId).ToList();
@@ -728,17 +751,31 @@ namespace BusinessLogic_MP0001
 
             // 場所階層ツリーの取得
             List<int> locationIdList = GetLocationTreeValues();
+            // 場所階層ツリーが選択されていなければエラー
+            if (locationIdList == null || locationIdList.Count == 0)
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
 
-            // IDのリストより全ての階層を検索し、階層情報のリストを取得
-            var param = new { StructureIdList = locationIdList, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
-            List<Dao.StructureGetInfo> structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
+            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+            string orParam = ComUtil.GetWhereSqlString("st.structure_id", locationIdList);
+
+            // SQL取得
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out string sql);
+
+            // 生成した条件文字列をSQLに設定する
+            Regex paramReplace = new Regex("@StructureIdList");
+            sql = paramReplace.Replace(sql, orParam);
+            // 選択された構成IDリストから配下の構成IDをすべて取得
+            var param = new { LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
+            IList<Dao.StructureGetInfo> structureInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sql, param);
 
             // ページ情報取得
             var hierarchyInfo = GetPageInfo(TargetCtrlId.Placehierarchy, this.pageInfoList);
             hierarchyInfo.CtrlId = TargetCtrlId.Placehierarchy;
 
             // 場所階層ツリーが選択されていなければエラー
-            if (structureInfoList == null)
+            if (structureInfoList == null || structureInfoList.Count == 0)
             {
                 return ComConsts.RETURN_RESULT.NG;
             }

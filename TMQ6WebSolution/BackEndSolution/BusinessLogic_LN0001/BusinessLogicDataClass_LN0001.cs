@@ -31,6 +31,9 @@ namespace BusinessLogic_LN0001
             /// <summary>Gets or sets スケジュール紐付け用キーID</summary>
             /// <value>スケジュール紐付け用キーID</value>
             public string KeyId { get; set; }
+            /// <summary>Gets or sets 準備対象</summary>
+            /// <value>準備対象</value>
+            public bool PreparationFlg { get; set; }
 
             #region 共通　地区・職種設定用
             /// <summary>Gets or sets 地区ID</summary>

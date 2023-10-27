@@ -766,12 +766,27 @@ namespace CommonTMQUtil
                 }
 
                 // IDのリストより上位の階層を検索し、階層情報のリストを取得
-                var param = new { StructureIdList = searchTargetStructureIdList.Distinct().ToList(), LanguageId = languageId };
-                var structureInfoList = SqlExecuteClass.SelectList<StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param, db);
-                if (structureInfoList == null)
+                //var param = new { StructureIdList = searchTargetStructureIdList.Distinct().ToList(), LanguageId = languageId };
+                //var structureInfoList = SqlExecuteClass.SelectList<StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param, db);
+
+                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+                string orParam = ComUtil.GetWhereSqlString("st.structure_id", searchTargetStructureIdList);
+
+                // SQL取得
+                GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText);
+
+                // 生成した条件文字列をSQLに設定する
+                Regex paramReplace = new Regex("@StructureIdList");
+                sqlText = paramReplace.Replace(sqlText, orParam);
+                // IDのリストより上位の階層を検索し、階層情報のリストを取得
+                var param = new { LanguageId = languageId };
+                IList<StructureGetInfo> results = db.GetListByDataClass<StructureGetInfo>(sqlText, param);
+                if (results == null)
                 {
                     return;
                 }
+                var structureInfoList = results.ToList();
+
                 // 処理対象の階層で繰り返し、階層の値を設定する
                 foreach (StructureType type in typeList)
                 {

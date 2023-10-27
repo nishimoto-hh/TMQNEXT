@@ -7,7 +7,7 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
     FROM
         ms_structure AS st
     WHERE
-        st.structure_id IN @StructureIdList
+        @StructureIdList
 ),
 rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT

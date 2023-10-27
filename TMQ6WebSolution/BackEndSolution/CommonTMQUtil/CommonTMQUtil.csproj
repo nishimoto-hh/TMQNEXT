@@ -113,6 +113,8 @@
     <None Remove="Resources\sql\Common\SELECT_StructureList.sql" />
     <None Remove="Resources\sql\Common\Select_TakeInventoryConfirmationDate.sql" />
     <None Remove="Resources\sql\Common\Select_UpperStructureList.sql" />
+    <None Remove="Resources\sql\Common\Structure_GetLowerList.sql" />
+    <None Remove="Resources\sql\Common\Structure_GetPartsLocationList.sql" />
     <None Remove="Resources\sql\Excel\ComInoutItemDefine_GetInfo.sql" />
     <None Remove="Resources\sql\Excel\CreateTableTemp.sql" />
     <None Remove="Resources\sql\Excel\GetInputControlDefine.sql" />
@@ -203,6 +205,7 @@
     <None Remove="Resources\sql\InventoryControl\WITH_GetShedList.sql" />
     <None Remove="Resources\sql\InventoryControl\WITH_GetSpareInfoList.sql" />
     <None Remove="Resources\sql\InventoryFirm\DeleteFixedStock.sql" />
+    <None Remove="Resources\sql\InventoryFirm\GetCommonFactoryId.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetFactoryIdList.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetInsertDataToFixedStock.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetInventoryFirmList.sql" />
@@ -243,6 +246,7 @@
     <None Remove="Resources\sql\Inventory\WITH_GetEnterList.sql" />
     <None Remove="Resources\sql\Inventory\WITH_GetInoutHistryList.sql" />
     <None Remove="Resources\sql\Inventory\WITH_GetInventoryList.sql" />
+    <None Remove="Resources\sql\Inventory\WITH_GetIssueChildList.sql" />
     <None Remove="Resources\sql\Inventory\WITH_GetIssueList.sql" />
     <None Remove="Resources\sql\IssueInput\GetIssueDepartmentList.sql" />
     <None Remove="Resources\sql\IssueInput\GetIssueDepartmentListEdit.sql" />
@@ -756,6 +760,8 @@
     <EmbeddedResource Include="Resources\sql\Common\PartsInventory\UpdateStock.sql" />
     <EmbeddedResource Include="Resources\sql\Common\PartsInventory\UpdateStockDelete.sql" />
     <EmbeddedResource Include="Resources\sql\Common\Select_InventryGetCount.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\Structure_GetLowerList.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\Structure_GetPartsLocationList.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\GetLongPlanIdList.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\GetInputControlDefine.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0100_Sheet3_Option.sql" />
@@ -783,10 +789,9 @@
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetWarehouse.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\WITH_GetIssueList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\DeleteFixedStock.sql" />
-    <EmbeddedResource Include="Resources\sql\InventoryFirm\GetFactoryIdList.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryFirm\GetCommonFactoryId.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetInsertDataToFixedStock.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetInventoryFirmList.sql" />
-    <EmbeddedResource Include="Resources\sql\InventoryFirm\GetJobIdList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetMaxUpdateDateConfirm.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetMaxUpdateDateFixed.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetStockIdList.sql" />
@@ -796,6 +801,7 @@
     <EmbeddedResource Include="Resources\sql\InventoryFirm\WITH_GetInventoryFirmList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetCountDuplicationData.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetFixedTargetMonth.sql" />
+    <EmbeddedResource Include="Resources\sql\Inventory\WITH_GetIssueChildList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetParts.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetInoutQuantity.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\GetEnterInput.sql" />

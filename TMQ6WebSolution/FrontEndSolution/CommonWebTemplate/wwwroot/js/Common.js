@@ -6855,8 +6855,17 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
                 }
             });
 
-            //【オーバーライド用関数】初期化処理(表示中画面用)
-            initFormOriginal(appPath, conductId, formNo, P_Article, curPageStatus, btnCtrlId, data);
+            var promise = new Promise((resolve) => {
+                //【オーバーライド用関数】初期化処理(表示中画面用)
+                initFormOriginal(appPath, conductId, formNo, P_Article, curPageStatus, btnCtrlId, data);
+
+                //処理が完了したことを通知（thenの処理を実行）
+                resolve();
+            }).then(() => {
+                //実行ボタンが全て非活性の場合、戻るor閉じるボタンにフォーカス設定
+                setFocusBackOrClose();
+            })
+
             nextFocus(); // タブフォーカスを制御
             // 列固定
             setFixColCss();
@@ -14305,9 +14314,15 @@ function transForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ct
         /* AKAP2.0Version end */
     }
 
-    //【オーバーライド用関数】遷移処理の後
-    postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element);
-
+    var promise = new Promise((resolve) => {
+        //【オーバーライド用関数】遷移処理の後
+        postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element);
+        //処理が完了したことを通知（thenの処理を実行）
+        resolve();
+    }).then(() => {
+        //実行ボタンが全て非活性の場合、戻るor閉じるボタンにフォーカス設定
+        setFocusBackOrClose();
+    })
 }
 
 /**
@@ -16862,8 +16877,13 @@ function getFactoryTdElement(selector, tr) {
     var target = tr ? tr : $(selector).closest('form');
     var ctrl = $(target).find('[data-factoryctrl="True"]');
     if (!ctrl || ctrl.length == 0) {
-        // 表示中の画面上に工場コントロールがない場合はnullを返す
-        return null;
+        // 同一form上にない場合は他のformから探す
+        target = $(target).siblings('form');
+        ctrl = $(target).find('[data-factoryctrl="True"]');
+        if (!ctrl || ctrl.length == 0) {
+            // 表示中の画面上に工場コントロールがない場合はnullを返す
+            return null;
+        }
     }
     if ($(ctrl).prop('tagName').toLowerCase() == 'td') {
         // tdタグ(=treeLabelの場合)そのまま返す
@@ -17358,9 +17378,17 @@ function removeSaveDataFromSessionStorageForList(code, conductId, formNo, id) {
  * @return Array.<string> 検索条件に一致したキー
  */
 function findSessionStorageKeys(code, keyword) {
-    var keys = Object.keys(sessionStorage).filter(function (key) {
-        return key.indexOf(code) == 0 && key.indexOf(keyword, code.length) >= 0;
-    });
+    var keys = [];
+    const settionStorageKeys = Object.keys(sessionStorage);
+    if (keyword) {
+        keys = settionStorageKeys.filter(function (key) {
+            return key.indexOf(code) == 0 && key.indexOf(keyword, code.length) >= 0;
+        });
+    } else {
+        keys = settionStorageKeys.filter(function (key) {
+            return key.indexOf(code) == 0;
+        });
+    }
     return keys;
 }
 
@@ -17543,15 +17571,24 @@ function refreshTreeView(appPath, conductId, grpId) {
  * @param {number} selects
  */
 function refreshComboBox(appPath, grpId) {
-    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, ',' + grpId);
-    $.each(keys, function (idx, key) {
-        // セッションストレージデータを削除
-        removeSaveDataFromSessionStorageByKey(key);
-    });
+    // コンボデータをクリア
+    clearSavedComboBoxData(grpId);
 
     var selects = $('select[data-param^="' + grpId + '"]');
     // コンボの再作成
     resetComboBox(appPath, selects);
+}
+
+/**
+ * セッションストレージに保持しているコンボボックスデータのクリア
+ * @param {number} grpId:構成グループID(未指定の場合は全コンボボックスデータ)
+ */
+function clearSavedComboBoxData(grpId) {
+    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, grpId ? (',' + grpId) : null);
+    $.each(keys, function (idx, key) {
+        // セッションストレージデータを削除
+        removeSaveDataFromSessionStorageByKey(key);
+    });
 }
 
 /**

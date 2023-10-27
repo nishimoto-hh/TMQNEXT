@@ -1,3 +1,6 @@
+/*
+* 一覧の項目の内容を取得するSQL
+*/
 WITH target AS (
 SELECT
     lplan.long_plan_id,

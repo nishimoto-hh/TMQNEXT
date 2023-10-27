@@ -93,15 +93,18 @@ namespace BusinessLogic_PT0001
 
             // 検索条件追加
             whereParam.LanguageId = this.LanguageId; // 言語ID
-            whereParam.userId = this.UserId;         // ユーザーの本務工場
-            IDictionary<string, object> tmpList = whereParam as IDictionary<string, object>;
-            if (tmpList.ContainsKey("LocationIdList"))
+            whereParam.userId = this.UserId;         // ユーザーID
+
+            // 検索条件を再生成(勘定科目一覧検索の場合)
+            if(sqlName == SqlName.Label.GetLabelSubjectList)
             {
-                whereParam.LocationIdList.Add(TMQConst.CommonFactoryId); // 共通工場ID
-            }
-            else
-            {
-                whereParam.LocationIdList = new List<int> { TMQConst.CommonFactoryId }; // 共通工場ID
+                // 「AND」でSQLを分割
+                whereSql = whereSql.Replace("WHERE", "AND").Replace("location_structure_id", "item2.location_structure_id");
+                string[] condList = whereSql.Split(")");
+                condList[0] = condList[0] + "OR item2.location_structure_id = " + TMQConst.CommonFactoryId.ToString();
+                whereSql = condList[0] + "\r\n" + ")";
+                // SQLを再生成した条件で置換
+                baseSql = baseSql.Replace("ReplaceLocationIdList", whereSql);
             }
 
             // 一覧検索実行

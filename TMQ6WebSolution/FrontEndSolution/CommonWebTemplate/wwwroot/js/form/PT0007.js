@@ -344,164 +344,178 @@ function PT0007_postBuiltTabulator(tbl, id) {
     }
 
     if (id == "#" + PT0007_FormList.LocationList.Id + getAddFormNo()) {
-        // 画面遷移フラグ(新規か修正か)を取得
-        var transFlg = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransFlg, 0, CtrlFlag.Label, false, false);
-
-        // 棚番移庫タブをクリックして表示する
-        clickTab(PT0007_FormList.TabNo.Location);
-
-        // 棚別在庫一覧
-        var table = P_listData['#' + PT0007_FormList.LocationList.Id + getAddFormNo()];
-        var row = $($(table.element.children[1]).find(".tabulator-row")[0]).find("div[tabulator-field='ROWNO']").find("a");
-        if (row.length > 0) {
-            // 先頭行のNo.リンクをクリックする
-            $(row).click();
-        }
-        if (transFlg == PT0007_TransFlg.FlgNew) {
-            // 新規の場合
-
-            // 取消ボタンを非活性にする
-            setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelLocation), true);
-
-            // 棚番移庫タブ フォーカス
-            setFocusLocation();
-        }
-        else if (transFlg == PT0007_TransFlg.FlgEdit) {
-            // 画面遷移タイプ(棚番移庫か部門移庫か)を取得
-            var transType = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransType, 0, CtrlFlag.Label, false, false);
-            if (transType == PT0007_TransType.Subject) {
-                // 棚番移庫
-
-                // 登録ボタンにフォーカスを設定
-                var btnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
-                if (btnVisible == PT0007_BtnVisible.Visible) {
-                    setFocusButton(PT0007_FormList.Button.RegistLocation);
-                }
-
-                // 結合文字列を枝番入力コントロールのヘッダーにセット
-                var joinStr = getValue(PT0007_FormList.LocationInfoTo.ToJoinStr.Id, PT0007_FormList.LocationInfoTo.ToJoinStr.JoinStr, 1, CtrlFlag.Label, false, false);
-                setValue(PT0007_FormList.LocationInfoTo.ToJoinStr.Id, PT0007_FormList.LocationInfoTo.ToJoinStr.LocationDetailNo, 1, CtrlFlag.Label, joinStr, false, true);
-
-                // 数量管理単位を移庫数にセット
-                var unitName = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.UnitName, 0, CtrlFlag.TextBox, false, false);
-                setValueToLocationNumberUnit(unitName);
-
-                // 移庫数を3桁ごとにカンマ区切りにする
-                var inoutQuantity = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.InoutQuantity, 1, CtrlFlag.TextBox, false, false).replace(",", ""); // 移庫数
-                var unitDigit = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.UnitDigit, 1, CtrlFlag.Label, false, false);                            // 小数点以下桁数
-                var inoutQuantityDisp = parseFloat(inoutQuantity).toLocaleString(undefined, { maximumFractionDigits: unitDigit });
-                setValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.InoutQuantity, 1, CtrlFlag.TextBox, inoutQuantityDisp, false, false);
-
-
-                // 登録・取消ボタンの活性/非活性
-                var BtnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
-                if (BtnVisible == PT0007_BtnVisible.UnVisible) {
-                    // 登録ボタンを非活性にする
-                    setDispMode(getButtonCtrl(PT0007_FormList.Button.RegistLocation), true);
-                    // 取消ボタンを非活性にする
-                    setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelLocation), true);
-                }
-
-                // 棚の翻訳は遅らせて表示(オートコンプリート)
-                setTimeout(function () {
-                    var ctrl = getCtrl(PT0007_FormList.LocationInfoTo.ToWarehouseId.Id, PT0007_FormList.LocationInfoTo.ToWarehouseId.PartsLocationCode, 1, CtrlFlag.TextBox, false, false);
-                    changeNoEdit(ctrl);
-                }, 300); //300ミリ秒
-
-                // 部門移庫タブを非表示
-                hideTab(PT0007_FormList.TabNo.Department);
-            }
-            else {
-                // 部門移庫タブをクリックして表示する
-                clickTab(PT0007_FormList.TabNo.Department);
-            }
-        }
-    }
-    else if (id == "#" + PT0007_FormList.DepartmentList.Id + getAddFormNo()) {
-        // 画面遷移フラグ(新規か修正か)を取得
-        var transFlg = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransFlg, 0, CtrlFlag.Label, false, false);
-
-
-        // 部門移庫タブをクリックして表示する
-        clickTab(PT0007_FormList.TabNo.Department);
-
-        // 部門別在庫一覧
-        var table = P_listData['#' + PT0007_FormList.DepartmentList.Id + getAddFormNo()];
-        var row = $($(table.element.children[1]).find(".tabulator-row")[0]).find("div[tabulator-field='ROWNO']").find("a");
-        if (row.length > 0) {
-            // 先頭行のNo.リンクをクリックする
-            $(row).click();
-        }
-        // 部門の翻訳表示は少し遅らせる
-        setTimeout(function () {
-            var department = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Department, 1, CtrlFlag.TextBox, false, false);
-            changeNoEdit(department);
-        }, 300); //300ミリ秒
-        // 勘定科目の翻訳表示は少し遅らせる
-        setTimeout(function () {
-            var subject = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Subject, 1, CtrlFlag.TextBox, false, false);
-            changeNoEdit(subject);
-        }, 300); //300ミリ秒
-
-        if (transFlg == PT0007_TransFlg.FlgNew) {
-
-            // 取消ボタンを非活性にする
-            setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelDepartment), true);
+        var promise = new Promise((resolve) => {
+            // 画面遷移フラグ(新規か修正か)を取得
+            var transFlg = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransFlg, 0, CtrlFlag.Label, false, false);
 
             // 棚番移庫タブをクリックして表示する
             clickTab(PT0007_FormList.TabNo.Location);
 
-            // 棚番移庫タブ フォーカス
-            setFocusLocation();
-        }
-        else if (transFlg == PT0007_TransFlg.FlgEdit) {
-            // 画面遷移タイプ(棚番移庫か部門移庫か)を取得
-            var transType = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransType, 0, CtrlFlag.Label, false, false);
-            if (transType == PT0007_TransType.Department) {
-                // 部門移庫
-
-                // 登録ボタンにフォーカスを設定
-                var btnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
-                if (btnVisible == PT0007_BtnVisible.Visible) {
-                    setFocusButton(PT0007_FormList.Button.RegistDepartment);
-                }
-
-                // 入庫単価を3桁ごとにカンマ区切りにする
-                var unitPrice = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.InoutQuantity, 1, CtrlFlag.TextBox, false, false).replace(",", "");
-                var currencyDigit = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.CurrencyDigit, 1, CtrlFlag.Label, false, false); // 小数点以下桁数
-                var unitPriceDisp = parseFloat(unitPrice).toLocaleString(undefined, { maximumFractionDigits: currencyDigit });
-                setValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.InoutQuantity, 1, CtrlFlag.TextBox, unitPriceDisp, false, false);
-
-                // 金額単位名称を移庫数にセット
-                var unitName = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.UnitName, 0, CtrlFlag.TextBox, false, false);
-                setValueToDepartmentNumberUnit(unitName);
-
-                //部門のフラグ取得
-                var depFlg = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.DepFlg, 1, CtrlFlag.Label, false, false);
-                // 入庫単価の活性/非活性
-                judgeAndDisableDepartment(depFlg);
-
-                // 登録・取消ボタンの活性/非活性
-                var BtnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
-                if (BtnVisible == PT0007_BtnVisible.UnVisible) {
-                    // 登録ボタンを非活性にする
-                    setDispMode(getButtonCtrl(PT0007_FormList.Button.RegistDepartment), true);
-                    // 取消ボタンを非活性にする
-                    setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelDepartment), true);
-                }
-
-                // 棚番移庫タブを非表示
-                hideTab(PT0007_FormList.TabNo.Location);
+            // 棚別在庫一覧
+            var table = P_listData['#' + PT0007_FormList.LocationList.Id + getAddFormNo()];
+            var row = $($(table.element.children[1]).find(".tabulator-row")[0]).find("div[tabulator-field='ROWNO']").find("a");
+            if (row.length > 0) {
+                // 先頭行のNo.リンクをクリックする
+                $(row).click();
             }
-            else {
+            if (transFlg == PT0007_TransFlg.FlgNew) {
+                // 新規の場合
+
+                // 取消ボタンを非活性にする
+                setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelLocation), true);
+
+                // 棚番移庫タブ フォーカス
+                setFocusLocation();
+            }
+            else if (transFlg == PT0007_TransFlg.FlgEdit) {
+                // 画面遷移タイプ(棚番移庫か部門移庫か)を取得
+                var transType = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransType, 0, CtrlFlag.Label, false, false);
+                if (transType == PT0007_TransType.Subject) {
+                    // 棚番移庫
+
+                    // 登録ボタンにフォーカスを設定
+                    var btnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
+                    if (btnVisible == PT0007_BtnVisible.Visible) {
+                        setFocusButton(PT0007_FormList.Button.RegistLocation);
+                    }
+
+                    // 結合文字列を枝番入力コントロールのヘッダーにセット
+                    var joinStr = getValue(PT0007_FormList.LocationInfoTo.ToJoinStr.Id, PT0007_FormList.LocationInfoTo.ToJoinStr.JoinStr, 1, CtrlFlag.Label, false, false);
+                    setValue(PT0007_FormList.LocationInfoTo.ToJoinStr.Id, PT0007_FormList.LocationInfoTo.ToJoinStr.LocationDetailNo, 1, CtrlFlag.Label, joinStr, false, true);
+
+                    // 数量管理単位を移庫数にセット
+                    var unitName = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.UnitName, 0, CtrlFlag.TextBox, false, false);
+                    setValueToLocationNumberUnit(unitName);
+
+                    // 移庫数を3桁ごとにカンマ区切りにする
+                    var inoutQuantity = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.InoutQuantity, 1, CtrlFlag.TextBox, false, false).replace(",", ""); // 移庫数
+                    var unitDigit = getValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.UnitDigit, 1, CtrlFlag.Label, false, false);                            // 小数点以下桁数
+                    var inoutQuantityDisp = parseFloat(inoutQuantity).toLocaleString(undefined, { maximumFractionDigits: unitDigit });
+                    setValue(PT0007_FormList.LocationInfoTo.ToMoney.Id, PT0007_FormList.LocationInfoTo.ToMoney.InoutQuantity, 1, CtrlFlag.TextBox, inoutQuantityDisp, false, false);
+
+
+                    // 登録・取消ボタンの活性/非活性
+                    var BtnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
+                    if (BtnVisible == PT0007_BtnVisible.UnVisible) {
+                        // 登録ボタンを非活性にする
+                        setDispMode(getButtonCtrl(PT0007_FormList.Button.RegistLocation), true);
+                        // 取消ボタンを非活性にする
+                        setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelLocation), true);
+                    }
+
+                    // 棚の翻訳は遅らせて表示(オートコンプリート)
+                    setTimeout(function () {
+                        var ctrl = getCtrl(PT0007_FormList.LocationInfoTo.ToWarehouseId.Id, PT0007_FormList.LocationInfoTo.ToWarehouseId.PartsLocationCode, 1, CtrlFlag.TextBox, false, false);
+                        changeNoEdit(ctrl);
+                    }, 300); //300ミリ秒
+
+                    // 部門移庫タブを非表示
+                    hideTab(PT0007_FormList.TabNo.Department);
+                }
+                else {
+                    // 部門移庫タブをクリックして表示する
+                    clickTab(PT0007_FormList.TabNo.Department);
+                }
+            }
+            //処理が完了したことを通知（thenの処理を実行）
+            resolve();
+        }).then(() => {
+            //実行ボタンが全て非活性の場合、戻るor閉じるボタンにフォーカス設定
+            setFocusBackOrClose();
+        });
+    }
+    else if (id == "#" + PT0007_FormList.DepartmentList.Id + getAddFormNo()) {
+        var promise = new Promise((resolve) => {
+            // 画面遷移フラグ(新規か修正か)を取得
+            var transFlg = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransFlg, 0, CtrlFlag.Label, false, false);
+
+            // 部門移庫タブをクリックして表示する
+            clickTab(PT0007_FormList.TabNo.Department);
+
+            // 部門別在庫一覧
+            var table = P_listData['#' + PT0007_FormList.DepartmentList.Id + getAddFormNo()];
+            var row = $($(table.element.children[1]).find(".tabulator-row")[0]).find("div[tabulator-field='ROWNO']").find("a");
+            if (row.length > 0) {
+                // 先頭行のNo.リンクをクリックする
+                $(row).click();
+            }
+            // 部門の翻訳表示は少し遅らせる
+            setTimeout(function () {
+                var department = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Department, 1, CtrlFlag.TextBox, false, false);
+                changeNoEdit(department);
+            }, 300); //300ミリ秒
+            // 勘定科目の翻訳表示は少し遅らせる
+            setTimeout(function () {
+                var subject = getCtrl(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.Subject, 1, CtrlFlag.TextBox, false, false);
+                changeNoEdit(subject);
+            }, 300); //300ミリ秒
+
+            if (transFlg == PT0007_TransFlg.FlgNew) {
+
+                // 取消ボタンを非活性にする
+                setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelDepartment), true);
+
                 // 棚番移庫タブをクリックして表示する
                 clickTab(PT0007_FormList.TabNo.Location);
 
                 // 棚番移庫タブ フォーカス
-                setFocusLocation(true);
+                setFocusLocation();
+            }
+            else if (transFlg == PT0007_TransFlg.FlgEdit) {
+                // 画面遷移タイプ(棚番移庫か部門移庫か)を取得
+                var transType = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.TransType, 0, CtrlFlag.Label, false, false);
+                if (transType == PT0007_TransType.Department) {
+                    // 部門移庫
+
+                    // 登録ボタンにフォーカスを設定
+                    var btnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
+                    if (btnVisible == PT0007_BtnVisible.Visible) {
+                        setFocusButton(PT0007_FormList.Button.RegistDepartment);
+                    }
+
+                    // 入庫単価を3桁ごとにカンマ区切りにする
+                    var unitPrice = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.InoutQuantity, 1, CtrlFlag.TextBox, false, false).replace(",", "");
+                    var currencyDigit = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.CurrencyDigit, 1, CtrlFlag.Label, false, false); // 小数点以下桁数
+                    var unitPriceDisp = parseFloat(unitPrice).toLocaleString(undefined, { maximumFractionDigits: currencyDigit });
+                    setValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.InoutQuantity, 1, CtrlFlag.TextBox, unitPriceDisp, false, false);
+
+                    // 金額単位名称を移庫数にセット
+                    var unitName = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.UnitName, 0, CtrlFlag.TextBox, false, false);
+                    setValueToDepartmentNumberUnit(unitName);
+
+                    //部門のフラグ取得
+                    var depFlg = getValue(PT0007_FormList.DepartmentInfoTo.Id, PT0007_FormList.DepartmentInfoTo.DepFlg, 1, CtrlFlag.Label, false, false);
+                    // 入庫単価の活性/非活性
+                    judgeAndDisableDepartment(depFlg);
+
+                    // 登録・取消ボタンの活性/非活性
+                    var BtnVisible = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.BtnVisible, 0, CtrlFlag.Label, false, false);
+                    if (BtnVisible == PT0007_BtnVisible.UnVisible) {
+                        // 登録ボタンを非活性にする
+                        setDispMode(getButtonCtrl(PT0007_FormList.Button.RegistDepartment), true);
+                        // 取消ボタンを非活性にする
+                        setDispMode(getButtonCtrl(PT0007_FormList.Button.CancelDepartment), true);
+                    }
+
+                    // 棚番移庫タブを非表示
+                    hideTab(PT0007_FormList.TabNo.Location);
+                }
+                else {
+                    // 棚番移庫タブをクリックして表示する
+                    clickTab(PT0007_FormList.TabNo.Location);
+
+                    // 棚番移庫タブ フォーカス
+                    setFocusLocation(true);
+                }
+
             }
 
-        }
+            //処理が完了したことを通知（thenの処理を実行）
+            resolve();
+        }).then(() => {
+            //実行ボタンが全て非活性の場合、戻るor閉じるボタンにフォーカス設定
+            setFocusBackOrClose();
+        });
     }
 }
 

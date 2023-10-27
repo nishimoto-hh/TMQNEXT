@@ -675,11 +675,8 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
         var btnName = $(btn).attr("name");
         if (btnName == MasterFormList.ButtonId.Delete) {
             //  行削除アイコン押下時
-            var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, ',' + grpId);
-            $.each(keys, function (idx, key) {
-                // セッションストレージデータを削除
-                removeSaveDataFromSessionStorageByKey(key);
-            });
+            // コンボデータをクリア
+            clearSavedComboBoxData(grpId);
             if (conductId == ConductIdMS1001) {
                 // 実行正常終了後処理（場所階層用）
                 postRegistProcessForMS1001(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);

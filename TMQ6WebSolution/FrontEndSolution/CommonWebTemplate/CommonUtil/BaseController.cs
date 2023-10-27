@@ -35,6 +35,14 @@ namespace CommonWebTemplate.CommonUtil
         /// サイトTOPへのリダイレクトURL文字列
         /// </summary>
         public const string RedirectSiteTopURL = @"~/Common/RedirectSiteTop";
+        /// <summary>
+        /// 偽造防止トークン用Formキー名
+        /// </summary>
+        public const string VerificationTokenFormKeyName = "__RequestVerificationToken";
+        /// <summary>
+        /// 偽造防止トークン用Cookieキー名
+        /// </summary>
+        public const string VerificationTokenCookieKeyName = "XSRF-TOKEN";
         #endregion
 
         #region === private定数 ===
@@ -119,7 +127,7 @@ namespace CommonWebTemplate.CommonUtil
                 var token = getRequestVerificationToken(Request);
                 if (!string.IsNullOrEmpty(token))
                 {
-                    postData.Add("__RequestVerificationToken", token);
+                    postData.Add(VerificationTokenFormKeyName, token);
                 }
 
                 // CommonコントローラのIndexアクションへPOSTメソッドでリダイレクト
@@ -872,20 +880,33 @@ namespace CommonWebTemplate.CommonUtil
         /// <summary>
         /// リクエスト情報から偽造防止トークンを取得
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="request">HTTPRequestオブジェクト</param>
         /// <returns></returns>
         protected string getRequestVerificationToken(HttpRequest request)
         {
             var token = string.Empty;
-            if (request.HasFormContentType && Request.Form.ContainsKey("__RequestVerificationToken"))
+            if (request.HasFormContentType && Request.Form.ContainsKey(VerificationTokenFormKeyName))
             {
                 // Formから偽造防止トークンを取得
-                token = Request.Form["__RequestVerificationToken"];
+                token = Request.Form[VerificationTokenFormKeyName];
             }
-            else if (request.Cookies.ContainsKey("XSRF-TOKEN"))
+            else if (request.Cookies.ContainsKey(VerificationTokenCookieKeyName))
             {
-                // Cookieから偽造防止トークンを取得
-                token = Request.Cookies["XSRF-TOKEN"];
+                // RequestのCookieから偽造防止トークンを取得
+                token = Request.Cookies[VerificationTokenCookieKeyName];
+            }
+            else
+            {
+                // ResponseのCookieから偽造防止トークンを取得
+                var setCookies = Response.GetTypedHeaders().SetCookie;
+                if (setCookies != null)
+                {
+                    var setCookie = setCookies.FirstOrDefault(x => x.Name == VerificationTokenCookieKeyName);
+                    if (setCookie != null)
+                    {
+                        token = setCookie.Value.ToString();
+                    }
+                }
             }
             return token;
         }
@@ -894,25 +915,56 @@ namespace CommonWebTemplate.CommonUtil
         /// Commonコントローラの指定機能へ遷移
         /// </summary>
         /// <param name="request">HTTPRequestオブジェクト</param>
-        /// <param name="key">遷移先キー(JSON文字列)</param>
+        /// <param name="procData">業務ロジックデータ</param>
+        /// <param name="key">遷移先キー(アンダーバー区切りの文字列)</param>
+        /// <param name="token">偽造防止トークン</param>
         /// <returns></returns>
         protected ActionResult redirectToCommonAction(HttpRequest request, CommonProcData procData, string key, string token)
         {
             BusinessLogicUtil blogic = new BusinessLogicUtil();
             try
             {
-                // 暗号化されたアクセスキーを復号化
-                // バックエンドの復号化データ取得処理を呼び出す
-                CommonProcReturn returnInfo = blogic.GetDecryptedData(procData, key, out string decryptedKey);
-                if (returnInfo.IsProcEnd() || string.IsNullOrEmpty(decryptedKey))
-                {
-                    // 復号化失敗
-                    throw new Exception(string.Format("Failed to decrypt access key. [{0}]", key));
-                }
+                // 遷移先キーの暗号化は行わない
+                //// 暗号化されたアクセスキーを復号化
+                //// バックエンドの復号化データ取得処理を呼び出す
+                //CommonProcReturn returnInfo = blogic.GetDecryptedData(procData, key, out string decryptedKey);
+                //if (returnInfo.IsProcEnd() || string.IsNullOrEmpty(decryptedKey))
+                //{
+                //    // 復号化失敗
+                //    throw new Exception(string.Format("Failed to decrypt access key. [{0}]", key));
+                //}
 
-                // JSON文字列のアクセスキーをDictionaryに変換
-                Dictionary<string, object> dicKey = null;
-                dicKey = CommonDefinitions.CommonUtil.JsonToDictionary(decryptedKey);
+                //// JSON文字列のアクセスキーをDictionaryに変換
+                //Dictionary<string, object> dicKey = null;
+                //dicKey = CommonDefinitions.CommonUtil.JsonToDictionary(decryptedKey);
+
+                // 遷移キーをアンダーバー区切りの文字列とする
+                // [機能ID]_[画面NO]_[データキー(複数存在する場合はアンダーバー区切り)]
+                Dictionary<string, object> dicKey = new Dictionary<string, object>();
+                var keys = key.Split("_");
+                if (keys.Length > 0 && !string.IsNullOrEmpty(keys[0]))
+                {
+                    dicKey.Add("ID", keys[0]);
+                }
+                if (keys.Length > 1 && !string.IsNullOrEmpty(keys[1]))
+                {
+                    dicKey.Add("NO", Convert.ToInt32(keys[1]));
+                }
+                var dataKeys = new List<string>();
+                if (keys.Length > 2)
+                {
+                    for (int i = 2; i < keys.Length; i++)
+                    {
+                        if (!string.IsNullOrEmpty(keys[i]))
+                        {
+                            dataKeys.Add(keys[i]);
+                        }
+                    }
+                    if (dataKeys.Count > 0)
+                    {
+                        dicKey.Add("KEY", string.Join(",", dataKeys));
+                    }
+                }
 
                 Dictionary<string, object> postData = null;
                 if (dicKey.ContainsKey("ID") && dicKey.ContainsKey("NO") && dicKey.ContainsKey("KEY"))
@@ -922,7 +974,7 @@ namespace CommonWebTemplate.CommonUtil
                     postData.Add("ConductId", dicKey["ID"]);
                     postData.Add("FormNo", dicKey["NO"]);
                     postData.Add("KEY", dicKey["KEY"]);
-                    postData.Add("__RequestVerificationToken", token);
+                    postData.Add(VerificationTokenFormKeyName, token);
                 }
                 else
                 {

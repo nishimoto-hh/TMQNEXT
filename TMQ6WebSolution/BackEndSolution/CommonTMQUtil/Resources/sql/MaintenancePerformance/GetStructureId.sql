@@ -10,7 +10,7 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
     FROM 
         ms_structure AS st
     WHERE
-        st.structure_id IN @StructureIdList
+        @StructureIdList
         /*フロント側で取得した構造IDを列挙*/
 ),
 rec_down(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(

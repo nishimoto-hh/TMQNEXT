@@ -2048,20 +2048,20 @@ namespace CommonWebTemplate.CommonUtil
         }
 
         /// <summary>
-        /// メールアドレスからユーザIDを取得
+        /// メールアドレスからログインIDを取得
         /// </summary>
         /// <param name="procData">
         /// 業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ(※以下、使用項目、内(*)：必須項目)
         /// 　mailAdress:メールアドレス(*)
         /// </param>
-        /// <param name="userId">ユーザID</param>
+        /// <param name="loginId">ログインID</param>
         /// <returns>処理ステータス情報</returns>
-        public CommonProcReturn GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out string userId)
+        public CommonProcReturn GetLoninIdByMailAdress(CommonProcData procData, string mailAdress, out string loginId)
         {
-            procData.CtrlId = "GetUserIdByMailAdress";
+            procData.CtrlId = "GetLoninIdByMailAdress";
             BusinessLogicIO logicIO = new BusinessLogicIO(procData);
             // ユーザID取得
-            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_GetUserIdByMailAdress(procData, mailAdress, out userId);
+            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_GetLoingIdByMailAdress(procData, mailAdress, out loginId);
 
             //処理結果
             return returnInfo;

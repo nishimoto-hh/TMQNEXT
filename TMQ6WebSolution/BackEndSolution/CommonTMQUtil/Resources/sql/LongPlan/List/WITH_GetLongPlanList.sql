@@ -1,3 +1,6 @@
+/*
+* 一覧の項目の内容を取得するSQL
+*/
 WITH eq_att AS(
      -- 機器情報添付の取得に使用する機器IDを機器情報より取得
     SELECT DISTINCT
@@ -77,6 +80,58 @@ max_dt AS(
         structure_group_id IN(1330, 1280, 1300, 1060, 1290, 1410, 1310, 1320)
     AND language_id = @LanguageId
 )
+,prepare_limit_days AS(
+     -- 準備対象列取得用、表示対象の日数を拡張項目より取得
+    SELECT
+        TOP 1 ex.extension_data AS limit_days
+    FROM
+        v_structure AS it
+        INNER JOIN
+            ms_item_extension AS ex
+        ON  (
+                it.structure_item_id = ex.item_id
+            AND ex.sequence_no = 9
+            )
+    WHERE
+        it.structure_group_id = 2080
+)
+,prepare_target AS(
+ -- 準備対象列取得用、機器別管理基準内でスケジュールが未完了かつ準備期間に入っているものを取得
+    SELECT
+        lp.long_plan_id,
+        msd.schedule_date,
+        COALESCE(preparation_period, 0) AS preparation_period,
+        row_number() over(partition BY lp.long_plan_id ORDER BY msd.schedule_date) AS row_num
+    FROM
+        ln_long_plan lp
+        INNER JOIN
+            mc_management_standards_content msc
+        ON  lp.long_plan_id = msc.long_plan_id
+        INNER JOIN
+            mc_maintainance_schedule ms
+        ON  msc.management_standards_content_id = ms.management_standards_content_id
+        INNER JOIN
+            mc_maintainance_schedule_detail msd
+        ON  ms.maintainance_schedule_id = msd.maintainance_schedule_id
+        AND COALESCE(msd.complition, 0) != 1
+    WHERE
+        msd.schedule_date >= DATEADD(dd,(
+                SELECT
+                    limit_days
+                FROM
+                    prepare_limit_days
+            ) * (- 1), GETDATE())
+)
+,prepare_target_narrow AS(
+-- 準備対象列取得用、直近1件に絞込、準備期間の日数を引き対象のもののみを表示、これを外部結合し、有無により準備対象列と判定する
+    SELECT
+        pt.long_plan_id
+    FROM
+        prepare_target AS pt
+    WHERE
+        pt.row_num = 1
+    AND GETDATE() >= DATEADD(dd,(pt.preparation_period) * (- 1), pt.schedule_date)
+)
 ,target AS(
      -- 表示情報を取得するSQL、翻訳対応のためWITH句へ
     SELECT
@@ -120,8 +175,10 @@ max_dt AS(
         ,max_dt.mc_man_st_con_update_datetime
         ,max_dt.sche_detail_update_datetime
         ,max_dt.attachment_update_datetime
+        -- スケジュールと同じ値
         ,lp.long_plan_id AS key_id
-    -- スケジュールと同じ値
+        -- 準備対象列
+        ,COALESCE((SELECT 1 FROM prepare_target_narrow AS pt WHERE pt.long_plan_id = lp.long_plan_id),0) AS preparation_flg
     FROM
          ln_long_plan AS lp
         LEFT OUTER JOIN

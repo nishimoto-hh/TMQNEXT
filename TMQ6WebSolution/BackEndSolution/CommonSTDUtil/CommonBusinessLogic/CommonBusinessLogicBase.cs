@@ -27,6 +27,7 @@ using UpdTag = CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS.UPDTAG;
 using RowStatus = CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS.ROWSTATUS;
 using ComRes = CommonSTDUtil.CommonResources;
 using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using System.Text.RegularExpressions;
 
 namespace CommonSTDUtil.CommonBusinessLogic
 {
@@ -5748,23 +5749,43 @@ namespace CommonSTDUtil.CommonBusinessLogic
             var existsWhere = false;
             if (selectSql.Contains(CommonColumnName.LocationId) && !unUseLocation)
             {
+                bool useBelongingInfo = false;
                 List<int> locationIdList = getIdListBySearchCond(STRUCTURE_CONSTANTS.CONDITION_KEY.Location);
                 if ((locationIdList == null || locationIdList.Count == 0) &&
                     (this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0))
                 {
                     // 場所階層の指定なしの場合、所属場所階層を渡す
-                    locationIdList = this.BelongingInfo.LocationInfoList.Select(x => x.StructureId).ToList();
+                    locationIdList = getBelongLocationIdList();
+                    useBelongingInfo = true;
                 }
 
                 if (locationIdList.Count > 0)
                 {
+                    //配下の構成IDを取得
                     locationIdList = GetLowerStructureIdList(locationIdList);
+                    if(!useBelongingInfo && this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0)
+                    {
+                        //場所階層の指定ありの場合
+
+                        //所属場所階層の配下の構成IDを取得
+                        List<int> belongLocationIdList = GetLowerStructureIdList(getBelongLocationIdList());
+                        //所属場所階層と一致するもののみ抽出
+                        locationIdList = locationIdList.Where(x => belongLocationIdList.Contains(x)).ToList();
+                    }
+                    if(locationIdList.Count == 0)
+                    {
+                        //所属に無いもののみが指定されていた場合、データを表示しない
+                        locationIdList.Add(-1);
+                    }
 
                     // WHERE句を生成
                     existsWhere = true;
                     sbSql.Append("WHERE ");
-                    sbSql.Append(CommonColumnName.LocationId).AppendLine(" IN @LocationIdList");
-                    dicResult.Add("LocationIdList", locationIdList);
+                    //sbSql.Append(CommonColumnName.LocationId).AppendLine(" IN @LocationIdList");
+                    //dicResult.Add("LocationIdList", locationIdList);
+                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
+                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.LocationId, locationIdList);
+                    sbSql.Append(orParam);
                 }
             }
 
@@ -5786,14 +5807,18 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     // WHERE句を生成
                     existsWhere = true;
                     sbSql.Append("WHERE ");
-                    sbSql.Append(CommonColumnName.PartsLocationId).AppendLine(" IN @LocationIdList");
-                    dicResult.Add("LocationIdList", locationIdList);
+                    //sbSql.Append(CommonColumnName.PartsLocationId).AppendLine(" IN @LocationIdList");
+                    //dicResult.Add("LocationIdList", locationIdList);
+                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
+                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.PartsLocationId, locationIdList);
+                    sbSql.Append(orParam);
                 }
             }
 
             // 職種機種構成IDリストを取得
             if (selectSql.Contains(CommonColumnName.JobId))
             {
+                bool useBelongingInfo = false;
                 List<int> jobIdList = getIdListBySearchCond(STRUCTURE_CONSTANTS.CONDITION_KEY.Job);
 
                 if ((jobIdList == null || jobIdList.Count == 0) && 
@@ -5801,11 +5826,26 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 {
                     // 職種機種の指定なしの場合、所属職種機種を渡す
                     jobIdList = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
+                    useBelongingInfo = true;
                 }
 
                 if (jobIdList.Count > 0)
                 {
                     jobIdList = GetLowerStructureIdList(jobIdList);
+                    if (!useBelongingInfo && this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0)
+                    {
+                        //職種機種の指定ありの場合
+
+                        //所属職種の配下の構成IDを取得
+                        List<int> belongJobIdList = GetLowerStructureIdList(this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList());
+                        //所属職種と一致するもののみ抽出
+                        jobIdList = jobIdList.Where(x => belongJobIdList.Contains(x)).ToList();
+                    }
+                    if (jobIdList.Count == 0)
+                    {
+                        //所属に無いもののみが指定されていた場合、データを表示しない
+                        jobIdList.Add(-1);
+                    }
                     if (existsWhere)
                     {
                         sbSql.Append("AND ");
@@ -5815,8 +5855,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         existsWhere = true;
                         sbSql.Append("WHERE ");
                     }
-                    sbSql.Append(CommonColumnName.JobId).AppendLine(" IN @JobIdList");
-                    dicResult.Add("JobIdList", jobIdList);
+                    //sbSql.Append(CommonColumnName.JobId).AppendLine(" IN @JobIdList");
+                    //dicResult.Add("JobIdList", jobIdList);
+                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
+                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.JobId, jobIdList);
+                    sbSql.Append(orParam);
                 }
             }
 
@@ -5923,9 +5966,18 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>配下の構成IDリスト</returns>
         public List<int> GetLowerStructureIdList(List<int> baseIdList)
         {
-            var list = this.db.GetListByOutsideSql<int>(
-                SqlName.GetStructureLowerList, SqlName.SubDir, new { StructureIdList = baseIdList }).ToList();
-            return list;
+            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+            string orParam = ComUtil.GetWhereSqlString("structure_id", baseIdList);
+
+            // SQL取得
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureLowerList, out string sql);
+
+            // 生成した条件文字列をSQLに設定する
+            Regex paramReplace = new Regex("@StructureIdList");
+            sql = paramReplace.Replace(sql, orParam);
+            // 選択された構成IDリストから配下の構成IDをすべて取得
+            IList<int> list = this.db.GetList<int>(sql);
+            return list.ToList();
         }
 
         /// <summary>
@@ -5935,9 +5987,18 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>棚の構成IDリスト</returns>
         public List<int> GetPartsStructureIdList(List<int> baseIdList)
         {
-            var list = this.db.GetListByOutsideSql<int>(
-                SqlName.GetPartsLocationList, SqlName.SubDir, new { StructureIdList = baseIdList, UserId = this.UserId }).ToList();
-            return list;
+            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+            string orParam = ComUtil.GetWhereSqlString("st.structure_id", baseIdList);
+
+            // SQL取得
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetPartsLocationList, out string sql);
+
+            // 生成した条件文字列をSQLに設定する
+            Regex paramReplace = new Regex("@StructureIdList");
+            sql = paramReplace.Replace(sql, orParam);
+            // 選択された構成IDリストから予備品棚の構成IDをすべて取得
+            IList<int> list = this.db.GetList<int>(sql, new { UserId = this.UserId });
+            return list.ToList();
         }
 
         /// <summary>
@@ -6275,6 +6336,47 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             return checkFlg;
         }
+
+        /// <summary>
+        /// 固定SQL文の取得
+        /// </summary>
+        /// <param name="subDir">Resources\sql配下のサブディレクトリパス(サブディレクトリが複数階層の場合、パス区切り文字は"\"ではなく".")</param>
+        /// <param name="fileName">SQLテキストファイル名</param>
+        /// <param name="sql">out 取得したSQL文</param>
+        /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+        /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
+        private static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnComment = null)
+        {
+            sql = string.Empty;
+            string assemblyName = CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementAssemblyName;
+
+            // リソース名を生成
+            StringBuilder resourceName = new StringBuilder();
+            resourceName.Append(assemblyName).Append(".").Append(CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementDir).Append(".");
+            if (!string.IsNullOrEmpty(subDir))
+            {
+                // サブディレクトリパスの追加(念のためパス区切り文字を"."に変換しておく)
+                resourceName.Append(subDir.Replace(@"\", ".")).Append(".");
+            }
+            resourceName.Append(fileName).Append(".sql");
+
+            // 埋め込みリソースからSQL文を取得
+            bool result = ComUtil.GetEmbeddedResourceStr(assemblyName, resourceName.ToString(), out sql);
+
+            // SQLの動的制御　コメントアウトを解除
+            if (listUnComment != null && listUnComment.Count > 0)
+            {
+                foreach (string wordUnComment in listUnComment)
+                {
+                    // @+指定された文字列がコメントアウトの前後に付いているので除去
+                    // /*@Hoge と @Hoge*/ を除去すれば、囲われたSQLが有効になる
+                    Regex startReplace = new Regex("\\/\\*@" + wordUnComment + "[^a-zA-Z\\d_]");
+                    sql = startReplace.Replace(sql, string.Empty).Replace("@" + wordUnComment + "*/", string.Empty);
+                }
+            }
+
+            return result;
+        }
     }
 
     /// <summary>
@@ -6358,6 +6460,5 @@ namespace CommonSTDUtil.CommonBusinessLogic
         public object Key3 { get; set; }
     }
     #endregion
-
 
 }

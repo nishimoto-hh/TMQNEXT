@@ -54,6 +54,11 @@ namespace CommonWebTemplate.Controllers
                     //=== ｱｸｾｽ許可ﾁｪｯｸ ===
                     //ｱｸｾｽ許可URL
                     string siteMinderUrl = AppCommonObject.Config.AppSettings.SiteMinderURL;
+                    CommonProcData procData = new CommonProcData();
+
+                    //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                    BusinessLogicUtil blogic = new BusinessLogicUtil();
+                    SetRequestInfo(ref procData);
                     if (!string.IsNullOrEmpty(siteMinderUrl))
                     {
                         //※ｱｸｾｽ許可URLが設定されている場合、ﾁｪｯｸする
@@ -67,11 +72,11 @@ namespace CommonWebTemplate.Controllers
                         {
                             //※ｱｸｾｽ不正
 
-                            //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
-                            CommonProcData procData = new CommonProcData();
+                            ////ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                            //CommonProcData procData = new CommonProcData();
 
-                            BusinessLogicUtil blogic = new BusinessLogicUtil();
-                            SetRequestInfo(ref procData);
+                            //BusinessLogicUtil blogic = new BusinessLogicUtil();
+                            //SetRequestInfo(ref procData);
                             //ブラウザの言語を取得
                             var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
                             if (procData.LanguageId == null)
@@ -86,15 +91,16 @@ namespace CommonWebTemplate.Controllers
                     }
 
                     //=== ﾘｸｴｽﾄ情報からﾛｸﾞｲﾝﾕｰｻﾞｰIDを取り出し ===
-                    string userId = "";
+                    //string userId = "";
                     //if (Request.Headers.ContainsKey(RequestManageUtil.RequestKey.SM_USER))
                     //{
                     //    userId = Request.Headers[RequestManageUtil.RequestKey.SM_USER].ToString();
                     //}
 
+                    string loginId = "";
                     // ★AzureADからのログイン時にメールアドレスからユーザIDを取得する場合、以下の処理を有効にしてください
                     // ↓↓↓ここから↓↓↓
-                    ////ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                    //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
                     //CommonProcData procData = new CommonProcData();
                     //SetRequestInfo(ref procData);
 
@@ -103,16 +109,15 @@ namespace CommonWebTemplate.Controllers
                     //string email = HttpContent.User.FindFirst(ClaimTypes.Name).Value;
 
                     //// メールアドレスをTMQのDBと照合し、取得できれば認証OKとする
-                    //BusinessLogicUtil blogic = new BusinessLogicUtil();
-                    //blogic.GetUserIdByMailAdress(procData, email, out string userId);
-                    //if (string.IsNullOrEmpty(userId))
+                    //blogic.GetLoninIdByMailAdress(procData, email, out string loginId);
+                    //if (string.IsNullOrEmpty(loginId))
                     //{
                     //    // 認証NG⇒ログイン画面表示？
                     //}
                     // ↑↑↑ここまで↑↑↑
 
                     //=== ﾛｸﾞｲﾝ処理 ===
-                    return Login(userId, null, string.Empty, true, sourceURL);
+                    return Login(loginId, null, string.Empty, true, sourceURL);
                 }
                 else
                 {

@@ -131,7 +131,6 @@
     <EmbeddedResource Include="sql\Common\ComboBox\C0011.sql" />
     <EmbeddedResource Include="sql\Common\ComboBox\C0018.sql" />
     <EmbeddedResource Include="sql\Common\GetImageFileInfo.sql" />
-    <EmbeddedResource Include="sql\Common\Structure_GetPartsLocationList.sql" />
   </ItemGroup>
 
   <ItemGroup>

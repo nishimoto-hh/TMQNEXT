@@ -15,7 +15,7 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1000
-                AND ms.structure_id IN @LocationIdList
+                ReplaceLocationIdList
                 AND ms.structure_layer_no = 1
             ) factory
             INNER JOIN
@@ -27,7 +27,7 @@ FROM
                         ms_structure ms
                     WHERE
                         ms.structure_group_id = 1010
-                    AND ms.structure_id IN @JobIdList
+                    ReplaceJobIdList
                     AND ms.structure_layer_no = 0
                 ) job
             ON  factory.factory_id = job.factory_id
@@ -43,7 +43,7 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1000
-                AND ms.structure_id IN @LocationIdList
+                ReplaceLocationIdList
                 AND ms.structure_layer_no = 1
             ) factory,
             (
@@ -53,7 +53,7 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1010
-                AND ms.structure_id IN @JobIdList
+                ReplaceJobIdList
                 AND ms.structure_layer_no = 0
                 AND ms.factory_id = 0
             ) job

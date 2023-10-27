@@ -22,6 +22,7 @@ SELECT
     ,target.budget_personality_structure_id
     ,target.list_group_id
     ,target.key_id
+    ,0 AS header_flg
     -- 翻訳
     -- 部位
     ,(

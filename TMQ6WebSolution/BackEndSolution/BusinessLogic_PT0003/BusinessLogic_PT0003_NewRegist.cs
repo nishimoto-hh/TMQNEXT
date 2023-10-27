@@ -329,7 +329,7 @@ namespace BusinessLogic_PT0003
                 //連番
                 param.Seq = OldNewDivition.Seq;
 
-                //棚卸状況の構成アイテム情報取得
+                //新旧区分の構成アイテム情報取得
                 List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
                 if (list != null)
                 {

@@ -46,8 +46,14 @@ namespace BusinessLogic_PT0003
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.List.InventoryList, this.pageInfoList);
 
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            {
+                return false;
+            }
+
             // 総件数取得SQL文の取得
-            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, null, withSql);
+            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
             // 総件数を取得
             //int cnt = db.GetCount(execSql, whereParam);
@@ -59,7 +65,7 @@ namespace BusinessLogic_PT0003
             }
 
             // 一覧検索SQL文の取得
-            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, null, withSql);
+            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
             // 検索SQLにORDER BYを追加
             var selectSql = new StringBuilder(execSql);
             selectSql.AppendLine(" ORDER BY parts_location_id, parts_no, old_new_structure_id, department_structure_id, account_structure_id ");
@@ -208,12 +214,6 @@ namespace BusinessLogic_PT0003
             //予備品倉庫から棚番IDを取得
             condition.PartsLocationIdList = GetLowerStructureIdList(new List<int> { condition.StorageLocationId });
 
-            //場所階層の条件を取得
-            setLocationStructureIdList();
-
-            //職種の条件を取得
-            setJobStructureIdList();
-
             // SQLのアンコメントする条件を設定
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             listUnComment = ComUtil.GetNotNullNameByClass<Dao.searchCondition>(condition);
@@ -234,65 +234,6 @@ namespace BusinessLogic_PT0003
                 listUnComment.Add(status == ReadyStatus.Created ? ReadyStatus.CreatedUncommentKey : ReadyStatus.NotYetUncommentKey);
             }
             return condition;
-
-            //場所階層の条件を取得
-            void setLocationStructureIdList()
-            {
-                //場所階層
-                var keyName = STRUCTURE_CONSTANTS.CONDITION_KEY.Location;
-                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
-                if (dic != null && dic.ContainsKey(keyName))
-                {
-                    List<int> locationIdList = dic[keyName] as List<int>;
-                    if ((locationIdList == null || locationIdList.Count == 0) &&
-                        (this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0))
-                    {
-                        // 場所階層の指定なしの場合、所属場所階層を渡す
-                        locationIdList = this.BelongingInfo.LocationInfoList.Select(x => x.StructureId).ToList();
-                    }
-                    // 選択された構成IDリストから配下の構成IDをすべて取得
-                    if (locationIdList.Count > 0)
-                    {
-                        //工場IDを抽出
-                        condition.FactoryIdList = GetPartsStructureIdList(locationIdList);
-                    }
-                }
-            }
-
-            //職種の条件を取得
-            void setJobStructureIdList()
-            {
-                //職種
-                var keyName =STRUCTURE_CONSTANTS.CONDITION_KEY.Job;
-                bool useBelongingInfo = false;
-                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(keyName)).FirstOrDefault();
-                if (dic != null && dic.ContainsKey(keyName))
-                {
-                    // 選択された構成IDリストから配下の構成IDをすべて取得
-                    List<int> jobIdList = dic[keyName] as List<int>;
-                    if ((jobIdList == null || jobIdList.Count == 0) &&
-                        (this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0))
-                    {
-                        // 職種機種の指定なしの場合、所属職種機種を渡す
-                        jobIdList = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
-                        useBelongingInfo = true;
-                    }
-                    if (jobIdList.Count > 0)
-                    {
-                        jobIdList = GetLowerStructureIdList(jobIdList);
-                        if (!useBelongingInfo && this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0)
-                        {
-                            //職種機種の指定ありの場合
-
-                            //所属職種の配下の構成IDを取得
-                            List<int> belongJobIdList = GetLowerStructureIdList(this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList());
-                            //所属職種と一致するもののみ抽出
-                            jobIdList = jobIdList.Where(x => belongJobIdList.Contains(x)).ToList();
-                        }
-                        condition.JobIdList = jobIdList;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -345,10 +286,9 @@ namespace BusinessLogic_PT0003
 
                 //棚卸データの存在チェック
                 string sql;
-                // if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCountRegistInventory, out sql))
                 if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCountRegistInventory, out sql, listUnComment))
                 {
-                        return false;
+                    return false;
                 }
                 //対象の棚卸データが存在するかチェック
                 int cnt = db.GetCount(sql, registData);

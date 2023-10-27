@@ -22,6 +22,7 @@ using System.Dynamic;
 using ComBase = CommonSTDUtil.CommonDataBaseClass;
 using InputDao = CommonSTDUtil.CommonSTDUtil.CommonInputReportDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
+using System.Text.RegularExpressions;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -2980,127 +2981,101 @@ namespace CommonTMQUtil
             info.SetExlSetValueByAddress("G" + outputRowCount.ToString(), GetTranslationText(111140018, languageId, db));
             mappingList.Add(info);
 
-            //// 場所階層
-            //for (int i = 0; i < conditionSheetLocationList.Count; i++)
-            //{
-            //    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
-            //    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
-            //    // マッピングセルを設定
-            //    address = ToAlphabet(i + 2) + (ComReport.ConditionSheetLocationRow).ToString();
+            // 場所階層
+            if(conditionSheetLocationList.Count > 0)
+            { 
+                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+                string orParam = ComUtil.GetWhereSqlString("st.structure_id", conditionSheetLocationList);
+                // SQL取得
+                GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText);
+                // 生成した条件文字列をSQLに設定する
+                Regex paramReplace = new Regex("@StructureIdList");
+                sqlText = paramReplace.Replace(sqlText, orParam);
+                // IDのリストより上位の階層を検索し、階層情報のリストを取得
+                var param = new { LanguageId = languageId };
 
-            //    // 場所階層構成IDから翻訳を取得
-            //    STDDao.VStructureItemEntity condition = new STDDao.VStructureItemEntity();
-            //    condition.StructureId = conditionSheetLocationList[i];
-            //    condition.LanguageId = languageId;
-            //    string getEntitySql = "select TOP(1) * from v_structure_item where structure_id = @StructureId and language_id = @LanguageId and location_structure_id = 0 order by location_structure_id ";
-            //    STDDao.VStructureItemEntity itemName = db.GetEntityByDataClass<STDDao.VStructureItemEntity>(getEntitySql, condition);
-
-            //    // マッピング情報設定
-            //    info.SetExlSetValueByAddress(address, itemName.TranslationText);
-
-            //    // マッピングリストに追加
-            //    mappingList.Add(info);
-            //}
-
-            var param = new { StructureIdList = conditionSheetLocationList, LanguageId = languageId };
-            var structureInfoList = SqlExecuteClass.SelectList<TMQUtil.StructureLayerInfo.StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param, db);
-            if (structureInfoList != null)
-            {
-                // 最上位の階層から最下層IDを取る
-                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> structureLayerInfoList = structureInfoList.Where(x => x.StructureLayerNo == 0).ToArray();
-
-                // 最下層のリスト
-                IList<TMQUtil.StructureLayerInfo.StructureLocationInfoEx> bottomLayerAll = new List<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>();
-
-                // 最上位の階層ごとに処理を繰り返す
-                foreach (TMQUtil.StructureLayerInfo.StructureGetInfo structureGetInfo in structureLayerInfoList)
+                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText, param);
+                if (results != null)
                 {
-                    TMQUtil.StructureLayerInfo.StructureLocationInfoEx temp = new();
-                    temp.LocationStructureId = structureGetInfo.OrgStructureId;
-                    bottomLayerAll.Add(temp);
-                }
+                    var structureInfoList = results.ToList();
+                    if (structureInfoList != null)
+                    {
+                        // 最上位の階層から最下層IDを取る
+                        IList<TMQUtil.StructureLayerInfo.StructureGetInfo> structureLayerInfoList = structureInfoList.Where(x => x.StructureLayerNo == 0).ToArray();
 
-                // データクラスに地区及び職種の階層情報を設定する処理
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>(ref bottomLayerAll, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Location }, db, languageId);
-                // 地区、工場、プラント、系列、工程、設備の順に並び替え(場所階層ツリーの表示順に合わせる)
-                var sortList = bottomLayerAll.OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId)
-                                                .ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId).ToList();
+                        // 最下層のリスト
+                        IList<TMQUtil.StructureLayerInfo.StructureLocationInfoEx> bottomLayerAll = new List<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>();
 
-                for (int i = 0; i < sortList.Count; i++)
-                {
-                    // 地区
-                    // マッピングセルを設定
-                    address = "B" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].DistrictName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        // 最上位の階層ごとに処理を繰り返す
+                        foreach (TMQUtil.StructureLayerInfo.StructureGetInfo structureGetInfo in structureLayerInfoList)
+                        {
+                            TMQUtil.StructureLayerInfo.StructureLocationInfoEx temp = new();
+                            temp.LocationStructureId = structureGetInfo.OrgStructureId;
+                            bottomLayerAll.Add(temp);
+                        }
 
-                    // 工場
-                    // マッピングセルを設定
-                    address = "C" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].FactoryName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        // データクラスに地区及び職種の階層情報を設定する処理
+                        TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>(ref bottomLayerAll, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Location }, db, languageId);
+                        // 地区、工場、プラント、系列、工程、設備の順に並び替え(場所階層ツリーの表示順に合わせる)
+                        var sortList = bottomLayerAll.OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId)
+                                                        .ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId).ToList();
 
-                    // プラント
-                    // マッピングセルを設定
-                    address = "D" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].PlantName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        for (int i = 0; i < sortList.Count; i++)
+                        {
+                            // 地区
+                            // マッピングセルを設定
+                            address = "B" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].DistrictName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
 
-                    // 系列
-                    // マッピングセルを設定
-                    address = "E" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].SeriesName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                            // 工場
+                            // マッピングセルを設定
+                            address = "C" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].FactoryName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
 
-                    // 工程
-                    // マッピングセルを設定
-                    address = "F" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].StrokeName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                            // プラント
+                            // マッピングセルを設定
+                            address = "D" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].PlantName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
 
-                    // 設備
-                    // マッピングセルを設定
-                    address = "G" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList[i].FacilityName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                            // 系列
+                            // マッピングセルを設定
+                            address = "E" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].SeriesName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
 
-                    outputRowCount += 1;
+                            // 工程
+                            // マッピングセルを設定
+                            address = "F" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].StrokeName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 設備
+                            // マッピングセルを設定
+                            address = "G" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].FacilityName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            outputRowCount += 1;
+                        }
+                    }
                 }
             }
-
-            //// 職種・機種
-            //for (int i = 0; i < conditionSheetJobList.Count; i++)
-            //{
-            //    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
-            //    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
-            //    // マッピングセルを設定
-            //    address = ToAlphabet(i + 2) + (ComReport.ConditionSheetJobRow).ToString();
-
-            //    STDDao.VStructureItemEntity condition = new STDDao.VStructureItemEntity();
-            //    condition.StructureId = conditionSheetJobList[i];
-            //    condition.LanguageId = languageId;
-            //    string getEntitySql = "select TOP(1) * from v_structure_item where structure_id = @StructureId and language_id = @LanguageId and location_structure_id = 0 order by location_structure_id ";
-            //    STDDao.VStructureItemEntity itemName = db.GetEntityByDataClass<STDDao.VStructureItemEntity>(getEntitySql, condition);
-
-            //    // マッピング情報設定
-            //    info.SetExlSetValueByAddress(address, itemName.TranslationText);
-
-            //    // マッピングリストに追加
-            //    mappingList.Add(info);
-            //}
-
+            // 職種・機種
             // 行をあける
             outputRowCount += 2;
             // 職種・機種
@@ -3119,67 +3094,83 @@ namespace CommonTMQUtil
             info.SetExlSetValueByAddress("E" + outputRowCount.ToString(), GetTranslationText(111070007, languageId, db));
             mappingList.Add(info);
 
-            var param2 = new { StructureIdList = conditionSheetJobList, LanguageId = languageId };
-            var structureInfoList2 = SqlExecuteClass.SelectList<TMQUtil.StructureLayerInfo.StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param2, db);
-            if (structureInfoList2 != null)
+            // 職種・機種
+            if(conditionSheetJobList.Count > 0)
             {
-                // 最上位の階層から最下層IDを取る
-                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> structureLayerInfoList2 = structureInfoList2.Where(x => x.StructureLayerNo == 0).ToArray();
-
-                // 最下層のリスト
-                IList<TMQUtil.StructureLayerInfo.StructureJobInfoEx> bottomLayerAll2 = new List<TMQUtil.StructureLayerInfo.StructureJobInfoEx>();
-
-                // 最上位の階層ごとに処理を繰り返す
-                foreach (TMQUtil.StructureLayerInfo.StructureGetInfo structureGetInfo2 in structureLayerInfoList2)
+                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
+                string orParam = ComUtil.GetWhereSqlString("st.structure_id", conditionSheetJobList);
+                // SQL取得
+                GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText2);
+                // 生成した条件文字列をSQLに設定する
+                Regex paramReplace = new Regex("@StructureIdList");
+                string sqlText = paramReplace.Replace(sqlText2, orParam);
+                // IDのリストより上位の階層を検索し、階層情報のリストを取得
+                var param = new { LanguageId = languageId };
+                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText, param);
+                if (results != null)
                 {
-                    TMQUtil.StructureLayerInfo.StructureJobInfoEx temp = new();
-                    temp.JobStructureId = structureGetInfo2.OrgStructureId;
-                    bottomLayerAll2.Add(temp);
-                }
+                    var structureInfoList2 = results.ToList();
 
-                // データクラスに地区及び職種の階層情報を設定する処理
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<TMQUtil.StructureLayerInfo.StructureJobInfoEx>(ref bottomLayerAll2, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Job }, db, languageId);
-                // 職種、機種大分類、機種中分類、機種小分類の順に並び替え(職種階層ツリーの表示順に合わせる)
-                var sortList2 = bottomLayerAll2.OrderBy(x => x.JobId).OrderBy(x => x.LargeClassficationId).ThenBy(x => x.MiddleClassficationId).ThenBy(x => x.SmallClassficationId).ToList();
+                    if (structureInfoList2 != null)
+                    {
+                        // 最上位の階層から最下層IDを取る
+                        IList<TMQUtil.StructureLayerInfo.StructureGetInfo> structureLayerInfoList2 = structureInfoList2.Where(x => x.StructureLayerNo == 0).ToArray();
 
-                for (int i = 0; i < sortList2.Count; i++)
-                {
-                    // 職種
-                    // マッピングセルを設定
-                    address = "B" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList2[i].JobName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        // 最下層のリスト
+                        IList<TMQUtil.StructureLayerInfo.StructureJobInfoEx> bottomLayerAll2 = new List<TMQUtil.StructureLayerInfo.StructureJobInfoEx>();
 
-                    // 機種大分類
-                    // マッピングセルを設定
-                    address = "C" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList2[i].LargeClassficationName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        // 最上位の階層ごとに処理を繰り返す
+                        foreach (TMQUtil.StructureLayerInfo.StructureGetInfo structureGetInfo2 in structureLayerInfoList2)
+                        {
+                            TMQUtil.StructureLayerInfo.StructureJobInfoEx temp = new();
+                            temp.JobStructureId = structureGetInfo2.OrgStructureId;
+                            bottomLayerAll2.Add(temp);
+                        }
 
-                    // 機種中分類
-                    // マッピングセルを設定
-                    address = "D" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList2[i].MiddleClassficationName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        // データクラスに地区及び職種の階層情報を設定する処理
+                        TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<TMQUtil.StructureLayerInfo.StructureJobInfoEx>(ref bottomLayerAll2, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Job }, db, languageId);
+                        // 職種、機種大分類、機種中分類、機種小分類の順に並び替え(職種階層ツリーの表示順に合わせる)
+                        var sortList2 = bottomLayerAll2.OrderBy(x => x.JobId).OrderBy(x => x.LargeClassficationId).ThenBy(x => x.MiddleClassficationId).ThenBy(x => x.SmallClassficationId).ToList();
 
-                    // 機種小分類
-                    // マッピングセルを設定
-                    address = "E" + (outputRowCount + 1).ToString();
-                    // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, sortList2[i].SmallClassficationName);
-                    // マッピングリストに追加
-                    mappingList.Add(info);
+                        for (int i = 0; i < sortList2.Count; i++)
+                        {
+                            // 職種
+                            // マッピングセルを設定
+                            address = "B" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList2[i].JobName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
 
-                    outputRowCount += 1;
+                            // 機種大分類
+                            // マッピングセルを設定
+                            address = "C" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList2[i].LargeClassficationName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 機種中分類
+                            // マッピングセルを設定
+                            address = "D" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList2[i].MiddleClassficationName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 機種小分類
+                            // マッピングセルを設定
+                            address = "E" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList2[i].SmallClassficationName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            outputRowCount += 1;
+                        }
+                    }
                 }
             }
-
             // 行をあける
             outputRowCount += 2;
 

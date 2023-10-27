@@ -1575,9 +1575,10 @@ function selectTab(selectTabNo) {
  * @param {any} options prevCreateTabulatorの引数、Tabulatorのコンストラクタに渡すテーブルオプション
  * @param {number} groupKeyVal 集計するキーの列のVAL値
  * @param {array[number]} groupDispVals 表示するキーの列のVAL値
-  * @param {array[number]} copyVals 削除せずコピーする列のVAL値
+ * @param {array[number]} copyVals 削除せずコピーする列のVAL値
+ * @param {number} headerFlgVal ヘッダ行ならTRUEをセットする列のVAL値
  */
-function convertTabulatorListToGroup(options, groupKeyVal, groupDispVals, copyVals) {
+function convertTabulatorListToGroup(options, groupKeyVal, groupDispVals, copyVals, headerFlgVal) {
     /*
      1 A TestA1
      2 A TestA2
@@ -1641,6 +1642,8 @@ function convertTabulatorListToGroup(options, groupKeyVal, groupDispVals, copyVa
         }
         // 集計行なので、子を追加
         newRow[childName] = [];
+
+        newRow["VAL" + headerFlgVal] = true;
         return newRow;
     }
     /**
@@ -3075,6 +3078,13 @@ function convertTabulatorListToNestedTable(id, parentId, childrenId, parentKeyVa
     var pData = pTable.getData();
     //子一覧のデータ
     var cData = cTable.getData();
+
+    if (!pData || pData.length <= 0) {
+        //親一覧のデータが無い場合終了
+        pTable = null;
+        cTable = null;
+        return;
+    }
 
     var pSubData = $.grep(pData, function (obj, index) {
         return (obj.SubData);

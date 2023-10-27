@@ -81,6 +81,8 @@ WITH number_unit AS (
         , plt.department_structure_id                                                    --部門ID
         , plt.account_structure_id                                                       --勘定科目ID
         , pps.factory_id                                                                 --工場ID
+        , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
+        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inout_history pih                                --受払履歴
         LEFT JOIN pt_lot plt                                --ロット情報
@@ -119,12 +121,6 @@ WITH number_unit AS (
         ))
         AND inout_division.extension_data = '2'                --払出
         AND pih.delete_flg = 0
-        /*@FactoryIdList
-        AND pps.factory_id IN @FactoryIdList
-        @FactoryIdList*/
-        /*@JobIdList
-        AND pps.job_structure_id IN @JobIdList
-        @JobIdList*/
     GROUP BY
         pih.inout_datetime
         , pih.work_no
@@ -141,6 +137,7 @@ WITH number_unit AS (
         , plt.department_structure_id
         , plt.account_structure_id
         , pps.factory_id
+        , pps.job_structure_id
              /*******************棚差調整データテーブルより抽出*******************/
     UNION ALL
     SELECT DISTINCT
@@ -160,10 +157,12 @@ WITH number_unit AS (
         , COALESCE(unit_round.round_division, 0) AS unit_round_division                  --丸め処理区分(数量)
         , COALESCE(unit_round.round_division, 0) AS currency_round_division              --丸め処理区分(金額)
         , CAST(pit.inventory_id AS varchar) + '_1'  AS control_char                      --棚卸ID_1(子要素との連携用)
-        , 0 AS control_flag                                                              --制御用フラグ
+        , 1 AS control_flag                                                              --制御用フラグ
         , pit.department_structure_id                                                    --部門ID
         , pit.account_structure_id                                                       --勘定科目ID
         , pps.factory_id                                                                 --工場ID
+        , pps.factory_id as parts_factory_id         --工場ID(ツリーの絞り込み用)
+        , pps.job_structure_id                       --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inventory_difference pid                 --棚差調整データ
         LEFT JOIN pt_inventory pit                  --棚卸データ
@@ -193,12 +192,6 @@ WITH number_unit AS (
         AND pit.difference_datetime IS NOT NULL
         AND pid.inout_datetime <= @TargetYearMonthNext        --受払日時 < 対象年月の末日
         AND inout_division.extension_data = '2'              --払出
-    /*@FactoryIdList
-        AND pps.factory_id IN @FactoryIdList
-    @FactoryIdList*/
-    /*@JobIdList
-        AND pps.job_structure_id IN @JobIdList
-    @JobIdList*/
     GROUP BY
         pit.inventory_id
         , pid.inout_datetime
@@ -216,6 +209,7 @@ WITH number_unit AS (
         , pit.department_structure_id
         , pit.account_structure_id
         , pps.factory_id
+        , pps.job_structure_id
 )
 , structure_factory AS ( 
     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる

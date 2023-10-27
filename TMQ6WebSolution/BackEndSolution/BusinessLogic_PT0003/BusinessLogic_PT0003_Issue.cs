@@ -37,11 +37,17 @@ namespace BusinessLogic_PT0003
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetIssueList, out string baseSql, listUnComment);
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetIssueList, out string withSql, listUnComment);
 
-            // 総件数取得SQL文の取得
-            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, null, withSql);
-
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.IssueList.List, this.pageInfoList);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            {
+                return false;
+            }
+
+            // 総件数取得SQL文の取得
+            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
             // 総件数を取得
             int cnt = db.GetCount(execSql, condition);
@@ -52,7 +58,7 @@ namespace BusinessLogic_PT0003
             }
 
             // 一覧検索SQL文の取得
-            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
+            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
 
             // 一覧検索実行
             var results = db.GetListByDataClass<Dao.inoutList>(execSql, condition);
@@ -90,8 +96,23 @@ namespace BusinessLogic_PT0003
         /// <returns>エラーの場合False</returns>
         private bool searchIssueChildList(Dao.searchCondition condition, List<string> listUnComment)
         {
+            // 検索SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetIssueChildList, out string baseSql, listUnComment);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetIssueChildList, out string withSql, listUnComment);
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.IssueList.ListChild, this.pageInfoList);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            {
+                return false;
+            }
+
+            // 一覧検索SQL文の取得
+            string execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
             // 一覧検索実行
-            var results = TMQUtil.SqlExecuteClass.SelectList<Dao.inoutList>(SqlName.GetIssueChildList, SqlName.SubDir, condition, this.db);
+            var results = db.GetListByDataClass<Dao.inoutList>(execSql.ToString(), condition);
             if (results == null || results.Count == 0)
             {
                 return false;
@@ -111,9 +132,6 @@ namespace BusinessLogic_PT0003
                 result.DepartmentNm = TMQUtil.CombineNumberAndUnit(result.DepartmentCd, result.DepartmentNm, true);
                 result.SubjectNm = TMQUtil.CombineNumberAndUnit(result.SubjectCd, result.SubjectNm, true);
             }
-
-            // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.IssueList.ListChild, this.pageInfoList);
 
             // 検索結果の設定
             if (SetSearchResultsByDataClass<Dao.inoutList>(pageInfo, results, results.Count(), false))

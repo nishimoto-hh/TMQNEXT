@@ -22,6 +22,7 @@ SELECT
     ,target.sche_detail_update_datetime
     ,target.attachment_update_datetime
     ,target.key_id
+    ,target.preparation_flg
     -- 翻訳
     -- 保全時期
     ,(

@@ -1,3 +1,6 @@
+/*
+* スケジュールの内容を取得するSQL
+*/
 SELECT
      lp.long_plan_id AS key_id
     ,msd.schedule_date

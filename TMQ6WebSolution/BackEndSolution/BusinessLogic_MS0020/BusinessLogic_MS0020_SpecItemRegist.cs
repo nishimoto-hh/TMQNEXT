@@ -123,13 +123,13 @@ namespace BusinessLogic_MS0020
                 {
                     return true;
                 }
+                // 構成マスタ
                 // アイテムマスタ
                 isError = !checkExclusiveSingle(FormInfo.SpecItemRegist.Info);
                 if (isError)
                 {
                     return true;
                 }
-                // 構成マスタ
 
                 return false;
             }

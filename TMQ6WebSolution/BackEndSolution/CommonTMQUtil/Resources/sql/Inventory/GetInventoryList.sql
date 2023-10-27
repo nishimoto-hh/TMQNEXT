@@ -1,5 +1,36 @@
 SELECT
-    *
+    parts_location_id                        --棚番ID
+    , parts_location_detail_no               --棚枝番
+    , parts_no                               --予備品No
+    , parts_name                             --予備品名
+    , old_new_structure_id                   --新旧区分
+    , department_structure_id                --部門ID
+    , department_cd                          --部門コード
+    , account_structure_id                   --勘定科目ID
+    , subject_cd                             --勘定科目コード
+    , stock_quantity_flg                     --在庫あり
+    , inventory_diff_flg                     --棚差あり
+    , stock_quantity                         --在庫数
+    , preparation_datetime                   --棚卸準備日時
+    , inventory_datetime                     --棚卸日時
+    , difference_datetime                    --棚卸調整日時
+    , inventory_quantity                     --棚卸数(取込の場合、取込値を表示)
+    , inout_quantity                         --棚卸調整数
+    , inventory_diff                         --棚差
+    , manufacturer_structure_id              --メーカー
+    , materials                              --材質
+    , model_type                             --型式
+    , fixed_datetime                         --棚卸確定日時
+    , parts_id                               --予備品ID
+    , unit_structure_id                      --数量単位ID
+    , currency_structure_id                  --金額単位ID
+    , factory_id                             --工場ID
+    , inventory_id                           --棚卸ID
+    , update_serialid                        --棚卸データ.更新シリアルID
+    , unit_digit                             --小数点以下桁数(数量)
+    , unit_round_division                    --丸め処理区分(数量)
+    , parts_factory_id                       --工場ID(ツリーの絞り込み用)
+    , job_structure_id                       --職種機種ID(ツリーの絞り込み用)
     , ( 
         SELECT
             tra.translation_text 

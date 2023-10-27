@@ -84,9 +84,9 @@ WITH department AS (
         pps.standard_size,                                                              --規格・寸法
         dpm.extension_data AS department_cd,                                            --部門CD
         pih.inout_quantity,                                                             --受払数(画面：入庫数)
-        pps.unit_structure_id,                                                           --数量管理単位ID
+        pps.unit_structure_id,                                                          --数量管理単位ID
         plt.unit_price,                                                                 --入庫単価
-        pps.currency_structure_id,                                                    --金額管理単位ID
+        pps.currency_structure_id,                                                      --金額管理単位ID
         pih.inout_quantity * plt.unit_price AS amount_money,                            --入庫金額
         pps.parts_id,                                                                   --予備品ID
         pps.factory_id,                                                                 --工場ID
@@ -97,7 +97,9 @@ WITH department AS (
         0 AS inventory_difference_id,                                                   --棚差調整ID
         0 AS control_flag,                                                              --制御用フラグ
         plt.department_structure_id,                                                    --部門ID
-        plt.account_structure_id                                                        --勘定科目ID
+        plt.account_structure_id,                                                       --勘定科目ID
+        pps.factory_id as parts_factory_id,                                             --工場ID(ツリーの絞り込み用)
+        pps.job_structure_id                                                            --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_parts pps                                --予備品仕様マスタ
         LEFT JOIN pt_lot plt                        --ロット情報マスタ
@@ -149,12 +151,6 @@ WITH department AS (
                 AND pit.preparation_datetime < pih.update_datetime
                 AND pih.update_datetime < pit.difference_datetime
             ))
-    /*@FactoryIdList
-        AND pps.factory_id IN @FactoryIdList
-    @FactoryIdList*/
-    /*@JobIdList
-        AND pps.job_structure_id IN @JobIdList
-    @JobIdList*/
     /*******************棚差調整データテーブルより抽出*******************/
     UNION ALL
     SELECT DISTINCT
@@ -182,7 +178,9 @@ WITH department AS (
         pid.inventory_difference_id,                                                    --棚差調整ID
         1 AS control_flag,                                                              --制御用フラグ
         pit.department_structure_id,                                                    --部門ID
-        pit.account_structure_id                                                        --勘定科目ID
+        pit.account_structure_id,                                                       --勘定科目ID
+        pps.factory_id as parts_factory_id,                                             --工場ID(ツリーの絞り込み用)
+        pps.job_structure_id                                                            --職種機種ID(ツリーの絞り込み用)
     FROM
         pt_inventory pit 
         /*棚卸データ */
@@ -225,12 +223,6 @@ WITH department AS (
         AND pit.parts_location_id IN @PartsLocationIdList   --棚番
         AND pit.department_structure_id IN @DepartmentIdList --部門
         AND pit.difference_datetime IS NOT NULL
-    /*@FactoryIdList
-        AND pps.factory_id IN @FactoryIdList
-    @FactoryIdList*/
-    /*@JobIdList
-        AND pps.job_structure_id IN @JobIdList
-    @JobIdList*/
 )
 , structure_factory AS ( 
     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる

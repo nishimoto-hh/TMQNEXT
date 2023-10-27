@@ -1691,3 +1691,43 @@ function GetLimitPropValue(arr, key, isMax) {
 
     return limitValue;
 }
+
+/**
+ * 実行ボタンが全て非活性の場合、戻るor閉じるボタンにフォーカス設定
+ */
+function setFocusBackOrClose() {
+    var button = $(P_Article).find('td:not(.hide) input:button');
+    //表示中の画面に存在する実行ボタンの数
+    var executeButonCount = $(button).filter('[data-actionkbn="' + actionkbn.Execute + '"],[data-actionkbn="' + actionkbn.Delete + '"],[data-actionkbn="'
+        + actionkbn.ComBatExec + '"],[data-actionkbn="' + actionkbn.Upload + '"],[data-actionkbn="' + actionkbn.ComUpload + '"]').length;
+    //実行ボタンのうち活性のものを取得
+    var executeButton = $(button).filter('[data-actionkbn="' + actionkbn.Execute + '"]:not(:disabled),[data-actionkbn="' + actionkbn.Delete + '"]:not(:disabled),[data-actionkbn="'
+        + actionkbn.ComBatExec + '"]:not(:disabled),[data-actionkbn="' + actionkbn.Upload + '"]:not(:disabled),[data-actionkbn="' + actionkbn.ComUpload + '"]:not(:disabled)');
+    if (executeButonCount > 0 && (!executeButton || executeButton.length == 0)) {
+        var backButton = $(P_Article).find('td:not(.hide) input:button[data-actionkbn="' + actionkbn.Back + '"]:not(:disabled)');
+        if (backButton && backButton.length > 0) {
+            //戻るボタンがある場合、フォーカス設定
+            setTimeout(function () {
+                //カレンダーが表示されている場合は閉じる
+                $("#ui-datepicker-div").hide();
+                //フォーカスを外す
+                $($(":focus")).blur();
+                //フォーカス設定
+                $(backButton).focus();
+            }, 350);
+        } else {
+            var closeButton = $(P_Article).find('td:not(.hide) input:button[data-actionkbn="' + actionkbn.Close + '"]:not(:disabled)');
+            if (closeButton && closeButton.length > 0) {
+                //閉じるボタンがある場合、フォーカス設定
+                setTimeout(function () {
+                    //カレンダーが表示されている場合は閉じる
+                    $("#ui-datepicker-div").hide();
+                    //フォーカスを外す
+                    $($(":focus")).blur();
+                    //フォーカス設定
+                    $(closeButton).focus();
+                }, 350);
+            }
+        }
+    }
+}

@@ -2370,6 +2370,14 @@ function postTabulatorRenderCompleted(tbl, id) {
         // 詳細画面 構成機器タブ ループ構成一覧
         changeDispCheckBox(DatailConstitution.LoopList);
     }
+    else if (id == "#" + DatailLongPlan.LongPlanList.Id + getAddFormNo()) {
+        // 
+        rowNoLinkChangeLongPlan();
+    }
+    else if (id == "#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
+        // 
+        rowNoLinkChangeMa();
+    }
 }
 
 

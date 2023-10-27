@@ -734,10 +734,6 @@ namespace BusinessLogic_MA0001
             public const string ReportIdRP0150 = "RP0150";
             // 処理対象帳票ID 故障原因分析書
             public const string ReportIdRP0160 = "RP0160";
-            // 指示検収票 ファイルパス
-            public const string templateFilePath = "MA0001";
-            // 指示検収票 ファイル名
-            public const string templateFileName = "MaintenanceInstructInspection.xlsx";
         }
         #endregion
 

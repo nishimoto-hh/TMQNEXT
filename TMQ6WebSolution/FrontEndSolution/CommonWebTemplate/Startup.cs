@@ -105,19 +105,31 @@ namespace CommonWebTemplate
 
             app.Use(async (context, next) =>
             {
-                string path = context.Request.Path.Value;
-                if (path != null && path.ToLower().Contains("/api"))
+                bool addToken = false;
+                if (AppCommonObject.Config.AppSettings.SiteMinderLogin)
                 {
-                    // WebAPIのリクエストの場合、偽造防止トークンをCookieへセット
+                    string sourceURL = context.Request.Headers.Referer.ToString();
+                    string azureADEntityID = AppCommonObject.Config.AppSettings.SiteMinderURL;
+                    if (!string.IsNullOrEmpty(sourceURL) && azureADEntityID.StartsWith(sourceURL))
+                    {
+                        // 遷移元がシングルサインオン用URLの場合、偽造防止トークンをCookieへセット
+                        addToken = true;
+                    }
+                }
+
+                if (addToken)
+                {
+                    // 偽造防止トークンをCookieへセット
                     var tokens = antiforgery.GetAndStoreTokens(context);
                     context.Response.Cookies.Append("XSRF-TOKEN",
                       tokens.RequestToken, new CookieOptions
                       {
-                          HttpOnly = false,
+                          HttpOnly = true,
                           Secure = true
                       }
                     );
                 }
+
                 await next();
             });
 

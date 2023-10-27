@@ -286,12 +286,15 @@ namespace BusinessLogic_DM0001
                 return false;
             }
 
+            // 画面左ツリーで選択された場所階層リストを再生成する
+            whereSql = makeWhereParamLocation(whereSql);
+
+            // 画面左ツリーで選択された職種リストを再生成する
+            whereSql = makeWhereParamJob(whereSql, true);
+
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
             whereParam.CommomFactoryId = TMQConsts.CommonFactoryId;
-            whereParam.LocationIdList = addDistrictId();
-            whereParam.JobIdList.Add(0);
-
             // SQL、WHERE句、WITH句より件数取得SQLを作成
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
 
@@ -330,24 +333,6 @@ namespace BusinessLogic_DM0001
             }
 
             return true;
-
-            List<int> addDistrictId()
-            {
-                // SQLを取得
-                TMQUtil.GetFixedSqlStatement(CommonDM.SqlName.SubDir, SqlName.List.GetDistrictIdList, out string baseSql);
-
-                // 地区ID取得
-                List<int> districtIdList = db.GetListByDataClass<int>(baseSql, whereParam);
-
-                foreach (int districtId in districtIdList)
-                {
-                    if (!whereParam.LocationIdList.Contains(districtId))
-                    {
-                        whereParam.LocationIdList.Add(districtId);
-                    }
-                }
-                return whereParam.LocationIdList;
-            }
         }
 
         /// <summary>
@@ -574,6 +559,56 @@ namespace BusinessLogic_DM0001
             return ComConsts.RETURN_RESULT.NG;
         }
 
+        /// <summary>
+        /// // 画面左ツリーで選択された場所階層リストを再生成する
+        /// </summary>
+        /// <param name="whereSql">検索条件生成前SQL</param>
+        /// <returns>検索条件生成後SQL</returns>
+        private string makeWhereParamLocation(string whereSql)
+        {
+            string[] condList = whereSql.Split("AND"); // 「AND」でSQLを分割
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(CommonDM.SqlName.SubDir, SqlName.List.GetDistrictIdList, out string baseSql);
+
+            dynamic nullCond = new ExpandoObject();
+
+            // 地区ID取得
+            List<int> districtIdList = db.GetListByDataClass<int>(baseSql + condList[0], nullCond);
+
+            string[] locationList = condList[0].Split(")");
+
+            foreach (int id in districtIdList)
+            {
+                locationList[0] += "OR location_structure_id = " + id.ToString() + "\r\n";
+            }
+
+            locationList[0] += ")";
+
+            // 再生成した場所階層条件と職種機種条件を結合
+            return locationList[0] + "\r\n" + "AND" + condList[1];
+        }
+        /// <summary>
+        /// // 画面左ツリーで選択された職種機種リストを再生成する
+        /// </summary>
+        /// <param name="whereSql">検索条件生成前SQL</param>
+        /// <param name="addCommonFactory">共通工場ID(0)を追加する場合はTrue</param>
+        /// <returns>検索条件生成後SQL</returns>
+        private string makeWhereParamJob(string whereSql, bool addCommonFactory = false)
+        {
+            string[] condList = whereSql.Split("AND"); // 「AND」でSQLを分割
+
+            string[] jobsList = condList[1].Split(")");
+
+            if(addCommonFactory)
+            {
+                jobsList[0] += "OR job_structure_id = " + TMQConsts.CommonFactoryId.ToString() + "\r\n";
+            }
+            jobsList[0] += ")";
+
+            // 場所階層条件と再生成した職種機種条件を結合
+            return condList[0] + "AND" + jobsList[0];
+        }
         #endregion
     }
 }
