@@ -1061,6 +1061,15 @@ namespace CommonTMQUtil
             /// <value>変更のあった項目(District_10|Series_30...)</value>
             public string ValueChanged { get; set; }
 
+            #region 詳細画面のボタン非表示処理で使用
+            /// <summary>Gets or sets ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</summary>
+            /// <value>ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</value>
+            public bool IsCertified { get; set; }
+            /// <summary>Gets or sets ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</summary>
+            /// <value>ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</value>
+            public bool IsCertifiedFactory { get; set; }
+            #endregion
+
             #region 地区・職種機種(変更管理テーブル)
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>

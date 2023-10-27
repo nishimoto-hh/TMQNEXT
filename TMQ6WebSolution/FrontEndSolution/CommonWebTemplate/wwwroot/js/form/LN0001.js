@@ -580,7 +580,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             }
             // 選択された行をパラメータに設定する
             const ctrlIdList = [FormList.List.Id, FormList.Condition.Id];
-            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0)
+            if (transTarget != RM00001_ConductId) {
+                // 出力ボタン以外の場合は選択行の情報を取得
+                conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0, false, true);
+            }
             return [result, conditionDataList];
         } else if (transTarget == FormDetail.No) {
             // 参照画面への遷移の場合

@@ -24,6 +24,7 @@ document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
 
 // 一覧画面 コントロール番号
 const FormList = {
+    No: 0,                              // 画面番号
     Id: "BODY_020_00_LST_0",            // 在庫確定一覧
     FactoryIdList: "BODY_040_00_LST_0", // 工場ID一覧
     JobIdList: "BODY_050_00_LST_0",     // 職種ID一覧
@@ -103,4 +104,48 @@ function postBuiltTabulator(tbl, id) {
             setDispMode(getButtonCtrl(FormList.Button.CancelCommit), true);
         }
     }
+}
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath
+ * @param {any} conductId
+ * @param {any} pgmId
+ * @param {any} formNo
+ * @param {any} btn
+ * @param {any} listData
+ */
+function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    if (formNo == FormList.No) {
+
+        // 押下されたボタン名取得
+        var btnName = btn[0].attributes.name.value;
+
+        // 確定実行・確定解除の場合はバックエンド側に渡すlistDataを取得しなおす
+        if (btnName == FormList.Button.ExecutCommit || btnName == FormList.Button.CancelCommit) {
+
+            var data = [];
+
+            // 在庫確定一覧の選択されているレコード
+            var confList = getListDataByCtrlIdList([FormList.Id], formNo, 0, false, true);
+            // 非表示の工場ID一覧、職種ID一覧、処理フラグ一覧
+            var otherList = getListDataByCtrlIdList([FormList.FactoryIdList, FormList.JobIdList, FormList.FlgList], formNo, 0);
+
+            // 取得したデータを返り値の配列に格納
+            confList.forEach(function (val) {
+                data.push(val);
+            });
+
+            otherList.forEach(function (val) {
+                data.push(val);
+            });
+
+            return data;
+        }
+
+    }
+
+    // 何もしない場合はそのまま返す
+    return listData;
 }

@@ -204,7 +204,6 @@ target AS(
             ms_item_extension division_ex -- アイテムマスタ拡張(申請区分)
         ON  division_ms.structure_item_id = division_ex.item_id
         AND division_ex.sequence_no = 1
-
     WHERE
         -- 「申請データ作成中」「承認依頼中」「差戻中」のデータのみ
         status_ex.extension_data IN('10', '20', '30')

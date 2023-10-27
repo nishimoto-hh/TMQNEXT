@@ -379,12 +379,43 @@ function getDetailConditionData(conductId, formNo, isDispVal, isInitForm, getChe
 }
 
 /**
+ * 選択行のみを取得するよう指定されたアクションの場合、
+ * @param {any} tbl 取得するテーブル
+ * @returns {bool} 新しいisSelectedOnlyの値
+ */
+function getIsSelectedOnly(tbl) {
+    if (!P_IsSelectedOnly) {
+        // グローバル変数で選択行のみを取得するよう指定されていない場合は終了
+        return false;
+    }
+    // テーブルより機能の情報を取得
+    var form = $(tbl).closest("article").find("form[id^='form']");
+    var conductIdW = $(form).find("input:hidden[name='CONDUCTID']").val();
+    var formNo = $(form).find("input:hidden[name='FORMNO']").val();
+    var tblId = $(tbl).attr("id");
+    // 新たに設定する戻り値
+    var rtnIsSelectedOnly = false;
+    // 定数で定義した一覧の場合は選択行のみ取得する
+    $.each(SelectedListInfo, function (i, info) {
+        var programId = info.ProgramId;
+        var ctrlGrpId = info.CtrlGrpId + "_" + formNo;
+        if (programId == conductIdW && tblId == ctrlGrpId) {
+            rtnIsSelectedOnly = true;
+            return false;
+        }
+    });
+    return rtnIsSelectedOnly;
+}
+
+/**
  *  横方向一覧の明細データ取得を取得する
  *  @param {byte}      ：画面番号
  *  @param {table要素} ：明細一覧table
  *  @param {number}    ：値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用、1:表示値を採用)
+ *  @param {string}    ：一覧のID(省略可能)
+ *  @param {boolean}    : 選択行のみを取得
  */
-function getListDataHorizontal(formNo, tbl, isDispVal, selectCtrlId, selRowNo) {
+function getListDataHorizontal(formNo, tbl, isDispVal, selectCtrlId, isSelectedOnly) {
 
     if (isDispVal == null) isDispVal = 0;
 
@@ -399,6 +430,10 @@ function getListDataHorizontal(formNo, tbl, isDispVal, selectCtrlId, selRowNo) {
         }
     }
 
+    if (!isSelectedOnly) {
+        isSelectedOnly = getIsSelectedOnly(tbl);
+    }
+
     var ctrlType = $(tbl).data('ctrltype');
     if (ctrlType == ctrlTypeDef.IchiranPtn3) {
         var id = "#" + $(tbl).attr("id");
@@ -408,7 +443,12 @@ function getListDataHorizontal(formNo, tbl, isDispVal, selectCtrlId, selRowNo) {
         }
         var rows = table.getRows("active");
         $.each(rows, function (i, row) {
-            var rowNo = row.getData().ROWNO;
+            var rowData = row.getData();
+            if (isSelectedOnly && rowData.SELTAG != 1) {
+                // 選択行のみを取得する場合は、選択の値が1でなければcontinue
+                return true;
+            }
+            var rowNo = rowData.ROWNO;
             var tmpData = getTempDataForTabulator(formNo, rowNo, id, isDispVal);
             listData.push(tmpData);
         });
@@ -1820,7 +1860,7 @@ function setCellChangeFlg(ctrlId, cangeColNo, setColNo) {
             $(td).text("1");
             td = null;
             tr = null;
-       });
+        });
 
     });
 

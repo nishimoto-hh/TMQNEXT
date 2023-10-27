@@ -20,9 +20,6 @@ function getPath() {
 }
 document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
 
-//機能ID
-const ConductId_HM0001 = "HM0001";
-
 // 一覧画面 コントロール番号
 const FormList = {
     No: 0, // 画面番号
@@ -64,8 +61,8 @@ const FormList = {
             FixedAssetNo: 30,            // 固定資産番号
             EquipmentNote: 31,           // 機器メモ
             Component: 32,               // 機器別管理基準変更有無
-            ApplicationDivisionCode: 39, // 申請区分(拡張項目)
-            ValueChanged: 40             // 変更のあった項目
+            ApplicationDivisionCode: 37, // 申請区分(拡張項目)
+            ValueChanged: 38             // 変更のあった項目
         }
     },
     Button: {                                 // ボタンコントロールID
@@ -95,23 +92,23 @@ const FormDetail = {
         },
         Machine: { // 機器番号～保全方式
             Id: "BODY_030_00_LST_1",         // コントロールグループID
-            ColumnNo: {                      // 項目番号
-                MachineNo: 1,                // 機器番号
-                MachineName: 2,              // 機器名称
-                EquipmentLevel: 3,           // 機器レベル
-                InstallationLocation: 4,     // 設置場所
-                NumberOfInstallation: 5,     // 設置台数
-                DateOfInstallation: 6,       // 設置年月
-                Importance: 7,               // 重要度
-                Conservation: 8,             // 保全方式
-                ValueChanged: 9,             // 変更のあった項目
-                ApplicationDivisionCode: 10, // 申請区分(拡張項目)
-                ApplicationStatusCode: 11,   // 申請状況(拡張項目)
-                MachineId: 12,               // 機番ID
-                HistoyManagementId: 13,      // 変更管理ID
-                ProcessMode: 14,             // 処理モード(0：トランザクションモード、1：変更管理モード)
-                IsCertified: 15,             // 申請の申請者またはシステム管理者の場合「1」、それ以外は「0」
-                IsCertifiedFactory: 16       // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」それ以外は「0」
+            ColumnNo: {                                // 項目番号
+                MachineNo: 1,                          // 機器番号
+                MachineName: 2,                        // 機器名称
+                EquipmentLevel: 3,                     // 機器レベル
+                InstallationLocation: 4,               // 設置場所
+                NumberOfInstallation: 5,               // 設置台数
+                DateOfInstallation: 6,                 // 設置年月
+                Importance: 7,                         // 重要度
+                Conservation: 8,                       // 保全方式
+                ValueChanged: 9,                       // 変更のあった項目
+                ApplicationDivisionCode: 10,           // 申請区分(拡張項目)
+                ApplicationStatusCode: 11,             // 申請状況(拡張項目)
+                MachineId: 12,                         // 機番ID
+                HistoyManagementId: 13,                // 変更管理ID
+                ProcessMode: 14,                       // 処理モード(0：トランザクションモード、1：変更管理モード)
+                IsCertified: 15,                       // 申請の申請者またはシステム管理者の場合はTrue
+                IsCertifiedFactory: 16,                // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue
             }
         },
         Reason: { // 適用法規～否認理由
@@ -173,20 +170,44 @@ const FormDetail = {
     },
     CssClass: {
         displayNone: "displayNone" // ボタンの非表示
-    },
+    }
 }
 
-// 処理モード
-const ProcessMode =
-{
-    Transaction: "0", // トランザクションモード
-    History: "1"      // 変更管理モード
+// 詳細編集画面 コントロール番号
+const FormEdit = {
+    No: 2, // 画面番号
+
+    MachineInfo: { // 機番情報
+        Machine: { // 機器番号～保全方式
+            Id: "BODY_010_00_LST_2",         // コントロールグループID
+            ColumnNo: {                                // 項目番号
+                MachineNo: 1,                          // 機器番号
+
+            }
+        },
+    },
+
+
+
+
+    Button: { // ボタンコントロールID
+        Regist: "Regist", // 登録
+    }
 }
+
+
+
+
+
+
+
+
+
 
 // フラグ判定用定数
 const JudgeFlg = {
-    False: "0", // False
-    True: "1"   // True
+    False: "false", // False
+    True: "true"    // True
 }
 
 // 詳細画面の 変更前 ボタンクリック時に表示する機器台帳詳細画面(MC0001)のタブ番号
@@ -215,8 +236,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     else if (formNo == FormDetail.No) { // 詳細画面
 
         // ボタン非表示
-        var condition = getConditionToHideButton();        
-        commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
+        var condition = getConditionToHideButton();
+        //commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
 
         // 背景色変更処理
         changeBackGroundColorDetail();
@@ -283,11 +304,116 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             // 別タブで機器台帳詳細画面(MC0001)を開くための検索条件を設定する(機番ID：非表示項目を取得、タブ番号：1)
             conditionDataList = getParamToMC0001(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false), tabNoToMC0001);
         }
+        else if (btn_ctrlId == FormDetail.Button.CopyRequest) { // 複写申請
+
+            // 詳細編集画面の検索のための情報を設定
+            conditionDataList = getListDataByCtrlIdList([FormDetail.MachineInfo.Machine.Id], FormDetail.No, 0);
+        }
+        else if (btn_ctrlId == FormDetail.Button.ChangeRequest) { // 変更申請
+
+            // 詳細編集画面の検索のための情報を設定
+            conditionDataList = getListDataByCtrlIdList([FormDetail.MachineInfo.Machine.Id], FormDetail.No, 0);
+
+
+
+            //var aaa = isInProgress(btn_ctrlId, appPath, formNo, ConductId_HM0001);
+
+
+            //return [false, conditionDataList];
+
+        }
+
+    }
+    else if (formNo == FormEdit.No) { // 詳細編集画面
 
     }
 
     return [true, conditionDataList];
 }
+
+
+/**
+ *【オーバーライド用関数】
+ *  戻る処理の前(単票、子画面共用)
+ *
+ *  @appPath        {string}    ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btnCtrlId      {byte}      ：ボタンのCtrlId
+ *  @codeTransFlg   {int}       ：1:コード＋翻訳 選ボタンから画面遷移/1以外:それ以外
+ */
+function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
+
+    var formNo = getFormNo();
+    if (formNo == FormEdit.No && btnCtrlId == FormEdit.Button.Regist) {
+        //新規登録画面から登録後、参照画面に渡すキー情報をセット
+        var conditionDataList = getListDataByCtrlIdList([FormEdit.MachineInfo.Machine.Id], FormEdit.No, 0);
+        // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
+        setSearchCondition(ConductId_HM0001, FormDetail.No, conditionDataList);
+    }
+    return true;
+}
+
+
+function isInProgress(btn_ctrlId, appPath, formNo, conductId) {
+
+    var eventFunc = function (status, data) {
+
+        // 申請状況の拡張項目
+        var applicationStatusCode = data.filter(x => x.ROWNO === 1)[0]["VAL" + FormDetail.MachineInfo.Machine.ColumnNo.ApplicationStatusCode];
+
+        applicationStatusCode = "20";
+        // 申請状況を判定
+        if (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Request) {
+
+            // 仕掛中(20：承認依頼中、30：差戻中)の場合はエラーメッセ―ジを表示して画面遷移しない
+
+            //メッセージ「保全履歴情報、故障分析情報の入力内容が変更になります。」
+            var strMessage = P_ComMsgTranslated[141300006];
+            setMessage(strMessage, 9);
+            //popupMessage([strMessage], messageType.Error, null);
+
+            return false;
+        }
+        else {
+
+            return true;
+        }
+    }
+
+    var getValHM0001 = function () {
+        //return getValue(btn_ctrlId);
+    }
+
+    var formData = getListDataByCtrlIdList([], formNo, 0);
+    ajaxCommon("checkIsInProgress", appPath, formNo, conductId, false, null, eventFunc);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * 【オーバーライド用関数】Tabulatorの描画が完了時の処理

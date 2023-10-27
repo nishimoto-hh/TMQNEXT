@@ -1284,7 +1284,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             }
             // 対象の一覧のコントロールグループIDをctrlIdListへ設定する
             const ctrlIdList = [FormDetail.MachineList.Id, FormDetail.FailureList.Id];
-            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0);
+            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0, false, true);
         }
 
         //略図添付ボタン、故障原因分析書添付ボタン押下時

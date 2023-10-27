@@ -670,8 +670,8 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             }
 
             // 一覧情報をセット
-            const ctrlIdList = [SearchList.List.Id];
-            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0)
+            //const ctrlIdList = [SearchList.List.Id];
+            //conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0)
 
         } else if (btn_ctrlId == SearchList.ButtonId.New) {
             // 新規

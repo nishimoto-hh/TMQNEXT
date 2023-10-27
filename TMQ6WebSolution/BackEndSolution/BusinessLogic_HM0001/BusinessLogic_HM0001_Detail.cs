@@ -55,25 +55,60 @@ namespace BusinessLogic_HM0001
         /// <returns>検索条件</returns>
         private Dao.detailSearchCondition getDetailSearchCondition()
         {
+            List<Dictionary<string, object>> conditionDictionary = new();
+            string fromCtrlId = string.Empty;
+
+            // 遷移元のCtrlIdを判定
+            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId);
+            if (compareId.IsStartId("checkIsInProgress"))
+            {
+                // 変更申請・承認依頼・申請内容修正ボタン押下時のAjax通信
+                conditionDictionary = this.resultInfoDictionary;
+                fromCtrlId = ConductInfo.FormDetail.ControlId.Machine;
+            }
+            else if(compareId.IsStartId(ConductInfo.FormEdit.ButtonId.Regist))
+            {
+                // 詳細編集画面の登録ボタンクリック
+                conditionDictionary = this.searchConditionDictionary;
+                fromCtrlId = ConductInfo.FormEdit.ControlId.Machine;
+            }
+            else if(compareId.IsStartId(ConductInfo.FormDetail.ButtonId.CopyRequest) ||
+                    compareId.IsStartId(ConductInfo.FormDetail.ButtonId.ChangeRequest) ||
+                    compareId.IsStartId(ConductInfo.FormEdit.ButtonId.Back))
+            {
+                // 詳細画面の複写申請ボタンクリック
+                // 詳細画面の変更申請ボタンクリック
+                // 詳細編集画面の戻るボタンクリック
+                conditionDictionary = this.searchConditionDictionary;
+                fromCtrlId = ConductInfo.FormDetail.ControlId.Machine;
+            }
+            else
+            {
+                // 一覧画面の詳細リンククリック
+                // 機器台帳(MC0001)詳細画面からの遷移
+                conditionDictionary = this.searchConditionDictionary;
+                fromCtrlId = ConductInfo.FormList.ControlId.List;
+            }
+
             // 検索条件を作成
             Dao.detailSearchCondition condition = new();
-            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormList.ControlId.List);
+            var targetDic = ComUtil.GetDictionaryByCtrlId(conditionDictionary, fromCtrlId);
 
-            // 変更管理ID、機番ID、データタイプ(トランザクションのデータか変更管理のデータか)を取得
-            SetDataClassFromDictionary(targetDic, ConductInfo.FormList.ControlId.List, condition, new List<string> { "HistoryManagementId", "MachineId" });
+            // 変更管理ID、機番IDを取得
+            SetDataClassFromDictionary(targetDic, fromCtrlId, condition, new List<string> { "HistoryManagementId", "MachineId" });
             condition.LanguageId = this.LanguageId;    // 言語ID
             condition.UserId = int.Parse(this.UserId); // ログインユーザID
 
             // 変更管理IDの有無で処理モードを設定
-            if (condition.HistoryManagementId == 0)
+            if (condition.HistoryManagementId <= 0)
             {
                 // 変更管理IDなし の場合、トランザクションモード
-                condition.ProcessMode = (int)processMode.transaction;
+                condition.ProcessMode = (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction;
             }
             else
             {
                 // 変更管理IDあり の場合、変更管理モード
-                condition.ProcessMode = (int)processMode.history;
+                condition.ProcessMode = (int)TMQConst.MsStructure.StructureId.ProcessMode.history;
             }
 
             return condition;
@@ -86,31 +121,33 @@ namespace BusinessLogic_HM0001
         /// <returns>エラーの場合はFalse</returns>
         private bool searchMachineAndEquipmentInfo(Dao.detailSearchCondition condition)
         {
-            // 表示するデータタイプに応じたSQLを取得
-            string sqlName = string.Empty;
+            // 表示するデータタイプに応じたSQLを取得;
             string withSql = string.Empty;
+            string sql = string.Empty;
 
             // 処理モードを判定
             switch (condition.ProcessMode)
             {
-                case (int)processMode.transaction: // トランザクションモード
-                    sqlName = SqlName.Detail.GetTransactionMachineInfo;
+                case (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction: // トランザクションモード
+
+                    // SQL取得
+                    TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDirMachine, SqlName.Detail.GetMachineDetail, out string traSql);
+                    sql = traSql;
                     break;
 
-                case (int)processMode.history: // 変更管理モード
-                    sqlName = SqlName.List.GetHistoryMachineList;
+                case (int)TMQConst.MsStructure.StructureId.ProcessMode.history: // 変更管理モード
 
-                    // WITH句取得
+                    // SQL取得
+                    TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string hisSql);
                     TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string outWithSql, new List<string>() { "IsDetail" });
+                    sql = hisSql;
                     withSql = outWithSql;
                     break;
                 default:
+
                     // 該当しない場合はエラー
                     return false;
             }
-
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string sql);
 
             // SQL実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(withSql + sql, condition);
@@ -119,58 +156,38 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
-            // ボタン表示/非表示フラグを取得
-            if (!GetIsAbleToClickBtn(results[0], condition))
-            {
-                return false;
-            }
-
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定(変更管理データ・トランザクションデータ どちらも設定する)
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, true);
 
+            // 申請状況の拡張項目を取得
+            results[0].ApplicationStatusCode = getApplicationStatusCode(condition, condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history);
+
             // 変更があった項目を取得(変更管理モードの場合)
-            if (condition.ProcessMode == (int)processMode.history)
+            if (condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history)
             {
+                // 変更があった項目を取得
                 TMQUtil.HistoryManagement.setValueChangedItem<Dao.searchResult>(results);
             }
+
+            // ボタン表示/非表示フラグを取得
+            GetIsAbleToClickBtn(results[0], condition);
 
             // 処理モードを検索結果に設定
             results[0].ProcessMode = condition.ProcessMode;
 
             // 検索結果の設定(機番情報)
-            if (!setSearchResult(ConductInfo.FormDetail.GroupNoMachine))
+            if (!setSearchResult(ConductInfo.FormDetail.GroupNoMachine, results))
             {
                 return false;
             }
 
             // 検索結果の設定(機器情報)
-            if (!setSearchResult(ConductInfo.FormDetail.GroupNoEquipment))
+            if (!setSearchResult(ConductInfo.FormDetail.GroupNoEquipment, results))
             {
                 return false;
             }
 
             return true;
-
-            // 検索結果を一覧に設定する
-            bool setSearchResult(short groupNo)
-            {
-                // 画面定義のグループ番号よりコントロールグループIDを取得
-                List<string> ctrlIdList = getResultMappingInfoByGrpNo(groupNo).CtrlIdList;
-
-                // グループ番号内の一覧に対して繰り返し値を設定する
-                foreach (var ctrlId in ctrlIdList)
-                {
-                    // 画面項目に値を設定
-                    if (!SetFormByDataClass(ctrlId, results))
-                    {
-                        // エラーの場合
-                        this.Status = CommonProcReturn.ProcStatus.Error;
-                        return false;
-                    }
-                }
-
-                return true;
-            }
         }
 
         /// <summary>
@@ -187,12 +204,12 @@ namespace BusinessLogic_HM0001
             // 処理モードを判定
             switch (condition.ProcessMode)
             {
-                case (int)processMode.transaction: // トランザクションモード
+                case (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction: // トランザクションモード
                     subDir = SqlName.SubDirMachine;
                     sqlName = SqlName.Detail.GetManagementStandard;
                     break;
 
-                case (int)processMode.history: // 変更管理モード
+                case (int)TMQConst.MsStructure.StructureId.ProcessMode.history: // 変更管理モード
                     subDir = SqlName.SubDir;
                     sqlName = SqlName.Detail.GetHistoryManagementStandardsList;
                     break;
@@ -222,28 +239,52 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// ボタン表示/非表示フラグ取得
+        ///  ボタン非表示制御フラグ取得
         /// </summary>
-        /// <param name="result">検索結果</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool GetIsAbleToClickBtn(Dao.searchResult result, Dao.detailSearchCondition condition)
+        /// <param name="result">詳細画面の検索結果</param>
+        /// <param name="condition">詳細画面の検索条件</param>
+        private void GetIsAbleToClickBtn(Dao.searchResult result, Dao.detailSearchCondition condition)
         {
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetIsAbleToClickBtn, out string sql);
+            // ①申請の申請者IDがログインユーザまたはシステム管理者かどうか
+            // ②// 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDかどうか
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            historyManagement.GetFlgHideButton(ref result, condition.HistoryManagementId, (TMQConst.MsStructure.StructureId.ProcessMode)Enum.ToObject(typeof(TMQConst.MsStructure.StructureId.ProcessMode), condition.ProcessMode));
+        }
+        #endregion
 
-            // SQL実行
-            IList<Dao.searchResult> isAble = db.GetListByDataClass<Dao.searchResult>(sql, condition);
-            if (isAble == null || isAble.Count == 0)
+        #region 登録
+        private bool registFormDetail()
+        {
+            // コントロールIDで比較
+            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId);
+
+            if (compareId.IsStartId(ConductInfo.FormDetail.ButtonId.DeleteRequest))
             {
-                return false;
+                // 削除申請
+                return deleteRequest();
             }
+            else
+            {
+                // 到達不能
+                throw new Exception();
+            }
+        }
+        #endregion
 
-            // 取得結果を設定
-            result.IsCertified = isAble[0].IsCertified;               // 申請の申請者またはシステム管理者の場合「1」、それ以外は「0」
-            result.IsCertifiedFactory = isAble[0].IsCertifiedFactory; // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」それ以外は「0」
+        #region 削除申請
+        private bool deleteRequest()
+        {
+            // 削除条件を取得
+            Dao.detailSearchCondition condition = getDetailSearchCondition();
+
+
+
 
             return true;
         }
+
+
+
         #endregion
 
         #region 登録

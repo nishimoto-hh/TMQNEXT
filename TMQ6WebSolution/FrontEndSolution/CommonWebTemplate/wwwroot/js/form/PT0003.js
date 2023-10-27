@@ -78,7 +78,7 @@ const FormList = {
         ChildId: "BODY_100_00_LST_0",
         FilterInput: 1,
         KeyValueParent: 10,
-        KeyValueChild:11
+        KeyValueChild: 11
     },
     ButtonId: {
         //棚卸準備リスト
@@ -112,7 +112,7 @@ const EnterInput = {
     //画面No
     No: 2,
     //1行目
-    FirstRowNo:1,
+    FirstRowNo: 1,
     //入庫数
     InoutQuantity: 3,
     //入庫単価
@@ -387,8 +387,7 @@ function setPageStatusEx(status, pageRowCount, conductPtn, formNo) {
             });
         }
     }
-    else if (formNo == EnterInput.No)
-    {
+    else if (formNo == EnterInput.No) {
         // 入庫単価入力画面
         // 入庫単価エリア取得
         var price = getCtrl(EnterInput.Id, EnterInput.UnitPrice, EnterInput.FirstRowNo, CtrlFlag.Input, false, false);
@@ -617,7 +616,7 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     // ボタン名取得
     var btnName = $(btn).attr('name');
-    if (formNo == EnterInput.No && btnName == EnterInput.Button.Regist){
+    if (formNo == EnterInput.No && btnName == EnterInput.Button.Regist) {
         // 入庫単価入力画面
         // 登録実行正常終了後画面を閉じて遷移元に移動
         var modal = $(btn).closest('section.modal_form');
@@ -765,8 +764,7 @@ function setDisabledLink(tbl, rows) {
  * 在庫数、在庫金額を計算して表示
  * @param {any} tbl 一覧
  */
-function setStockCalculation(tbl)
-{
+function setStockCalculation(tbl) {
     // 対象コントール内の全行取得
     var trs = tbl.getRows();
     $(trs).each(function (i, tr) {
@@ -775,16 +773,14 @@ function setStockCalculation(tbl)
         var division = tr.getData()['VAL' + InoutList.EnterIssueHistory.CotrlFlg];
 
         // 繰越行
-        if (division == TranslationDivision.Forward)
-        {
+        if (division == TranslationDivision.Forward) {
             // データのリンクを無効にする
             noneLinkCarryData(false, 0);
             return true;
-        } 
+        }
 
         // 出庫以外
-        if (division != TranslationDivision.Issue)
-        {
+        if (division != TranslationDivision.Issue) {
             // 入庫数取得
             var inQuantity = tr.getData()['VAL' + InoutList.EnterIssueHistory.InQuantity].replace(/[^-0-9.]/g, '');
             // 入庫数単位取得
@@ -801,8 +797,7 @@ function setStockCalculation(tbl)
                 setValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockQuantity, i, CtrlFlag.Label, parseFloat(inQuantity).toLocaleString().toString() + unit);
                 setValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockAmount, i, CtrlFlag.Label, parseFloat(inventoryAmount).toLocaleString().toString() + currency);
             }
-            else
-            {
+            else {
                 // 前行の在庫数、在庫金額取得
                 var stockQuantity = getValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockQuantity, i - 1, CtrlFlag.Label, false, false);
                 stockQuantity = stockQuantity.replace(/[^-0-9.]/g, '');
@@ -819,8 +814,7 @@ function setStockCalculation(tbl)
                 setValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockAmount, i, CtrlFlag.Label, total.toLocaleString().toString() + currency);
             }
         }
-        else
-        {
+        else {
             // 出庫数取得
             var issueQuantity = tr.getData()['VAL' + InoutList.EnterIssueHistory.IssueQuantity].replace(/[^-0-9.]/g, '');
             // 出庫数単位取得
@@ -837,8 +831,7 @@ function setStockCalculation(tbl)
                 setValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockQuantity, i, CtrlFlag.Label, issueQuantity.toLocaleString().toString() + unit);
                 setValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockAmount, i, CtrlFlag.Label, issueAmount.toLocaleString().toString() + currency);
             }
-            else
-            {
+            else {
                 // 前行の在庫数、在庫金額取得
                 var stockQuantity = getValue(InoutList.EnterIssueHistory.Id, InoutList.EnterIssueHistory.StockQuantity, i - 1, CtrlFlag.Label, false, false);
                 stockQuantity = stockQuantity.replace(/[^-0-9.]/g, '');
@@ -890,8 +883,7 @@ function noneLinkCarryData(flg, rowNo) {
 
         }
     }
-    else
-    {
+    else {
         // 入出庫履歴一覧の要素取得
         ctrlId = InoutList.EnterIssueHistory.Id;
 
@@ -905,7 +897,7 @@ function noneLinkCarryData(flg, rowNo) {
             // 文字色を黒に変更
             var value = $(link).find("a");
             $(value)[0].style.color = "black";
-            
+
         }
     }
 }
@@ -982,8 +974,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     }
 
     // 遷移元が入庫一覧の場合
-    if (ctrlId == FormList.EnterHistory.Id)
-    {
+    if (ctrlId == FormList.EnterHistory.Id) {
         // 遷移区分取得
         var rowData = P_listData["#" + FormList.EnterHistory.Id + getAddFormNo()].searchData("ROWNO", "=", rowNo)[0];
         var division = rowData["VAL" + FormList.EnterHistory.ControlFlag];
@@ -996,8 +987,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     }
 
     // 棚卸(受払履歴)への遷移の場合
-    if (transTarget == InoutList.No)
-    {
+    if (transTarget == InoutList.No) {
         // 対象年月取得
         var targetDate = getValue(FormList.Condition.Id, FormList.Condition.TargetYearMonth, 0, CtrlFlag.TextBox, false, false);
         // 検索条件をセット
@@ -1037,8 +1027,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         return [false, conditionDataList];
     }
     // 移庫入力に遷移の場合は条件を受け渡す
-    else if (ctrlId == InoutList.EnterIssueHistory.Id && transTarget == ConductId_PT0007)
-    {
+    else if (ctrlId == InoutList.EnterIssueHistory.Id && transTarget == ConductId_PT0007) {
         // 遷移区分取得
         var division = $(element).parent().parent().find("div[tabulator-field='VAL" + InoutList.EnterIssueHistory.Division + "']")[0].innerText;
 
@@ -1249,7 +1238,7 @@ function preRegistProcess(appPath, transDiv, conductId, pgmId, formNo, btn, cond
         // 表示する確認メッセージ(デフォルト)を取得(P_MessageStr)に格納
         setMessageStrForBtn(btn, confirmKbnDef.Disp);
         var errorMsg = P_MessageStr;
-        if (isChangeList(FormList.InventoryList.Id)) {
+        if (isChangeList(FormList.InventoryList.Id, true)) {
             //明細の行変更フラグがtrueの場合、棚卸数が変更されているとみなし表示メッセージ変更
             errorMsg = P_ComMsgTranslated[141020004];//一時保存後に棚卸数が変更されています。変更内容は破棄され、保存された値で棚差調整します。よろしいですか？
         }

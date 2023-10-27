@@ -90,6 +90,8 @@
     <None Remove="Resources\sql\Common\HistoryManagement\GetAuthLevelByUserId.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetCntBeforeUpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetIsSystemAdministratorByUserId.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagement.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagementDetail.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatusApproval.sql" />
     <None Remove="Resources\sql\Common\InsertTempJob.sql" />
@@ -179,6 +181,7 @@
     <None Remove="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <None Remove="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0360_Sheet1.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetApplicationStatusFromMachineId.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetCntBeforeUpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
@@ -186,6 +189,8 @@
     <None Remove="Resources\sql\HistoryMachine\GetIsAbleToClickBtn.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
+    <None Remove="Resources\sql\HistoryMachine\InsertEquipmentInfo.sql" />
+    <None Remove="Resources\sql\HistoryMachine\InsertMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetCategoryList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetEnterInfoList.sql" />
@@ -777,6 +782,8 @@
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetApprovalUserId.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetAuthLevel.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\InsertHistoryManagement.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\InsertHistoryManagementDetail.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempJob.sql" />
     <EmbeddedResource Include="Resources\sql\Common\InsertTempLocation.sql" />
@@ -827,11 +834,12 @@
     <EmbeddedResource Include="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0360_Sheet1.sql" />
-    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetCntBeforeUpdateApplicationStatus.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetApplicationStatusFromMachineId.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
-    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetIsAbleToClickBtn.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertEquipmentInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertMachineInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitAccountStructureId.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitOldNewStructureId.sql" />

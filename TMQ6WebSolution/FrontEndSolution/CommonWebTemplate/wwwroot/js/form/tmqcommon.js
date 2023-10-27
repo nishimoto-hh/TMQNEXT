@@ -60,6 +60,12 @@ const RM00001_ConductId = "RM0001";
 // マスタメンテナンス一覧 機能ID
 const MS0001_ConductId = "MS0001";
 
+// 変更管理機器台帳 機能ID
+const ConductId_HM0001 = "HM0001";
+
+// 変更管理長期計画 機能ID
+const ConductId_HM0002 = "HM0002";
+
 // 一覧フィルタ(付加情報の遷移先に設定)
 const ListFilter_TransTarget = 'FILTER';
 
@@ -1443,16 +1449,15 @@ function getParamToPT0007FromPT0001(CtrlId, PartsId) {
 }
 
 /**
- * 機器台帳変更管理 詳細画面への遷移パラメータを作成する
- * @param {any} HistoryManagementId 変更管理ID
+ * 機器台帳(MC0001)の詳細画面から、機器台帳変更管理 詳細画面への遷移パラメータを作成する
  * @param {any} MachineId           機番ID
  */
 function getParamToHM0001FormDetail(MachineId) {
     var conditionData = {};
     conditionData['CTRLID'] = HM0001_List_CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL41'] = 0;
-    conditionData['VAL43'] = MachineId;
+    conditionData['VAL39'] = 0;         // 変更管理ID
+    conditionData['VAL41'] = MachineId; // 機番ID
     return conditionData;
 }
 
@@ -3514,23 +3519,31 @@ function combineNumberAndUnit(val, unit, isUseSpace) {
 /**
  * 明細（tabulator一覧）の入力値が変更されているかチェックする
  * @param {string} ctrlId 一覧の項目ID
- * @param {string} message メッセージ
+ * @param {string} isSelectedOnly 選択行のみ判定する場合はTRUE
  * @return 変更されている場合True、変更なしの場合False
  */
-function isChangeList(ctrlId) {
+function isChangeList(ctrlId, isSelectedOnly) {
     var flg = false;
 
     var table = P_listData['#' + ctrlId + getAddFormNo()];
     if (table) {
-        var trs = table.getRows();
+           var trs = table.getRows();
+
         if (trs != null && trs.length > 0) {
             // 検索結果一覧を参照し、変更されている（UPDTAG=1）かどうかをチェック
             $(trs).each(function (i, tr) {
+                var rowData = tr.getData();
+                if (isSelectedOnly && rowData.SELTAG != 1) {
+                    // 選択行のみを取得する場合は、選択の値が1でなければcontinue
+                    return true;
+                }
+
                 var ele = tr.getCell('UPDTAG').getElement();
                 if ($(ele).find("input[data-name='UPDTAG']").val()) {
                     flg = true;
                     return false;
                 }
+                ele = null;
             });
         }
         table = null;
@@ -3538,6 +3551,13 @@ function isChangeList(ctrlId) {
     return flg;
 }
 
+
+// 変更管理 処理モード
+const ProcessMode =
+{
+    Transaction: "0", // トランザクションモード
+    History: "1"      // 変更管理モード
+}
 
 /**
  * 変更管理 背景色変更共通処理
@@ -3638,29 +3658,50 @@ function changeBackGroundColorHistory(ctrlId, val, applicationDivisionCode) {
     $(cell).addClass(backGroundStyle);
 }
 
-
+// 変更管理詳細画面 ボタンコントロールID
+const HistoryFormDetailCommonButton =
+{
+    CopyRequest: "CopyRequest",                             // 複写申請
+    ChangeRequest: "ChangeRequest",                         // 変更申請
+    DeleteRequest: "DeleteRequest",                         // 削除申請
+    ChangeApplicationRequest: "ChangeApplicationRequest",   // 承認依頼
+    EditRequest: "EditRequest",                             // 修正
+    CancelRequest: "CancelRequest",                         // 取消
+    PullBackRequest: "PullBackRequest",                     // 引戻
+    ChangeApplicationApproval: "ChangeApplicationApproval", // 承認
+    ChangeApplicationDenial: "ChangeApplicationDenial",     // 否認
+    BeforeChange: "BeforeChange"                            // 変更前
+}
 /**
  * 変更管理 詳細画面ボタン非表示 制御
- * @param {any} isTransactionMode       :トランザクションモードの場合True、変更管理モードの場合False
- * @param {any} applicationStatusCode   :申請状況(10：申請データ作成中、20：承認依頼中、30：差戻中、40：承認済み)
- * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
- * @param {any} isCertified             :申請の申請者またはシステム管理者の場合True、それ以外はFalse
- * @param {any} isCertifiedFactory      :工場の承認ユーザの場合True
+ * @param {any} isTransactionMode                :トランザクションモードの場合True、変更管理モードの場合False
+ * @param {any} applicationStatusCode            :申請状況(10：申請データ作成中、20：承認依頼中、30：差戻中、40：承認済み)
+ * @param {any} applicationDivisionCode          :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
+ * @param {any} isCertified                      :申請の申請者またはシステム管理者の場合True、それ以外はFalse
+ * @param {any} isCertifiedFactory               :工場の承認ユーザの場合True
  */
 function commonButtonHideHistory(isTransactionMode, applicationStatusCode, applicationDivisionCode, isCertified, isCertifiedFactory) {
+
+    // 全てのボタンを表示状態にする
+    Object.keys(HistoryFormDetailCommonButton).forEach(function (button, idx) {
+        dispNoneElementHistory(getButtonCtrl(button), false);
+    });
+
+
+    // ボタン毎に各パターンのどれかに該当する場合は非表示にする
 
     // 複写申請
     // ①変更管理モードの場合
     if (!isTransactionMode) {
-        dispNoneElementHistory(getButtonCtrl("CopyRequest"));
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.CopyRequest), true);
     }
 
     // 変更申請・削除申請
     // ①変更管理モードの場合
     // ②仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
-    if (!isTransactionMode || (applicationStatusCode == ApplicationStatus.Making || applicationStatusCode == ApplicationStatus.Return)) {
-        dispNoneElementHistory(getButtonCtrl("ChangeRequest"));
-        dispNoneElementHistory(getButtonCtrl("DeleteRequest"));
+    if (!isTransactionMode || (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeRequest), true);
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.DeleteRequest), true);
     }
 
     // 承認依頼
@@ -3668,9 +3709,11 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ②申請状況が「20：承認依頼中」の場合
     // ③申請状況が「10：申請データ作成中」かつ、申請の申請者でない場合
     // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
+    // ⑤仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
     if (isTransactionMode || applicationStatusCode == ApplicationStatus.Request ||
-        (applicationStatusCode == ApplicationStatus.Making && !isCertified) || (applicationStatusCode == ApplicationStatus.Return && !isCertified)) {
-        dispNoneElementHistory(getButtonCtrl("ChangeApplicationRequest"));
+        (applicationStatusCode == ApplicationStatus.Making && !isCertified) || (applicationStatusCode == ApplicationStatus.Return && !isCertified) ||
+        (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationRequest), true);
     }
 
     // 修正
@@ -3678,9 +3721,11 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ②申請状況が「10：申請データ作成中」かつ、申請区分が「30：削除申請」の場合
     // ③申請状況が「20：承認依頼中」の場合
     // ④申請状況が「30：差戻中」かつ、申請区分が「30：削除申請」の場合
+    // ⑤仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
     if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && applicationDivisionCode == ApplicationDivision.Delete) || applicationStatusCode == ApplicationStatus.Request ||
-        (applicationStatusCode == ApplicationStatus.Return && applicationDivisionCode == ApplicationDivision.Delete)) {
-        dispNoneElementHistory(getButtonCtrl("EditRequest"));
+        (applicationStatusCode == ApplicationStatus.Return && applicationDivisionCode == ApplicationDivision.Delete) ||
+        (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.EditRequest), true);
     }
 
     // 取消
@@ -3690,7 +3735,7 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
     if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && !isCertified) || applicationStatusCode == ApplicationStatus.Request ||
         (applicationStatusCode == ApplicationStatus.Return && !isCertified)) {
-        dispNoneElementHistory(getButtonCtrl("CancelRequest"));
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.CancelRequest), true);
     }
 
     // 引戻
@@ -3700,7 +3745,7 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ④申請状況が「30：差戻中」の場合
     if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || (applicationStatusCode == ApplicationStatus.Request && !isCertified) ||
         applicationStatusCode == ApplicationStatus.Return) {
-        dispNoneElementHistory(getButtonCtrl("PullBackRequest"));
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.PullBackRequest), true);
     }
 
     // 承認・否認
@@ -3709,22 +3754,49 @@ function commonButtonHideHistory(isTransactionMode, applicationStatusCode, appli
     // ③工場の承認ユーザでない場合
     // ④申請状況が「30：差戻中」の場合
     if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || !isCertifiedFactory || applicationStatusCode == ApplicationStatus.Return) {
-        dispNoneElementHistory(getButtonCtrl("ChangeApplicationApproval"));
-        dispNoneElementHistory(getButtonCtrl("ChangeApplicationDenial"));
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationApproval), true);
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationDenial), true);
     }
 
     // 変更前
+    // ①トランザクションモードの場合
     if (isTransactionMode) {
-        dispNoneElementHistory(getButtonCtrl("BeforeChange"));
+        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.BeforeChange), true);
     }
 }
 
 /**
  * 変更管理 ボタンを非表示にする
  * @param {any} button ボタン要素
+ * @param {any} isHide 非表示にする場合はTrue
  */
-function dispNoneElementHistory(button) {
+function dispNoneElementHistory(button, isHide) {
 
-    // ボタンの親要素を非表示にする
-    $(button).parent().css("display", "none");
+    // .hide() だと親要素のwidthが残って隙間ができるため以下の方法で非表示にする
+
+    // フラグを判定
+    if (isHide) {
+        // ボタンの親要素を非表示にする
+        $(button).parent().css("display", "none");
+    }
+    else {
+        // ボタンの親要素を表示する
+        $(button).parent().css("display", "");
+    }
+}
+
+/**
+ * 変更管理関連のコントロールの表示制御
+ * @param {any} isHistoryManagement 変更管理の場合はTrue
+ * @param {any} historyManagementBtnName 変更管理ボタンの名前
+ * @param {any} hideBtns 変更管理の時に非表示にするボタンの名前のリスト
+ */
+function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns) {
+    var historyManagementBtn = getButtonCtrl(historyManagementBtnName);
+    dispNoneElementHistory(historyManagementBtn, !isHistoryManagement);
+
+    $.each(hideBtns, function (i, name) {
+        var btn = getButtonCtrl(name);
+        dispNoneElementHistory(btn, isHistoryManagement);
+    });
 }

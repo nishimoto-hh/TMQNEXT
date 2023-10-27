@@ -897,3 +897,18 @@ function prevCommonValidCheck(appPath, conductId, formNo, btn) {
 function prevAfterBackExec(appPath, conductId, pgmId, formNo, ctrlId) {
     return false;
 }
+
+/**
+ *【オーバーライド用関数】登録処理前の「listData」個別取得処理
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+ */
+function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
+
+    // 何もしない場合はそのまま返す
+    return listData;
+}

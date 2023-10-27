@@ -334,7 +334,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             }
             // 選択された行をパラメータに設定する
             const ctrlIdList = [FormList.List.Id, FormList.Condition.Id];
-            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0)
+            if (transTarget != RM00001_ConductId) {
+                // 出力ボタン以外の場合は選択行の情報を取得
+                conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0, false, true);
+            }
         } else if (transPtn == transPtnDef.OtherTab && transTarget.startsWith('MC0001')) {
             // 機器台帳画面に遷移する場合、パラメータを設定する
             var machineId = getSiblingsValue(element, FormList.List.MachineId, CtrlFlag.Label);

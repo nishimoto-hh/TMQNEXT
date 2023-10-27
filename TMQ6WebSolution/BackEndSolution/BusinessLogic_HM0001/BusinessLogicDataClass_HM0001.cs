@@ -47,7 +47,7 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// 一覧画面・詳細画面の検索結果
+        /// 一覧画面・詳細画面・詳細編集画面の検索結果
         /// </summary>
         public class searchResult : TmqDao.HmMcMachineEntity, HistoryManagementDao.IHistoryManagementCommon
         {
@@ -138,12 +138,18 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 承認者フラグ(0：承認権限無し、承認権限有り)</summary>
             /// <value>承認者フラグ(0：承認権限無し、承認権限有り)</value>
             public int AbleApproval { get; set; }
-            /// <summary>Gets or sets ボタン表示制御フラグ(申請の申請者かシステム管理者の場合は「1」)</summary>
-            /// <value>ボタン表示制御フラグ(申請の申請者かシステム管理者の場合は「1」)</value>
-            public int IsCertified { get; set; }
-            /// <summary>Gets or sets ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」)</summary>
-            /// <value>ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合は「1」)</value>
-            public int IsCertifiedFactory { get; set; }
+            /// <summary>Gets or sets ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</summary>
+            /// <value>ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</value>
+            public bool IsCertified { get; set; }
+            /// <summary>Gets or sets ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</summary>
+            /// <value>ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</value>
+            public bool IsCertifiedFactory { get; set; }
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public string ExecutionDivision { get; set; }
+            /// <summary>Gets or sets 機器ID</summary>
+            /// <value>機器ID</value>
+            public long EquipmentId { get; set; }
 
             #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
@@ -406,6 +412,26 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 変更のあった項目</summary>
             /// <value>変更のあった項目</value>
             public string ValueChanged { get; set; }
+        }
+
+        /// <summary>
+        /// 詳細編集画面の登録情報データクラス(機番情報)
+        /// </summary>
+        public class registMachineInfo : TmqDao.HmMcMachineEntity
+        {
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
+        }
+
+        /// <summary>
+        /// 詳細編集画面の登録情報データクラス(機器情報)
+        /// </summary>
+        public class registEquipmentInfo : TmqDao.HmMcEquipmentEntity
+        {
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
         }
     }
 }

@@ -408,7 +408,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
             // 予備品一覧をセット
             const ctrlIdList = [FormList.Id];
-            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0);
+            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0, false, true);
 
         }
         else if (btn_ctrlId == FormList.Button.Enter) { // 入庫

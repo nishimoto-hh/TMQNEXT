@@ -182,6 +182,8 @@
                 RoundDivision = 2050,
                 // 変更管理 申請状況
                 ApplicationStatus = 2090,
+                // 変更管理 申請区分
+                ApplicationDivision = 2100,
                 // 権限
                 Authority = 9040,
                 // テンポラリフォルダパス
@@ -429,6 +431,21 @@
                     /// 長期計画
                     /// </summary>
                     HM0002 = 2
+                }
+
+                /// <summary>
+                /// 処理モード
+                /// </summary>
+                public enum ProcessMode
+                {
+                    /// <summary>
+                    /// トランザクションモード
+                    /// </summary>
+                    transaction,
+                    /// <summary>
+                    /// 変更管理モード
+                    /// </summary>
+                    history
                 }
             }
         }

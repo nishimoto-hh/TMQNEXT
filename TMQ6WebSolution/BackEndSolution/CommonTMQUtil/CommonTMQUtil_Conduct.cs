@@ -1030,6 +1030,11 @@ namespace CommonTMQUtil
                 public const string GetApprovalUserId = "GetApprovalUserId";
                 /// <summary>変更管理IDより、申請状況の拡張区分取得するSQL</summary>
                 public const string GetApplicationStatus = "GetApplicationStatus";
+
+                /// <summary>変更管理テーブルにデータを新規登録するSQL</summary>
+                public const string InsertHistoryManagement = "InsertHistoryManagement";
+                /// <summary>変更管理詳細テーブルにデータを新規登録するSQL</summary>
+                public const string InsertHistoryManagementDetail = "InsertHistoryManagementDetail";
             }
 
             /// <summary>
@@ -1117,7 +1122,7 @@ namespace CommonTMQUtil
             public bool UpdateApplicationStatus(ComDao.HmHistoryManagementEntity condition, TMQConst.MsStructure.StructureId.ApplicationStatus registStatusCode)
             {
                 // 申請状況IDを取得
-                condition.ApplicationStatusId = getApplicationStatus();
+                condition.ApplicationStatusId = getApplicationStatus(registStatusCode);
 
                 // 登録情報を設定
                 SetHistoryManagementInfo();
@@ -1132,24 +1137,6 @@ namespace CommonTMQUtil
                 }
 
                 return true;
-
-                // 拡張アイテムより申請状況の構成IDを取得
-                int getApplicationStatus()
-                {
-                    //構成アイテムを取得するパラメータ設定
-                    TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
-                    //構成グループID
-                    param.StructureGroupId = (int)TMQConst.MsStructure.GroupId.ApplicationStatus;
-                    //連番
-                    param.Seq = 1;
-                    // 拡張データ
-                    param.ExData = ((int)registStatusCode).ToString();
-
-                    // 申請状況(構成ID)取得
-                    List<TMQUtil.StructureItemEx.StructureItemExInfo> applicationStatusList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.Db);
-
-                    return applicationStatusList[0].StructureId;
-                }
 
                 // 登録情報を設定
                 void SetHistoryManagementInfo()
@@ -1177,6 +1164,154 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
+            /// 変更管理のベース(変更管理テーブル・変更管理詳細テーブル)の新規登録処理
+            /// </summary>
+            /// <param name="applicationDivision">申請区分</param>
+            /// <param name="executionDivision">実行処理区分</param>
+            /// <returns>エラーの場合は(False, -1)</returns>
+            public (bool returnFlag, long historyManagementDetailId, long historyManagementId) InsertHistoryManagementBaseTable(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision, int executionDivision)
+            {
+                // 変更管理テーブル 新規登録処理
+                (bool returnFlag, long historyManagementId) historyManagementResult = InsertHistoryManagement(applicationDivision);
+                if (!historyManagementResult.returnFlag)
+                {
+                    return (false, -1, -1);
+                }
+
+                // 変更管理詳細テーブル 新規登録処理
+                (bool returnFlag, long historyManagementDetailId) historyManagementDetailResult = InsertHistoryManagementDetail(historyManagementResult.historyManagementId, executionDivision);
+                if (!historyManagementDetailResult.returnFlag)
+                {
+                    return (false, -1, -1);
+                }
+
+                // 登録処理で採番した 変更管理詳細ID を返す
+                return (true, historyManagementResult.historyManagementId, historyManagementDetailResult.historyManagementDetailId);
+
+            }
+
+            /// <summary>
+            /// 変更管理テーブル新規登録処理
+            /// </summary>
+            /// <param name="applicationDivision">申請区分</param>
+            /// <param name="isNewData">新規・複写の場合はTrue、変更の場合はFalse</param>
+            /// <returns>エラーの場合は(False, -1)</returns>
+
+            public (bool returnFlag, long historyManagementId) InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision)
+            {
+                // 登録情報を作成
+                ComDao.HmHistoryManagementEntity registInfo = new();
+
+                // 申請状況IDを取得
+                registInfo.ApplicationStatusId = getApplicationStatus(TMQConst.MsStructure.StructureId.ApplicationStatus.Making);
+
+                // 申請区分IDを取得
+                registInfo.ApplicationDivisionId = getApplicationDivision(applicationDivision);
+
+                registInfo.ApplicationConductId = this.ApplicationConductId; // 申請機能ID
+                registInfo.ApplicationUserId = this.UserId;                  // 申請者ID
+                registInfo.InsertDatetime = this.Now;                        // 登録日時
+                registInfo.InsertUserId = this.UserId;                       // 登録ユーザー
+                registInfo.UpdateDatetime = this.Now;                        // 更新日時
+                registInfo.InsertUserId = this.UserId;                       // 更新ユーザー
+
+                // SQL文の取得
+                if (!TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.InsertHistoryManagement, out string sql))
+                {
+                    return (false, -1);
+                }
+
+                long returnId = this.Db.RegistAndGetKeyValue<long>(sql, out bool isError, registInfo);
+                return (!isError, returnId);
+            }
+
+            /// <summary>
+            /// 変更管理詳細テーブル新規登録処理
+            /// </summary>
+            /// <param name="historyManagementId">変更管理ID</param>
+            /// <param name="executionDivision">実行処理区分</param>
+            /// <returns>エラーの場合は(False, -1)</returns>
+            public (bool returnFlag, long historyManagementDetailId) InsertHistoryManagementDetail(long historyManagementId, int executionDivision)
+            {
+                // 登録情報を作成
+                ComDao.HmHistoryManagementDetailEntity registInfo = new();
+                registInfo.HistoryManagementId = historyManagementId; //変更管理ID
+                registInfo.ExecutionDivision = executionDivision;     // 実行処理区分
+                registInfo.InsertDatetime = this.Now;                 // 登録日時
+                registInfo.InsertUserId = this.UserId;                // 登録ユーザー
+                registInfo.UpdateDatetime = this.Now;                 // 更新日時
+                registInfo.InsertUserId = this.UserId;                // 更新ユーザー
+
+                // SQL文の取得
+                if (!TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.InsertHistoryManagementDetail, out string sql))
+                {
+                    return (false, -1);
+                }
+
+                long returnId = this.Db.RegistAndGetKeyValue<long>(sql, out bool isError, registInfo);
+                return (!isError, returnId);
+            }
+
+            /// <summary>
+            /// 申請状況の拡張項目より、該当アイテムの構成IDを取得
+            /// </summary>
+            /// <param name="registStatusCode">申請状況の拡張項目</param>
+            /// <returns>構成ID</returns>
+            public int getApplicationStatus(TMQConst.MsStructure.StructureId.ApplicationStatus applicationStatus)
+            {
+                //構成アイテムを取得するパラメータ設定
+                TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+                //構成グループID
+                param.StructureGroupId = (int)TMQConst.MsStructure.GroupId.ApplicationStatus;
+                //連番
+                param.Seq = 1;
+                // 拡張データ
+                param.ExData = ((int)(TMQConst.MsStructure.StructureId.ApplicationStatus)Enum.ToObject(typeof(TMQConst.MsStructure.StructureId.ApplicationStatus), applicationStatus)).ToString();
+
+                // 申請状況(構成ID)取得
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> applicationStatusList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.Db);
+
+                return applicationStatusList[0].StructureId;
+            }
+
+
+            /// <summary>
+            /// 申請区分の拡張項目より、該当アイテムの構成IDを取得
+            /// </summary>
+            /// <param name="registStatusCode">申請状況の拡張項目</param>
+            /// <returns>構成ID</returns>
+            public int getApplicationDivision(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision)
+            {
+                //構成アイテムを取得するパラメータ設定
+                TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+                //構成グループID
+                param.StructureGroupId = (int)TMQConst.MsStructure.GroupId.ApplicationDivision;
+                //連番
+                param.Seq = 1;
+                // 拡張データ
+                param.ExData = ((int)(TMQConst.MsStructure.StructureId.ApplicationDivision)Enum.ToObject(typeof(TMQConst.MsStructure.StructureId.ApplicationDivision), applicationDivision)).ToString(); ;
+
+                // 申請区分(構成ID)取得
+                List<TMQUtil.StructureItemEx.StructureItemExInfo> applicationDivisionList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.Db);
+
+                return applicationDivisionList[0].StructureId;
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            /// <summary>
             /// 変更管理テーブルの申請状況更新処理前の入力チェック
             /// </summary>
             /// <param name="condition">検索条件</param>
@@ -1188,7 +1323,7 @@ namespace CommonTMQUtil
                 errMsg = null;
 
                 // 変更管理データが「20：承認依頼中」かどうかを判定
-                if (!isRequestDataByHistoryManagementId(condition , TMQConst.MsStructure.StructureId.ApplicationStatus.Request))
+                if (!isRequestDataByHistoryManagementId(condition, TMQConst.MsStructure.StructureId.ApplicationStatus.Request))
                 {
                     // 承認依頼中でない変更管理が選択されています。
                     errMsg = new string[] { ComRes.ID.ID141190002, ComRes.ID.ID131120042, ComRes.ID.ID111290002 };
@@ -1216,19 +1351,37 @@ namespace CommonTMQUtil
             /// <returns>指定された申請状況と一致しない場合はFalse</returns>
             public bool isRequestDataByHistoryManagementId(ComDao.HmHistoryManagementEntity condition, TMQConst.MsStructure.StructureId.ApplicationStatus targetApplicationStatus)
             {
+                string applicationStatus = getApplicationStatusByHistoryManagementId(condition);
+
+                // 引数で指定された申請状況でない場合はエラー
+                if (string.IsNullOrEmpty(applicationStatus) || applicationStatus != ((int)targetApplicationStatus).ToString())
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// 変更管理IDより、申請状況の拡張項目を取得する
+            /// </summary>
+            /// <param name="condition">検索条件</param>
+            /// <returns>申請状況の拡張項目</returns>
+            public string getApplicationStatusByHistoryManagementId(ComDao.HmHistoryManagementEntity condition)
+            {
                 // SQLを取得
                 TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApplicationStatus, out string sql);
 
                 // SQL実行
                 TMQUtil.StructureItemEx.StructureItemExInfo statusInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, condition);
 
-                if (statusInfo == null || statusInfo.ExData == null || statusInfo.ExData != ((int)targetApplicationStatus).ToString())
+                if (statusInfo == null || statusInfo.ExData == null)
                 {
-                    // 取得できないまたは指定された申請状況でない場合はエラー
-                    return false;
+                    // 取得できない場合は空文字を返す
+                    return string.Empty;
                 }
 
-                return true;
+                return statusInfo.ExData;
             }
 
             /// <summary>
@@ -1273,11 +1426,66 @@ namespace CommonTMQUtil
 
                 if (certifiedInfo == null || certifiedInfo.ExData == null || certifiedInfo.ExData != this.UserId.ToString())
                 {
-                    // 取得できないまたはシステム管理者でない場合はエラー
+                    // 取得できないまたは工場の承認ユーザーでない場合はエラー
                     return false;
                 }
 
                 return true;
+            }
+
+            /// <summary>
+            /// ボタン非表示制御フラグ取得(詳細画面のボタン非表示処理に使用)
+            /// </summary>
+            /// <typeparam name="T">共通の検索結果データクラス IHistoryManagementCommonを実装</typeparam>
+            /// <param name="result">画面に設定する検索結果</param>
+            /// <param name="historyManagementId">変更管理ID</param>
+            /// <param name="processMode">処理モード</param>
+
+            public void GetFlgHideButton<T>(ref T result, long? historyManagementId, TMQConst.MsStructure.StructureId.ProcessMode processMode)
+                 where T : HistoryManagementDao.IHistoryManagementCommon, new()
+            {
+                // 変更管理IDに紐付くデータを取得
+                ComDao.HmHistoryManagementEntity historyCondition = new();
+                historyCondition = historyCondition.GetEntity((long)historyManagementId, this.Db);
+
+                // 申請の申請者IDがログインユーザまたはシステム管理者かどうか
+                result.IsCertified = isCertified();
+
+                // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDかどうか
+                result.IsCertifiedFactory = isCertifiedFactory();
+
+                bool isCertified()
+                {
+                    bool isSystemAdministrator = this.isSystemAdministrator(new ComDao.HmHistoryManagementEntity());
+
+                    // トランザクションモードの場合はシステム管理者かどうかを返す
+                    if (processMode == TMQConst.MsStructure.StructureId.ProcessMode.transaction)
+                    {
+                        return isSystemAdministrator;
+                    }
+
+                    // 申請の申請者IDがログインユーザまたはシステム管理者の場合True
+                    if (historyCondition.ApplicationUserId == this.UserId || isSystemAdministrator)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                bool isCertifiedFactory()
+                {
+                    // 処理モードを判定
+                    if (processMode == TMQConst.MsStructure.StructureId.ProcessMode.transaction)
+                    {
+                        return false;
+                    }
+
+                    // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDかどうか
+                    return this.isCertifiedFactory(historyCondition);
+                }
             }
         }
     }

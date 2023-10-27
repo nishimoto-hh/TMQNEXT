@@ -1832,7 +1832,7 @@ namespace CommonTMQUtil
                     //棚番
                     long partsLocationId = long.Parse(result.parts_location_id.ToString());
                     string partsLocationDetailNo = string.Empty;
-                    if(result.parts_location_detail_no != null)
+                    if (result.parts_location_detail_no != null)
                     {
                         partsLocationDetailNo = (result.parts_location_detail_no).ToString();
                     }
@@ -2850,17 +2850,13 @@ namespace CommonTMQUtil
             mappingList.Add(info);
 
             // 場所階層
-            if(conditionSheetLocationList.Count > 0)
-            { 
-                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-                string orParam = ComUtil.GetWhereSqlString("st.structure_id", conditionSheetLocationList);
+            if (conditionSheetLocationList.Count > 0)
+            {
                 // SQL取得
                 GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText);
-                // 生成した条件文字列をSQLに設定する
-                Regex paramReplace = new Regex("@StructureIdList");
-                sqlText = paramReplace.Replace(sqlText, orParam);
                 // IDのリストより上位の階層を検索し、階層情報のリストを取得
-                var param = new { LanguageId = languageId };
+                // 場所階層はカンマ区切りの文字列で渡す
+                var param = new { LanguageId = languageId, StructureIdList = string.Join(",", conditionSheetLocationList) };
 
                 IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText, param);
                 if (results != null)
@@ -2963,18 +2959,14 @@ namespace CommonTMQUtil
             mappingList.Add(info);
 
             // 職種・機種
-            if(conditionSheetJobList.Count > 0)
+            if (conditionSheetJobList.Count > 0)
             {
-                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-                string orParam = ComUtil.GetWhereSqlString("st.structure_id", conditionSheetJobList);
                 // SQL取得
                 GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText2);
-                // 生成した条件文字列をSQLに設定する
-                Regex paramReplace = new Regex("@StructureIdList");
-                string sqlText = paramReplace.Replace(sqlText2, orParam);
                 // IDのリストより上位の階層を検索し、階層情報のリストを取得
-                var param = new { LanguageId = languageId };
-                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText, param);
+                // 職種はカンマ区切りの文字列で渡す
+                var param = new { LanguageId = languageId, StructureIdList = string.Join(",", conditionSheetJobList) };
+                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText2, param);
                 if (results != null)
                 {
                     var structureInfoList2 = results.ToList();

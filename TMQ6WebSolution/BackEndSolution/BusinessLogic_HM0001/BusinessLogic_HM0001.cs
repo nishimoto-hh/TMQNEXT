@@ -16,6 +16,7 @@ using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_HM0001
 {
@@ -30,27 +31,12 @@ namespace BusinessLogic_HM0001
         /// </summary>
         private enum executionDiv
         {
-            machineNew,     // 機器の新規・複写登録
-            machineEdit,    // 機器の修正
-            machineDelete,  // 機器の削除
-            componentNew,   // 保全項目一覧の追加
-            componentEdit,  // 保全項目一覧の項目編集
-            componentDelete // 保全項目一覧の削除
-        }
-
-        /// <summary>
-        /// 表示しているデータの種類
-        /// </summary>
-        private enum processMode
-        {
-            /// <summary>
-            /// トランザクションモード
-            /// </summary>
-            transaction,
-            /// <summary>
-            /// 変更管理モード
-            /// </summary>
-            history
+            machineNew = 1,     // 機器の新規・複写登録
+            machineEdit = 2,    // 機器の修正
+            machineDelete = 3,  // 機器の削除
+            componentNew = 4,   // 保全項目一覧の追加
+            componentEdit = 5,  // 保全項目一覧の項目編集
+            componentDelete = 6 // 保全項目一覧の削除
         }
 
         /// <summary>
@@ -70,29 +56,33 @@ namespace BusinessLogic_HM0001
             {
                 /// <summary>一覧情報取得SQL</summary>
                 public const string GetHistoryMachineList = "GetHistoryMachineList";
-                /// <summary>申請状況を更新する前の入力チェック用SQL</summary>
-                public const string GetCntBeforeUpdateApplicationStatus = "GetCntBeforeUpdateApplicationStatus";
             }
             /// <summary>
             /// 詳細画面SQL
             /// </summary>
             public static class Detail
             {
-                /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
-                public const string GetTransactionMachineInfo = "GetTransactionMachineInfo";
-                /// <summary>保全項目一覧取得(機器台帳：MC0001のSQLを使用)</summary>
-                public const string GetManagementStandard = "GetManagementStandard";
                 /// <summary>保全項目一覧(変更管理)取得SQL</summary>
                 public const string GetHistoryManagementStandardsList = "GetHistoryManagementStandardsList";
-                /// <summary>ボタンクリック権限取得SQL(ボタン表示/非表示用)</summary>
-                public const string GetIsAbleToClickBtn = "GetIsAbleToClickBtn";
+                /// <summary>機番IDから見た申請状況の拡張項目を取得する</summary>
+                public const string GetApplicationStatusFromMachineId = "GetApplicationStatusFromMachineId";
+
+                #region 機器台帳(MC0001)のSQLを使用
+                /// <summary>保全項目一覧取得(機器台帳：MC0001のSQLを使用)</summary>
+                public const string GetManagementStandard = "GetManagementStandard";
+                /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
+                public const string GetMachineDetail = "MachineDetail";
+                #endregion
             }
             /// <summary>
             /// 編集画面SQL
             /// </summary>
             public static class Edit
             {
-
+                /// <summary>機番情報登録SQL</summary>
+                public const string InsertMachineInfo = "InsertMachineInfo";
+                /// <summary>機器情報登録SQL</summary>
+                public const string InsertEquipmentInfo = "InsertEquipmentInfo";
             }
         }
 
@@ -130,6 +120,10 @@ namespace BusinessLogic_HM0001
                 public static class ButtonId
                 {
                     /// <summary>
+                    /// 新規申請
+                    /// </summary>
+                    public const string New = "New";
+                    /// <summary>
                     /// 一括承認
                     /// </summary>
                     public const string ApprovalAll = "ApprovalAll";
@@ -149,20 +143,28 @@ namespace BusinessLogic_HM0001
                 /// フォーム番号
                 /// </summary>
                 public const short FormNo = 1;
-
+                /// <summary>
+                /// グループ番号(変更管理情報)
+                /// </summary>
+                public const short GroupNoHistory = 201;
                 /// <summary>
                 /// グループ番号(機番情報)
                 /// </summary>
-                public const short GroupNoMachine = 201;
+                public const short GroupNoMachine = 202;
                 /// <summary>
                 /// グループ番号(機器情報)
                 /// </summary>
-                public const short GroupNoEquipment = 202;
+                public const short GroupNoEquipment = 203;
                 /// <summary>
                 /// コントロールID
                 /// </summary>
                 public static class ControlId
                 {
+                    /// <summary>
+                    /// 機番情報(機器番号～保全方式)
+                    /// </summary>
+                    public const string Machine = "BODY_030_00_LST_1";
+
                     /// <summary>
                     /// 保全項目一覧
                     /// </summary>
@@ -173,6 +175,68 @@ namespace BusinessLogic_HM0001
                 /// </summary>
                 public static class ButtonId
                 {
+                    /// <summary>
+                    /// 複写申請
+                    /// </summary>
+                    public const string CopyRequest = "CopyRequest";
+                    /// <summary>
+                    /// 変更申請
+                    /// </summary>
+                    public const string ChangeRequest = "ChangeRequest";
+                    /// <summary>
+                    /// 削除申請
+                    /// </summary>
+                    public const string DeleteRequest = "DeleteRequest";
+                    /// <summary>
+                    /// 申請内容修正
+                    /// </summary>
+                    public const string EditRequest = "EditRequest";
+                }
+            }
+
+            /// <summary>
+            /// 詳細編集画面
+            /// </summary>
+            public static class FormEdit
+            {
+                /// <summary>
+                /// フォーム番号
+                /// </summary>
+                public const short FormNo = 2;
+                /// <summary>
+                /// グループ番号(機番情報)
+                /// </summary>
+                public const short GroupNoMachine = 301;
+                /// <summary>
+                /// グループ番号(機器情報)
+                /// </summary>
+                public const short GroupNoEquipment = 302;
+                /// <summary>
+                /// コントロールID
+                /// </summary>
+                public static class ControlId
+                {
+                    /// <summary>
+                    /// 機番情報(機器番号～保全方式)
+                    /// </summary>
+                    public const string Machine = "BODY_010_00_LST_2";
+
+
+                }
+
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class ButtonId
+                {
+                    /// <summary>
+                    /// 登録
+                    /// </summary>
+                    public const string Regist = "Regist";
+                    /// <summary>
+                    /// 戻る
+                    /// </summary>
+                    public const string Back = "Back";
                 }
             }
         }
@@ -219,8 +283,16 @@ namespace BusinessLogic_HM0001
                         return ComConsts.RETURN_RESULT.NG;
                     }
                     break;
+
                 case ConductInfo.FormDetail.FormNo: // 詳細画面
                     if (!searchDetailList())
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+
+                case ConductInfo.FormEdit.FormNo: // 詳細編集画面
+                    if (!searchEditList())
                     {
                         return ComConsts.RETURN_RESULT.NG;
                     }
@@ -260,7 +332,38 @@ namespace BusinessLogic_HM0001
                 // 削除処理実行
                 return Delete();
             }
-            // 他の処理がある場合、else if 節に条件を追加する
+            else if (compareId.IsStartId("checkIsInProgress"))
+            {
+                // 変更申請・承認依頼・申請内容修正ボタンクリック時の排他チェック(Ajax通信)
+                // 機番IDから見た申請状況が仕掛中(承認依頼中 または 差戻中)かどうか判定する
+                return isInProgress();
+            }
+
+            // 登録・削除と異なる、機能固有の処理の場合
+            string metodName = string.Empty;
+            string processName = string.Empty;
+
+            if(this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.DeleteRequest))
+            {
+                // 詳細画面 削除申請ボタン
+                metodName = "updateSchedule";
+                processName = ComRes.ID.ID111130006;
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // この部分は到達不能なので、エラーを返す
             return ComConsts.RETURN_RESULT.NG;
         }
@@ -277,8 +380,16 @@ namespace BusinessLogic_HM0001
             //画面番号で分岐
             switch (this.FormNo)
             {
-                case ConductInfo.FormList.FormNo:
+                case ConductInfo.FormList.FormNo: // 一覧画面
                     resultRegist = registFormList();
+                    break;
+
+                case ConductInfo.FormDetail.FormNo: // 詳細画面
+                    resultRegist = registFormDetail();
+                    break;
+
+                case ConductInfo.FormEdit.FormNo: // 詳細編集画面
+                    resultRegist = registFormEdit();
                     break;
                 default:
                     // この部分は到達不能なので、エラーを返す
@@ -327,6 +438,7 @@ namespace BusinessLogic_HM0001
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int DeleteImpl()
         {
+            int a = 1;
             //this.ResultList = new();
 
             //// 一覧のチェックされた行のレコードを削除するイメージ
@@ -370,8 +482,77 @@ namespace BusinessLogic_HM0001
         #region privateメソッド
 
 
+        private int isInProgress()
+        {
+            // 検索条件を取得
+            Dao.detailSearchCondition condition = getDetailSearchCondition();
 
+            // 申請状況の拡張項目を取得
+            string applicationStatusCode = getApplicationStatusCode(condition, false);
 
+            // 返り値を設定(実際は画面に設定しない)
+            Dao.searchResult result = new() { ApplicationStatusCode = applicationStatusCode };
+            SetFormByDataClass(ConductInfo.FormDetail.ControlId.Machine, new List<Dao.searchResult>() { result });
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// 申請状況の拡張項目を取得
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="getByHistoryManagementId">変更管理IDより取得する場合はTrue</param>
+        /// <returns>申請状況の拡張項目</returns>
+        private string getApplicationStatusCode(Dao.detailSearchCondition condition, bool getByHistoryManagementId)
+        {
+            if (getByHistoryManagementId)
+            {
+                TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+                return historyManagement.getApplicationStatusByHistoryManagementId(new ComDao.HmHistoryManagementEntity() { HistoryManagementId = condition.HistoryManagementId });
+            }
+            else
+            {
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetApplicationStatusFromMachineId, out string appStatusSql);
+
+                // SQL実行
+                IList<Dao.searchResult> applicationStatusCode = db.GetListByDataClass<Dao.searchResult>(appStatusSql, condition);
+                if (applicationStatusCode == null || applicationStatusCode.Count == 0)
+                {
+                    // 取得できない場合は空文字を返す
+                    return string.Empty;
+                }
+
+                return applicationStatusCode[0].ApplicationStatusCode;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// 検索結果を一覧に設定する
+        /// </summary>
+        /// <param name="groupNo">一覧のグループ番号</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool setSearchResult(short groupNo, IList<Dao.searchResult> results)
+        {
+            // 画面定義のグループ番号よりコントロールグループIDを取得
+            List<string> ctrlIdList = getResultMappingInfoByGrpNo(groupNo).CtrlIdList;
+
+            // グループ番号内の一覧に対して繰り返し値を設定する
+            foreach (var ctrlId in ctrlIdList)
+            {
+                // 画面項目に値を設定
+                if (!SetFormByDataClass(ctrlId, results))
+                {
+                    // エラーの場合
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
 
 
@@ -392,7 +573,7 @@ namespace BusinessLogic_HM0001
         /// 編集画面　登録処理
         /// </summary>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistEdit()
+        private bool executeRegistEdita()
         {
             //// 排他チェック
             //if (isErrorExclusive())
@@ -514,7 +695,45 @@ namespace BusinessLogic_HM0001
 
 
 
+        /// <summary>
+        /// 画面に登録する内容をデータクラスで取得(単一)
+        /// </summary>
+        /// <typeparam name="T">データクラスの型</typeparam>
+        /// <param name="groupNoList">取得するグループ番号のリスト</param>
+        /// <param name="now">システム日時</param>
+        /// <returns>登録内容のデータクラス</returns>
+        private T getRegistInfo<T>(List<short> groupNoList, DateTime now)
+        where T : CommonDataBaseClass.CommonTableItem, new()
+        {
+            // 相称型を使用することで、色々な型を呼出元で宣言することができる
 
+            T resultInfo = new();
+
+            foreach (short groupNo in groupNoList)
+            {
+                // 登録対象グループの画面項目定義の情報
+                var grpMapInfo = getResultMappingInfoByGrpNo(groupNo);
+
+                // 対象グループのコントロールIDの結果情報のみ抽出
+                var ctrlIdList = grpMapInfo.CtrlIdList;
+                List<Dictionary<string, object>> conditionList = ComUtil.GetDictionaryListByCtrlIdList(this.resultInfoDictionary, ctrlIdList);
+
+                // コントロールIDごとに繰り返し
+                foreach (var ctrlId in ctrlIdList)
+                {
+                    // コントロールIDより画面の項目を取得
+                    Dictionary<string, object> condition = ComUtil.GetDictionaryByCtrlId(conditionList, ctrlId);
+                    var mapInfo = grpMapInfo.selectByCtrlId(ctrlId);
+                    // 登録データの設定
+                    if (!SetExecuteConditionByDataClass(condition, mapInfo.Value, resultInfo, now, this.UserId, this.UserId))
+                    {
+                        // エラーの場合終了
+                        return resultInfo;
+                    }
+                }
+            }
+            return resultInfo;
+        }
 
 
 

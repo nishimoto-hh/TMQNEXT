@@ -4548,6 +4548,91 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
+        /// 変更管理詳細
+        /// </summary>
+        public class HmHistoryManagementDetailEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmHistoryManagementDetailEntity()
+            {
+                TableName = "hm_history_management_detail";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 変更管理詳細ID</summary>
+                /// <value>変更管理詳細ID</value>
+                public long HistoryManagementDetailId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHistoryManagementDetailId)
+                {
+                    HistoryManagementDetailId = pHistoryManagementDetailId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HistoryManagementDetailId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmHistoryManagementDetailEntity GetEntity(long pHistoryManagementDetailId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHistoryManagementDetailId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmHistoryManagementDetailEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHistoryManagementDetailId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHistoryManagementDetailId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
         /// 機番情報変更管理
         /// </summary>
         public class HmMcMachineEntity : CommonTableItem
@@ -4648,5 +4733,240 @@ namespace CommonTMQUtil
                 return db.GetEntityByDataClass<HmMcMachineEntity>(getEntitySql);
             }
         }
+
+        /// <summary>
+        /// 機器情報変更管理
+        /// </summary>
+        public class HmMcEquipmentEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcEquipmentEntity()
+            {
+                TableName = "hm_mc_equipment";
+            }
+
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機器情報変更管理ID</summary>
+            /// <value>機器情報変更管理ID</value>
+            public long HmEquipmentId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 機器ID</summary>
+            /// <value>機器ID</value>
+            public long EquipmentId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
+            /// <summary>Gets or sets 循環対象</summary>
+            /// <value>循環対象</value>
+            public bool CirculationTargetFlg { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public int? ManufacturerStructureId { get; set; }
+            /// <summary>Gets or sets メーカー型式</summary>
+            /// <value>メーカー型式</value>
+            public string ManufacturerType { get; set; }
+            /// <summary>Gets or sets 型式コード</summary>
+            /// <value>型式コード</value>
+            public string ModelNo { get; set; }
+            /// <summary>Gets or sets シリアル番号</summary>
+            /// <value>シリアル番号</value>
+            public string SerialNo { get; set; }
+            /// <summary>Gets or sets 製造日</summary>
+            /// <value>製造日</value>
+            public DateTime? DateOfManufacture { get; set; }
+            /// <summary>Gets or sets 納期</summary>
+            /// <value>納期</value>
+            public int? DeliveryDate { get; set; }
+            /// <summary>Gets or sets 機器メモ</summary>
+            /// <value>機器メモ</value>
+            public string EquipmentNote { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public int? UseSegmentStructureId { get; set; }
+            /// <summary>Gets or sets 固定資産番号</summary>
+            /// <value>固定資産番号</value>
+            public string FixedAssetNo { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public bool MaintainanceKindManage { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機器情報変更管理ID</summary>
+                /// <value>機器情報変更管理ID</value>
+                public long HmEquipmentId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmEquipmentId)
+                {
+                    HmEquipmentId = pHmEquipmentId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmEquipmentId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcEquipmentEntity GetEntity(long pHmEquipmentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmEquipmentId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcEquipmentEntity>(getEntitySql);
+            }
+
+        }
+
+        /// <summary>
+        /// 長計件名変更管理
+        /// </summary>
+        public class HmLnLongPlanEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmLnLongPlanEntity()
+            {
+                TableName = "hm_ln_long_plan";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 長計件名変更管理ID</summary>
+            /// <value>長計件名変更管理ID</value>
+            public long HmLongPlanId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 長期計画件名ID</summary>
+            /// <value>長期計画件名ID</value>
+            public long LongPlanId { get; set; }
+            /// <summary>Gets or sets 件名</summary>
+            /// <value>件名</value>
+            public string Subject { get; set; }
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 件名メモ</summary>
+            /// <value>件名メモ</value>
+            public string SubjectNote { get; set; }
+            /// <summary>Gets or sets 担当者</summary>
+            /// <value>担当者</value>
+            public int? PersonId { get; set; }
+            /// <summary>Gets or sets 担当者名</summary>
+            /// <value>担当者名</value>
+            public string PersonName { get; set; }
+            /// <summary>Gets or sets 作業項目</summary>
+            /// <value>作業項目</value>
+            public int? WorkItemStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理区分</summary>
+            /// <value>予算管理区分</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 予算性格区分</summary>
+            /// <value>予算性格区分</value>
+            public int? BudgetPersonalityStructureId { get; set; }
+            /// <summary>Gets or sets 保全時期</summary>
+            /// <value>保全時期</value>
+            public int? MaintenanceSeasonStructureId { get; set; }
+            /// <summary>Gets or sets 目的区分</summary>
+            /// <value>目的区分</value>
+            public int? PurposeStructureId { get; set; }
+            /// <summary>Gets or sets 作業区分</summary>
+            /// <value>作業区分</value>
+            public int? WorkClassStructureId { get; set; }
+            /// <summary>Gets or sets 処置区分</summary>
+            /// <value>処置区分</value>
+            public int? TreatmentStructureId { get; set; }
+            /// <summary>Gets or sets 設備区分</summary>
+            /// <value>設備区分</value>
+            public int FacilityStructureId { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 長計件名変更管理ID</summary>
+                /// <value>長計件名変更管理ID</value>
+                public long HmLongPlanId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmLongPlanId)
+                {
+                    HmLongPlanId = pHmLongPlanId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmLongPlanId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmLnLongPlanEntity GetEntity(long pHmLongPlanId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmLongPlanId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmLnLongPlanEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmLongPlanId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmLongPlanId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
     }
 }

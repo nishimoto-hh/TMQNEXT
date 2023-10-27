@@ -91,6 +91,26 @@ var P_ExecRenComFlag = false;
 var P_TabulatorSortingFlag = false;
 var P_TabulatorFilteringFlag = false;
 
+/*Public変数：選択行のみ取得フラグ*/
+var P_IsSelectedOnly = false;
+/**定義 帳票出力の場合は、以下の機能の時に選択行のみ取得フラグをTrueにする*/
+const SelectedConductIdsForOutput = ["RM0001", "PT0002", "PT0003"];
+/**定義 登録の場合は、以下の機能の時に選択行のみ取得フラグをTrueにする*/
+const SelectedConductIdsForExecute = ["PT0003"];
+/**定義 選択行のみ取得フラグがTrueの時以下の画面の一覧は選択行のみを取得*/
+const SelectedListInfo = [
+    { ProgramId: 'MC0001', CtrlGrpId: 'BODY_020_00_LST_0' }, // 機器台帳一覧
+    { ProgramId: 'LN0001', CtrlGrpId: 'BODY_040_00_LST_0' }, // 件名別長期計画一覧
+    { ProgramId: 'LN0002', CtrlGrpId: 'BODY_040_00_LST_0' }, // 機器別長期計画一覧
+    { ProgramId: 'MA0001', CtrlGrpId: 'BODY_020_00_LST_0' }, // 保全活動一覧
+    { ProgramId: 'PT0001', CtrlGrpId: 'BODY_020_00_LST_0' }, // 予備品一覧
+    { ProgramId: 'PT0002', CtrlGrpId: 'BODY_030_00_LST_0' }, // 入庫一覧
+    { ProgramId: 'PT0002', CtrlGrpId: 'BODY_050_00_LST_0' }, // 出庫一覧
+    { ProgramId: 'PT0002', CtrlGrpId: 'BODY_070_00_LST_0' }, // 棚番移庫一覧
+    { ProgramId: 'PT0002', CtrlGrpId: 'BODY_090_00_LST_0' }, // 部門移庫一覧
+    { ProgramId: 'PT0003', CtrlGrpId: 'BODY_040_00_LST_0' }, // 棚卸データ一覧
+];
+
 /**定義 Tabulatorイベント待機ステータス */
 const tabulatorEventWaitStatusDef = {
     /** 未設定 */
@@ -2541,7 +2561,7 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
             var valNo = name ? name.replace("VAL", "") : '';
             var selected = $.grep(data,
                 function (elem, index) {
-                    if (elem == null || elem==undefined) {
+                    if (elem == null || elem == undefined) {
                         return false;
                     }
                     //return (elem.VALUE1 == $(selector).val());
@@ -3468,6 +3488,10 @@ function listSort(appPath, conductId, pgmId, selector) {
     });
 
     var ctrltype = $(tbl).data('ctrltype');
+    if (ctrltype == ctrlTypeDef.IchiranPtn1) {
+        // 101の場合はソート不要
+        return;
+    }
     if (dataEditedFlg && ctrltype != ctrlTypeDef.IchiranPtn2) {
         // 画面変更ﾌﾗｸﾞONの場合、ﾃﾞｰﾀ破棄確認ﾒｯｾｰｼﾞ
 
@@ -8345,6 +8369,11 @@ function initRegistBtn(appPath, btn) {
     });
 }
 
+// 一覧で選択された行のみ取得する機能ID
+const ConductIdGetSelectedRow = ["DM0001"];
+// 一覧で選択された行のみ取得するボタンコントロールID
+const CtrlIdGetSelectedRow = ["Delete"];
+
 /**
  *  登録ボタン - 確認メッセージOK時、実行処理
  *  @param {string} appPath ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
@@ -8359,8 +8388,12 @@ function initRegistBtn(appPath, btn) {
  *  @param {number} confirmNo ：確認番号
  */
 function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, confirmNo) {
+    // 選択行のみを取得する機能の場合はフラグをオンにする
+    setSelectedOnlyFlg(true, conductId, SelectedConductIdsForExecute);
     // 【オーバーライド用関数】実行ボタン前処理
     if (!preRegistProcess(appPath, transDiv, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, confirmNo)) {
+        // 選択行のみを取得する機能の場合はフラグをオフに戻す
+        setSelectedOnlyFlg(false, conductId, SelectedConductIdsForExecute);
         return false;
     }
 
@@ -8385,8 +8418,23 @@ function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, bt
 
     //ﾃﾞｰﾀ収集対象の一覧取得
     var targets = getTargetListElements(btn, isEdit);
-    // 収集対象一覧の明細ﾃﾞｰﾀﾘｽﾄ(入力値)を取得
-    listData = getListDataElements(targets, formNo, 0);    //ｺｰﾄﾞ値を採用
+
+    // 【オーバーライド用関数】登録処理前の「listData」個別取得処理
+    listData = getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData);
+
+    // 個別で取得していない場合は共通側で取得する
+    if (!listData) {
+
+        // 指定された機能ID・ボタンコントロールIDかどうか
+        if (ConductIdGetSelectedRow.includes(conductId) && CtrlIdGetSelectedRow.includes(btn[0].attributes.name.value)) {
+            // 選択されたレコードのみ取得
+            listData = getListDataElements(targets, formNo, 0, true);    //ｺｰﾄﾞ値を採用
+        }
+        else {
+            // 収集対象一覧の明細ﾃﾞｰﾀﾘｽﾄ(入力値)を取得
+            listData = getListDataElements(targets, formNo, 0);    //ｺｰﾄﾞ値を採用
+        }
+    }
 
     // 【オーバーライド用関数】登録前追加条件取得処理
     var conditionDataList = addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
@@ -8543,6 +8591,8 @@ function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, bt
     else {
         $(P_Article).find(".detail_div").focus();
     }
+    // 選択行のみを取得する機能の場合はフラグをオフに戻す
+    setSelectedOnlyFlg(false, conductId, SelectedConductIdsForExecute);
 }
 
 /**
@@ -8694,6 +8744,19 @@ function initReportBtn(appPath, btn) {
 }
 
 /**
+ * 選択行のみ取得するフラグを変更する
+ * @param {any} isOn フラグをオンにする場合はTRUE、オフにする場合はFALSE
+ * @param {any} conductId 機能ID
+ * @param {any} checkList このリスト内の機能なら対象とする
+ */
+function setSelectedOnlyFlg(isOn, conductId, checkList) {
+    if (checkList.includes(conductId)) {
+        // 指定された機能なら特定の一覧では選択行のみを取得する
+        P_IsSelectedOnly = isOn;
+    }
+}
+
+/**
  *  Excecl出力ボタン - 確認メッセージOK時、実行処理
  *  @param {string} ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  *  @param {string} ：機能ID
@@ -8704,7 +8767,8 @@ function initReportBtn(appPath, btn) {
  *  @param {number} ：確認ﾒｯｾｰｼﾞ番号
  */
 function clickReportBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtrlId, actionkbnW, confirmNo) {
-
+    // 指定された機能なら特定の一覧では選択行のみを取得する
+    setSelectedOnlyFlg(true, conductId, SelectedConductIdsForOutput);
     //検索エリアのエラー状態を初期化
     var element = $(P_Article).find("#" + P_formSearchId);
     clearErrorStatus(element);
@@ -8832,6 +8896,8 @@ function clickReportBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, conduct
         //});
         /*--非同期処理--*/
     }
+    // 元に戻す
+    setSelectedOnlyFlg(false, conductId, SelectedConductIdsForOutput);
 }
 
 /*--非同期タブ処理--*/
@@ -13931,7 +13997,7 @@ function initSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStruc
         // 複数選択かどうかを判定
         const isMultiSelect = $(targetDiv).parent().find("a.tree_select").data("multiselect") == "1";
 
-       // 選択値の取得
+        // 選択値の取得
         var nodes = $(tree).jstree(true).get_selected(true);
         if (nodes == null || nodes.length == 0) {
             return;
@@ -14935,8 +15001,9 @@ function getListDataAllCmConduct(isDispVal) {
  * @param {html}    elements    : 一覧要素(複数可)※.ctrlId単位
  * @param {number}  formNo      : 
  * @param {number}  isDispVal   : 値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
+ * @param {boolean}  isSelectedOnly      : 選択行のみを取得
  */
-function getListDataElements(elements, formNo, isDispVal) {
+function getListDataElements(elements, formNo, isDispVal, isSelectedOnly) {
 
     // 一覧の入力データ取得
     var listData = [];
@@ -14963,7 +15030,7 @@ function getListDataElements(elements, formNo, isDispVal) {
         }
         else {
             // 横方向一覧
-            listDataW = getListDataHorizontal(formNo, element, isDispVal);
+            listDataW = getListDataHorizontal(formNo, element, isDispVal, '', isSelectedOnly);
         }
         //listData.push(listDataW);
         listData = listData.concat(listDataW);
@@ -14976,13 +15043,15 @@ function getListDataElements(elements, formNo, isDispVal) {
  * @param {Array.<string>}  ctrlIdList  : 対象一覧コントロールID配列
  * @param {number}          formNo      : 画面番号
  * @param {number}          isDispVal   : 値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
+ * @param {boolean}         isEdit      : 
+ * @param {boolean}         isSelectedOnly      : 選択行のみを取得
  * @return{Array.<Dictionary<string, string>}   : 一覧要素のデータ配列
  */
-function getListDataByCtrlIdList(ctrlIdList, formNo, isDispVal, isEdit) {
+function getListDataByCtrlIdList(ctrlIdList, formNo, isDispVal, isEdit, isSelectedOnly) {
     // データ収集対象の一覧要素を取得
     var targets = getTargetListElementsByCtrlId(formNo, ctrlIdList, isEdit);
     // 対象一覧のデータを取得
-    return getListDataElements(targets, formNo, isDispVal);
+    return getListDataElements(targets, formNo, isDispVal, isSelectedOnly);
 }
 
 /**
@@ -16377,7 +16446,7 @@ function resetMultiSelectBox(appPath, msuls) {
     if (!msuls || msuls.length == 0) { return; }
 
     $.each(msuls, function () {
-         // 要素が参照モードなら処理を行わない
+        // 要素が参照モードなら処理を行わない
         if ($(this).closest(".ctrlId").data("referencemode") == 1) {
             return true; // continue
         }
@@ -17691,11 +17760,11 @@ function refreshComboBox(appPath, grpId) {
  */
 function clearSavedComboBoxData(grpId) {
     // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
-//    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, grpId ? (',' + grpId) : null);
-//    $.each(keys, function (idx, key) {
-//        // セッションストレージデータを削除
-//        removeSaveDataFromSessionStorageByKey(key);
-//    });
+    //    var keys = findSessionStorageKeys(sessionStorageCode.CboMasterData, grpId ? (',' + grpId) : null);
+    //    $.each(keys, function (idx, key) {
+    //        // セッションストレージデータを削除
+    //        removeSaveDataFromSessionStorageByKey(key);
+    //    });
     var keys = findObjectDataKeys(P_ComboBoxJsonList, ',' + grpId);
     $.each(keys, function (idx, key) {
         // グローバル変数データを削除
@@ -18703,7 +18772,7 @@ function setHeader(head, id, editptn, referenceMode, appPath) {
 
     if (head.formatter && head.formatter.toString().indexOf("date") == 0) {
         //日付（ブラウザ標準）
-        setHeaderDate(head, id, editptn, referenceMode, appPath);        
+        setHeaderDate(head, id, editptn, referenceMode, appPath);
     }
 
     if (head.formatter && head.formatter.toString().indexOf("time") == 0) {
@@ -20061,7 +20130,7 @@ function getTextBoxLabel(fromtoFlag, cell) {
 
         ret = val;
     }
-    
+
     return escapeHtml(ret);
 }
 
@@ -20981,7 +21050,7 @@ function getSelectedStructureIdList(grpId, treeViewType, isMerged) {
  * @param {object} node         :選択ノード
  * @param {number} maxLayerNo   :最上位の階層番号
  */
-function getSelectedNodes(treeViewId, node, maxLayerNo){
+function getSelectedNodes(treeViewId, node, maxLayerNo) {
     var layerNo = getTreeViewLayerNo(node);
     if (layerNo >= maxLayerNo) {
         return [node];
