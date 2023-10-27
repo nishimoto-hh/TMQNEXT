@@ -5,6 +5,8 @@ total_stock AS( -- 新旧区分・部門・勘定科目 ごとの在庫数
         lot.old_new_structure_id,
         lot.department_structure_id,
         lot.account_structure_id,
+        lot.management_division,
+        lot.management_no,
         COALESCE(SUM(stock.stock_quantity), 0) AS stock_quantity
     FROM
         pt_lot lot
@@ -17,13 +19,17 @@ total_stock AS( -- 新旧区分・部門・勘定科目 ごとの在庫数
     GROUP BY
         lot.old_new_structure_id,
         lot.department_structure_id,
-        lot.account_structure_id
+        lot.account_structure_id,
+        lot.management_division,
+        lot.management_no
 ),
 amount AS( -- 新旧区分・部門・勘定科目 ごとの在庫金額
     SELECT
         amount.old_new_structure_id,
         amount.department_structure_id,
         amount.account_structure_id,
+        amount.management_division,
+        amount.management_no,
         COALESCE(SUM(amount.stock_quantity), 0) AS stock_amount
     FROM
         (
@@ -31,6 +37,8 @@ amount AS( -- 新旧区分・部門・勘定科目 ごとの在庫金額
                 lot.old_new_structure_id,
                 lot.department_structure_id,
                 lot.account_structure_id,
+                lot.management_division,
+                lot.management_no,
                 lot.unit_price * stock.stock_quantity AS stock_quantity
             FROM
                 pt_lot lot
@@ -44,7 +52,9 @@ amount AS( -- 新旧区分・部門・勘定科目 ごとの在庫金額
     GROUP BY
         amount.old_new_structure_id,
         amount.department_structure_id,
-        amount.account_structure_id
+        amount.account_structure_id,
+        amount.management_division,
+        amount.management_no
 )
 
 SELECT *
@@ -56,7 +66,7 @@ SELECT DISTINCT
     lot.management_no,                                                                                                                                            -- 管理No.
     total_stock.stock_quantity,                                                                                                                                   -- 在庫数
     amount.stock_amount,                                                                                                                                          -- 在庫金額
-    CAST(lot.old_new_structure_id AS varchar) + '_' + CAST(lot.department_structure_id AS varchar) + '_' + CAST(lot.account_structure_id AS varchar) AS nest_key, -- 入れ子キー
+    CAST(lot.old_new_structure_id AS varchar) + '_' + CAST(lot.department_structure_id AS varchar) + '_' + CAST(lot.account_structure_id AS varchar)  + '_' + COALESCE(lot.management_division, '') + '_' + COALESCE(lot.management_no, '') AS nest_key, -- 入れ子キー
     COALESCE(unit_digit.extension_data, 0) AS unit_digit,                                                                                                         -- 小数点以下桁数(数量)
     COALESCE(currency_digit.currency_digit, 0) AS currency_digit,                                                                                                 -- 小数点以下桁数(金額)
     COALESCE(round_division.extension_data, 1) AS unit_round_division,                                                                                            -- 丸め処理区分(数量)
@@ -128,11 +138,15 @@ FROM
     ON  lot.old_new_structure_id = total_stock.old_new_structure_id
     AND lot.department_structure_id = total_stock.department_structure_id
     AND lot.account_structure_id = total_stock.account_structure_id
+    AND COALESCE(lot.management_division, '') = COALESCE(total_stock.management_division, '')
+    AND COALESCE(lot.management_no,'') = COALESCE(total_stock.management_no,'')
     LEFT JOIN
         amount -- 在庫金額
     ON  lot.old_new_structure_id = amount.old_new_structure_id
     AND lot.department_structure_id = amount.department_structure_id
     AND lot.account_structure_id = amount.account_structure_id
+    AND COALESCE(lot.management_division,'') = COALESCE(amount.management_division,'')
+    AND COALESCE(lot.management_no,'') = COALESCE(amount.management_no,'')
     LEFT JOIN
         department -- 部門
     ON  lot.department_structure_id = department.department_id

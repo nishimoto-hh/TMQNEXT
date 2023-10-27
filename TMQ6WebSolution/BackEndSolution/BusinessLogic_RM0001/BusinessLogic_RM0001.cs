@@ -422,8 +422,8 @@ namespace BusinessLogic_RM0001
             {
                 case ConductInfo.FormList.ButtonCtrlId.Regist: // 一覧画面_更新
                 case ConductInfo.FormOutPattern.ButtonCtrlId.Regist: // 出力パターン_登録画面
-                    setReportImplDataByCondition(out int factoryId, out string reportId, out int templateId, 
-                                                out int outputPatternId, out string programId, 
+                    setReportImplDataByCondition(out int factoryId, out string reportId, out int templateId,
+                                                out int outputPatternId, out string programId,
                                                 out string templateFilePath, out string templateFileName);
                     resultRegist = executeRegistEdit(this.CtrlId, programId);
                     break;
@@ -854,8 +854,9 @@ namespace BusinessLogic_RM0001
                 // 選択チェックボックスがある場合
                 if (resultRow.ContainsKey("SELTAG") == true)
                 {
+                    string seltag = resultRow["SELTAG"].ToString();
                     // 未選択のデータは処理の対象外とする
-                    if (int.Parse(resultRow["SELTAG"].ToString()) == 0)
+                    if (string.IsNullOrEmpty(seltag) || int.Parse(seltag) == 0)
                     {
                         continue;
                     }

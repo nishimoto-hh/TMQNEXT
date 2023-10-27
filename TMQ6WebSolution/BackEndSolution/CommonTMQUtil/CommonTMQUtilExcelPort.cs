@@ -2909,6 +2909,95 @@ namespace CommonTMQUtil
                             }
                         }
 
+                        if (string.IsNullOrEmpty(factoryIdStr) && factoryIdDefine.EpSelectLinkColumnNo > 0 && factoryIdDefine.EpAutoExtentionColumnNo != null)
+                        {
+                            //工場IDが取得出来ていないかつ他の列の拡張により工場IDが決まる場合、そのアイテムデータから工場IDを取得する
+
+                            InputDefineForExcelPort reportInfo = reportInfoList.Where(x => x.EpSelectIdColumnNo == factoryIdDefine.EpSelectLinkColumnNo).FirstOrDefault();
+                            // 行番号をセット
+                            reportInfo.StartRowNo = rowNo;
+
+                            // 設定値を取得
+                            string val = getCellValueBySheetNo(sheetNo, reportInfo.StartColumnNo, reportInfo.StartRowNo);
+                            // 連動元列番号値を取得
+                            string linkColumnVal = getLinkColumnVal(reportInfo, tmpErrorInfo);
+                            // 連動元による絞り込み有無（連動元が工場IDの場合は除外）
+                            bool linkColumnFlg;
+
+                            // 階層系マスタの場合は対象外
+                            if (isStructureMaster())
+                            {
+                                linkColumnFlg = false;
+                            }
+                            else
+                            {
+                                linkColumnFlg = reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
+                            }
+                            // コンボボックス、複数選択リストボックス、画面選択列の場合
+                            // 対象行の選択項目IDを取得
+                            var selectId = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectIdColumnNo, reportInfo.StartRowNo);
+                            var selectIdDefine = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectIdColumnNo).FirstOrDefault();
+
+                            if (itemDataDic.ContainsKey(reportInfo.EpSelectGroupId))
+                            {
+                                var itemList = itemDataDic[reportInfo.EpSelectGroupId];
+                                if (itemList.Count > 0)
+                                {
+                                    if (!string.IsNullOrEmpty(val))
+                                    {
+                                        if (!val.Contains(","))
+                                        {
+                                            //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                            List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal, false);
+                                            if (targetItemList != null && targetItemList.Count > 0)
+                                            {
+                                                if (targetItemList.Count == 1)
+                                                {
+                                                    //1件の場合
+                                                    //工場IDが設定されている拡張列のキー（exparam1等）
+                                                    string exparamKey = targetItemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                    factoryIdStr = targetItemList[0].ContainsKey(exparamKey) ? targetItemList[0][exparamKey].ToString() : null;
+                                                }
+                                                else
+                                                {
+                                                    //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                    bool existsFlg = targetItemList.Exists(x => x[ColName.Id].ToString() == selectId);
+                                                    if (existsFlg)
+                                                    {
+                                                        //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                        targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId, linkColumnFlg, linkColumnVal, false);
+                                                        if (targetItemList != null && targetItemList.Count == 1)
+                                                        {
+                                                            //IDにより１件に絞れた場合
+                                                            //工場IDが設定されている拡張列のキー（exparam1等）
+                                                            string exparamKey = targetItemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                            factoryIdStr = targetItemList[0].ContainsKey(exparamKey) ? targetItemList[0][exparamKey].ToString() : null;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 選択値が空の場合
+                                        if (true.Equals(reportInfo.RequiredFlg))
+                                        {
+                                            // 必須項目の場合
+                                            if (itemList.Count == 1)
+                                            {
+                                                // 選択候補が1件の場合、その値をセットする
+                                                //工場IDが設定されている拡張列のキー（exparam1等）
+                                                string exparamKey = itemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                factoryIdStr = itemList[0].ContainsKey(exparamKey) ? itemList[0][exparamKey].ToString() : null;
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         var msg = string.Empty;
 
                         if (!string.IsNullOrEmpty(factoryIdStr))
@@ -2916,7 +3005,7 @@ namespace CommonTMQUtil
                             // マスタ 標準アイテム未使用 の場合は工場IDがパイプ「|」区切りになっているので分割
                             if (isMasterUnuse)
                             {
-                                var unuseFactoryIdList = factoryIdStr.Split("|");
+                                var unuseFactoryIdList = factoryIdStr.Split("|", StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string unuseFactoryId in unuseFactoryIdList)
                                 {
                                     var factoryId = Convert.ToInt32(unuseFactoryId);
@@ -2994,6 +3083,11 @@ namespace CommonTMQUtil
                             // 列区分が設定されている列は別にチェックを行うためスキップ
                             continue;
                         }
+                        if (reportInfo.EpSelectLinkColumnNo > 0 && reportInfo.EpAutoExtentionColumnNo != null)
+                        {
+                            // 自動表示拡張列番号が設定されている列は連動元のチェック時に値を設定するためスキップ
+                            continue;
+                        }
 
                         // 行番号をセット
                         reportInfo.StartRowNo = rowNo;
@@ -3032,7 +3126,7 @@ namespace CommonTMQUtil
                         }
                         else
                         {
-                            linkColumnFlg = reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
+                            linkColumnFlg = factoryIdDefine != null && reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
                         }
 
                         if (string.IsNullOrEmpty(val))
@@ -3062,10 +3156,23 @@ namespace CommonTMQUtil
                             flg = true;
                         }
 
+                        //コンボボックス、複数選択リストボックス、画面選択列の場合の対象アイテムデータ
+                        Dictionary<string, object> targetItem = null;
+
                         if (reportInfo.ColumnType != ColumnType.ComboBox &&
                             reportInfo.ColumnType != ColumnType.MultiListBox &&
                             reportInfo.ColumnType != ColumnType.FormSelect)
                         {
+                            // 階層系マスタか判定
+                            if (isStructureMaster())
+                            {
+                                // 入力チェックを個別に行うため値をデータクラスに設定
+                                setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+
+                                //拡張項目の値をデータクラスに設定
+                                setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
+                            }
+
                             if (rowCheckFlg)
                             {
                                 // アップロード共通チェック実行
@@ -3116,6 +3223,9 @@ namespace CommonTMQUtil
                             // 対象行の選択項目IDを取得
                             var selectId = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectIdColumnNo, reportInfo.StartRowNo);
                             var selectIdDefine = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectIdColumnNo).FirstOrDefault();
+
+                            //画面選択列のエラー設定フラグ
+                            bool formSelectError = false;
 
                             //// 標準アイテム未使用 の場合は初期設定値に戻す
                             //if (isMasterUnuse)
@@ -3203,7 +3313,76 @@ namespace CommonTMQUtil
                                         bool multErrorFlg = false;
                                         if (!val.Contains(","))
                                         {
-                                            tmpId = getItemValue(itemList, targetFactoryId, ColName.Name, val, ColName.Id, linkColumnFlg, linkColumnVal);
+                                            if (targetFactoryId == TMQConsts.CommonFactoryId)
+                                            {
+                                                //工場IDが取得できていない場合
+
+                                                //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                                List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal, false);
+                                                if (targetItemList != null && targetItemList.Count > 0)
+                                                {
+                                                    if (targetItemList.Count == 1)
+                                                    {
+                                                        targetItem = targetItemList.FirstOrDefault();
+                                                        tmpId = targetItem[ColName.Id].ToString();
+                                                    }
+                                                    else
+                                                    {
+                                                        //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                        bool existsFlg = targetItemList.Exists(x => x[ColName.Id].ToString() == selectId);
+                                                        if (existsFlg)
+                                                        {
+                                                            //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                            targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId, linkColumnFlg, linkColumnVal, false);
+                                                            if (targetItemList != null && targetItemList.Count == 1)
+                                                            {
+                                                                //IDにより１件に絞れた場合
+                                                                targetItem = targetItemList.FirstOrDefault();
+                                                                tmpId = selectId;
+                                                            }
+                                                        }
+
+                                                        if (ComUtil.IsNullOrEmpty(tmpId))
+                                                        {
+                                                            //１件に絞れないためエラー
+                                                            // 「名称により項目を絞り込むことができません。画面より項目を指定してください。」
+                                                            var msg = GetResMessage(ComRes.ID.ID141340001, languageId, msgResources);
+                                                            tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                                            formSelectError = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                //翻訳に紐づくアイテムデータが複数存在するかチェック
+                                                List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal);
+                                                if (targetItemList != null && targetItemList.Count > 0)
+                                                {
+                                                    if (targetItemList.Count == 1)
+                                                    {
+                                                        targetItem = targetItemList.FirstOrDefault();
+                                                        tmpId = targetItem[ColName.Id].ToString();
+                                                    }
+                                                    else
+                                                    {
+                                                        //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                        object checkId = getItemValue(targetItemList, targetFactoryId, ColName.Id, selectId, ColName.Id);
+                                                        if (!ComUtil.IsNullOrEmpty(checkId))
+                                                        {
+                                                            //設定されているIDが正しい場合、そのアイテムデータを取得
+                                                            targetItem = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId).FirstOrDefault();
+                                                            tmpId = checkId;
+                                                        }
+                                                        else
+                                                        {
+                                                            //設定されているIDが正しくない場合、翻訳に一致する先頭アイテムデータを取得
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId = targetItem[ColName.Id].ToString();
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                         else
                                         {
@@ -3211,20 +3390,105 @@ namespace CommonTMQUtil
                                             var vals = val.Split(",");
                                             foreach (var tmpVal in vals)
                                             {
-                                                var id = getItemValue(itemList, targetFactoryId, ColName.Name, tmpVal, ColName.Id, linkColumnFlg, linkColumnVal);
-                                                if (!ComUtil.IsNullOrEmpty(id))
+                                                if (targetFactoryId == TMQConsts.CommonFactoryId)
                                                 {
-                                                    if (tmpId != null)
+                                                    //工場IDが取得できていない場合
+
+                                                    //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                                    List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, tmpVal, linkColumnFlg, linkColumnVal, false);
+                                                    if (targetItemList != null && targetItemList.Count > 0)
                                                     {
-                                                        tmpId += "|";
+                                                        if (targetItemList.Count == 1)
+                                                        {
+                                                            if (tmpId != null)
+                                                            {
+                                                                tmpId += "|";
+                                                            }
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId += targetItem[ColName.Id].ToString();
+                                                        }
+                                                        else
+                                                        {
+                                                            //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                            string tmpSelectId = targetItemList.Where(x => selectId.Split("|").Contains(x[ColName.Id].ToString())).Select(x => x[ColName.Id].ToString()).FirstOrDefault();
+                                                            if (!string.IsNullOrEmpty(tmpSelectId))
+                                                            {
+                                                                //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                                targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, tmpSelectId, linkColumnFlg, linkColumnVal, false);
+                                                                if (targetItemList != null && targetItemList.Count == 1)
+                                                                {
+                                                                    //IDにより１件に絞れた場合
+                                                                    if (tmpId != null)
+                                                                    {
+                                                                        tmpId += "|";
+                                                                    }
+                                                                    targetItem = targetItemList.FirstOrDefault();
+                                                                    tmpId += tmpSelectId;
+                                                                }
+                                                            }
+
+                                                            if (string.IsNullOrEmpty(tmpSelectId) || targetItemList == null || targetItemList.Count != 1)
+                                                            {
+                                                                //１件に絞れないためエラー
+                                                                // 「名称により項目を絞り込むことができません。画面より項目を指定してください。」
+                                                                var msg = GetResMessage(ComRes.ID.ID141340001, languageId, msgResources);
+                                                                tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                                                formSelectError = true;
+                                                                multErrorFlg = true;
+                                                                break;
+                                                            }
+                                                        }
                                                     }
-                                                    tmpId += id.ToString();
+                                                    else
+                                                    {
+                                                        // 選択項目IDが取得できない場合
+                                                        multErrorFlg = true;
+                                                        break;
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    //選択項目IDが取得できない
-                                                    multErrorFlg = true;
-                                                    break;
+                                                    //翻訳に紐づくアイテムデータが複数存在するかチェック
+                                                    List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, tmpVal, linkColumnFlg, linkColumnVal);
+                                                    if (targetItemList != null && targetItemList.Count > 0)
+                                                    {
+                                                        if (targetItemList.Count == 1)
+                                                        {
+                                                            if (tmpId != null)
+                                                            {
+                                                                tmpId += "|";
+                                                            }
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId += targetItem[ColName.Id].ToString();
+                                                        }
+                                                        else
+                                                        {
+                                                            //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                            string tmpSelectId = targetItemList.Where(x => selectId.Split("|").Contains(x[ColName.Id].ToString())).Select(x => x[ColName.Id].ToString()).FirstOrDefault();
+                                                            if (!ComUtil.IsNullOrEmpty(tmpSelectId))
+                                                            {
+                                                                if (tmpId != null)
+                                                                {
+                                                                    tmpId += "|";
+                                                                }
+                                                                //設定されているIDが正しい場合、そのアイテムデータを取得
+                                                                targetItem = getItemList(targetItemList, targetFactoryId, ColName.Id, tmpSelectId).FirstOrDefault();
+                                                                tmpId += tmpSelectId;
+                                                            }
+                                                            else
+                                                            {
+                                                                //設定されているIDが正しくない場合、翻訳に一致する先頭アイテムデータを取得
+                                                                targetItem = targetItemList.FirstOrDefault();
+                                                                tmpId += targetItem[ColName.Id].ToString();
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 選択項目IDが取得できない場合
+                                                        multErrorFlg = true;
+                                                        break;
+                                                    }
                                                 }
                                             }
                                         }
@@ -3233,6 +3497,9 @@ namespace CommonTMQUtil
                                             // 選択項目IDが取得できた場合、Excelへ値をセット
                                             selectId = tmpId.ToString();
                                             setCellValueBySheetNo(sheetNo, selectIdDefine.StartColumnNo, reportInfo.StartRowNo, selectId);
+
+                                            //拡張項目の値をExcelに設定
+                                            setExParamValueToExcel(reportInfo, targetItem);
                                         }
                                         else
                                         {
@@ -3251,6 +3518,7 @@ namespace CommonTMQUtil
                                                 // 選択候補が1件の場合、その値をセットする
                                                 val = itemList[0][ColName.Name].ToString();
                                                 selectId = itemList[0][ColName.Id].ToString();
+                                                targetItem = itemList[0];
                                                 // 入力項目が存在する場合、フラグをたてる
                                                 flg = true;
                                             }
@@ -3285,7 +3553,7 @@ namespace CommonTMQUtil
                             else
                             {
                                 // 選択項目IDが空の場合
-                                if (rowCheckFlg && !string.IsNullOrEmpty(val))
+                                if (rowCheckFlg && !string.IsNullOrEmpty(val) && !formSelectError)
                                 {
                                     // 選択項目が空でない場合
                                     // 「選択内容が不正です。」
@@ -3298,6 +3566,9 @@ namespace CommonTMQUtil
                                 {
                                     // 入力チェックを個別に行うため値をデータクラスに設定
                                     setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+
+                                    //拡張項目の値をデータクラスに設定
+                                    setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
                                 }
 
                                 continue;
@@ -3306,6 +3577,9 @@ namespace CommonTMQUtil
 
                         // 値をデータクラスに設定
                         setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+
+                        //拡張項目の値をデータクラスに設定
+                        setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
                     }
 
                     if (scheduleInfoList != null && scheduleInfoList.Count > 0)
@@ -3359,6 +3633,70 @@ namespace CommonTMQUtil
                     }
                     return linkColumnVal;
                 }
+
+                //自動表示拡張列の値をデータクラスに設定
+                void setExParamValueToDataClass(InputDefineForExcelPort reportInfo, Dictionary<string, object> targetItem, object tmpResult)
+                {
+                    //対象の連動元列番号が設定されている列定義を取得
+                    List<InputDefineForExcelPort> exReportInfoList = reportInfoList.Where(x => x.EpSelectLinkColumnNo == reportInfo.EpSelectIdColumnNo && x.EpAutoExtentionColumnNo != null).ToList();
+                    foreach (InputDefineForExcelPort exReportInfo in exReportInfoList)
+                    {
+                        //値が設定されている拡張列のキー（exparam1等）
+                        string exparamKey = targetItem.Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + exReportInfo.EpAutoExtentionColumnNo)).FirstOrDefault();
+                        if (string.IsNullOrEmpty(exparamKey))
+                        {
+                            continue;
+                        }
+                        //値を取得
+                        string exVal = targetItem.ContainsKey(exparamKey) ? targetItem[exparamKey].ToString() : null;
+                        //値をデータクラスに設定
+                        setCellValueToDataClass<T>(exReportInfo, properites, tmpResult, exVal);
+                    }
+                }
+
+                //自動表示拡張列の値をExcelに設定
+                void setExParamValueToExcel(InputDefineForExcelPort reportInfo, Dictionary<string, object> targetItem)
+                {
+                    //対象の連動元列番号が設定されている列定義を取得
+                    List<InputDefineForExcelPort> exReportInfoList = reportInfoList.Where(x => x.EpSelectLinkColumnNo == reportInfo.EpSelectIdColumnNo && x.EpAutoExtentionColumnNo != null).ToList();
+                    foreach (InputDefineForExcelPort exReportInfo in exReportInfoList)
+                    {
+                        // 行番号をセット
+                        exReportInfo.StartRowNo = rowNo;
+
+                        //値が設定されている拡張列のキー（exparam1等）
+                        string exparamKey = targetItem.Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + exReportInfo.EpAutoExtentionColumnNo)).FirstOrDefault();
+                        if (string.IsNullOrEmpty(exparamKey))
+                        {
+                            continue;
+                        }
+                        //値を取得
+                        string exVal = targetItem.ContainsKey(exparamKey) ? targetItem[exparamKey].ToString() : null;
+                        //値をExcelに設定
+                        setCellValueBySheetNo(sheetNo, exReportInfo.StartColumnNo, exReportInfo.StartRowNo, exVal);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// 選択項目値の取得
+            /// </summary>
+            /// <param name="itemList">選択項目リスト</param>
+            /// <param name="targetFactoryId">対象工場ID</param>
+            /// <param name="keyName">キー項目名</param>
+            /// <param name="keyVal">キー項目値</param>
+            /// <param name="linkColumnFlg">選択項目連動元の値による絞り込み有無</param>
+            /// <param name="linkColumnVal">選択項目連動元の値</param>
+            /// <param name="useFactoryId">工場IDによる絞り込み有無</param>
+            /// <returns></returns>
+            private List<Dictionary<string, object>> getItemList(List<Dictionary<string, object>> itemList, int targetFactoryId, string keyName, string keyVal, bool linkColumnFlg = false, string linkColumnVal = null, bool useFactoryId = true)
+            {
+                return itemList.Where(x =>
+                    x[keyName].ToString() == keyVal &&
+                    (useFactoryId ? (x["factory_id"].ToString() == targetFactoryId.ToString() || x["factory_id"].ToString() == TMQConsts.CommonFactoryId.ToString()) : true) &&
+                    (linkColumnFlg ? x["parent_id"].ToString() == linkColumnVal : true) &&
+                    (x.ContainsKey("unuse_factory_id") ? !x["unuse_factory_id"].ToString().Split("|").Contains(targetFactoryId.ToString()) : true)) //未使用標準アイテムは除外
+                    .ToList();
             }
 
             /// <summary>
@@ -4225,7 +4563,7 @@ namespace CommonTMQUtil
         /// <summary>選択項目連動元列番号(ExcelPort用)</summary>
         public int EpSelectLinkColumnNo { get; set; }
         /// <summary>自動表示拡張列番号(ExcelPort用)</summary>
-        public int EpAutoExtentionColumnNo { get; set; }
+        public int? EpAutoExtentionColumnNo { get; set; }
         /// <summary>列区分(ExcelPort用)</summary>
         public int? EpColumnDivision { get; set; }
     }

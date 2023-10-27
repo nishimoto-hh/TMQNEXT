@@ -29,6 +29,27 @@ namespace CommonTMQUtil
         public const int ItemTranslasionMaxLength = 400;
 
         /// <summary>
+        /// ExcelPort　階層系マスタの数値の範囲
+        /// </summary>
+        public class numericRangeExcelPort
+        {
+            /// <summary>
+            /// 最小値
+            /// </summary>
+            public const long minValue = 1;
+            /// <summary>
+            /// 最大値
+            /// </summary>
+            public const long maxValue = 9999999999;
+            /// <summary>
+            /// 最大桁数
+            /// </summary>
+            public const long maxLength = 10;
+
+        }
+
+
+        /// <summary>
         /// マスタメンテナンス共通
         /// </summary>
         public class ComMaster
@@ -750,7 +771,7 @@ namespace CommonTMQUtil
             public int? StructureGroupId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? DistrictNumber { get; set; }
+            public long? DistrictNumber { get; set; }
             /// <summary>Gets or sets 地区ID(構成ID)</summary>
             /// <value>地区ID(構成ID)</value>
             public long? DistrictId { get; set; }
@@ -759,7 +780,7 @@ namespace CommonTMQUtil
             public string DistrictName { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? FactoryNumber { get; set; }
+            public long? FactoryNumber { get; set; }
             /// <summary>Gets or sets 工場ID(構成ID)</summary>
             /// <value>工場ID(構成ID)</value>
             public long? FactoryId { get; set; }
@@ -771,7 +792,7 @@ namespace CommonTMQUtil
             public int? FactoryParentId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? FactoryParentNumber { get; set; }
+            public long? FactoryParentNumber { get; set; }
             /// <summary>Gets or sets プラントID(構成ID)</summary>
             /// <value>プラントID(構成ID)</value>
             public long? PlantId { get; set; }
@@ -783,7 +804,7 @@ namespace CommonTMQUtil
             public int? PlantItemTranslationId { get; set; }
             /// <summary>Gets or sets プラント番号</summary>
             /// <value>プラント番号</value>
-            public int? PlantNumber { get; set; }
+            public string PlantNumber { get; set; }
             /// <summary>Gets or sets プラント名</summary>
             /// <value>プラント名</value>
             public string PlantName { get; set; }
@@ -795,10 +816,10 @@ namespace CommonTMQUtil
             public int? PlantParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? PlantParentNumber { get; set; }
+            public string PlantParentNumber { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? PlantParentNumberBefore { get; set; }
+            public string PlantParentNumberBefore { get; set; }
             /// <summary>Gets or sets 系列ID(構成ID)</summary>
             /// <value>系列ID(構成ID)</value>
             public long? SeriesId { get; set; }
@@ -810,7 +831,7 @@ namespace CommonTMQUtil
             public int? SeriesItemTranslationId { get; set; }
             /// <summary>Gets or sets 系列番号</summary>
             /// <value>系列番号</value>
-            public int? SeriesNumber { get; set; }
+            public string SeriesNumber { get; set; }
             /// <summary>Gets or sets 系列名</summary>
             /// <value>系列名</value>
             public string SeriesName { get; set; }
@@ -822,10 +843,10 @@ namespace CommonTMQUtil
             public int? SeriesParentId { get; set; }
             /// <summary>Gets or sets プラント番号</summary>
             /// <value>プラント番号</value>
-            public int? SeriesParentNumber { get; set; }
+            public string SeriesParentNumber { get; set; }
             /// <summary>Gets or sets プラント番号</summary>
             /// <value>プラント番号</value>
-            public int? SeriesParentNumberBefore { get; set; }
+            public string SeriesParentNumberBefore { get; set; }
             /// <summary>Gets or sets 工程ID(構成ID)</summary>
             /// <value>工程ID(構成ID)</value>
             public long? StrokeId { get; set; }
@@ -837,7 +858,7 @@ namespace CommonTMQUtil
             public int? StrokeItemTranslationId { get; set; }
             /// <summary>Gets or sets 工程番号</summary>
             /// <value>工程番号</value>
-            public int? StrokeNumber { get; set; }
+            public string StrokeNumber { get; set; }
             /// <summary>Gets or sets 工程名</summary>
             /// <value>工程名</value>
             public string StrokeName { get; set; }
@@ -849,10 +870,10 @@ namespace CommonTMQUtil
             public int? StrokeParentId { get; set; }
             /// <summary>Gets or sets 系列番号</summary>
             /// <value>系列番号</value>
-            public int? StrokeParentNumber { get; set; }
+            public string StrokeParentNumber { get; set; }
             /// <summary>Gets or sets 系列番号</summary>
             /// <value>系列番号</value>
-            public int? StrokeParentNumberBefore { get; set; }
+            public string StrokeParentNumberBefore { get; set; }
             /// <summary>Gets or sets 設備ID(構成ID)</summary>
             /// <value>設備ID(構成ID)</value>
             public long? FacilityId { get; set; }
@@ -864,7 +885,7 @@ namespace CommonTMQUtil
             public int? FacilityItemTranslationId { get; set; }
             /// <summary>Gets or sets 設備番号</summary>
             /// <value>設備番号</value>
-            public int? FacilityNumber { get; set; }
+            public string FacilityNumber { get; set; }
             /// <summary>Gets or sets 設備名</summary>
             /// <value>設備名</value>
             public string FacilityName { get; set; }
@@ -876,10 +897,10 @@ namespace CommonTMQUtil
             public int? FacilityParentId { get; set; }
             /// <summary>Gets or sets 工程番号</summary>
             /// <value>設備番号</value>
-            public int? FacilityParentNumber { get; set; }
+            public string FacilityParentNumber { get; set; }
             /// <summary>Gets or sets 工程番号</summary>
             /// <value>設備番号</value>
-            public int? FacilityParentNumberBefore { get; set; }
+            public string FacilityParentNumberBefore { get; set; }
         }
 
         /// <summary>
@@ -898,7 +919,7 @@ namespace CommonTMQUtil
             public int? StructureGroupId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? DistrictNumber { get; set; }
+            public long? DistrictNumber { get; set; }
             /// <summary>Gets or sets 地区ID(構成ID)</summary>
             /// <value>地区ID(構成ID)</value>
             public long? DistrictId { get; set; }
@@ -907,7 +928,7 @@ namespace CommonTMQUtil
             public string DistrictName { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? FactoryNumber { get; set; }
+            public long? FactoryNumber { get; set; }
             /// <summary>Gets or sets 工場ID(構成ID)</summary>
             /// <value>工場ID(構成ID)</value>
             public long? FactoryId { get; set; }
@@ -919,7 +940,7 @@ namespace CommonTMQUtil
             public int? FactoryParentId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? FactoryParentNumber { get; set; }
+            public long? FactoryParentNumber { get; set; }
             /// <summary>Gets or sets 職種ID(構成ID)</summary>
             /// <value>職種ID(構成ID)</value>
             public long? JobId { get; set; }
@@ -931,7 +952,7 @@ namespace CommonTMQUtil
             public int? JobItemTranslationId { get; set; }
             /// <summary>Gets or sets 職種番号</summary>
             /// <value>職種番号</value>
-            public int? JobNumber { get; set; }
+            public string JobNumber { get; set; }
             /// <summary>Gets or sets 職種名</summary>
             /// <value>職種名</value>
             public string JobName { get; set; }
@@ -943,10 +964,10 @@ namespace CommonTMQUtil
             public int? JobParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? JobParentNumber { get; set; }
+            public string JobParentNumber { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? JobParentNumberBefore { get; set; }
+            public string JobParentNumberBefore { get; set; }
             /// <summary>Gets or sets 保全実績集計職種コード</summary>
             /// <value>保全実績集計職種コード</value>
             public string JobCodeVal { get; set; }
@@ -964,7 +985,7 @@ namespace CommonTMQUtil
             public int? LargeClassItemTranslationId { get; set; }
             /// <summary>Gets or sets 機種大分類番号</summary>
             /// <value>機種大分類番号</value>
-            public int? LargeClassNumber { get; set; }
+            public string LargeClassNumber { get; set; }
             /// <summary>Gets or sets 機種大分類名</summary>
             /// <value>機種大分類名</value>
             public string LargeClassName { get; set; }
@@ -976,10 +997,10 @@ namespace CommonTMQUtil
             public int? LargeClassParentId { get; set; }
             /// <summary>Gets or sets 職種番号</summary>
             /// <value>職種番号</value>
-            public int? LargeClassParentNumber { get; set; }
+            public string LargeClassParentNumber { get; set; }
             /// <summary>Gets or sets 職種番号</summary>
             /// <value>職種番号</value>
-            public int? LargeClassParentNumberBefore { get; set; }
+            public string LargeClassParentNumberBefore { get; set; }
             /// <summary>Gets or sets 機種中分類ID(構成ID)</summary>
             /// <value>機種中分類ID(構成ID)</value>
             public long? MiddleClassId { get; set; }
@@ -991,7 +1012,7 @@ namespace CommonTMQUtil
             public int? MiddleClassItemTranslationId { get; set; }
             /// <summary>Gets or sets 機種中分類番号</summary>
             /// <value>機種中分類番号</value>
-            public int? MiddleClassNumber { get; set; }
+            public string MiddleClassNumber { get; set; }
             /// <summary>Gets or sets 機種中分類名</summary>
             /// <value>機種中分類名</value>
             public string MiddleClassName { get; set; }
@@ -1003,10 +1024,10 @@ namespace CommonTMQUtil
             public int? MiddleClassParentId { get; set; }
             /// <summary>Gets or sets 機種大分類番号</summary>
             /// <value>機種大分類番号</value>
-            public int? MiddleClassParentNumber { get; set; }
+            public string MiddleClassParentNumber { get; set; }
             /// <summary>Gets or sets 機種大分類番号</summary>
             /// <value>機種大分類番号</value>
-            public int? MiddleClassParentNumberBefore { get; set; }
+            public string MiddleClassParentNumberBefore { get; set; }
             /// <summary>Gets or sets 機種小分類ID(構成ID)</summary>
             /// <value>機種小分類ID(構成ID)</value>
             public long? SmallClassId { get; set; }
@@ -1018,7 +1039,7 @@ namespace CommonTMQUtil
             public int? SmallClassItemTranslationId { get; set; }
             /// <summary>Gets or sets 機種小分類番号</summary>
             /// <value>機種小分類番号</value>
-            public int? SmallClassNumber { get; set; }
+            public string SmallClassNumber { get; set; }
             /// <summary>Gets or sets 機種小分類名</summary>
             /// <value>機種小分類名</value>
             public string SmallClassName { get; set; }
@@ -1030,10 +1051,10 @@ namespace CommonTMQUtil
             public int? SmallClassParentId { get; set; }
             /// <summary>Gets or sets 機種中分類番号</summary>
             /// <value>機種中分類番号</value>
-            public int? SmallClassParentNumber { get; set; }
+            public string SmallClassParentNumber { get; set; }
             /// <summary>Gets or sets 機種中分類番号</summary>
             /// <value>機種中分類番号</value>
-            public int? SmallClassParentNumberBefore { get; set; }
+            public string SmallClassParentNumberBefore { get; set; }
         }
 
         /// <summary>
@@ -1052,7 +1073,7 @@ namespace CommonTMQUtil
             public int? StructureGroupId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? DistrictNumber { get; set; }
+            public long? DistrictNumber { get; set; }
             /// <summary>Gets or sets 地区ID(構成ID)</summary>
             /// <value>地区ID(構成ID)</value>
             public long? DistrictId { get; set; }
@@ -1061,7 +1082,7 @@ namespace CommonTMQUtil
             public string DistrictName { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? FactoryNumber { get; set; }
+            public long? FactoryNumber { get; set; }
             /// <summary>Gets or sets 工場ID(構成ID)</summary>
             /// <value>工場ID(構成ID)</value>
             public long? FactoryId { get; set; }
@@ -1073,7 +1094,7 @@ namespace CommonTMQUtil
             public int? FactoryParentId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? FactoryParentNumber { get; set; }
+            public long? FactoryParentNumber { get; set; }
             /// <summary>Gets or sets 倉庫ID(構成ID)</summary>
             /// <value>倉庫ID(構成ID)</value>
             public long? WarehouseId { get; set; }
@@ -1085,7 +1106,7 @@ namespace CommonTMQUtil
             public int? WarehouseItemTranslationId { get; set; }
             /// <summary>Gets or sets 倉庫番号</summary>
             /// <value>倉庫番号</value>
-            public int? WarehouseNumber { get; set; }
+            public string WarehouseNumber { get; set; }
             /// <summary>Gets or sets 倉庫名</summary>
             /// <value>倉庫名</value>
             public string WarehouseName { get; set; }
@@ -1097,10 +1118,10 @@ namespace CommonTMQUtil
             public int? WarehouseParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? WarehouseParentNumber { get; set; }
+            public string WarehouseParentNumber { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? WarehouseParentNumberBefore { get; set; }
+            public string WarehouseParentNumberBefore { get; set; }
             /// <summary>Gets or sets 棚ID(構成ID)</summary>
             /// <value>棚ID(構成ID)</value>
             public long? RackId { get; set; }
@@ -1112,7 +1133,7 @@ namespace CommonTMQUtil
             public int? RackItemTranslationId { get; set; }
             /// <summary>Gets or sets 棚番号</summary>
             /// <value>棚番号</value>
-            public int? RackNumber { get; set; }
+            public string RackNumber { get; set; }
             /// <summary>Gets or sets 棚名</summary>
             /// <value>棚名</value>
             public string RackName { get; set; }
@@ -1124,10 +1145,10 @@ namespace CommonTMQUtil
             public int? RackParentId { get; set; }
             /// <summary>Gets or sets 倉庫番号</summary>
             /// <value>倉庫番号</value>
-            public int? RackParentNumber { get; set; }
+            public string RackParentNumber { get; set; }
             /// <summary>Gets or sets 倉庫番号</summary>
             /// <value>倉庫番号</value>
-            public int? RackParentNumberBefore { get; set; }
+            public string RackParentNumberBefore { get; set; }
         }
 
         /// <summary>
@@ -1146,7 +1167,7 @@ namespace CommonTMQUtil
             public int? StructureGroupId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? DistrictNumber { get; set; }
+            public long? DistrictNumber { get; set; }
             /// <summary>Gets or sets 地区ID(構成ID)</summary>
             /// <value>地区ID(構成ID)</value>
             public long? DistrictId { get; set; }
@@ -1155,7 +1176,7 @@ namespace CommonTMQUtil
             public string DistrictName { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? FactoryNumber { get; set; }
+            public long? FactoryNumber { get; set; }
             /// <summary>Gets or sets 工場ID(構成ID)</summary>
             /// <value>工場ID(構成ID)</value>
             public long? FactoryId { get; set; }
@@ -1167,7 +1188,7 @@ namespace CommonTMQUtil
             public int? FactoryParentId { get; set; }
             /// <summary>Gets or sets 地区番号</summary>
             /// <value>地区番号</value>
-            public int? FactoryParentNumber { get; set; }
+            public long? FactoryParentNumber { get; set; }
             /// <summary>Gets or sets 部門ID(構成ID)</summary>
             /// <value>部門ID(構成ID)</value>
             public long? DepartmentId { get; set; }
@@ -1179,7 +1200,7 @@ namespace CommonTMQUtil
             public int? DepartmentItemTranslationId { get; set; }
             /// <summary>Gets or sets 部門番号</summary>
             /// <value>部門番号</value>
-            public int? DepartmentNumber { get; set; }
+            public string DepartmentNumber { get; set; }
             /// <summary>Gets or sets 部門名</summary>
             /// <value>部門名</value>
             public string DepartmentName { get; set; }
@@ -1191,10 +1212,10 @@ namespace CommonTMQUtil
             public int? DepartmentParentId { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? DepartmentParentNumber { get; set; }
+            public string DepartmentParentNumber { get; set; }
             /// <summary>Gets or sets 工場番号</summary>
             /// <value>工場番号</value>
-            public int? DepartmentParentNumberBefore { get; set; }
+            public string DepartmentParentNumberBefore { get; set; }
             /// <summary>Gets or sets 部門コード</summary>
             /// <value>部門コード</value>
             public string DepartmentCode { get; set; }
@@ -3998,8 +4019,8 @@ namespace CommonTMQUtil
         /// <summary>
         /// ExcelPort 階層系の文字数チェック
         /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
+        /// <param name="text">チェック対象文字</param>
+        /// <returns>エラーの場合はFalse</returns>
         public static bool commonTextByteCheckExcelPort(string text, out int maxlength)
         {
             maxlength = ItemTranslasionMaxLength;
@@ -4010,6 +4031,49 @@ namespace CommonTMQUtil
                 return false;
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 階層系マスタの数値の範囲チェック
+        /// </summary>
+        /// <param name="value">チェック対象数値</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool rangeChackExcelPort(string value)
+        {
+            // 数値に変換できない場合はFalse
+            if (!long.TryParse(value, out long outValue))
+            {
+                return false;
+            }
+
+            // 0～9999999999の範囲外の場合はエラー
+            if (outValue < numericRangeExcelPort.minValue || outValue > numericRangeExcelPort.maxValue)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 階層系マスタの数値の桁数チェック
+        /// </summary>
+        /// <param name="value">チェック対象数値</param>
+        /// <returns></returns>
+        public static bool lengthCheckExcelPort(string value)
+        {
+            // 値が空の場合は何もしない
+            if (string.IsNullOrEmpty(value))
+            {
+                return true;
+            }
+
+            // 10桁以上の場合はエラー
+            if (value.Length > numericRangeExcelPort.maxLength)
+            {
+                return false;
+            }
             return true;
         }
         #endregion

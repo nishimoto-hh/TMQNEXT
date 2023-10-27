@@ -2067,7 +2067,8 @@ ContinueRow:
             sValue = visibleRow.Cells(1, (idColno + 1)).text
             Set rRange = dataWs.Range(GetColNum2Txt(idColno + 1) & CStr(lCheckRowNo))
             sDefauleId = ""
-            Call ShowComboBox_Check(SheetNo, rRange, sValue, sType, "0", lvalColNo, sDefauleId, sDefauleVal, bReturn)
+            Dim errMsg As String
+            Call ShowComboBox_Check(SheetNo, rRange, sValue, sType, "0", lvalColNo, sDefauleId, sDefauleVal, bReturn, errMsg)
             If sDefauleId > "" Then
                 '送信字処理ID表示
                 dataWs.Cells(lCheckRowNo, idColno) = sDefauleId
@@ -2903,7 +2904,8 @@ Public Sub ShowComboBox_Check(ByVal SheetNo As Integer _
                             , ByRef p_valColNo As Long _
                             , ByRef sDefaultId As String _
                             , ByRef sDefaultVal As String _
-                            , ByRef bReturn As Boolean)
+                            , ByRef bReturn As Boolean _
+                            , ByRef errMsg As String)
 On Error GoTo ErrHandler
     sDefaultId = ""   'デフォルト値ID
     sDefaultVal = ""  'デフォルト値名称
@@ -2983,9 +2985,12 @@ On Error GoTo ErrHandler
                         , Operator:=xlFilterValues
                 End If
             Else
-                '共通工場=0でフィルターを掛ける
-                itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
-                    , Operator:=xlFilterValues
+                'コンボボックスの場合
+                If sCellType = CellType_ComboBox Then
+                    '共通工場=0でフィルターを掛ける
+                    itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
+                        , Operator:=xlFilterValues
+                End If
             End If
 
             '選択名称でフィルターを掛ける
@@ -3026,7 +3031,13 @@ On Error GoTo ErrHandler
             Exit Sub
     End Select
     
-
+    ' 入力チェック開始時のIDの値を取得
+    Dim selectedItemId As Long
+    selectedItemId = Worksheets(SheetNo).Cells(Target.row, valColNo).Value
+    ' 入力チェック開始時に選択されているアイテムの行番号
+    Dim selectedItemRowNo As Long
+    selectedItemRowNo = 0
+    
     '可視セルの行数を取得
     Dim rowCnt As Long
     rowCnt = itemWs.Range("A1").CurrentRegion.Resize(, 1).SpecialCells(xlCellTypeVisible).Count
@@ -3077,6 +3088,11 @@ On Error GoTo ErrHandler
             'IDをパイプ区切りで設定
             multiItemId = multiItemId + Str(visibleRow.Cells(1, ColNo)) + DelimiterId
         End If
+        
+        ' IDの値が入力チェック開始時に選択されているアイテムのIDと同一の場合
+        If ColNo = 2 And selectedItemId = visibleRow.Cells(1, ColNo) Then
+            selectedItemRowNo = RowNo
+        End If
       Next
 CONTINUE1:
     Next
@@ -3107,19 +3123,32 @@ CONTINUE1:
     ElseIf RowNo > 1 Then
         'デフォルト値を変数にセットして返す
         If filteredData(1, Item_ColNo_Text) > "" Then
+            
             '選択ID値格納先列番号
             p_valColNo = valColNo
-            'ID値
-            sDefaultId = filteredData(1, Item_ColNo_Id)
-            '名称
-            sDefaultVal = filteredData(1, Item_ColNo_Text)
+            
+            '選択されているアイテムが正常な場合、選択されているアイテムにする
+            If selectedItemRowNo > 0 Then
+                'ID値
+                sDefaultId = filteredData(selectedItemRowNo, Item_ColNo_Id)
+                '名称
+                sDefaultVal = filteredData(selectedItemRowNo, Item_ColNo_Text)
+            Else
+            '選択されているアイテムが不正な場合は選択可能リストの１番目にする
+                'ID値
+                sDefaultId = filteredData(1, Item_ColNo_Id)
+                '名称
+                sDefaultVal = filteredData(1, Item_ColNo_Text)
+            End If
+            
             '該当あり
             bReturn = True
         End If
     End If
     
-    '複数選択リストの場合、①選択されているアイテム数と非表示シートでフィルタをかけたレコード数が異なる、②未使用アイテムが選択されている場合エラーとする
+    'セルタイプを判定
     If sCellType = CellType_MultiListBox Then
+    '複数選択リストの場合、①選択されているアイテム数と非表示シートでフィルタをかけたレコード数が異なる、②未使用アイテムが選択されている場合エラーとする
         If Not multiItemCnt = UBound(arr) + 1 Or isUnuseError = True Then
             '選択ID値格納先列番号
             p_valColNo = valColNo
@@ -3132,6 +3161,20 @@ CONTINUE1:
         Else
         'エラーではない場合
         sDefaultId = Replace(multiItemId, " ", "")
+        End If
+    ElseIf sCellType = CellType_FormList Then
+        '選択画面の場合、工場IDが空で選択対象が複数存在する場合エラーとする
+        If sFactoryId = "" And RowNo > 1 Then
+            '選択ID値格納先列番号
+            p_valColNo = 0
+            'ID値
+            sDefaultId = ""
+            '名称
+            sDefaultVal = ""
+            '該当なし
+            bReturn = False
+            '返り値のエラーメッセージを設定(名称により項目を絞り込むことができません。画面より項目を指定してください。)
+            errMsg = GetMessage("141340001")
         End If
     End If
 
@@ -3445,19 +3488,34 @@ On Error GoTo ErrHandler
             Dim sDefauleVal As String
             Dim lvalColNo As Long
             Dim bReturn As Boolean
+            Dim errMsg As String
             Set rRange = dataWs.Range(GetColNum2Txt(lCol) & CStr(lRow))
-            Call ShowComboBox_Check(SheetNo, rRange, sValue, sType, sFactoryId, lvalColNo, sDefauleId, sDefauleVal, bReturn)
+            Call ShowComboBox_Check(SheetNo, rRange, sValue, sType, sFactoryId, lvalColNo, sDefauleId, sDefauleVal, bReturn, errMsg)
             If bReturn = False Then
                 '選択エラー
                 'IDクリア
                 If lvalColNo > 0 Then
                     dataWs.Cells(lRow, lvalColNo) = ""
                 End If
-                '141140004：選択内容が不正です。
-                sErrMsg = GetMessage("141140004")
+                
+                ' チェック後にエラーメッセージが設定されている場合は設定されているものをセット
+                If Not errMsg = "" Then
+                    sErrMsg = errMsg
+                Else
+                '何も設定されていない場合
+                    '141140004：選択内容が不正です。
+                    sErrMsg = GetMessage("141140004")
+                End If
+                
             Else
                 If lvalColNo > 0 Then
                     dataWs.Cells(lRow, lvalColNo) = sDefauleId
+                    
+                    'チェック正常終了後、拡張項目を設定する
+                    If Not ActiveCell Is Nothing Then
+                        '拡張項目があれば表示
+                        Call modCommon.GetKakuchoCheck(rRange, rRange.row, 1)
+                    End If
                 End If
             End If
             

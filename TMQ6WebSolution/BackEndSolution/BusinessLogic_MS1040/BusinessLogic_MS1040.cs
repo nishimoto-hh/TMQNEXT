@@ -105,7 +105,7 @@ namespace BusinessLogic_MS1040
             /// 親構成ID
             /// </summary>
             /// <value>
-            public int? ParentId;
+            public long? ParentId;
         }
 
         /// <summary>
@@ -640,13 +640,13 @@ namespace BusinessLogic_MS1040
         private List<TMQUtil.CommonExcelPortMasterPartsList> getMasterResults(TMQUtil.CommonExcelPortMasterCondition searchCondition)
         {
             // 地区情報を取得
-            if (!getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, int?> dicDistrict))
+            if (!getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, long?> dicDistrict))
             {
                 return new List<TMQUtil.CommonExcelPortMasterPartsList>();
             }
 
             // 工場情報を取得
-            if (!getFactoryResults(dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, int?> dicFactory))
+            if (!getFactoryResults(dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, long?> dicFactory))
             {
                 return new List<TMQUtil.CommonExcelPortMasterPartsList>();
             }
@@ -655,7 +655,7 @@ namespace BusinessLogic_MS1040
             searchCondition.FactoryIdList = factoryIdList;
 
             // 予備品倉庫情報を取得
-            if (!getWarehouseResults(dicFactory, out IList<TMQUtil.CommonExcelPortMasterPartsList> warehouseResults, out Dictionary<long?, int?> dicWarehouse))
+            if (!getWarehouseResults(dicFactory, out IList<TMQUtil.CommonExcelPortMasterPartsList> warehouseResults, out Dictionary<long?, long?> dicWarehouse))
             {
                 return new List<TMQUtil.CommonExcelPortMasterPartsList>();
             }
@@ -739,7 +739,7 @@ namespace BusinessLogic_MS1040
             return results;
 
             // 地区情報を取得
-            bool getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, int?> dicDistrict)
+            bool getDistrictResults(out IList<TMQUtil.CommonExcelPortMasterStructureList> districtResults, out Dictionary<long?, long?> dicDistrict)
             {
                 districtResults = null;
                 dicDistrict = new();
@@ -766,7 +766,7 @@ namespace BusinessLogic_MS1040
             }
 
             // 工場情報を取得
-            bool getFactoryResults(Dictionary<long?, int?> dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, int?> dicFactory)
+            bool getFactoryResults(Dictionary<long?, long?> dicDistrict, out IList<TMQUtil.CommonExcelPortMasterStructureList> factoryResults, out List<long> factoryIdList, out Dictionary<long?, long?> dicFactory)
             {
                 factoryResults = null;
                 factoryIdList = new();
@@ -796,7 +796,7 @@ namespace BusinessLogic_MS1040
             }
 
             // 予備品倉庫情報を取得
-            bool getWarehouseResults(Dictionary<long?, int?> dicFactory, out IList<TMQUtil.CommonExcelPortMasterPartsList> warehouseResults, out Dictionary<long?, int?> dicWarehouse)
+            bool getWarehouseResults(Dictionary<long?, long?> dicFactory, out IList<TMQUtil.CommonExcelPortMasterPartsList> warehouseResults, out Dictionary<long?, long?> dicWarehouse)
             {
                 warehouseResults = null;
                 dicWarehouse = new();
@@ -816,15 +816,15 @@ namespace BusinessLogic_MS1040
                 // 予備品倉庫の親IDを設定
                 foreach (TMQUtil.CommonExcelPortMasterPartsList warehouseResult in warehouseResults)
                 {
-                    warehouseResult.WarehouseParentNumber = (int)dicFactory[warehouseResult.WarehouseParentId];
-                    dicWarehouse.Add(warehouseResult.WarehouseId, warehouseResult.WarehouseNumber);
+                    warehouseResult.WarehouseParentNumber = ((int)dicFactory[warehouseResult.WarehouseParentId]).ToString();
+                    dicWarehouse.Add(warehouseResult.WarehouseId, long.Parse(warehouseResult.WarehouseNumber));
                 }
 
                 return true;
             }
 
             // 棚情報を取得
-            bool getRackResults(Dictionary<long?, int?> dicWarehouse, out IList<TMQUtil.CommonExcelPortMasterPartsList> rackResults)
+            bool getRackResults(Dictionary<long?, long?> dicWarehouse, out IList<TMQUtil.CommonExcelPortMasterPartsList> rackResults)
             {
                 rackResults = null;
 
@@ -843,7 +843,7 @@ namespace BusinessLogic_MS1040
                 // 機種大分類の親IDを設定
                 foreach (TMQUtil.CommonExcelPortMasterPartsList rackResult in rackResults)
                 {
-                    rackResult.RackParentNumber = (int)dicWarehouse[rackResult.RackParentId];
+                    rackResult.RackParentNumber = ((int)dicWarehouse[rackResult.RackParentId]).ToString();
                 }
 
                 return true;
@@ -914,7 +914,7 @@ namespace BusinessLogic_MS1040
 
             // 各階層のリストを作成する
             // 地区
-            Dictionary<int?, long?> districtDic = new();
+            Dictionary<long?, long?> districtDic = new();
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultDistrictList)
             {
                 // 地区リスト
@@ -925,7 +925,7 @@ namespace BusinessLogic_MS1040
             }
 
             // 工場
-            Dictionary<int?, long?> factoryDic = new();
+            Dictionary<long?, long?> factoryDic = new();
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultFactoryList)
             {
                 // 工場リスト
@@ -941,22 +941,55 @@ namespace BusinessLogic_MS1040
             bool rowErrFlg = false;
 
             // 倉庫
-            Dictionary<int?, ExcelPortStructureList> warehouseDic = new();
+            Dictionary<long?, ExcelPortStructureList> warehouseDic = new();
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultWarehouseList)
             {
                 rowErrFlg = false;
 
                 // 倉庫IDが入力されていない場合はエラー
-                if (result.WarehouseNumber == null)
+                if (string.IsNullOrEmpty(result.WarehouseNumber) || !long.TryParse(result.WarehouseNumber, out long outWarehouseNumber))
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
                     rowErrFlg = true;
                 }
+                if (!TMQUtil.rangeChackExcelPort(result.WarehouseNumber))
+                {
+                    // 範囲外の値の場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseNo, null, GetResMessage(new string[] { ComRes.ID.ID941060015, TMQUtil.numericRangeExcelPort.minValue.ToString(), TMQUtil.numericRangeExcelPort.maxValue.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.lengthCheckExcelPort(result.WarehouseNumber))
+                {
+                    // 最大桁数より多い場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseNo, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.numericRangeExcelPort.maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (long.TryParse(result.WarehouseNumber, out outWarehouseNumber))
+                {
+                    // ディクショナリにキーが含まれている場合(重複したIDが入力されている場合)エラー
+                    if (warehouseDic.ContainsKey(long.Parse(result.WarehouseNumber)))
+                    {
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseNo, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                        rowErrFlg = true;
+                    }
+                }
 
                 // 工場IDが入力されていない場合はエラー
-                if (result.WarehouseParentNumber == null)
+                if (string.IsNullOrEmpty(result.WarehouseParentNumber) || !long.TryParse(result.WarehouseParentNumber, out long outWarehouseParentNumber))
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.rangeChackExcelPort(result.WarehouseParentNumber))
+                {
+                    // 範囲外の値の場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941060015, TMQUtil.numericRangeExcelPort.minValue.ToString(), TMQUtil.numericRangeExcelPort.maxValue.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.lengthCheckExcelPort(result.WarehouseParentNumber))
+                {
+                    // 最大桁数より多い場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.numericRangeExcelPort.maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
                     rowErrFlg = true;
                 }
 
@@ -967,31 +1000,65 @@ namespace BusinessLogic_MS1040
                 }
 
                 // 倉庫リスト
-                if (result.WarehouseNumber != null)
+                if (!string.IsNullOrEmpty(result.WarehouseNumber))
                 {
                     ExcelPortStructureList list = new();
                     list.StructureId = result.WarehouseId;
-                    list.ParentId = result.WarehouseParentNumber;
-                    warehouseDic.Add(result.WarehouseNumber, list);
+                    list.ParentId = long.Parse(result.WarehouseParentNumber);
+                    warehouseDic.Add(long.Parse(result.WarehouseNumber), list);
                 }
             }
 
             // 棚
+            List<long?> rackDic = new();
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultRackList)
             {
                 rowErrFlg = false;
 
                 // 棚IDが入力されていない場合はエラー
-                if (result.RackNumber == null)
+                if (string.IsNullOrEmpty(result.RackNumber) || !long.TryParse(result.RackNumber, out long outRackNumber))
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
                     rowErrFlg = true;
                 }
+                if (!TMQUtil.rangeChackExcelPort(result.RackNumber))
+                {
+                    // 範囲外の値の場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackNo, null, GetResMessage(new string[] { ComRes.ID.ID941060015, TMQUtil.numericRangeExcelPort.minValue.ToString(), TMQUtil.numericRangeExcelPort.maxValue.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.lengthCheckExcelPort(result.RackNumber))
+                {
+                    // 最大桁数より多い場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackNo, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.numericRangeExcelPort.maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (long.TryParse(result.RackNumber, out outRackNumber))
+                {
+                    // ディクショナリにキーが含まれている場合(重複したIDが入力されている場合)エラー
+                    if (rackDic.Contains(long.Parse(result.RackNumber)))
+                    {
+                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackNo, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                        rowErrFlg = true;
+                    }
+                }
 
                 // 倉庫IDが入力されていない場合はエラー
-                if (result.RackParentNumber == null)
+                if (string.IsNullOrEmpty(result.RackParentNumber) || !long.TryParse(result.RackParentNumber, out long outRackParentNumber))
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.rangeChackExcelPort(result.RackParentNumber))
+                {
+                    // 範囲外の値の場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941060015, TMQUtil.numericRangeExcelPort.minValue.ToString(), TMQUtil.numericRangeExcelPort.maxValue.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    rowErrFlg = true;
+                }
+                if (!TMQUtil.lengthCheckExcelPort(result.RackParentNumber))
+                {
+                    // 最大桁数より多い場合はエラー
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.numericRangeExcelPort.maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
                     rowErrFlg = true;
                 }
 
@@ -1000,6 +1067,8 @@ namespace BusinessLogic_MS1040
                 {
                     continue;
                 }
+
+                rackDic.Add(long.Parse(result.RackNumber));
             }
 
             // 各階層のID列が不正の場合はエラー
@@ -1048,7 +1117,7 @@ namespace BusinessLogic_MS1040
         /// </summary>
         /// <param name="errorInfoList">エラー情報リスト</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool executeCheckAndRegistWarehouseExcelPort(ref List<TMQUtil.CommonExcelPortMasterPartsList> resultWarehouseList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, ref Dictionary<int?, ExcelPortStructureList> warehouseDic)
+        private bool executeCheckAndRegistWarehouseExcelPort(ref List<TMQUtil.CommonExcelPortMasterPartsList> resultWarehouseList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<long?, long?> factoryDic, ref Dictionary<long?, ExcelPortStructureList> warehouseDic)
         {
             DateTime now = DateTime.Now;
 
@@ -1060,7 +1129,7 @@ namespace BusinessLogic_MS1040
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultWarehouseList)
             {
                 // 倉庫
-                if ((!string.IsNullOrEmpty(result.WarehouseName) || result.WarehouseParentNumber != null) && result.WarehouseNumber == null)
+                if ((!string.IsNullOrEmpty(result.WarehouseName) || !string.IsNullOrEmpty(result.WarehouseParentNumber)) && string.IsNullOrEmpty(result.WarehouseNumber))
                 {
                     // 倉庫IDが未入力かつ、倉庫名・工場IDのどちらかが入力されている場合
                     // 必須項目です。入力してください。
@@ -1069,11 +1138,11 @@ namespace BusinessLogic_MS1040
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.WarehouseNumber != null && string.IsNullOrEmpty(result.WarehouseName))
+                if (!string.IsNullOrEmpty(result.WarehouseNumber) && string.IsNullOrEmpty(result.WarehouseName))
                 {
                     // 倉庫IDが入力されていて倉庫名が未入力の場合
-                    // アイテム翻訳は○○桁以下で入力して下さい。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    // ○○文字以内で入力して下さい。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseName, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1081,13 +1150,13 @@ namespace BusinessLogic_MS1040
                 if (!TMQUtil.commonTextByteCheckExcelPort(result.WarehouseName, out int maxLength))
                 {
                     // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
+                    // ○○文字以内で入力して下さい。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.WarehouseName, null, GetResMessage(new string[] { ComRes.ID.ID941060018, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Warehouse.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.WarehouseNumber != null && result.WarehouseParentNumber == null)
+                if (!string.IsNullOrEmpty(result.WarehouseNumber) && string.IsNullOrEmpty(result.WarehouseParentNumber))
                 {
                     // 倉庫IDが入力されていて工場IDが未入力の場合
                     // 必須項目です。入力してください。
@@ -1096,7 +1165,7 @@ namespace BusinessLogic_MS1040
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.WarehouseParentNumber != null && !factoryDic.ContainsKey(result.WarehouseParentNumber))
+                if (!string.IsNullOrEmpty(result.WarehouseParentNumber) && !factoryDic.ContainsKey(long.Parse(result.WarehouseParentNumber)))
                 {
                     // 存在しない工場IDが入力されている場合
                     // 入力内容が不正です。
@@ -1117,7 +1186,7 @@ namespace BusinessLogic_MS1040
                         @TranslationText = result.WarehouseName,
                         @StructureGroupId = structureGroupId,
                         @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Warehouse,
-                        @ParentStructureId = factoryDic[result.WarehouseParentNumber]
+                        @ParentStructureId = factoryDic[long.Parse(result.WarehouseParentNumber)]
                     }, SqlName.GetCountLayersTranslation, ref cnt, db, SqlName.ComLayersDir);
 
                     if (cnt > 0)
@@ -1153,7 +1222,7 @@ namespace BusinessLogic_MS1040
         /// </summary>
         /// <param name="errorInfoList">エラー情報リスト</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool executeCheckAndRegistRackExcelPort(ref List<TMQUtil.CommonExcelPortMasterPartsList> resultRackList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<int?, long?> factoryDic, Dictionary<int?, ExcelPortStructureList> warehouseDic)
+        private bool executeCheckAndRegistRackExcelPort(ref List<TMQUtil.CommonExcelPortMasterPartsList> resultRackList, ref List<ComDao.UploadErrorInfo> errorInfoList, Dictionary<long?, long?> factoryDic, Dictionary<long?, ExcelPortStructureList> warehouseDic)
         {
             DateTime now = DateTime.Now;
 
@@ -1165,7 +1234,7 @@ namespace BusinessLogic_MS1040
             foreach (TMQUtil.CommonExcelPortMasterPartsList result in resultRackList)
             {
                 // 棚
-                if ((!string.IsNullOrEmpty(result.RackName) || result.RackParentNumber != null) && result.RackNumber == null)
+                if ((!string.IsNullOrEmpty(result.RackName) || !string.IsNullOrEmpty(result.RackParentNumber)) && string.IsNullOrEmpty(result.RackNumber))
                 {
                     // 棚IDが未入力かつ、棚名・倉庫IDのどちらかが入力されている場合
                     // 必須項目です。入力してください。
@@ -1174,11 +1243,11 @@ namespace BusinessLogic_MS1040
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.RackNumber != null && string.IsNullOrEmpty(result.RackName))
+                if (!string.IsNullOrEmpty(result.RackNumber) && string.IsNullOrEmpty(result.RackName))
                 {
                     // 棚IDが入力されていて系列名が未入力の場合
-                    // アイテム翻訳は○○桁以下で入力して下さい。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    // ○○文字以内で入力して下さい。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackName, null, GetResMessage(new string[] { ComRes.ID.ID941060018, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1186,13 +1255,13 @@ namespace BusinessLogic_MS1040
                 if (!TMQUtil.commonTextByteCheckExcelPort(result.RackName, out int maxLength))
                 {
                     // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
+                    // ○○文字以内で入力して下さい。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.RackName, null, GetResMessage(new string[] { ComRes.ID.ID941060018, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1040.Rack.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.RackNumber != null && result.RackParentNumber == null)
+                if (!string.IsNullOrEmpty(result.RackNumber) && string.IsNullOrEmpty(result.RackParentNumber))
                 {
                     // 棚IDが入力されていて倉庫IDが未入力の場合
                     // 必須項目です。入力してください。
@@ -1201,7 +1270,7 @@ namespace BusinessLogic_MS1040
                     rowErrFlg = true;
                     continue;
                 }
-                if (result.RackParentNumber != null && !warehouseDic.ContainsKey(result.RackParentNumber))
+                if (!string.IsNullOrEmpty(result.RackParentNumber) && !warehouseDic.ContainsKey(long.Parse(result.RackParentNumber)))
                 {
                     // 存在しない倉庫IDが入力されている場合
                     // 入力内容が不正です。
@@ -1222,7 +1291,7 @@ namespace BusinessLogic_MS1040
                         @TranslationText = result.RackName,
                         @StructureGroupId = structureGroupId,
                         @StructureLayerNo = (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack,
-                        @ParentStructureId = warehouseDic[result.RackParentNumber].StructureId
+                        @ParentStructureId = warehouseDic[long.Parse(result.RackParentNumber)].StructureId
                     }, SqlName.GetCountLayersTranslation, ref cnt, db, SqlName.ComLayersDir);
 
                     if (cnt > 0)
@@ -1259,12 +1328,12 @@ namespace BusinessLogic_MS1040
         /// </summary>
         /// <param name="factoryDic">工場IDディクショナリ</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool executeExcelPortRegistWarehouse(TMQUtil.CommonExcelPortMasterPartsList warehouse, Dictionary<int?, long?> factoryDic, ref Dictionary<int?, ExcelPortStructureList> warehouseDic, DateTime now)
+        private bool executeExcelPortRegistWarehouse(TMQUtil.CommonExcelPortMasterPartsList warehouse, Dictionary<long?, long?> factoryDic, ref Dictionary<long?, ExcelPortStructureList> warehouseDic, DateTime now)
         {
             // 所属情報が変更されている場合は削除
             bool isNew = false;
-            if (warehouse.WarehouseParentNumber != null &&
-                warehouse.WarehouseParentNumberBefore != null &&
+            if (!string.IsNullOrEmpty(warehouse.WarehouseParentNumber) &&
+                !string.IsNullOrEmpty(warehouse.WarehouseParentNumberBefore) &&
                 warehouse.WarehouseParentNumber != warehouse.WarehouseParentNumberBefore)
             {
                 if (!TMQUtil.SqlExecuteClass.Regist(Master.SqlName.UpdateMsStructureInfoAddDeleteFlg, Master.SqlName.SubDir, new { StructureId = warehouse.WarehouseId, UpdateDatetime = now, UpdateUserId = this.UserId }, db))
@@ -1283,10 +1352,10 @@ namespace BusinessLogic_MS1040
                                                              warehouse.WarehouseName,                                            // 翻訳名
                                                              warehouse.WarehouseNameBefore,                                      // 変更前翻訳名
                                                              warehouse.WarehouseItemTranslationId,                               // 翻訳ID
-                                                             (int)factoryDic[warehouse.WarehouseParentNumber],                   // 工場ID
+                                                             (int)factoryDic[long.Parse(warehouse.WarehouseParentNumber)],                   // 工場ID
                                                              warehouse.WarehouseId,                                              // 構成ID
                                                              (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Warehouse, // 階層番号
-                                                             (int)factoryDic[warehouse.WarehouseParentNumber],                   // 親構成ID
+                                                             (int)factoryDic[long.Parse(warehouse.WarehouseParentNumber)],                   // 親構成ID
                                                              out int transId,                                                    // 翻訳ID
                                                              isNew))
             {
@@ -1296,7 +1365,7 @@ namespace BusinessLogic_MS1040
             // アイテムマスタ登録
             if (!TMQUtil.registItemStructureExcelPort(warehouse.WarehouseId,                  // 構成ID
                                             structureGroupId,                                 // 構成グループID
-                                            (int)factoryDic[warehouse.WarehouseParentNumber], // 工場ID
+                                            (int)factoryDic[long.Parse(warehouse.WarehouseParentNumber)], // 工場ID
                                             warehouse.WarehouseName,                          // 翻訳名
                                             warehouse.WarehouseNameBefore,                    // 変更前翻訳名
                                             warehouse.WarehouseItemTranslationId,             // 翻訳ID
@@ -1315,9 +1384,9 @@ namespace BusinessLogic_MS1040
             // 構成マスタ登録
             if (!TMQUtil.registStructureExcelPort(structureGroupId,                                                  // 構成グループID
                                                  warehouse.WarehouseId,                                              // 構成ID
-                                                 (int)factoryDic[warehouse.WarehouseParentNumber],                   // 工場ID
+                                                 (int)factoryDic[long.Parse(warehouse.WarehouseParentNumber)],                   // 工場ID
                                                  itemId,                                                             // アイテムID
-                                                 (int)factoryDic[warehouse.WarehouseParentNumber],                   // 親構成ID
+                                                 (int)factoryDic[long.Parse(warehouse.WarehouseParentNumber)],                   // 親構成ID
                                                  (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Warehouse, // 階層番号
                                                  now,                                                                // 現在日時
                                                  this.db,                                                            // DBクラス
@@ -1329,7 +1398,7 @@ namespace BusinessLogic_MS1040
             }
 
             // 倉庫ディクショナリに登録した情報を追加
-            warehouseDic[warehouse.WarehouseNumber].StructureId = structureId;
+            warehouseDic[long.Parse(warehouse.WarehouseNumber)].StructureId = structureId;
 
             return true;
         }
@@ -1340,7 +1409,7 @@ namespace BusinessLogic_MS1040
         /// <param name="warehouseDic">倉庫IDディクショナリ</param>
         /// <param name="now">現在日時</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool executeExcelPortRegistRack(TMQUtil.CommonExcelPortMasterPartsList rack, Dictionary<int?, ExcelPortStructureList> warehouseDic, Dictionary<int?, long?> factoryDic, DateTime now)
+        private bool executeExcelPortRegistRack(TMQUtil.CommonExcelPortMasterPartsList rack, Dictionary<long?, ExcelPortStructureList> warehouseDic, Dictionary<long?, long?> factoryDic, DateTime now)
         {
             bool parentChanged = false;
 
@@ -1349,13 +1418,13 @@ namespace BusinessLogic_MS1040
                 // DBより自分自身の親構成IDを取得
                 ComDao.MsStructureEntity ms = new ComDao.MsStructureEntity().GetEntity((int)rack.RackId, this.db);
                 // 自分の親構成IDを比較(異なる場合は自分の親アイテムの所属が変わった)
-                parentChanged = ms.ParentStructureId != warehouseDic[rack.RackParentNumber].StructureId;
+                parentChanged = ms.ParentStructureId != warehouseDic[long.Parse(rack.RackParentNumber)].StructureId;
             }
 
             // 所属情報が変更されている場合は削除(自分の親アイテムの所属が変わった場合も含む)
             bool isNew = false;
-            if ((rack.RackParentNumber != null &&
-                rack.RackParentNumberBefore != null &&
+            if ((!string.IsNullOrEmpty(rack.RackParentNumber) &&
+                 !string.IsNullOrEmpty(rack.RackParentNumberBefore) &&
                 rack.RackParentNumber != rack.RackParentNumberBefore) ||
                 parentChanged)
             {
@@ -1366,7 +1435,7 @@ namespace BusinessLogic_MS1040
                 isNew = true;
             }
 
-            int factoryId = (int)factoryDic[(int)warehouseDic[rack.RackParentNumber].ParentId];
+            int factoryId = (int)factoryDic[(int)warehouseDic[long.Parse(rack.RackParentNumber)].ParentId];
             // 翻訳マスタ登録処理
             if (!TMQUtil.registTranslationStructureExcelPort(structureGroupId,                                              // 構成グループID
                                                              now,                                                           // 現在日時
@@ -1379,7 +1448,7 @@ namespace BusinessLogic_MS1040
                                                              factoryId,                                                     // 工場ID
                                                              rack.RackId,                                                   // 構成ID
                                                              (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack, // 階層番号
-                                                             (int)warehouseDic[rack.RackParentNumber].StructureId,          // 親構成ID
+                                                             (int)warehouseDic[long.Parse(rack.RackParentNumber)].StructureId,          // 親構成ID
                                                              out int transId,                                               // 翻訳ID
                                                              isNew))
             {
@@ -1410,7 +1479,7 @@ namespace BusinessLogic_MS1040
                                                  rack.RackId,                                                   // 構成ID
                                                  factoryId,                                                     // 工場ID
                                                  itemId,                                                        // アイテムID
-                                                 (int)warehouseDic[rack.RackParentNumber].StructureId,          // 親構成ID
+                                                 (int)warehouseDic[long.Parse(rack.RackParentNumber)].StructureId,          // 親構成ID
                                                  (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack, // 階層番号
                                                  now,                                                           // 現在日時
                                                  this.db,                                                       // DBクラス

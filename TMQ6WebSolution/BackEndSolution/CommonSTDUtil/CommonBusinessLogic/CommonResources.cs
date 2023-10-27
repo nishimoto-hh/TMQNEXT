@@ -1796,7 +1796,11 @@
             /// <summary>
             /// 入力内容が不正です。
             /// </summary>
-            public const string ID141220008 = "141220008";       
+            public const string ID141220008 = "141220008";
+            /// <summary>
+            /// 名称により項目を絞り込むことができません。画面より項目を指定してください。
+            /// </summary>
+            public const string ID141340001 = "141340001";
         }
     }
 }

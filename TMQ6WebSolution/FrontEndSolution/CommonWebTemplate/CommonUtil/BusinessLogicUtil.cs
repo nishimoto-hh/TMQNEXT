@@ -24,6 +24,14 @@ namespace CommonWebTemplate.CommonUtil
 {
     public class BusinessLogicUtil
     {
+        #region === メンバ変数 ===
+        #region === private変数 ===
+        private CommonDataEntities context;
+        #endregion
+        /// <summary>ログ出力</summary>
+        protected CommonLogger logger = CommonLogger.GetInstance();
+        #endregion
+
         #region === 定数定義 ===
         public enum FormId
         {
@@ -1637,7 +1645,7 @@ namespace CommonWebTemplate.CommonUtil
                 //③取り込み処理
                 //⑥ｴﾗｰの場合、処理を中断
                 CommonProcReturn returnInfo = businessLogicExec(procData, out logicResult);    //ﾃﾞｰﾀ保存なし
-                                                                                          //処理結果を初期化
+                                                                                               //処理結果を初期化
                 if (returnInfo.IsProcEnd())
                 {
                     Dictionary<string, object> resultsW = logicResult as Dictionary<string, object>;
@@ -2489,7 +2497,11 @@ namespace CommonWebTemplate.CommonUtil
                 }
                 catch (Exception ex)
                 {
-                    return new CommonProcReturn(CommonProcReturn.ProcStatus.Error, ex.Message);
+                    // ログ出力
+                    logger.WriteLog(ex.Message);
+                    // 画面に表示するメッセージ
+                    string msg = GetMessage(CommonSTDUtil.CommonResources.ID.ID941040004, procData);
+                    return new CommonProcReturn(CommonProcReturn.ProcStatus.Error, msg);
                 }
 
             }
@@ -2509,6 +2521,19 @@ namespace CommonWebTemplate.CommonUtil
             returnInfo.FILEDOWNLOADNAME = fileDownloadName;
 
             return returnInfo;
+        }
+
+        /// <summary>
+        /// メッセージIDよりメッセージ内容を取得
+        /// </summary>
+        /// <param name="msgId">メッセージID</param>
+        /// <param name="procData">業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ</param>
+        /// <returns></returns>
+        public string GetMessage(string msgId, CommonProcData procData)
+        {
+            GetResourceName(procData, new List<string> { msgId }, out IDictionary<string, string> resources);
+            string msg = ConvertResourceName(msgId, resources);
+            return msg;
         }
 
         /// <summary>

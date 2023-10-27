@@ -265,21 +265,21 @@ function separateDicReturn(dicReturn, conductId) {
     // 結果データ
     var resultData = null;
     if (dicReturn != null) {
-        if ("Result" in dicReturn) {
+        if (dicReturn["Result"]) {
             resultData = dicReturn["Result"];   // List<Dictionary<string, object>>
         }
         // 個別実装用データ
-        if ("Individual" in dicReturn) {
+        if (dicReturn["Individual"]) {
             P_dicIndividual = dicReturn["Individual"];  // Dictionary<string, object>
         }
         /* ボタン権限制御 切替 start ================================================ */
         // ﾎﾞﾀﾝ権限
-        if ("ButtonStatus" in dicReturn && dicReturn["ButtonStatus"].length > 0 && conductId != null && conductId.length > 0) {
+        if (dicReturn["ButtonStatus"] && dicReturn["ButtonStatus"].length > 0 && conductId != null && conductId.length > 0) {
             P_buttonDefine[conductId] = dicReturn["ButtonStatus"];  // List<Dictionary<string, object>>
         }
         /* ボタン権限制御 切替 end ================================================== */
 
-        if ("DefineTransList" in dicReturn) {
+        if (dicReturn["DefineTransList"]) {
             P_DefineTransList = dicReturn["DefineTransList"];   // List<Dictionary<string, object>>
         } else {
             P_DefineTransList = [];

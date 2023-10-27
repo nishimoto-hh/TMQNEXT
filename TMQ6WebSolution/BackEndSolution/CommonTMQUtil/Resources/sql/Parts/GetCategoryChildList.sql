@@ -5,7 +5,7 @@ SELECT
     COALESCE(stock.stock_quantity, 0) AS stock_quantity,                                                                                                          -- 在庫数
     COALESCE(lot.unit_price, 0) AS unit_price,                                                                                                                    -- 入庫単価
     COALESCE(stock.stock_quantity * lot.unit_price, 0) AS stock_amount,                                                                                           -- 在庫金額
-    CAST(lot.old_new_structure_id AS varchar) + '_' + CAST(lot.department_structure_id AS varchar) + '_' + CAST(lot.account_structure_id AS varchar) AS nest_key, -- 入れ子キー
+    CAST(lot.old_new_structure_id AS varchar) + '_' + CAST(lot.department_structure_id AS varchar) + '_' + CAST(lot.account_structure_id AS varchar) + '_' + COALESCE(lot.management_division, '') + '_' + COALESCE(lot.management_no, '') AS nest_key, -- 入れ子キー
     COALESCE(unit_digit.extension_data, 0) AS unit_digit,                                                                                                         -- 小数点以下桁数(数量)
     COALESCE(currency_digit.currency_digit, 0) AS currency_digit,                                                                                                 -- 小数点以下桁数(金額)
     COALESCE(round_division.extension_data, 1) AS unit_round_division,                                                                                            -- 丸め処理区分(数量)
