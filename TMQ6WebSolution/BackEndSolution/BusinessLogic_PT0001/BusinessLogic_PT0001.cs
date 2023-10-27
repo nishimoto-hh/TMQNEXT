@@ -602,16 +602,6 @@ namespace BusinessLogic_PT0001
             listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
             listPf.RegistTempTable(); // 登録
 
-            // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true, isJobKindOnly: true))
-            {
-                // 「ダウンロード処理に失敗しました。」
-                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
-                return ComConsts.RETURN_RESULT.NG;
-            }
-
-            // SQLパラメータに言語ID設定
-            whereParam.LanguageId = this.LanguageId;
             // 一覧検索SQL文の取得
             string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, null, withSql);
             var selectSql = new StringBuilder(executeSql);

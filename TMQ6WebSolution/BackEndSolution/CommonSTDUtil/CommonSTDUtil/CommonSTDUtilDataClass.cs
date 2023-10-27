@@ -1598,12 +1598,19 @@ namespace CommonSTDUtil.CommonSTDUtil
                 /// <summary>Gets or sets 構成ID</summary>
                 /// <value>構成ID</value>
                 public int StructureId { get; set; }
+                /// <summary>Gets or sets 場所階層ID(工場)</summary>
+                /// <value>場所階層ID(工場)</value>
+                public int LocationStructureId { get; set; }
+                /// <value>言語ID</value>
+                public string LanguageId { get; set; }
                 /// <summary>
                 /// コンストラクタ
                 /// </summary>
-                public PrimaryKey(int pStructureId)
+                public PrimaryKey(int pStructureId, string pLanguageId, int pLocationStructureId)
                 {
                     StructureId = pStructureId;
+                    LocationStructureId = pLocationStructureId;
+                    LanguageId = pLanguageId;
                 }
             }
 
@@ -1613,38 +1620,76 @@ namespace CommonSTDUtil.CommonSTDUtil
             /// <returns>プライマリーキー情報</returns>
             public PrimaryKey PK()
             {
-                PrimaryKey pk = new PrimaryKey(this.StructureId);
+                PrimaryKey pk = new PrimaryKey(this.StructureId, this.LanguageId, this.LocationStructureId ?? -1);
                 return pk;
             }
 
             /// <summary>
-            /// エンティティ
+            /// エンティティ取得
             /// </summary>
+            /// <param name="pStructureId">構成ID</param>
+            /// <param name="db">DB接続</param>
+            /// <param name="pLanguageId">翻訳の言語ID、省略時は日本語</param>
+            /// <param name="pLocationStructureId">個別翻訳の工場ID、省略時は共通</param>
             /// <returns>該当のデータを返す</returns>
-            public VStructureItemEntity GetEntity(int pStructureId, ComDB db)
+            public static VStructureItemEntity GetEntity(int pStructureId, ComDB db, string pLanguageId = CommonConstants.LanguageId.Japanese, int pLocationStructureId = 0)
             {
-                PrimaryKey condition = new PrimaryKey(pStructureId);
-                // SQL文生成
-                // ビューのため、既存のGetEntityではテーブル情報を参照できない、固定でSQLを作成する
-                string getEntitySql = "select * from v_structure_item where structure_id = @StructureId";
-
-                return db.GetEntityByDataClass<VStructureItemEntity>(getEntitySql, condition);
+                return GetEntityCommon(pStructureId, db, pLanguageId, pLocationStructureId);
             }
 
             /// <summary>
-            /// エンティティ(言語指定)
+            /// 構成IDよりエンティティ取得、一意にならないので先頭を取得する
             /// </summary>
+            /// <param name="pStructureId">構成ID</param>
+            /// <param name="db">DB接続</param>
             /// <returns>該当のデータを返す</returns>
-            public VStructureItemEntity GetEntity(int pStructureId, string languageId, ComDB db)
+            public static VStructureItemEntity GetEntityById(int pStructureId, ComDB db)
             {
-                VStructureItemEntity condition = new VStructureItemEntity();
-                condition.StructureId = pStructureId;
-                condition.LanguageId = languageId;
+                return GetEntityCommon(pStructureId, db);
+            }
+
+            /// <summary>
+            /// 構成IDと言語よりエンティティ取得、一意にならないので先頭を取得する
+            /// </summary>
+            /// <param name="pStructureId">構成ID</param>
+            /// <param name="pLanguageId">言語ID</param>
+            /// <param name="db">DB接続</param>
+            /// <returns>該当のデータを返す</returns>
+            public static VStructureItemEntity GetEntityByIdLanguage(int pStructureId, string pLanguageId, ComDB db)
+            {
+                return GetEntityCommon(pStructureId, db, pLanguageId);
+            }
+
+            /// <summary>
+            /// エンティティ取得の実際の処理
+            /// </summary>
+            /// <param name="pStructureId">構成ID</param>
+            /// <param name="db">DB接続</param>
+            /// <param name="pLanguageId">言語ID、条件に含めない場合は省略</param>
+            /// <param name="pLocationStructureId">個別翻訳の工場ID、条件に含めない場合は省略</param>
+            /// <returns></returns>
+            private static VStructureItemEntity GetEntityCommon(int pStructureId, ComDB db, string pLanguageId = "", int pLocationStructureId = -1)
+            {
+                PrimaryKey condition = new(pStructureId, pLanguageId, pLocationStructureId);
                 // SQL文生成
                 // ビューのため、既存のGetEntityではテーブル情報を参照できない、固定でSQLを作成する
-                string getEntitySql = "select * from v_structure_item where structure_id = @StructureId and language_id = @LanguageId";
+                StringBuilder getEntitySql = new("select * from v_structure_item where structure_id = @StructureId");
+                if (!string.IsNullOrEmpty(pLanguageId))
+                {
+                    // 言語IDが指定されている場合は条件を追加
+                    getEntitySql.AppendLine(" and language_id = @LanguageId");
+                }
+                if (pLocationStructureId != -1)
+                {
+                    // 翻訳工場IDが指定されている場合は条件を追加
+                    getEntitySql.AppendLine(" and location_structure_id = @LocationStructureId");
+                }
 
-                return db.GetEntityByDataClass<VStructureItemEntity>(getEntitySql, condition);
+                // IDのみの場合は一意にならないので並び替え、共通工場(0)、日本語が先頭になるように並べる
+                getEntitySql.AppendLine(" order by location_structure_id , CASE language_id WHEN 'ja' THEN 0 ELSE 1 END ");
+                // SQL実行
+                var result = db.GetEntityByDataClass<VStructureItemEntity>(getEntitySql.ToString(), condition);
+                return result;
             }
         }
 

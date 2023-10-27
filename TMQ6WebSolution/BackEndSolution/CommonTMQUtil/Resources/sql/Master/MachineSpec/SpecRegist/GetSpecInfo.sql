@@ -7,18 +7,18 @@
 -- 構成マスタの内容は固定
 WITH num_type AS (
 SELECT
-    item.structure_id,
+    st.structure_id,
     ex.extension_data
 FROM
-    v_structure_item AS item
+    ms_structure AS st
     INNER JOIN
         ms_item_extension AS ex
     ON  (
-            item.structure_item_id = ex.item_id
+            st.structure_item_id = ex.item_id
         AND ex.sequence_no = 1
         )
 WHERE
-    item.structure_group_id = 2060
+    st.structure_group_id = 2060
 )
 
 SELECT

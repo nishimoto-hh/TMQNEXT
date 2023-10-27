@@ -152,6 +152,7 @@ facatory_max AS(
                                        SELECT 0
                                        UNION
                                        SELECT f.factoryId FROM factory f)
+    AND item.language_id = /*languageId*/'ja' 
     GROUP BY
         item.structure_id
 )

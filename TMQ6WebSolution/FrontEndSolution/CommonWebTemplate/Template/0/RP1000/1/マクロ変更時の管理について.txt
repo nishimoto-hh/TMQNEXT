@@ -6,8 +6,8 @@
 以下、説明です。コード内にも記載しています。
 
 ■出力に必要な参照をチェック
-[参照設定] Microsoft Visual Basic for Applications Extensibility 必要
-[参照設定] Microsoft Scripting Runtime 必要
+[参照設定] Microsoft Visual Basic for Applications Extensibility
+[参照設定] Microsoft Scripting Runtime
 ■マクロのセキュリティ設定を変更
 マクロのセキュリティ「VBAプロジェクトオブジェクトモデルへのアクセスを信頼する」にチェック
 ■modExportSourceを開いてF5で実行

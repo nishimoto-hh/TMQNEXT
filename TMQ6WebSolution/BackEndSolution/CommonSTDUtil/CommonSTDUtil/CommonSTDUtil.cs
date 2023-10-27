@@ -1919,6 +1919,29 @@ namespace CommonSTDUtil.CommonSTDUtil
                         structureIdList = dic["structureIdList"] as List<int>;
                     }
                 }
+                // 場所階層の場合(場所階層(1000),変更管理関連(1001,1002))
+                // ユーザの本務工場でも、その配下の場所に権限が設定されている場合はその工場の権限を除外する
+                // ※本務工場の下のAプラントに権限がある場合、Bプラントの権限は無いので本務工場の権限を持つとBプラントの権限も含まれてしまう
+                List<int> dutyStructureGroupList = new List<int> {
+                    STRUCTURE_CONSTANTS.STRUCTURE_GROUP .Location, STRUCTURE_CONSTANTS.STRUCTURE_GROUP .LocationNoHistory,
+                    STRUCTURE_CONSTANTS.STRUCTURE_GROUP .LocationHistory};
+                bool isExistsDutyLocationGroup = structureGroupIdList.Intersect(dutyStructureGroupList).Any();
+                // 本務工場が設定されている場合(システム管理者でない)
+                if (isExistsDutyLocationGroup && belongingInfo.DutyFactoryId != STRUCTURE_CONSTANTS.CommonFactoryId)
+                {
+                    // 所属場所階層に本務工場の配下(工場IDが本務工場)で場所階層が本務工場でないものがあるか
+                    // ⇒本務工場全体の権限が無いので、所属構成IDから本務工場を削除
+
+                    int dutyFactoryId = belongingInfo.DutyFactoryId; // 本務工場ID(変数名が長いので定義)
+                    // 本務工場配下有無フラグ(工場IDが本務工場で構成IDが本務工場でない所属場所階層があればTrue)
+                    var isExistsDutyFollower = belongingInfo.LocationInfoList.Where(x => x.FactoryId == dutyFactoryId && x.StructureId != dutyFactoryId).Any();
+                    if (isExistsDutyFollower)
+                    {
+                        // 構成IDから本務工場を削除
+                        structureIdList.Remove(dutyFactoryId);
+                    }
+                }
+
                 // 予備品の場合
                 if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.SpareLocation))
                 {
@@ -1932,12 +1955,17 @@ namespace CommonSTDUtil.CommonSTDUtil
                     // 予備品共通工場は表示する
                     exceptCommonFactory = false;
                 }
-
+                // ツリー項目で工場個別の翻訳、並び替えを行う場合True
+                bool isTransFactoryOrderTree = false;
                 // 原因性格の場合
                 if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Cause))
                 {
                     // 構成マスタによる絞込は行わない
                     structureIdList = new();
+                    if (structureGroupIdList.Count == 1)
+                    {
+                        isTransFactoryOrderTree = true;
+                    }
                 }
 
                 if (structureIdList != null && structureIdList.Count > 0)
@@ -2004,7 +2032,8 @@ namespace CommonSTDUtil.CommonSTDUtil
                           StructureIdList = structureIdList,
                           StructureGroupIdList = structureGroupIdList,
                           ExceptCommonFactory = exceptCommonFactory,
-                          NarrowHistoryFactory = narrowHistoryFactory
+                          NarrowHistoryFactory = narrowHistoryFactory,
+                          IsTransFactoryOrderTree = isTransFactoryOrderTree
                       }).ToList();
 
                 if (isLocationForUserUst)
@@ -3834,6 +3863,44 @@ namespace CommonSTDUtil.CommonSTDUtil
         }
 
         /// <summary>
+        /// 文字列が指定した書式で日時に変更できるか判定
+        /// </summary>
+        /// <param name="date">判定する文字列</param>
+        /// <param name="format">書式</param>
+        /// <returns>判定できる場合True</returns>
+        public static bool IsDateTimeFormat(string date, string format)
+        {
+            DateTime dt;
+
+            if (DateTime.TryParseExact(date, format, null, System.Globalization.DateTimeStyles.None, out dt))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 文字列が整数型に変更できるか判定
+        /// </summary>
+        /// <param name="str">判定する文字列</param>
+        /// <returns>true:正常、false:異常</returns>
+        public static bool IsLong(string str)
+        {
+            long num;
+            if (long.TryParse(str, out num))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 文字列がDecimal型に変更できるか判定
         /// </summary>
         /// <param name="str">判定する文字列</param>
@@ -4956,7 +5023,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                     if (target.PropertyType == typeof(List<int>))
                     {
                         //複数選択チェックボックスの選択値が無い場合、空のリストのため要素があるかチェック
-                        if(((List<int>)value).Any())
+                        if (((List<int>)value).Any())
                         {
                             nullPropertyNames.Add(target.Name);
                         }

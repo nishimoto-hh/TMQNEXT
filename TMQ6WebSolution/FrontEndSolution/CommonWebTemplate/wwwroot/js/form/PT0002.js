@@ -218,7 +218,7 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     }
 
     // 遷移元が部門在庫情報(出庫入力)の場合
-    if (ctrlId == PT0006_FormList.Department) {
+    if (ctrlId == PT0006_FormList.Department.Id) {
         PT0006_prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element);
         return [false, conditionDataList];
     }

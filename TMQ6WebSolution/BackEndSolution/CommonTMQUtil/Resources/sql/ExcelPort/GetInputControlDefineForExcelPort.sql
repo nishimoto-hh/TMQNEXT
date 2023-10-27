@@ -29,7 +29,9 @@ SELECT
     , oid.ep_relation_parameters
     , oid.ep_select_id_column_no
     , oid.ep_column_division
+    , oid.ep_select_link_column_no
     , mt.translation_text 
+    , [dbo].[get_rep_translation_text](@FactoryId, cd.format_translation_id, @LanguageId) AS format_text    -- ‘®•¶š—ñ
 FROM
     ms_input_group_define igd 
     LEFT JOIN ms_input_control_define icd 

@@ -46,7 +46,7 @@
         @foreach (var structure in structureList)
         {
             @:<ul>
-                @:<li data-jstree='{ "opened" : @isOpen }' data-structureno="@structureNo" data-structureid="@structure.StructureId" data-factoryid="@structure.FactoryId">@structure.TranslationText
+                @:<li data-jstree='{ "opened" : @isOpen }' data-structureno="@structureNo" data-structureid="@structure.StructureId" data-factoryid="@structure.FactoryId" data-translatefactoryid="@structure.LocationStructureId">@structure.TranslationText
 
                 int nextNo = structureNo + 1;
                 bool isNextOpen = isOpen;

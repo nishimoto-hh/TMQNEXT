@@ -301,5 +301,6 @@ AND (msc.maintainance_division <> (SELECT TOP(1) it.structure_id
 	 OR msc.maintainance_division IS NULL)
 AND mcp.is_management_standard_conponent = 1    -- 機器別管理基準フラグ
 AND mcp.machine_id = @MachineId
-ORDER BY msc.maintainance_kind_structure_id,mcp.inspection_site_structure_id,msc.inspection_content_structure_id
+ORDER BY msc.maintainance_kind_structure_id,mcp.inspection_site_structure_id,mcp.management_standards_component_id
+,msc.inspection_content_structure_id,msc.management_standards_content_id
  

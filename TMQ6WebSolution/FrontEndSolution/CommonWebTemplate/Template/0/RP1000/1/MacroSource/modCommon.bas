@@ -47,6 +47,9 @@ Public Const SendId_Update As String = "2"
 ' 送信時処理ID-削除
 Public Const SendId_Delete As String = "9"
 
+' 送信時処理ID-エラー(登録・内容更新・削除でない場合　入力チェックで使用)
+Public Const SendId_Error As String = "-1"
+
 ' 入力シート行番号-データ開始行
 Public Const Input_RowNo_Start As Long = 4
 
@@ -168,6 +171,8 @@ Public Const Item_ColNo_Kakucho18 As Long = 23
 Public Const Item_ColNo_Kakucho19 As Long = 24
 ' 選択アイテムシート列番号-拡張項目20
 Public Const Item_ColNo_Kakucho20 As Long = 25
+' 選択アイテムシート列番号-標準アイテム未使用工場ID
+Public Const Item_ColNo_UnuseFactoryId As Long = 26
 
 ' 選択アイテムシート行番号-データ開始行
 Public Const Item_RowNo_Start As Long = 3
@@ -256,6 +261,19 @@ Public Const ChokeiKanri_Schedule_OnId As String = "1"  'フィルターで使用する為S
 
 ' 標準ID
 Public Const G_DefaultID As String = "0"
+
+' 工場ID(コンボボックス選択時にレコードの工場IDが設定される、拡張項目設定時に使用)
+Public G_FactoryId As String
+
+'送信時処理「登録」
+Public Const SendName_Insert = "登録"
+
+'送信時処理「内容更新」
+Public Const SendName_Update = "内容更新"
+
+'送信時処理「削除」
+Public Const SendName_Delete = "削除"
+
 
 '***************************************
 ' 定義値の取得
@@ -491,6 +509,9 @@ On Error GoTo ErrHandler
     'エラーを表示する
     On Error GoTo 0
 
+    '拡張項目設定時に使用する工場IDを初期化(標準工場ID「0」)
+    G_FactoryId = G_DefaultID
+    
     '工場ID取得
     Dim sFactoryId As String
     Dim lFactoryIdColNo As Long
@@ -501,6 +522,9 @@ On Error GoTo ErrHandler
     lFactoryIdColNo = G_FactoryIdData(SheetNo, 2)
     If lFactoryIdColNo > 0 Then
         sFactoryId = Worksheets(SheetNo_Input).Cells(Target.row, lFactoryIdColNo)
+        
+        '拡張項目を設定する際に使用する工場IDを設定
+        G_FactoryId = sFactoryId
     End If
     
     'グループIDでフィルターを掛ける
@@ -560,12 +584,37 @@ On Error GoTo ErrHandler
     Dim sMeId As String
     RowNo = 0
     Dim visibleRow As Range
+    
+    ' 標準アイテムの翻訳を工場アイテムの翻訳で上書きした回数
+    Dim duplicationCnt As Integer
+    duplicationCnt = 0
+    
+    '標準アイテム未使用工場ID格納用配列
+    Dim unuseFactoryIdArray() As String
+    Dim unuseFactoryIdCnt As Long
+    unuseFactoryIdCnt = 0
+    
     '可視セルの行をループ
     For Each visibleRow In itemWs.Range("A1").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
         If visibleRow.row < (Item_RowNo_Start) Then
             'ヘッダー行はスキップ
             GoTo CONTINUE1:
         End If
+        
+        '標準アイテム未使用工場IDを「|」で分割する
+        ReDim unuseFactoryIdArray(0)
+        unuseFactoryIdArray = Split(visibleRow.Cells(1, Item_ColNo_UnuseFactoryId), DelimiterId)
+        
+        '標準アイテム未使用工場IDのうち､レコードの工場ID列の値と同一のものがあるか確認
+        For unuseFactoryIdCnt = 0 To UBound(unuseFactoryIdArray)
+            '未使用工場であればコンボボックスには追加しないのでここで終了
+            If (unuseFactoryIdArray(unuseFactoryIdCnt) = sFactoryId) Then
+                '余分な空白行を取り除くための変数を加算
+                duplicationCnt = duplicationCnt + 1
+                GoTo CONTINUE1:
+            End If
+        Next
+        
         lRow = visibleRow.row
 
         '配列にすでに同じIDが登録済の場合、工場が選択済ならば名称を上書きする。
@@ -584,8 +633,8 @@ On Error GoTo ErrHandler
                      If sFId = G_DefaultID Then
                          sMeId = DicFactoryId(sSearchId_me)
                          If sMeId > "" Then
-                             '選択工場が別にある場合、標準は表示しない
-                             GoTo CONTINUE1
+                             '選択工場が別にある場合でも表示するためコメントアウト
+                             'GoTo CONTINUE1
                          End If
                          '標準は表示
                          GoTo CONTINUE0
@@ -607,8 +656,19 @@ On Error GoTo ErrHandler
                      If sFactoryId = sFId Then
                          sName = DicA(sSearchId)
                         
-                        '名称を上書き
+                        '標準翻訳を工場翻訳で上書き
                         filteredData(RowNo, Item_ColNo_Text) = sName
+                        
+                        '標準翻訳を工場翻訳で上書きしたら「CONTINUE0:」で翻訳がヒットしないためここで検索する
+                        For ColNo = 1 To 4
+                            If ColNo = 4 And filteredData(RowNo, ColNo) = Target Then
+                            'クリック時の設定値のインデックス
+                            selectedIdx = RowNo - 1
+                            End If
+                        Next
+                        
+                        '標準翻訳を工場翻訳で上書きしたのでカウントアップ
+                        duplicationCnt = duplicationCnt + 1
 
                         '追加はしないのでループのEndへすすむ
                         GoTo CONTINUE1
@@ -621,7 +681,10 @@ CONTINUE0:
         For ColNo = 1 To 4
             '可視セルの値を配列に入力
             filteredData(RowNo, ColNo) = visibleRow.Cells(1, ColNo)
-            If ColNo = 2 And filteredData(RowNo, ColNo) = prevValue Then
+            
+            'コンボボックスのインデックスはアイテムのIDではなくアイテムの名称で一致するものにする
+            'If ColNo = 2 And filteredData(RowNo, ColNo) = prevValue Then
+            If ColNo = 4 And filteredData(RowNo, ColNo) = Target Then
                 'クリック時の設定値のインデックス
                 selectedIdx = RowNo - 1
             End If
@@ -644,6 +707,17 @@ CONTINUE1:
     Else
         'コンボボックスのプロパティ設定⇒表示
         With ComboBox
+        
+            '2次元配列の行列を入れ替えるための配列
+            Dim transedArray()
+            '行列入れ替え処理
+            transedArray = WorksheetFunction.Transpose(filteredData)
+            '2次元配列再作成(行は固定、列は元の要素数 - 標準翻訳を工場翻訳で上書きした回数)
+            ReDim Preserve transedArray(1 To 4, 1 To UBound(filteredData, 1) - duplicationCnt)
+            '行列入れ替え処理(この処理で元の2次元配列から不要なから行を除いた状態になる)
+            filteredData = WorksheetFunction.Transpose(transedArray)
+            
+            .Clear
             .List = filteredData
             .Top = Target.Top
             .Left = Target.Left
@@ -655,7 +729,9 @@ CONTINUE1:
             .Width = Target.Width + 15      'コンボボックス表示幅(セル幅＋プルダウン矢印▼の幅)
             .Height = Target.Height         'コンボボックス表示高さ(セル高さ)
             .MatchEntry = fmMatchEntryComplete  '入力したテキストと全て一致する項目を検索
-            .Style = fmStyleDropDownList    '手入力不可
+            
+            '.Style = fmStyleDropDownList    '手入力不可
+            .Style = fmStyleDropDownCombo    '手入力可
             .Visible = True
         End With
     End If
@@ -686,6 +762,10 @@ On Error GoTo ErrHandler
         '選択ID値格納先列番号なし
         GoTo CONTINUE2:
     End If
+    
+     'この処理開始時の複数選択リストの文字列(引数のTargetの値)を対比しておく
+    Dim itemNames As String
+    itemNames = Target
 
     '選択項目グループIDを取得
     grpId = GetGrpId(SheetNo, Target)
@@ -753,12 +833,36 @@ On Error GoTo ErrHandler
     Dim RowNo As Long, ColNo As Long
     RowNo = 0
     Dim visibleRow As Range
+    
+    ' 標準アイテムの翻訳を工場アイテムの翻訳で上書きした回数
+    Dim duplicationCnt As Integer
+    duplicationCnt = 0
+    
+    '標準アイテム未使用工場ID格納用配列
+    Dim unuseFactoryIdArray() As String
+    Dim unuseFactoryIdCnt As Long
+    unuseFactoryIdCnt = 0
+
     '可視セルの行をループ
     For Each visibleRow In itemWs.Range("A1").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
         If visibleRow.row < Item_RowNo_Start Then
             'ヘッダー行はスキップ
             GoTo CONTINUE1:
         End If
+        
+        '標準アイテム未使用工場IDを「|」で分割する
+        ReDim unuseFactoryIdArray(0)
+        unuseFactoryIdArray = Split(visibleRow.Cells(1, Item_ColNo_UnuseFactoryId), DelimiterId)
+        
+        '標準アイテム未使用工場IDのうち､レコードの工場ID列の値と同一のものがあるか確認
+        For unuseFactoryIdCnt = 0 To UBound(unuseFactoryIdArray)
+            '未使用工場であればリストボックスには追加しないのでここで終了
+            If (unuseFactoryIdArray(unuseFactoryIdCnt) = sFactoryId) Then
+                '余分な空白行を取り除くための変数を加算
+                duplicationCnt = duplicationCnt + 1
+                GoTo CONTINUE1:
+            End If
+        Next
 
         '配列にすでに同じIDが登録済の場合、工場が選択済ならば名称を上書きする。
         If RowNo > 0 Then
@@ -769,6 +873,10 @@ On Error GoTo ErrHandler
                     If sFactoryId = visibleRow.Cells(1, Item_ColNo_FactoryId) Then
                        '名称を上書き
                        filteredData(iIdx, Item_ColNo_Text) = visibleRow.Cells(1, Item_ColNo_Text)
+                       
+                        '標準翻訳を工場翻訳で上書きしたのでカウントアップ
+                        duplicationCnt = duplicationCnt + 1
+                        
                        '追加はしないのでメインループのEndへすすむ
                        GoTo CONTINUE1
                     End If
@@ -789,6 +897,16 @@ CONTINUE1:
 
     'リストボックスのプロパティ設定⇒表示
     With ListBox
+        
+        '2次元配列の行列を入れ替えるための配列
+        Dim transedArray()
+        '行列入れ替え処理
+        transedArray = WorksheetFunction.Transpose(filteredData)
+        '2次元配列再作成(行は固定、列は元の要素数 - 標準翻訳を工場翻訳で上書きした回数)
+        ReDim Preserve transedArray(1 To 4, 1 To UBound(filteredData, 1) - duplicationCnt)
+        '行列入れ替え処理(この処理で元の2次元配列から不要なから行を除いた状態になる)
+        filteredData = WorksheetFunction.Transpose(transedArray)
+            
         .List = filteredData
         .ColumnCount = 4                '表示列数
         .TextColumn = Item_ColNo_Text   '表示列
@@ -816,6 +934,10 @@ CONTINUE1:
             Next i
         End If
         
+        '処理開始時の値をセルに設定する
+        ActiveSheet.Cells(ActiveCell.row, valColNo) = prevValue          'ID列
+        ActiveSheet.Cells(ActiveCell.row, ActiveCell.Column) = itemNames 'アイテム列
+           
         .Visible = True
     End With
 
@@ -925,8 +1047,8 @@ On Error GoTo ErrHandler
                 End If
             End If
         Else
-            ActiveSheet.Cells(vSelected.row, valColNo) = ""
-            ActiveSheet.Cells(vSelected.row, vSelected.Column) = ""
+            'ActiveSheet.Cells(vSelected.row, valColNo) = ""
+            'ActiveSheet.Cells(vSelected.row, vSelected.Column) = ""
        End If
     End With
 
@@ -1043,18 +1165,35 @@ On Error GoTo ErrHandler
                     'Me.Application.EnableEvents = False
                     Application.EnableEvents = False
 
+                    Dim lBakRow As Long
+                    Dim lAddRow As Long
+                    lBakRow = 0
+                    lAddRow = 0
+                    
                     'コピーの場合、コピー元のセル範囲を取得
                     copyCells = GetCopyAddress(sName)
                     Set copyRange = Range(Application.ConvertFormula(copyCells, xlR1C1, xlA1))
+                     
+                    'コピー元のセル個数分ループ
+                    'コピー元の選択ID値格納先列番号が０以上ならば、IDをコピーする。
                     For i = 1 To copyRange.Count
                         Set targetRange = copyRange(i)
                         valColNo = GetValColNo(vIndex, targetRange)
                         If valColNo > 0 Then
                             text = ActiveSheet.Cells(targetRange.row, targetRange.Column)
                             Val = ActiveSheet.Cells(targetRange.row, valColNo)
-'                            ActiveSheet.Cells(Target.row, Target.Column) = text
-                            ActiveSheet.Cells(Target.row, Target.Column + i - 1) = text
-                            ActiveSheet.Cells(Target.row, valColNo) = Val
+                            
+                            '１つ前のセルより下の行か？
+                            If lBakRow > 0 And targetRange.row > 0 Then
+                                If lBakRow < targetRange.row Then
+                                    lAddRow = lAddRow + 1
+                                End If
+                            End If
+                                                                             
+                            'コピー先へIDをセット
+                            ActiveSheet.Cells(Target.row + lAddRow, valColNo) = Val
+
+                            lBakRow = targetRange.row
                         End If
                     Next
                     Application.EnableEvents = True
@@ -1072,6 +1211,9 @@ On Error GoTo ErrHandler
                 If Application.CutCopyMode = xlCopy Then
                     'セルを編集するため、一時的にイベント無効化
                     Application.EnableEvents = False
+                    
+                    lBakRow = 0
+                    lAddRow = 0
 
                     'コピーの場合、コピー元のセル範囲を取得
                     copyCells = GetCopyAddress(sName)
@@ -1080,11 +1222,18 @@ On Error GoTo ErrHandler
                         Set targetRange = copyRange(i)
                         valColNo = GetValColNo(vIndex, targetRange)
                         If valColNo > 0 Then
-                            text = Worksheets(SheetNo_Input).Cells(targetRange.row, targetRange.Column)
-                            Val = Worksheets(SheetNo_Input).Cells(targetRange.row, valColNo)
-'                            Worksheets(SheetNo_Input).Cells(Target.row, Target.Column) = text
-                            Worksheets(SheetNo_Input).Cells(Target.row, Target.Column + i - 1) = text
-                            Worksheets(SheetNo_Input).Cells(Target.row, valColNo) = Val
+                            text = ActiveSheet.Cells(targetRange.row, targetRange.Column)
+                            Val = ActiveSheet.Cells(targetRange.row, valColNo)
+                            
+                            '１つ前のセルより下の行か？
+                            If lBakRow > 0 And targetRange.row > 0 Then
+                                If lBakRow < targetRange.row Then
+                                    lAddRow = lAddRow + 1
+                                End If
+                            End If
+                             'コピー先へIDをセット
+                            ActiveSheet.Cells(Target.row + lAddRow, valColNo) = Val
+                            lBakRow = targetRange.row
                         End If
                     Next
 
@@ -1236,17 +1385,33 @@ Function SetErrorInfo(tErrorInfo As typeErrorInfo _
         Set errorWs = Worksheets(.sOutName)
         'シート名
         errorWs.Cells(.lOutRow, ErrorInfo_SheetNo) = .sErrName
+        errorWs.Cells(.lOutRow, ErrorInfo_SheetNo).Borders.LineStyle = xlContinuous '罫線
+        
         '行
         errorWs.Cells(.lOutRow, ErrorInfo_Row) = .lErrRow
+        errorWs.Cells(.lOutRow, ErrorInfo_Row).Borders.LineStyle = xlContinuous '罫線
+        
         '列
         errorWs.Cells(.lOutRow, ErrorInfo_Col) = GetColNum2Txt(.lErrCol)
+        errorWs.Cells(.lOutRow, ErrorInfo_Col).Borders.LineStyle = xlContinuous '罫線
+        
         '処理区分
         errorWs.Cells(.lOutRow, ErrorInfo_Kubun) = .sErrKubun
+        errorWs.Cells(.lOutRow, ErrorInfo_Kubun).Borders.LineStyle = xlContinuous '罫線
         
         'セルへのハイパーリンク設定
         '    リンク元：エラー情報シートのエラー情報列
         '    リンク先：エラーが発生しているシートのセル
         errorWs.Hyperlinks.Add Anchor:=errorWs.Cells(.lOutRow, ErrorInfo_Info), Address:="", SubAddress:="'" & .sErrName & "'" & "!" & .sErrRange, TextToDisplay:=.sErrMsg
+        
+        '「エラー情報」列のフォントを「Meiryo UI」に変更
+        errorWs.Cells(.lOutRow, ErrorInfo_Info).Font.Name = "Meiryo UI"
+        errorWs.Cells(.lOutRow, ErrorInfo_Info).Borders.LineStyle = xlContinuous '罫線
+        
+        'エラー行の高さを自動設定する
+        errorWs.Cells.EntireRow.AutoFit
+        
+        
 
         '[入力シート]
         
@@ -1270,6 +1435,12 @@ Function SetErrorInfo(tErrorInfo As typeErrorInfo _
     
         'エラー有無列にエラー字の文言を表示
         dataWs.Cells(.lErrRow, ErrorUmuNo) = Error_Umu_Ari
+        
+        'メモのサイズを自動調整にする
+        rMemo.Comment.Shape.TextFrame.AutoSize = True
+        
+        'メモのフォントを「Meiryo UI」に変更
+        rMemo.Comment.Shape.TextFrame.Characters.Font.Name = "Meiryo UI"
 
     End With
     
@@ -1647,6 +1818,8 @@ On Error GoTo ErrHandler
     If lastRow >= ErrorInfo_RowNo_Start Then
         '開始行～最終行をクリア
         dataWs.Range("A" & ErrorInfo_RowNo_Start & ":I" & lastRow).ClearContents
+        '罫線を削除
+        dataWs.Range("A" & ErrorInfo_RowNo_Start & ":I" & lastRow).Borders.LineStyle = xlLineStyleNone
     End If
 
     Exit Sub
@@ -1820,6 +1993,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
     Dim sDefauleId As String
     Dim sDefauleVal As String
     Dim lvalColNo As Long
+    Dim defineWs As Worksheet
+    Set defineWs = Worksheets(SheetName_Define)
     
     '可視セルの行をループ
     Dim sColStart As String
@@ -1845,7 +2020,19 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
         sKeyVal = ""
         
         '送信時処理ID取得
-        sId = visibleRow.Cells(1, idColno)
+        'sId = visibleRow.Cells(1, idColno)
+        
+        '送信時処理名称より、送信時処理IDを取得する(ラベルを正とする)
+        sId = GetSendProcIdByName(visibleRow.Cells(1, (idColno + 1)).text)
+        
+        '送信時処理IDをセルに値を設定
+        If sId = SendId_Error Then
+            'エラーの場合は空
+            visibleRow.Cells(1, idColno) = ""
+        Else
+            '正常の場合は取得した値
+            visibleRow.Cells(1, idColno) = sId
+        End If
 
         If sId = "" Then
             'チェック対象行を再取得
@@ -1855,8 +2042,27 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
             '★2023/03/01 Start
             '送信字処理IDから送信時処理をループの前に取得（コピー字、IDが空になる為）
             Dim bReturn As Boolean
-            '列タイプ取得
-            sType = WhereData(1, Define_ColNo_Type)
+            
+            'フィルタを解除
+            Call Sheet_AutoFilterOff(SheetName_Define)
+            '選択ID値格納先列番号でフィルターを掛ける
+            defineWs.Range("A" & Define_RowNo_Start).AutoFilter Field:=Define_ColNo_Val, Criteria1:=idColno
+            '可視セルの行をループ
+            Dim visibleSendProcessRow As Range
+            For Each visibleSendProcessRow In defineWs.Range("A5").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
+                If visibleSendProcessRow.row < Define_RowNo_Start Then
+                    'ヘッダー行はスキップ
+                    GoTo ContinueRow:
+                End If
+                
+                '送信時処理の列タイプ取得
+                sType = visibleSendProcessRow.Cells(1, Define_ColNo_Type)
+                Exit For
+ContinueRow:
+            Next
+            'フィルタを解除
+            Call Sheet_AutoFilterOff(SheetName_Define)
+            
             '入力値取得
             sValue = visibleRow.Cells(1, (idColno + 1)).text
             Set rRange = dataWs.Range(GetColNum2Txt(idColno + 1) & CStr(lCheckRowNo))
@@ -1873,10 +2079,74 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
         '工場ID取得
         If FactoryIdNo > 0 Then
             sFactoryId = visibleRow.Cells(1, FactoryIdNo)
+
+            If sFactoryId = "" Then
+                '工場IDが取得できない場合、翻訳からIDを取得する
+                Dim itemWs As Worksheet
+                Set itemWs = Worksheets(SheetName_Item)
+                
+                'フィルタを解除
+                Call Sheet_AutoFilterOff(SheetName_Define)
+                
+                'シートNoでフィルターを掛ける
+                defineWs.Range("A" & Define_RowNo_Start).AutoFilter Field:=Define_ColNo_SheetNo, Criteria1:=SheetNo
+                '選択ID値格納先列番号でフィルターを掛ける
+                defineWs.Range("A" & Define_RowNo_Start).AutoFilter Field:=Define_ColNo_Val, Criteria1:=FactoryIdNo
+                
+                '可視セルの行をループ
+                Dim visibleDefineRow As Range
+                For Each visibleDefineRow In defineWs.Range("A5").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
+                    If visibleDefineRow.row < Define_RowNo_Start Then
+                        'ヘッダー行はスキップ
+                        GoTo ContinueDefine:
+                    End If
+                    
+                    '工場（翻訳）列番号
+                    Dim sFactoryNameColNo As Long
+                    sFactoryNameColNo = visibleDefineRow.Cells(1, Define_ColNo_ColNo)
+                    '工場（翻訳）取得
+                    Dim sFactoryName As String
+                    sFactoryName = visibleRow.Cells(1, sFactoryNameColNo)
+                    
+                    '選択項目グループID
+                    Dim grpId As Long
+                    grpId = visibleDefineRow.Cells(1, Define_ColNo_GrpId)
+                    
+                    'フィルタを解除
+                    itemWs.Range("A1").AutoFilter
+                    
+                    'グループIDでフィルターを掛ける
+                    itemWs.Range("A1").AutoFilter Item_ColNo_GrpId, grpId
+                    '表示文字列でフィルターを掛ける
+                    itemWs.Range("A1").AutoFilter Item_ColNo_Text, sFactoryName
+                    '可視セルの行をループ
+                    Dim visibleItemRow As Range
+                    For Each visibleItemRow In itemWs.Range("A5").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
+                        If visibleItemRow.row < Item_RowNo_Start Then
+                            'ヘッダー行はスキップ
+                            GoTo ContinueItem:
+                        End If
+                        sFactoryId = visibleItemRow.Cells(1, Item_ColNo_Id)
+                        Exit For
+
+ContinueItem:
+                    Next
+                    
+                    If sFactoryId <> "" Then
+                        Exit For
+                    End If
+
+ContinueDefine:
+                Next
+                
+                'フィルタを解除
+                Call Sheet_AutoFilterOff(SheetName_Define)
+                Call Sheet_AutoFilterOff(SheetName_Item)
+            End If
         End If
 
         Select Case sId
-            Case SendId_Insert, SendId_Update, SendId_Delete   '登録, 更新, 削除
+            Case SendId_Insert, SendId_Update, SendId_Delete, SendId_Error   '登録, 更新, 削除, エラー(左記３項目以外)
             Case Else
                 'IDが空
                 GoTo CONTINUE1:
@@ -1923,6 +2193,9 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                         bFlg = False
                         sErrMsgNo = "141120014"  '新規追加データに対して内容更新・削除は指定できません。
                     End If
+                Case SendId_Error ' エラー(上記３項目以外)
+                    bFlg = False
+                    sErrMsgNo = "141140004"  '選択内容が不正です。
             End Select
             
             If bFlg = False Then
@@ -1997,6 +2270,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                     sValueOrg = sValue
                     If lCol > (idColno + 1) And sValue > "" Then
                         If CheckType(lErrorCnt, tErrorInfo, SheetNo, dataWs, sType, sFactoryId, sValue, lCheckRowNo, lCol, ErrorUmuNo) = False Then
+                            '次の項目のチェックへ
+                            GoTo ContinueNextCol:
                         End If
                     End If
                     
@@ -2050,6 +2325,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                                 If SetErrorInfo(tErrorInfo, dataWs, ErrorUmuNo) = False Then
                                     GoTo CONTINUE2:
                                 End If
+                                '次の項目のチェックへ
+                                GoTo ContinueNextCol:
                             End If
                         End If
                     End If
@@ -2065,8 +2342,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                         '入力値あり かつ 最大桁数が０以上の場合にチェックする
                         If sValue <> "" And iMaxLen > 0 Then
                         
-                            '入力値の桁数取得（半角全角考慮）
-                            iCheckLen = LenB(StrConv(sValue, vbFromUnicode))
+                            '入力値の桁数取得（半角全角考慮しない）
+                            iCheckLen = Len(sValue)
 
                             If iCheckLen > iMaxLen Then
 
@@ -2082,6 +2359,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                                 If SetErrorInfo(tErrorInfo, dataWs, ErrorUmuNo) = False Then
                                     GoTo CONTINUE2:
                                 End If
+                                '次の項目のチェックへ
+                                GoTo ContinueNextCol:
                             End If
                         End If
 
@@ -2148,6 +2427,8 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                         If SetErrorInfo(tErrorInfo, dataWs, ErrorUmuNo) = False Then
                             GoTo CONTINUE2:
                         End If
+                        '次の項目のチェックへ
+                        GoTo ContinueNextCol:
                     End If
     
                     '-----------------------------------------------
@@ -2161,7 +2442,7 @@ Function GetInputSheetCheck(ByVal SheetNo As Integer _
                         End If
                     End If
                     
-                    
+ContinueNextCol:
                 Next
 
             Case Else
@@ -2235,6 +2516,7 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
     Dim iCheckLen As Integer
     Dim lLoopCnt As Long
     Dim lSubErrorCnt As Long
+    Dim lErrorCnt As Long
     Dim tErrorInfo As typeErrorInfo       'エラー情報
     Dim tErrorInfoClear As typeErrorInfo  'エラー情報 初期用
     Dim rRange As Range
@@ -2242,8 +2524,10 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
     Dim arrDt As Variant
     Dim sValueOrg As String
 
+    lErrorCnt = 0
     lLoopCnt = 0
     lSubErrorCnt = 0
+    lCheckRowNo = 4
         
     'シート名取得
     sSheetName = dataWs.Name
@@ -2309,6 +2593,7 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 If ErrorUmuNo > 0 Then
                     If ErrorUmuNo > idColno Then
                         Set rRange = dataWs.Range(GetColNum2Txt(ErrorUmuNo) & lCheckRowNo)
+                        rRange = ""
                     End If
                 End If
             End If
@@ -2322,6 +2607,21 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 GoTo CONTINUE1:
             End If
             
+            'コンボボックスの項目の場合以下の入力チェックを実施
+            If sType = CellType_ComboBox And lCol > (idColno + 1) And sValue > "" Then
+            
+                With tErrorInfo
+                    .sErrRange = GetColNum2Txt(lCol) & lCheckRowNo
+                    .lErrRow = lCheckRowNo
+                    .lOutRow = (ErrorInfo_RowNo_Start - 1) + lErrorStartCnt + lSubErrorCnt
+                End With
+          
+                If CheckType(lErrorCnt, tErrorInfo, SheetNo, dataWs, sType, 0, sValue, lCheckRowNo, lCol, ErrorUmuNo) = False Then
+                ' エラーの場合は処理全体のエラー件数を加算
+                    lSubErrorCnt = lSubErrorCnt + 1
+                End If
+            End If
+            
             '-----------------------------------------------
             '最大桁数　チェック
             '-----------------------------------------------
@@ -2333,13 +2633,14 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 '入力値あり かつ 最大桁数が０以上の場合にチェックする
                 If sValue <> "" And iMaxLen > 0 Then
                 
-                    '入力値の桁数取得（半角全角考慮）
-                    iCheckLen = LenB(StrConv(sValue, vbFromUnicode))
+                    '入力値の桁数取得（半角全角考慮しない）
+                    iCheckLen = Len(sValue)
 
                     If iCheckLen > iMaxLen Then
 
                         '最大桁数エラー
                         lSubErrorCnt = lSubErrorCnt + 1
+                        lErrorCnt = lErrorCnt + 1
                         
                         'エラー情報格納
                         With tErrorInfo
@@ -2388,6 +2689,7 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 If IsNumeric(sValue) = False Or Len(sValue) <> LenB(sValue2) Then
                     '数値エラー
                     lSubErrorCnt = lSubErrorCnt + 1
+                    lErrorCnt = lErrorCnt + 1
                     
                     'エラー情報格納
                     With tErrorInfo
@@ -2623,6 +2925,22 @@ On Error GoTo ErrHandler
         Call modCommon.GetDefineFindString(G_FactoryIdCnt, G_FactoryIdData, ColumnDivision_FactoryId)
     End If
     lFactoryIdColNo = G_FactoryIdData(SheetNo, 2)
+    
+    '標準アイテム未使用工場ID格納用配列
+    Dim unuseFactoryIdArray() As String
+    Dim unuseFactoryIdCnt As Long
+    unuseFactoryIdCnt = 0
+    
+    '標準アイテム未使用チェック用エラーフラグ
+    Dim isUnuseError As Boolean
+    isUnuseError = False
+    
+    '複数選択リストで選択可能なアイテム件数(非表示シートにフィルタをかけた後のレコード数)
+    Dim multiItemCnt As Long
+    multiItemCnt = 0
+    
+    '複数選択リストで選択されているアイテムのID(パイプ区切り)
+    Dim multiItemId As String
 
     Select Case sCellType
         Case CellType_ComboBox, CellType_FormList
@@ -2664,6 +2982,10 @@ On Error GoTo ErrHandler
                     itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", sFactoryId, "=") _
                         , Operator:=xlFilterValues
                 End If
+            Else
+                '共通工場=0でフィルターを掛ける
+                itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
+                    , Operator:=xlFilterValues
             End If
 
             '選択名称でフィルターを掛ける
@@ -2671,12 +2993,29 @@ On Error GoTo ErrHandler
         
         Case CellType_MultiListBox
             '複数選択リストボックス
+            
+            '選択ID値格納先列番号
+            valColNo = GetValColNo(SheetNo, Target)
+            If valColNo <= 0 Then
+                GoTo CONTINUE2:
+            End If
 
             '選択項目グループIDを取得
             grpId = GetGrpId(SheetNo, Target)
             
             '選択項目グループIDでフィルターを掛ける
             itemWs.Range("A1").AutoFilter Item_ColNo_GrpId, grpId
+            If sFactoryId > "0" Then
+                If CInt(lFactoryIdColNo) < valColNo Then
+                    '工場IDでフィルターを掛ける
+                    itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", sFactoryId, "=") _
+                        , Operator:=xlFilterValues
+                End If
+            Else
+                '共通工場=0でフィルターを掛ける
+                itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
+                    , Operator:=xlFilterValues
+            End If
             '選択名称でフィルターを掛ける
             'itemWs.Range("A1").AutoFilter Item_ColNo_Text, sValue
             arr = Split(sValue, DelimiterName)
@@ -2703,11 +3042,41 @@ On Error GoTo ErrHandler
             'ヘッダー行はスキップ
             GoTo CONTINUE1:
         End If
+        
+        '標準アイテム未使用工場IDを「|」で分割する
+        ReDim unuseFactoryIdArray(0)
+        unuseFactoryIdArray = Split(visibleRow.Cells(1, Item_ColNo_UnuseFactoryId), DelimiterId)
 
+        '標準アイテム未使用工場IDのうち､レコードの工場ID列の値と同一のものがあるか確認
+        For unuseFactoryIdCnt = 0 To UBound(unuseFactoryIdArray)
+            '未使用工場の場合はスキップ
+            If (unuseFactoryIdArray(unuseFactoryIdCnt) = sFactoryId) Then
+                isUnuseError = True
+                GoTo CONTINUE1:
+            End If
+        Next
+        
+        '未使用アイテムが選択されている場合
+        If isUnuseError = True Then
+            RowNo = 0
+            GoTo CONTINUE1:
+        End If
+        
+        '複数選択リストの場合は選択可能なアイテム数を退避
+        If sCellType = CellType_MultiListBox Then
+          multiItemCnt = multiItemCnt + 1
+        End If
+        
       RowNo = RowNo + 1
       For ColNo = 1 To 4
         '可視セルの値を配列に入力
         filteredData(RowNo, ColNo) = visibleRow.Cells(1, ColNo)
+        
+        '複数選択リストの場合
+        If sCellType = CellType_MultiListBox And ColNo = 2 Then
+            'IDをパイプ区切りで設定
+            multiItemId = multiItemId + Str(visibleRow.Cells(1, ColNo)) + DelimiterId
+        End If
       Next
 CONTINUE1:
     Next
@@ -2746,6 +3115,23 @@ CONTINUE1:
             sDefaultVal = filteredData(1, Item_ColNo_Text)
             '該当あり
             bReturn = True
+        End If
+    End If
+    
+    '複数選択リストの場合、①選択されているアイテム数と非表示シートでフィルタをかけたレコード数が異なる、②未使用アイテムが選択されている場合エラーとする
+    If sCellType = CellType_MultiListBox Then
+        If Not multiItemCnt = UBound(arr) + 1 Or isUnuseError = True Then
+            '選択ID値格納先列番号
+            p_valColNo = valColNo
+            'ID値
+            sDefaultId = ""
+            '名称
+            sDefaultVal = ""
+            '該当なし
+            bReturn = False
+        Else
+        'エラーではない場合
+        sDefaultId = Replace(multiItemId, " ", "")
         End If
     End If
 
@@ -4133,6 +4519,11 @@ On Error GoTo ErrHandler
     Dim visibleRow As Range
     Dim kDat As String
     
+    '表示する拡張項目の値(標準工場翻訳)
+    Dim exValue As String
+    '表示する拡張項目の値(工場個別翻訳)
+    Dim exValueFactory As String
+    
     '可視セルの行をループ（１行のはず）
     For Each visibleRow In itemWs.Range("A1").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
         If visibleRow.row < Item_RowNo_Start Then
@@ -4142,8 +4533,36 @@ On Error GoTo ErrHandler
 
       RowNo = RowNo + 1
       For ColNo = 1 To KakuchoCnt
-        '可視セルの拡張項目の値を表示（拡張項目１つ目～）
+      
+      '表示する拡張項目の工場IDを判定
+      If visibleRow.Cells(1, Item_ColNo_FactoryId) = G_DefaultID Then
+        '標準工場の翻訳の場合
+        exValue = visibleRow.Cells(1, (Item_ColNo_Kakucho01 + (Kakucho(3, ColNo) - 1)))
+      ElseIf visibleRow.Cells(1, Item_ColNo_FactoryId) = G_FactoryId Then
+        '工場個別翻訳の場合
+        exValueFactory = visibleRow.Cells(1, (Item_ColNo_Kakucho01 + (Kakucho(3, ColNo) - 1)))
+      ElseIf G_FactoryId = "" Then
+        '工場IDが空(コンボボックス表示処理が実行されていない)の場合、値の表示のみ行う
         Worksheets(SheetNo_Input).Cells(outRowNo, CLng(Kakucho(2, ColNo))) = visibleRow.Cells(1, (Item_ColNo_Kakucho01 + (Kakucho(3, ColNo) - 1)))
+        GoTo CONTINUE2:
+      Else
+        '対象外の翻訳の場合は何もしない
+        GoTo CONTINUE2:
+      End If
+      
+      '工場個別翻訳が設定されていれば優先して表示
+      If Not exValueFactory = "" Then
+        exValue = exValueFactory
+      End If
+      
+      '拡張項目をセルに表示
+      Worksheets(SheetNo_Input).Cells(outRowNo, CLng(Kakucho(2, ColNo))) = exValue
+      exValue = ""        '標準工場翻訳を初期化
+      exValueFactory = "" '工場個別翻訳を初期化
+      
+      '可視セルの拡張項目の値を表示（拡張項目１つ目～）
+      'Worksheets(SheetNo_Input).Cells(outRowNo, CLng(Kakucho(2, ColNo))) = visibleRow.Cells(1, (Item_ColNo_Kakucho01 + (Kakucho(3, ColNo) - 1)))
+CONTINUE2:
       Next
 CONTINUE1:
     Next
@@ -4339,7 +4758,48 @@ ErrHandler:
 End Sub
 
 
+'***************************************
+' 指定されたファイルのレコード数を取得
+'***************************************
+Function GetLineCount(a_sFilePath) As Long
+    Dim oFS As New FileSystemObject
+    Dim oTS As TextStream
+    Dim iLine
+    
+    '// 引数のファイルが存在しない場合は処理を終了する
+    If (oFS.FileExists(a_sFilePath) = False) Then
+        GetLineCount = -1
+        Exit Function
+    End If
+    
+    '// 追加モードで開く
+    Set oTS = oFS.OpenTextFile(a_sFilePath, ForAppending)
+    
+    GetLineCount = oTS.Line - 1
+End Function
 
+'***************************************
+' 送信時処理名称より、送信時処理IDを取得する
+'***************************************
+Function GetSendProcIdByName(sendProcName) As String
 
+    '送信時処理名称を判定
+    If sendProcName = SendName_Insert Then
+        '「登録」の場合「1」
+        GetSendProcIdByName = SendId_Insert
+        
+    ElseIf sendProcName = SendName_Update Then
+        '「内容更新」の場合「2」
+        GetSendProcIdByName = SendId_Update
+        
+    ElseIf sendProcName = SendName_Delete Then
+        '「削除」の場合「9」
+        GetSendProcIdByName = SendId_Delete
+        
+    Else
+        '該当しない場合「-1」
+        GetSendProcIdByName = SendId_Error
+    End If
+End Function
 
 

@@ -2193,7 +2193,7 @@ namespace CommonWebTemplate.CommonUtil
             userInfo = null;
 
             bool isCheckOK = false;
-            CommonUserMst loginData = new CommonUserMst(procData.LoginUserName, string.Empty, string.Empty, procData.LoginUserId);
+            CommonUserMst loginData = new CommonUserMst(procData.LoginId, string.Empty, string.Empty, procData.LoginUserId);
             CommonProcReturn returnInfo = authU.LoginAuthentication(loginData, false, procData, out isCheckOK, ref userInfo, true);
             if (returnInfo.IsProcEnd())
             {

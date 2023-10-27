@@ -254,14 +254,12 @@ AND EXISTS
 		FROM
 		(
             -- 個別工場ID設定を優先して該当する設定がない場合は共通の設定を採用
-			SELECT factory_id, structure_id FROM v_structure_item_all
+			SELECT factory_id, structure_id FROM v_structure_all
 			WHERE structure_group_id = 2070 -- 工場毎会計提出表出力条件
-			AND   language_id = @LanguageId
 			AND   factory_id = pp.factory_id
 			UNION ALL
-			SELECT factory_id, structure_id FROM v_structure_item_all
+			SELECT factory_id, structure_id FROM v_structure_all
 			WHERE structure_group_id = 2070 -- 工場毎会計提出表出力条件
-			AND   language_id = @LanguageId
 			AND   factory_id = 0
 		) sub_v
 		-- 個別工場ID設定を優先する

@@ -1735,7 +1735,7 @@ namespace CommonTMQUtil
             public int getFactoryIdByStructureId(int structureId)
             {
                 // SQL実行
-                var result = new STDDao.VStructureItemEntity().GetEntity(structureId, this.Db);
+                var result =  STDDao.VStructureItemEntity.GetEntityById(structureId, this.Db);
                 if (result == null)
                 {
                     // 取得できない場合-1を返す

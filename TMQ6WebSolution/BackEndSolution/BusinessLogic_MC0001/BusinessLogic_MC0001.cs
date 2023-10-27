@@ -980,8 +980,6 @@ namespace BusinessLogic_MC0001
 
                 //// SQLを取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string baseSql);
-                // WITH句は別に取得
-                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string withSql);
 
                 //// 場所分類＆職種機種＆詳細検索条件取得
                 //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
@@ -1007,7 +1005,7 @@ namespace BusinessLogic_MC0001
                 whereParam.LanguageId = this.LanguageId;
 
                 // 一覧検索SQL文の取得
-                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, false, -1);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, null, false, -1);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY");
                 selectSql.AppendLine("machine_no ");
@@ -1033,8 +1031,6 @@ namespace BusinessLogic_MC0001
 
                 // SQLを取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string baseSql);
-                // WITH句は別に取得
-                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string withSql);
 
                 ////// 場所分類＆職種機種＆詳細検索条件取得
                 //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
@@ -1060,7 +1056,7 @@ namespace BusinessLogic_MC0001
                 whereParam.LanguageId = this.LanguageId;
 
                 // 一覧検索SQL文の取得
-                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, false, -1);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, null, false, -1);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY");
                 selectSql.AppendLine("machine_no ");
@@ -1148,7 +1144,7 @@ namespace BusinessLogic_MC0001
                 // 機器台帳登録チェック処理
                 if (!checkExcelPortRegistDetail(ref resultList, ref errorInfoList))
                 {
-                    if(errorInfoList.Count > 0)
+                    if (errorInfoList.Count > 0)
                     {
                         // エラー情報シートへ設定
                         excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
@@ -1207,8 +1203,6 @@ namespace BusinessLogic_MC0001
 
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql);
-            // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetList, out string withSql);
 
             // 場所分類＆職種機種＆詳細検索条件取得
             if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
@@ -1240,7 +1234,7 @@ namespace BusinessLogic_MC0001
             }
 
             // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, null, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");
             selectSql.AppendLine("machine_no ");
@@ -1276,7 +1270,7 @@ namespace BusinessLogic_MC0001
             long equipmentId = getEquipmentId(false);
 
             // 機番情報
-            searchKiban(machineId, DetailFormType.Detail, equipmentId);
+            searchKiban(machineId, DetailFormType.Detail, out int factoryId, equipmentId);
 
             // 機種別仕様
             searchSpec();
@@ -1300,6 +1294,9 @@ namespace BusinessLogic_MC0001
 
             // MP情報
             searchMPInfo(machineId);
+
+            // ★画面定義の翻訳情報取得★
+            GetContorlDefineTransData(factoryId);
 
             // スケジュール表示条件エラーかどうか
             if (manageScheduleCondError == true || longPlanScheduleCondError == true)
@@ -1433,10 +1430,14 @@ namespace BusinessLogic_MC0001
         /// <summary>
         /// 詳細情報検索(機番情報)
         /// </summary>
+        /// <param name="machineId">機器ID</param>
         /// <param name="mode">参照画面:0,修正画面:1,複写画面:2</param>
-        /// <returns>処理結果：正常ならTrue、異常ならFlase</returns>
-        private bool searchKiban(long machineId, int mode, long equipmentId = -1)
+        /// <param name="factoryId">out 機番情報の工場ID</param>
+        /// <param name="equipmentId">省略可能　機番ID</param>
+        /// <returns>処理結果：正常ならTrue、異常ならFalse</returns>
+        private bool searchKiban(long machineId, int mode, out int factoryId, long equipmentId = -1)
         {
+            factoryId = -1;
             flgMaintainanceKindManage = false;
             // 検索条件取得
             dynamic whereParam = null; // WHERE句パラメータ
@@ -1531,10 +1532,8 @@ namespace BusinessLogic_MC0001
 
             }
 
-            return true;
+            factoryId = results[0].FactoryId.Value;
 
-            // 正常終了
-            this.Status = CommonProcReturn.ProcStatus.Valid;
             return true;
         }
 
@@ -1723,7 +1722,9 @@ namespace BusinessLogic_MC0001
                 machineId = paraMachineId;
             }
             // 機番・機器情報取得
-            searchKiban(machineId, DetailFormType.Edit);
+            searchKiban(machineId, DetailFormType.Edit, out int factoryId);
+            // ★画面定義の翻訳情報取得★
+            GetContorlDefineTransData(factoryId);
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return true;
@@ -1738,7 +1739,9 @@ namespace BusinessLogic_MC0001
             // 機番情報取得
             long machineId = getMachineId(true);
             // 機番・機器情報取得
-            searchKiban(machineId, DetailFormType.Copy);
+            searchKiban(machineId, DetailFormType.Copy, out int factoryId);
+            // ★画面定義の翻訳情報取得★
+            GetContorlDefineTransData(factoryId);
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return true;
@@ -1818,7 +1821,7 @@ namespace BusinessLogic_MC0001
                     return false;
                 }
                 // 構成
-                if (!insertParent(machineResult.id, now , registMachineInfo.EquipmentLevelStructureId))
+                if (!insertParent(machineResult.id, now, registMachineInfo.EquipmentLevelStructureId))
                 {
                     return false;
                 }
@@ -1829,6 +1832,9 @@ namespace BusinessLogic_MC0001
             else
             {
                 // 更新
+                // 更新前情報を取得
+                var preUpdInfo = new ComDao.McMachineEntity().GetEntity(registMachineInfo.MachineId, this.db);
+
                 // 機番情報
                 if (!registUpdateDb<ComDao.McMachineEntity>(registMachineInfo, SqlName.UpdateMachineInfo))
                 {
@@ -1843,6 +1849,19 @@ namespace BusinessLogic_MC0001
                 if (!registApplicable(registMachineInfo.MachineId, now, true, false))
                 {
                     return false;
+                }
+                // 構成
+                // 機器レベルに変更があった場合のみ登録
+                if (registMachineInfo.EquipmentLevelStructureId != preUpdInfo.EquipmentLevelStructureId)
+                {
+                    if (!deleteComposition(registMachineInfo.MachineId))
+                    {
+                        return false;
+                    }
+                    if (!insertParent(registMachineInfo.MachineId, now, registMachineInfo.EquipmentLevelStructureId))
+                    {
+                        return false;
+                    }
                 }
 
                 // 更新後初期表示処理のためデータセット
@@ -2774,7 +2793,7 @@ namespace BusinessLogic_MC0001
             }
             else
             {
-                if(epValue == null || epValue.Length == 0)
+                if (epValue == null || epValue.Length == 0)
                 {
                     return true;
                 }
@@ -2828,7 +2847,7 @@ namespace BusinessLogic_MC0001
             // 一覧検索SQL文の取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetMachineLevel, out string sql);
             dynamic whereParam = null; // WHERE句パラメータ
-            whereParam = new { MachineLevel = levelId, LanguageId = this.LanguageId};
+            whereParam = new { MachineLevel = levelId, LanguageId = this.LanguageId };
             // 機器レベルの拡張項目取得
             IList<Dao.ExtensionVal> results = db.GetListByDataClass<Dao.ExtensionVal>(sql, whereParam);
             if (results == null || results.Count == 0)
@@ -2983,7 +3002,7 @@ namespace BusinessLogic_MC0001
                     resultList[i].ConservationStructureId = resultList[i].InspectionSiteConservationStructureId;
 
                     // 循環対象
-                    if(resultList[i].CirculationTargetFlg == null)
+                    if (resultList[i].CirculationTargetFlg == null)
                     {
                         resultList[i].CirculationTargetFlg = 0;
                     }
@@ -3097,6 +3116,10 @@ namespace BusinessLogic_MC0001
                         resultList[i].UpdateDatetime = now;
                         resultList[i].UpdateUserId = int.Parse(this.UserId);
 
+                        // 更新前情報を取得
+                        long machineId = resultList[i].MachineId ?? -1;
+                        var preUpdInfo = new ComDao.McMachineEntity().GetEntity(machineId, this.db);
+
                         // 機番情報
                         if (!registUpdateDb<BusinessLogicDataClass_MC0001.excelPortMachineList>(resultList[i], SqlName.UpdateMachineInfo))
                         {
@@ -3112,7 +3135,19 @@ namespace BusinessLogic_MC0001
                         {
                             return false;
                         }
-
+                        // 構成
+                        // 機器レベルに変更があった場合のみ登録
+                        if (resultList[i].EquipmentLevelStructureId != preUpdInfo.EquipmentLevelStructureId)
+                        {
+                            if (!deleteComposition(machineId))
+                            {
+                                return false;
+                            }
+                            if (!insertParent(machineId, now, resultList[i].EquipmentLevelStructureId))
+                            {
+                                return false;
+                            }
+                        }
                     }
                     // 削除
                     else if (resultList[i].ProcessId == 9)

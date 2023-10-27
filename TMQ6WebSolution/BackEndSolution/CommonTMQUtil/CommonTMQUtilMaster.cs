@@ -157,8 +157,6 @@ namespace CommonTMQUtil
                 public const string GetStandardItemTranslation = "GetStandardItemTranslation";
                 /// <summary>SQL名：アイテム情報取得</summary>
                 public const string GetItemInfo = "GetItemInfo";
-                /// <summary>SQL名：翻訳マスタ件数取得(全工場)</summary>
-                public const string GetCountAllTranslation = "GetCountAllTranslation";
                 /// <summary>SQL名：翻訳マスタ件数取得</summary>
                 public const string GetCountTranslation = "GetCountTranslation";
                 /// <summary>SQL名：翻訳マスタ情報取得</summary>
@@ -951,6 +949,9 @@ namespace CommonTMQUtil
             public int? JobParentNumberBefore { get; set; }
             /// <summary>Gets or sets 保全実績集計職種コード</summary>
             /// <value>保全実績集計職種コード</value>
+            public string JobCodeVal { get; set; }
+            /// <summary>Gets or sets 保全実績集計職種コード</summary>
+            /// <value>保全実績集計職種コード</value>
             public string JobCode { get; set; }
             /// <summary>Gets or sets 機種大分類ID(構成ID)</summary>
             /// <value>機種大分類ID(構成ID)</value>
@@ -1197,6 +1198,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 部門コード</summary>
             /// <value>部門コード</value>
             public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 修理部門区分</summary>
+            /// <value>修理部門区分</value>
+            public string FixDivisionVal { get; set; }
             /// <summary>Gets or sets 修理部門区分</summary>
             /// <value>修理部門区分</value>
             public string FixDivision { get; set; }

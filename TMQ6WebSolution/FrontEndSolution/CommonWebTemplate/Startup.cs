@@ -107,7 +107,7 @@ namespace CommonWebTemplate
 	                            LoadMetadata = true,
 	                            SingleSignOnServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl),
 	                            SingleLogoutServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleLogoutServiceUrl),
-	                            MetadataLocation = "Stub_Metadata.xml",
+	                            MetadataLocation = AppCommonObject.Config.AppSettings.AzureADMetadataLocation,
 	                        };
 	                        options.IdentityProviders.Add(idp);
                     }

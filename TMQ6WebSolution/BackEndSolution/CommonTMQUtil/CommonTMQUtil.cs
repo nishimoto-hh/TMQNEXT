@@ -411,6 +411,7 @@ namespace CommonTMQUtil
         /// <param name="db">DB操作クラス</param>
         /// <param name="languageId">言語ID</param>
         /// <returns>取得した構成リスト</returns>
+        /// <remarks>工場個別の翻訳が設定されている場合、複数レコード取得されるため使用時に考慮すること</remarks>
         public static List<CommonSTDUtillDataClass.VStructureItemEntity> GetStructureItemList(List<int> structureIdList, ComDB db, string languageId)
         {
             return GetStructureItemList<CommonSTDUtillDataClass.VStructureItemEntity>(structureIdList, db, languageId);
@@ -448,7 +449,10 @@ namespace CommonTMQUtil
                     return true;
                 }
 
-                if (member.Count() > 1)
+                //翻訳により複数レコード存在する場合があるので重複削除
+                var structureIdList = member.Select(x => x.StructureId).Distinct();
+
+                if (structureIdList.Count() > 1)
                 {
                     // 要素が複数ある場合は最下層でない
                     return false;
@@ -469,6 +473,7 @@ namespace CommonTMQUtil
         /// <param name="languageId">言語ID</param>
         /// <param name="orderFactoryId">表示順を取得する工場ID、省略時は全工場共通の値</param>
         /// <returns>紐づく階層の値</returns>
+        /// <remarks>工場個別の翻訳が設定されている場合、複数レコード取得されるため使用時に考慮すること</remarks>
         public static List<T> GetStructureItemList<T>(List<int> structureIdList, ComDB db, string languageId, int orderFactoryId = TMQConsts.CommonFactoryId)
         {
             //カンマ区切りの文字列にする
@@ -847,6 +852,9 @@ namespace CommonTMQUtil
                 /// <summary>Gets or sets 翻訳名称</summary>
                 /// <value>翻訳名称</value>
                 public string TranslationText { get; set; }
+                /// <summary>Gets or sets 翻訳工場ID</summary>
+                /// <value>翻訳工場ID</value>
+                public int? LocationStructureId { get; set; }
                 /// <summary>Gets or sets 構成グループID</summary>
                 /// <value>構成グループID</value>
                 public int? StructureGroupId { get; set; }
@@ -867,8 +875,9 @@ namespace CommonTMQUtil
             /// <param name="db">DB接続</param>
             /// <param name="languageId">言語ID</param>
             /// <param name="treeViewFlg">ツリー選択ラベル用に設定する場合、true</param>
+            /// <param name="transFactoryId">翻訳に使用する工場ID（未指定時はデータの工場または共通）</param>
             /// <remarks>設定するデータクラスは、FromPropertyNameのIDのメンバと定義されている型の階層のIDと名称をメンバに持つこと</remarks>
-            public static void SetStructureLayerInfoToDataClass<T>(ref IList<T> targetList, List<StructureType> typeList, ComDB db, string languageId, bool treeViewFlg = false)
+            public static void SetStructureLayerInfoToDataClass<T>(ref IList<T> targetList, List<StructureType> typeList, ComDB db, string languageId, bool treeViewFlg = false, int transFactoryId = 0)
             {
                 // 階層ID取得元のプロパティの情報を取得
                 PropertyInfo[] targetProps = typeof(T).GetProperties(); // 設定するデータクラスの情報を取得
@@ -930,6 +939,9 @@ namespace CommonTMQUtil
                     return;
                 }
 
+                //工場IDのプロパティ
+                var factoryProp = getPropertyByName(targetProps, "FactoryId");
+
                 // 処理対象の階層で繰り返し、階層の値を設定する
                 foreach (StructureType type in typeList)
                 {
@@ -979,6 +991,17 @@ namespace CommonTMQUtil
                                 continue;
                             }
 
+                            //対象行の工場IDを取得(翻訳の取得に使用)
+                            var factoryId = transFactoryId;
+                            if (factoryProp != null && transFactoryId == TMQConsts.CommonFactoryId)
+                            {
+                                var factoryIdStr = factoryProp.GetValue(targetRow);
+                                if (factoryIdStr != null)
+                                {
+                                    factoryId = int.Parse(factoryIdStr.ToString());
+                                }
+                            }
+
                             //カンマ区切りのIDの場合、分割
                             List<string> structureIdList = value.ToString().Split(',').ToList();
                             List<int> idList = new();
@@ -987,11 +1010,16 @@ namespace CommonTMQUtil
                             {
                                 // 構成階層ID(地区or職種)
                                 int structureId = int.Parse(structureIdStr.ToString());
-                                // 取得した階層情報リストの検索元構成IDで絞り込み
-                                StructureGetInfo narrowByStructureId = narrowByProperty.FirstOrDefault(x => x.OrgStructureId == structureId);
+                                // 取得した階層情報リストの検索元構成IDで絞り込み(工場個別翻訳のデータを取得)
+                                StructureGetInfo narrowByStructureId = narrowByProperty.FirstOrDefault(x => x.OrgStructureId == structureId && x.LocationStructureId == factoryId);
                                 if (narrowByStructureId == null)
                                 {
-                                    continue;
+                                    // 取得した階層情報リストの検索元構成IDで絞り込み(共通翻訳のデータを取得)
+                                    narrowByStructureId = narrowByProperty.FirstOrDefault(x => x.OrgStructureId == structureId && x.LocationStructureId == TMQConsts.CommonFactoryId);
+                                    if (narrowByStructureId == null)
+                                    {
+                                        continue;
+                                    }
                                 }
                                 if (!isId && treeViewFlg)
                                 {
@@ -2105,7 +2133,8 @@ namespace CommonTMQUtil
             //棚番の結合文字列を取得
             string joinStr = GetJoinStrOfPartsLocation(factoryId, languageId, db);
             //棚IDより棚の翻訳を取得
-            STDDao.VStructureItemEntity item = new STDDao.VStructureItemEntity().GetEntity(Convert.ToInt32(partsLocationId), languageId, db);
+            // 棚IDは予備品テーブルはbigintだが定義元の構成マスタはintなので問題なし
+            STDDao.VStructureItemEntity item =  STDDao.VStructureItemEntity.GetEntityByIdLanguage(Convert.ToInt32(partsLocationId), languageId, db);
             //棚番、結合文字、棚枝番より表示用棚番を取得
             return GetDisplayPartsLocation(item.TranslationText, partsLocationDetailNo, joinStr);
         }
@@ -2135,7 +2164,8 @@ namespace CommonTMQUtil
             else
             {
                 //棚IDより棚の翻訳をDBより取得
-                STDDao.VStructureItemEntity item = new STDDao.VStructureItemEntity().GetEntity(Convert.ToInt32(partsLocationId), languageId, db);
+                // 棚IDは予備品テーブルはbigintだが定義元の構成マスタはintなので問題なし
+                STDDao.VStructureItemEntity item = STDDao.VStructureItemEntity.GetEntityByIdLanguage(Convert.ToInt32(partsLocationId), languageId, db);
                 partsLocationText = item.TranslationText;
             }
             //棚番、結合文字、棚枝番より表示用棚番を取得

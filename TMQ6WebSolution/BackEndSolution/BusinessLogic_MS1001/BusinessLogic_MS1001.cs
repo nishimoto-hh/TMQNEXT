@@ -1042,22 +1042,32 @@ namespace BusinessLogic_MS1001
 
             // エラー情報リスト
             List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
 
             // プラント
             Dictionary<int?, ExcelPortStructureList> plantDic = new();
             foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultPlantList)
             {
+                rowErrFlg = false;
+
                 // プラントIDが入力されていない場合はエラー
                 if (result.PlantNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 工場IDが入力されていない場合はエラー
                 if (result.PlantParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1075,17 +1085,25 @@ namespace BusinessLogic_MS1001
             Dictionary<int?, ExcelPortStructureList> seriesDic = new();
             foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultSeriesList)
             {
+                rowErrFlg = false;
+
                 // 系列IDが入力されていない場合はエラー
                 if (result.SeriesNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // プラントIDが入力されていない場合はエラー
                 if (result.SeriesParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1103,17 +1121,25 @@ namespace BusinessLogic_MS1001
             Dictionary<int?, ExcelPortStructureList> strokeDic = new();
             foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultStrokeList)
             {
+                rowErrFlg = false;
+
                 // 工程IDが入力されていない場合はエラー
                 if (result.StrokeNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 系列IDが入力されていない場合はエラー
                 if (result.StrokeParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1130,17 +1156,25 @@ namespace BusinessLogic_MS1001
             // 設備
             foreach (TMQUtil.CommonExcelPortMasterStructureList result in resultFacilityList)
             {
+                rowErrFlg = false;
+
                 // 設備IDが入力されていない場合はエラー
                 if (result.FacilityNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 工程IDが入力されていない場合はエラー
                 if (result.FacilityParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
             }
@@ -1244,8 +1278,17 @@ namespace BusinessLogic_MS1001
                 if (result.PlantNumber != null && string.IsNullOrEmpty(result.PlantName))
                 {
                     // プラントIDが入力されていてプラント名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.PlantName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1262,17 +1305,8 @@ namespace BusinessLogic_MS1001
                 if (result.PlantParentNumber != null && !factoryDic.ContainsKey(result.PlantParentNumber))
                 {
                     // 存在しない工場IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.PlantName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.PlantParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Plant.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1351,8 +1385,17 @@ namespace BusinessLogic_MS1001
                 if (result.SeriesNumber != null && string.IsNullOrEmpty(result.SeriesName))
                 {
                     // 系列IDが入力されていて系列名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.SeriesName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1369,17 +1412,8 @@ namespace BusinessLogic_MS1001
                 if (result.SeriesParentNumber != null && !plantDic.ContainsKey(result.SeriesParentNumber))
                 {
                     // 存在しないプラントIDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.SeriesName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SeriesParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Series.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1459,8 +1493,17 @@ namespace BusinessLogic_MS1001
                 if (result.StrokeNumber != null && string.IsNullOrEmpty(result.StrokeName))
                 {
                     // 工程IDが入力されていて工程名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.StrokeName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1477,17 +1520,8 @@ namespace BusinessLogic_MS1001
                 if (result.StrokeParentNumber != null && !seriesDic.ContainsKey(result.StrokeParentNumber))
                 {
                     // 存在しない系列IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.StrokeName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.StrokeParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Stroke.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1568,8 +1602,17 @@ namespace BusinessLogic_MS1001
                 if (result.FacilityNumber != null && string.IsNullOrEmpty(result.FacilityName))
                 {
                     // 設備IDが入力されていて設備名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.FacilityName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1586,17 +1629,8 @@ namespace BusinessLogic_MS1001
                 if (result.FacilityParentNumber != null && !strokeDic.ContainsKey(result.FacilityParentNumber))
                 {
                     // 存在しない工程IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.FacilityName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.FacilityParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1000.Facility.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;

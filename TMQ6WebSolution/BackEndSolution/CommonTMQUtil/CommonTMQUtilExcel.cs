@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Data.SqlTypes;
+using CommonWebTemplate.Models.Common;
 using ComBase = CommonSTDUtil.CommonDataBaseClass;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
@@ -768,7 +770,7 @@ namespace CommonTMQUtil
                 if (sheetDefine.SearchConditionFlg == true)
                 {
                     // 検索条件からデータを取得し、エクセルを作成する
-                    var dataList = GetReportDatabySearchCondition(searchCondition, db);
+                    var dataList = GetReportDatabySearchCondition(searchCondition, languageId, db);
                     // マッピングデータ作成
                     List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingList(
                                                                             factoryId,
@@ -1146,7 +1148,7 @@ namespace CommonTMQUtil
                 if (sheetDefine.SearchConditionFlg == true)
                 {
                     // 検索条件からデータを取得し、エクセルを作成する
-                    var dataList = GetReportDatabySearchCondition(searchCondition, db);
+                    var dataList = GetReportDatabySearchCondition(searchCondition, languageId, db);
                     // マッピングデータ作成
                     List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingListForCondition(
                                                                             factoryId,
@@ -1183,7 +1185,7 @@ namespace CommonTMQUtil
                     }
 
                     // tempテーブルに対象帳票シート定義の使用構成グループデータを設定する
-                    if(string.IsNullOrEmpty(sheetDefine.UseStructureGroupId) == false)
+                    if (string.IsNullOrEmpty(sheetDefine.UseStructureGroupId) == false)
                     {
                         // 使用構成グループを取得
                         TMQUtil.ListPerformanceUtil listPf = new(db, languageId);
@@ -1192,7 +1194,7 @@ namespace CommonTMQUtil
                         // 翻訳用一時テーブル登録
                         // 翻訳する構成グループのリスト
                         var structuregroupList = new List<GroupId>();
-                        foreach(string groupId in sheetDefine.UseStructureGroupId.Split(',')) 
+                        foreach (string groupId in sheetDefine.UseStructureGroupId.Split(','))
                         {
                             int iGroupId = int.Parse(groupId);
                             foreach (GroupId Value in Enum.GetValues(typeof(GroupId)))
@@ -1285,7 +1287,7 @@ namespace CommonTMQUtil
                         {
                             bolLocationFlg = true;
                         }
-                        
+
                         val = rowDic[ColumnName.OutputReportJobNameGotFlg];
                         if (val != null && string.IsNullOrEmpty(val.ToString()) == false && val.ToString() == "1")
                         {
@@ -1295,7 +1297,7 @@ namespace CommonTMQUtil
 
                     // 機能場所階層情報、職種情報どちらも取得済であれば以下の処理をスキップする
                     if (bolJobFlg == false || bolLocationFlg == false)
-                    { 
+                    {
                         // 最大ネスト数分、ループ
                         for (int idx = 0; idx < ComReport.MaxLayerNest; idx++)
                         {
@@ -1808,12 +1810,13 @@ namespace CommonTMQUtil
         /// <summary>
         /// 帳票データ取得(検索条件から)
         /// </summary>
-        /// <param name="selectKeyDataList">選択データ</param>
-        /// <param name="targetSql">対象SQL</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="languageId">言語ID</param>
         /// <param name="db">DB操作クラス</param>
         /// <returns>true:正常　false:エラー</returns>
         public static IList<dynamic> GetReportDatabySearchCondition(
             dynamic searchCondition,
+            string languageId,
             ComDB db)
         {
             IList<dynamic> dataList = new List<dynamic>();
@@ -1826,7 +1829,7 @@ namespace CommonTMQUtil
                 foreach (int locationId in locationIdList)
                 {
                     // 構成マスタビューからデータ取得
-                    var structureItem = new STDDao.VStructureItemEntity().GetEntity(locationId, db);
+                    var structureItem = STDDao.VStructureItemEntity.GetEntityByIdLanguage(locationId, languageId, db);
                     string keyName = "";
                     // 階層の各レイヤーに設定する。複数ある場合、カンマで追加する。
                     switch (structureItem.StructureLayerNo.GetValueOrDefault())
@@ -1877,7 +1880,7 @@ namespace CommonTMQUtil
                 foreach (int jobId in jobIdList)
                 {
                     // 構成マスタビューからデータ取得
-                    var structureItem = new STDDao.VStructureItemEntity().GetEntity(jobId, db);
+                    var structureItem = STDDao.VStructureItemEntity.GetEntityByIdLanguage(jobId, languageId, db);
                     string keyName = ColumnName.JobName;
                     if (dicResult.ContainsKey(keyName))
                     {
@@ -1938,7 +1941,7 @@ namespace CommonTMQUtil
             {
                 // データを一括でINSERTするSQL文を作成
                 var insertSqlList = getMultiInsertSql(selectKeyDataList);
-                var param = new { LanguageId = languageId, FactoryId = factoryId};
+                var param = new { LanguageId = languageId, FactoryId = factoryId };
 
                 foreach (var insertSqlInfo in insertSqlList)
                 {
@@ -2332,7 +2335,7 @@ namespace CommonTMQUtil
                     if (!isFirst)
                     {
                         //2項目目以降
-                        addSql.AppendLine("UNION");
+                        addSql.AppendLine("UNION ALL");
                     }
                     //表示順
                     string colOrder = targetList.Where(x => x.StructureId == structureId && x.Seq == 2).Select(x => x.ExData).FirstOrDefault();
@@ -3109,7 +3112,7 @@ namespace CommonTMQUtil
                                 // ###.## → ##0.00
                                 reportInfo.FormatText = reportInfo.FormatText.Substring(0, idx) + "0." + new string('0', decimalLength);
                             }
-                            else if(reportInfo.FormatText.IndexOf("#") >= 0)
+                            else if (reportInfo.FormatText.IndexOf("#") >= 0)
                             {
                                 //小数なしの数値 #,### → #,##0 (値「0」がブランクにならないよう変換)
                                 reportInfo.FormatText = reportInfo.FormatText.Substring(0, reportInfo.FormatText.Length - 1) + "0";
@@ -3147,7 +3150,7 @@ namespace CommonTMQUtil
                             }
                         }
                     }
-                    
+
                     if (rowData != null)
                     {
                         switch (reportInfo.OutputMethod)
@@ -4682,7 +4685,7 @@ namespace CommonTMQUtil
                     val = ComUtil.ConvertDecimal(val).ToString();
                 }
             }
-            if (!checkCellType(reportInfo.DataType, val, languageId, msgResources, ref error))
+            if (!checkCellType(reportInfo, val, languageId, msgResources, ref error))
             {
                 // 型が異なる場合、エラーを設定し、スキップ
                 tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
@@ -4715,6 +4718,18 @@ namespace CommonTMQUtil
                 if (!checkRange(reportInfo, val, db, languageId, msgResources, ref error))
                 {
                     // 範囲エラーの場合、エラーを設定し、スキップ
+                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                    return false;
+                }
+            }
+
+            // 日付の場合、最小日付チェック
+            if (reportInfo.DataType == ComReport.DataTypeDat)
+            {
+                if (SqlDateTime.MinValue.Value.CompareTo(Convert.ToDateTime(val)) > 0)
+                {
+                    // 「{0}以上の値を入力して下さい。」
+                    error = GetResMessage(new string[] { ComRes.ID.ID941060017, SqlDateTime.MinValue.ToString() }, languageId, msgResources);
                     tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
                     return false;
                 }
@@ -4766,7 +4781,7 @@ namespace CommonTMQUtil
             foreach (ComBase.UploadErrorInfo tmp in tmpErrorInfo)
             {
                 //項目、エラー内容が同じものが設定されているかチェック(メッセージはエラーの種類ごとにまとめて表示する為)
-                int count = errorInfoList.Where(x => x.TranslationText == tmp.TranslationText && x.ErrorInfo == tmp.ErrorInfo).Count();
+                int count = errorInfoList.Where(x => x.TranslationText == tmp.TranslationText && x.ErrorInfo == tmp.ErrorInfo && x.ProcDiv == tmp.ProcDiv).Count();
                 if (count > 0)
                 {
                     //対象のインデックス番号を取得
@@ -4778,6 +4793,7 @@ namespace CommonTMQUtil
                             index = errorInfoList.Select((e, index) => (e, index)).Where(x =>
                                 x.e.TranslationText == tmp.TranslationText &&
                                 x.e.ErrorInfo == tmp.ErrorInfo &&
+                                x.e.ProcDiv == tmp.ProcDiv &&
                                 x.e.ColumnNo[0] == tmp.ColumnNo[0]).Select(x => x.index).DefaultIfEmpty(-1).First();
                             // 縦方向連続の場合、行番号を追加
                             if (index >= 0)
@@ -4793,9 +4809,10 @@ namespace CommonTMQUtil
                             }
                             break;
                         case ComReport.LateralDirection:
-                            index = errorInfoList.Select((e, index) => (e, index)).Where(x => 
-                                x.e.TranslationText == tmp.TranslationText && 
+                            index = errorInfoList.Select((e, index) => (e, index)).Where(x =>
+                                x.e.TranslationText == tmp.TranslationText &&
                                 x.e.ErrorInfo == tmp.ErrorInfo &&
+                                x.e.ProcDiv == tmp.ProcDiv &&
                                 x.e.RowNo[0] == tmp.RowNo[0]).Select(x => x.index).DefaultIfEmpty(-1).First();
                             // 横方向連続の場合、列番号を追加
                             if (index >= 0)
@@ -4823,23 +4840,38 @@ namespace CommonTMQUtil
         /// <summary>
         /// 取込処理 型チェック
         /// </summary>
-        /// <param name="dataType">データタイプ</param>
+        /// <param name="reportInfo">ファイル入力項目定義情報</param>
         /// <param name="val">文字列</param>
         /// <param name="languageId">言語ID</param>
         /// <param name="msgResources">メッセージリソース</param>
         /// <param name="error">エラー情報</param>
         /// <returns>true:正常、false:異常</returns>
-        private static bool checkCellType(int dataType, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
+        private static bool checkCellType(ComBase.InputDefine reportInfo, string val, string languageId, ComUtil.MessageResources msgResources, ref string error)
         {
             // データタイプによって処理を分岐
+            int dataType = reportInfo.DataType;
             switch (dataType)
             {
                 case ComReport.DataTypeStr:
                     // 文字列の場合、正常
                     return true;
                 case ComReport.DataTypeInt:
+                    // 整数の場合
+                    if (!ComUtil.IsDecimal(val))
+                    {
+                        // 「数値で入力してください。」
+                        error = GetResMessage(new string[] { ComRes.ID.ID941190002, ComRes.ID.ID911130002 }, languageId, msgResources);
+                        return false;
+                    }
+                    if (ComUtil.IsLong(val))
+                    {
+                        return true;
+                    }
+                    // 「整数で入力してください。」
+                    error = GetResMessage(new string[] { ComRes.ID.ID941190002, ComRes.ID.ID911140003 }, languageId, msgResources);
+                    return false;
                 case ComReport.DataTypeNum:
-                    // 数値の場合
+                    // 実数の場合
                     if (ComUtil.IsDecimal(val))
                     {
                         return true;
@@ -4853,8 +4885,16 @@ namespace CommonTMQUtil
                     {
                         return true;
                     }
-                    // 「日付で入力してください。」
-                    error = GetResMessage(new string[] { ComRes.ID.ID941190002, ComRes.ID.ID911270007 }, languageId, msgResources);
+                    if (reportInfo.ControlType == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TimePicker || reportInfo.ControlType == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time)
+                    {
+                        // 「時刻で入力してください。」
+                        error = GetResMessage(new string[] { ComRes.ID.ID941120015 }, languageId, msgResources);
+                    }
+                    else
+                    {
+                        // 「日付で入力してください。」
+                        error = GetResMessage(new string[] { ComRes.ID.ID941190002, ComRes.ID.ID911270007 }, languageId, msgResources);
+                    }
                     return false;
                 default:
                     // 基本、到達しない
@@ -5224,7 +5264,7 @@ namespace CommonTMQUtil
                                     val = ComUtil.ConvertDecimal(val).ToString();
                                 }
                             }
-                            if (!checkCellType(reportInfo.DataType, val, languageId, msgResources, ref error))
+                            if (!checkCellType(reportInfo, val, languageId, msgResources, ref error))
                             {
                                 // 型が異なる場合、エラーを設定し、スキップ
                                 tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));

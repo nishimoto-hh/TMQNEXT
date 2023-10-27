@@ -71,6 +71,9 @@ namespace BusinessLogic_LN0001
             // 変更管理ボタンの表示制御用フラグ
             setHistoryManagementFlg(ConductInfo.FormDetail.ControlId.Hide, factoryId);
 
+            // ★画面定義の翻訳情報取得★
+            GetContorlDefineTransData(factoryId);
+
             return true;
 
             // 画面タイプの再設定
@@ -135,7 +138,7 @@ namespace BusinessLogic_LN0001
                 SetSearchResultsByDataClass<Dao.Detail.List>(pageInfo, list, list.Count);
                 // スケジュール情報のセット
                 // 保全活動の場合移動可能
-                setSchedule(listCtrlId, true, param.LongPlanId, factoryId, contentType);
+                setSchedule(isDisplayMaintainanceKind, listCtrlId, true, param.LongPlanId, factoryId, contentType);
             }
         }
 

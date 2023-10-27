@@ -143,10 +143,6 @@ namespace BusinessLogic_HM0001
                 public const string GetMaintainanceKindManageExistCheckHistory = "GetMaintainanceKindManageExistCheckHistory";
                 /// <summary>機器別管理基準部位変更管理テーブル登録SQL</summary>
                 public const string InsertHmManagementStandardsComponentInfo = "InsertHmManagementStandardsComponentInfo";
-                /// <summary>機器別管理基準内容変更管理テーブル登録SQL</summary>
-                public const string InsertHmManagementStandardsContentInfo = "InsertHmManagementStandardsContentInfo";
-                /// <summary>保全スケジュール変更管理テーブル登録SQL</summary>
-                public const string InsertHmMaintainanceScheduleInfo = "InsertHmMaintainanceScheduleInfo";
                 /// <summary>SQL名：長期計画存在チェック(変更管理)</summary>
                 public const string GetLongPlanSingleHistory = "GetLongPlanSingleHistory";
                 /// <summary>SQL名：機器レベル取得</summary>
@@ -1248,9 +1244,20 @@ namespace BusinessLogic_HM0001
                     }
                 }
 
+                // 親子構成 ループ構成 登録処理
+                if (!registComposition(condition.MachineId))
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            // 親子構成とループ構成の登録処理
+            bool registComposition(long? machineId)
+            {
                 // 親子構成 登録処理
                 ComDao.McMachineParentInfoEntity parentInfo = new();
-                parentInfo.MachineId = condition.MachineId; // 機番ID
+                parentInfo.MachineId = machineId; // 機番ID
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon(ref parentInfo, now, userId, userId);
                 // SQL実行
@@ -1264,7 +1271,7 @@ namespace BusinessLogic_HM0001
                 // 一覧検索SQL文の取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMachineLevel, out string sql);
                 dynamic whereParam = null; // WHERE句パラメータ
-                whereParam = new { MachineId = condition.MachineId, LanguageId = this.LanguageId };
+                whereParam = new { MachineId = machineId, LanguageId = this.LanguageId };
                 // 機器レベルの拡張項目取得
                 IList<Dao.ExtensionVal> results = db.GetListByDataClass<Dao.ExtensionVal>(sql, whereParam);
                 if (results == null || results.Count == 0)
@@ -1274,7 +1281,7 @@ namespace BusinessLogic_HM0001
                 if (results[0].ExtensionData == MachineLavel.Loop)
                 {
                     ComDao.McLoopInfoEntity loopInfo = new();
-                    loopInfo.MachineId = condition.MachineId;
+                    loopInfo.MachineId = machineId;
                     // テーブル共通項目を設定
                     setExecuteConditionByDataClassCommon(ref loopInfo, now, userId, userId);
                     // SQL実行
@@ -1289,6 +1296,9 @@ namespace BusinessLogic_HM0001
             // 承認時処理 機器の修正
             bool updateTransactionTableMachine(Dao.historyManagmentDetail condition)
             {
+                // 変更前機器情報を取得
+                var oldMachineInfo = new ComDao.McMachineEntity().GetEntity(condition.MachineId, this.db);
+
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon(ref condition, now, userId, userId);
 
@@ -1314,6 +1324,29 @@ namespace BusinessLogic_HM0001
                 if (!deleteMachineInfoDataExists(condition, SqlName.SubDirMachine, SqlName.Detail.DeleteApplicableLawsInfo))
                 {
                     return false;
+                }
+
+                // 親子構成、ループ機器の登録処理
+                if (oldMachineInfo.EquipmentLevelStructureId != machine.EquipmentLevelStructureId)
+                {
+                    // 元の機器台帳より機器レベルが変更になる場合のみ登録を行う
+
+                    // 既存の親子構成を削除して登録
+                    // 親子構成(トランザクション) 削除処理
+                    if (!deleteMachineInfoDataExists(condition, SqlName.SubDirMachine, SqlName.Detail.DeleteParentInfo))
+                    {
+                        return false;
+                    }
+                    // ループ構成(トランザクション) 削除処理
+                    if (!deleteMachineInfoDataExists(condition, SqlName.SubDirMachine, SqlName.Detail.DeleteLoopInfo))
+                    {
+                        return false;
+                    }
+                    // 登録
+                    if (!registComposition(condition.MachineId))
+                    {
+                        return false;
+                    }
                 }
 
                 // 適用法規が選択されていない場合はここで終了

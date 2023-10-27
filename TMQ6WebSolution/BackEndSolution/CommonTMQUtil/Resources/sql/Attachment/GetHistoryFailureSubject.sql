@@ -1,5 +1,15 @@
 SELECT
-    subject + '略図添付' AS subject,
+    subject+
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            ms_translation tra
+        WHERE
+            tra.location_structure_id = 0
+        AND tra.translation_id = 111400002
+        AND tra.language_id = @LanguageId
+    ) AS subject,
     @FunctionTypeId AS function_type_id,
     @KeyId AS key_id,
     location_structure_id,

@@ -90,6 +90,8 @@ namespace BusinessLogic_HM0002
                 // 参照画面の非表示項目より取得した情報で参照画面の項目に値を設定する
                 // ツリー表示
                 initFormByLongPlanId(param, toCtrlIdList, out bool isMaintainanceKindFactory, out int factoryId, true);
+                // ★画面定義の翻訳情報取得★
+                GetContorlDefineTransData(factoryId);
             }
 
             return true;

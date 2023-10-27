@@ -61,6 +61,19 @@ Private Sub Workbook_Open()
         Call Worksheets(1).ChangeColumnDisplay
     End If
 
+    'アクティブシートのインデックス取得
+    Dim activeIndex As Integer
+    activeIndex = ActiveSheet.Index
+    
+    '一番左のシートを表示
+    Sheets(1).Select
+      
+    'アクティブセル列の1行目にフォーカスを当てる
+    Cells(1, ActiveCell.Column).Select
+    
+    'ブックを開いたときにアクティブだったシートを表示
+    Sheets(activeIndex).Select
+
     ' 保存済みにする
     ThisWorkbook.Saved = True
 End Sub

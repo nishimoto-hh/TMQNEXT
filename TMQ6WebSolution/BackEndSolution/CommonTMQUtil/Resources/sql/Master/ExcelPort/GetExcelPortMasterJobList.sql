@@ -40,6 +40,7 @@ SELECT
                 )
             AND tra.structure_id = item.structure_id
         ) AS job_name_before,                                     -- 職種名(変更前)
+    ex.extension_data AS job_code_val,                            -- 保全実績集計職種コード
     ex.extension_data AS job_code                                 -- 保全実績集計職種コード
 FROM
     v_structure_item_all item

@@ -1924,7 +1924,7 @@ namespace BusinessLogic_MA0001
                     if (result.ProcessId == Const.SendProcessId.Update)
                     {
                         //更新時、件名区分が変更されている場合エラー
-                        ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(result.SummaryId, this.db);
+                        ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(result.SummaryId ?? -1, this.db);
                         if (summary.ActivityDivision != result.ActivityDivision)
                         {
                             // 件名区分は変更できません。
@@ -2666,7 +2666,7 @@ namespace BusinessLogic_MA0001
                 //添付情報
                 Dao.AttachmentInfo attachment = new Dao.AttachmentInfo();
                 attachment.FunctionTypeIdList = new List<int>() { (int)Const.Attachment.FunctionTypeId.Summary }; //件名添付
-                attachment.KeyId = result.SummaryId;
+                attachment.KeyId = result.SummaryId ?? -1;
                 //削除する添付情報を取得
                 List<ComDao.AttachmentEntity> list = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentInfo, SqlName.SubDir, attachment, this.db);
                 if (list != null)

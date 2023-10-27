@@ -1,4 +1,4 @@
---location_structure_id(ツリーで選択されたアイテムを取得する為に記載しています)
+--parts_factory_id(ツリーで選択されたアイテムを取得する為に記載しています)
 --job_structure_id(ツリーで選択されたアイテムを取得する為に記載しています)
 SELECT
     factory_job.factory_id,                                -- 工場

@@ -4,6 +4,7 @@
 SELECT
     mub.location_structure_id 
     , mub.location_structure_id AS job_structure_id
+    , mub.duty_flg
 FROM
     ms_user_belong mub 
     INNER JOIN ms_structure msr 

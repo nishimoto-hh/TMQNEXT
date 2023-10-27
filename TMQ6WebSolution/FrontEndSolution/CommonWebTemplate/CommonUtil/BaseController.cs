@@ -817,6 +817,7 @@ namespace CommonWebTemplate.CommonUtil
             {
                 UserInfoDef userInfo = HttpContext.Session.GetObject<UserInfoDef>(SessionKey.CIM_USER_INFO);
                 procData.LoginUserId = userInfo.UserId;
+                procData.LoginId = userInfo.LoginId;
                 procData.LoginUserName = userInfo.UserName;
                 procData.LanguageId = userInfo.LanguageId;
                 procData.GUID = userInfo.GUID;

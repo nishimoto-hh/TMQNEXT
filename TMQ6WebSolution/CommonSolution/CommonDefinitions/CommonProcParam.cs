@@ -72,6 +72,8 @@ namespace CommonWebTemplate.CommonDefinitions
         public List<string> ConditionSheetNameList { get; set; } = null;
         /// <summary>検索条件設定値リスト</summary>
         public List<string> ConditionSheetValueList { get; set; } = null;
+        /// <summary>翻訳工場ID</summary>
+        public int TransFactoryId { get; set; }
 
         /// <summary>
         /// コンストラクタ
@@ -131,6 +133,9 @@ namespace CommonWebTemplate.CommonDefinitions
         /// <summary>ユーザー情報の再取得</summary>
         public bool UpdateUserInfo { get; set; }
 
+        /// <summary>画面定義翻訳リスト</summary>
+        public List<Dictionary<string, object>> DefineTransList { get; set; }
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -146,6 +151,7 @@ namespace CommonWebTemplate.CommonDefinitions
             this.Individual = new Dictionary<string, object>();
             this.ButtonStatusList = new List<Dictionary<string, object>>();
             this.UpdateUserInfo = false;
+            this.DefineTransList = new List<Dictionary<string, object>>();
         }
     }
 

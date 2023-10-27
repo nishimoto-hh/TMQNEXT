@@ -18,7 +18,7 @@ WITH group_ex AS(
 SELECT TOP 1
     ie.extension_data AS temp_folder_path
 FROM
-    v_structure_item si
+    v_structure si
     LEFT OUTER JOIN ms_item_extension ie
     ON  si.structure_item_id = ie.item_id
     LEFT OUTER JOIN group_ex

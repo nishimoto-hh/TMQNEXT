@@ -50,10 +50,6 @@ namespace BusinessLogic_DM0001
                 /// 一時テーブルに構成ID(職種)を追加するSQL
                 /// </summary>
                 public const string InsertJobStructureIdToTemp = "InsertJobStructureIdToTemp";
-                /// <summary>
-                /// 一覧画面検索時、データの件数を取得するSQL
-                /// </summary>
-                public const string GetCountAttachmentList = "GetCountAttachmentList";
             }
         }
 

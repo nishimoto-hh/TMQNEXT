@@ -151,14 +151,16 @@ namespace BusinessLogic_SP0001
             {
                 condition.MachineId = long.Parse((string)machineId);
             }
+            condition.LanguageId = this.LanguageId;
 
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.searchCondition>(condition);
 
             // SQLを取得
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetPartsList, out string withSql);
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetPartsList, out string baseSql, listUnComment);
             // 件数取得SQLを作成
-            string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, string.Empty, string.Empty);
+            string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, string.Empty, withSql);
 
             // 総件数を取得
             int cnt = db.GetCount(executeSql.ToString(), condition);
@@ -169,7 +171,7 @@ namespace BusinessLogic_SP0001
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, string.Empty);
+            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, string.Empty, withSql);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY parts_name, standard_size, maker");
 

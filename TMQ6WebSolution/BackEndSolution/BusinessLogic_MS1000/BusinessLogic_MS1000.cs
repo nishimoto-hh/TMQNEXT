@@ -1020,6 +1020,14 @@ namespace BusinessLogic_MS1000
                 return true;
             }
 
+            // 変更管理承認者とExcelPort使用権限の関連チェック
+            if (isErrorRelationHistoryAndExcelPort(hiddenInfo, ref errorInfoDictionary))
+            {
+                // エラー情報を画面に反映
+                SetJsonResult(errorInfoDictionary);
+                return true;
+            }
+
             // 工場を登録する際、変更管理の承認者が設定されている場合、ユーザの権限を判定
             // ゲストかシステム管理者の場合エラー
             if (isErrorApprovalUserError(hiddenInfo, ref errorInfoDictionary))
@@ -1220,6 +1228,53 @@ namespace BusinessLogic_MS1000
                 {
                     int authLevelValue = (int)authLevel;
                     return authLevelValue.ToString();
+                }
+            }
+
+            /// <summary>
+            /// 変更管理承認者とExcelPort使用権限の関連チェック
+            /// </summary>
+            /// <param name="hiddenInfo">非表示情報</param>
+            /// <param name="errorInfoDictionary">エラー情報</param>
+            /// <returns>入力チェックエラーがある場合True</returns>
+            bool isErrorRelationHistoryAndExcelPort(TMQUtil.HiddenInfoForMaster hiddenInfo, ref List<Dictionary<string, object>> errorInfoDictionary)
+            {
+                if (!isFactory(hiddenInfo))
+                {
+                    // 工場の登録でない場合、終了
+                    return false;
+                }
+
+                // 入力内容を取得
+                var ctrlId = ConductInfo.FormEdit.ControlId.FactoryItemInfoId; // 対象コントロールID
+                Dao.SearchResult inputData = GetFormDataByCtrlId<Dao.SearchResult>(ctrlId);
+
+                // 変更管理承認者とExcelPort使用権限がどちらも入力されている場合はエラーとする
+                if (!string.IsNullOrEmpty(inputData.ExData4) &&
+                    !string.IsNullOrEmpty(inputData.ExData5))
+                {
+                    setErrorInfo(ctrlId, ref errorInfoDictionary);
+                    return true;
+                }
+
+                return false;
+
+                // エラー情報をセット
+                void setErrorInfo(string ctrlId, ref List<Dictionary<string, object>> errorInfoDictionary)
+                {
+                    var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ctrlId);
+                    // エラー情報格納クラス
+                    ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                    var info = getResultMappingInfo(ctrlId);  // エラー情報を画面に設定するためのマッピング情報リスト
+                    string errMsg = GetResMessage(ComRes.ID.ID141290010);     // 変更管理承認者とExcelPort使用権限は同時に設定できません。
+                    // 変更管理承認者
+                    string val = info.getValName("approval_user");
+                    errorInfo.setError(errMsg, val);
+                    errorInfoDictionary.Add(errorInfo.Result);
+                    // ExcelPort使用権限
+                    val = info.getValName("excelport_auth");
+                    errorInfo.setError(errMsg, val);
+                    errorInfoDictionary.Add(errorInfo.Result);
                 }
             }
         }

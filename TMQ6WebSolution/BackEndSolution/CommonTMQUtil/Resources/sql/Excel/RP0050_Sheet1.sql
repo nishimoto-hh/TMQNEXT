@@ -2,14 +2,6 @@ DECLARE @w_key1 bigint       -- 機器ID
 DECLARE @w_key2 nvarchar(2)  -- 言語ID
 DECLARE @w_key3 int          -- 本務工場
 DECLARE @w_idx  int          -- ソート用インデックス
-DECLARE @TranslationIdCirculationTargetTrue int;
-DECLARE @TranslationIdCirculationTargetFalse int;
-DECLARE @TranslationIdExists int;
-DECLARE @TranslationIdNotExists int;
-SET @TranslationIdCirculationTargetTrue = 111160071;    -- 対象
-SET @TranslationIdCirculationTargetFalse = 111270034;   -- 非対象
-SET @TranslationIdExists = 111010021;                   -- あり
-SET @TranslationIdNotExists = 111210005;                -- なし
 
 CREATE TABLE #temp_rep(
 	job_structure_id                int,            -- 職種機種階層ID
@@ -121,9 +113,51 @@ BEGIN
 
     SET @w_idx = @w_idx + 1;
 
+WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111160071
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, CirculationTargetFalse AS (-- 「非対象」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111270034
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, TransExists AS (-- 「あり」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111010021
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, TransNotExists AS (-- 「なし」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111210005
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+
 	-- 機器別保全保全履歴一覧 情報取得
     -- 複数行に対応させるため、一旦一時テーブルに保存
     INSERT INTO #temp_rep
+
     SELECT *, row_number() over(order by ISNULL(completion_date,'9999/12/31') desc) as row_no, @w_idx
     FROM
     (SELECT
@@ -247,17 +281,15 @@ BEGIN
 	    ) AS job_name,
 	    sm.subject,    -- 件名
 	   	'' AS phenomenon_name,                    -- 現象
-		-- CASE WHEN ISNULL(call_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS call_count_name,
-	    -- CASE WHEN ISNULL(stop_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS stop_count_name, 
 		CASE WHEN ISNULL(call_count, 0) >= 1 THEN 
-            [dbo].[get_rep_translation_text](@w_key3, @TranslationIdExists, @w_key2)
+            TransExists.translation_text -- あり
         ELSE 
-            [dbo].[get_rep_translation_text](@w_key3, @TranslationIdNotExists, @w_key2)
+            TransNotExists.translation_text -- なし
         END AS call_count_name,
 	    CASE WHEN ISNULL(maintenance_count, 0) >= 1 THEN 
-            [dbo].[get_rep_translation_text](@w_key3, @TranslationIdExists, @w_key2)
+            TransExists.translation_text -- あり
         ELSE 
-            [dbo].[get_rep_translation_text](@w_key3, @TranslationIdNotExists, @w_key2)
+            TransNotExists.translation_text -- なし
         END AS stop_count_name, 
 	    stop_time,
         '' AS work_purpose_name,                     -- 目的区分
@@ -571,12 +603,11 @@ BEGIN
             )
             AND tra.structure_id = use_segment_structure_id
         ) AS use_segment_name,                        -- 使用区分
-        --(CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN '非対象' ELSE '対象' END) AS circulation_target,                                           -- 循環対象
         (
             CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdCirculationTargetFalse, @w_key2)
+                CirculationTargetFalse.translation_text
             ELSE 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdCirculationTargetTrue, @w_key2)
+                CirculationTargetTrue.translation_text -- 対象
             END
         ) AS circulation_target,                                           -- 循環対象
         fixed_asset_no,                  -- 固定資産番号
@@ -950,6 +981,14 @@ BEGIN
 	        ON mc.machine_id = app5.machine_id,
 	    ma_history_inspection_site his,
 	    ma_history_inspection_content hic
+    CROSS JOIN
+       CirculationTargetTrue --「対象」の翻訳
+    CROSS JOIN
+       CirculationTargetFalse -- 「非対象」の翻訳
+    CROSS JOIN
+       TransExists --「あり」の翻訳
+    CROSS JOIN
+       TransNotExists -- 「なし」の翻訳
         WHERE
             sm.summary_id = hs.summary_id
         and hs.history_id = hsm.history_id
@@ -1098,17 +1137,15 @@ BEGIN
                  )
                  AND tra.structure_id = phenomenon_structure_id
             ) AS phenomenon_name,                        -- 現象
-	        -- CASE WHEN ISNULL(call_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS call_count_name,
-	        -- CASE WHEN ISNULL(stop_count, 0) >= 1 THEN '有り' ELSE 'なし' END AS stop_count_name, 
 	        CASE WHEN ISNULL(call_count, 0) >= 1 THEN 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdExists, @w_key2)
+                TransExists.translation_text -- あり
             ELSE 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdNotExists, @w_key2)
+                TransNotExists.translation_text -- なし
             END AS call_count_name,
 	        CASE WHEN ISNULL(stop_count, 0) >= 1 THEN 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdExists, @w_key2)
+                TransExists.translation_text -- あり
             ELSE 
-                [dbo].[get_rep_translation_text](@w_key3, @TranslationIdNotExists, @w_key2)
+                TransNotExists.translation_text -- なし
             END AS stop_count_name, 
 	        stop_time,
 	        '' AS work_purpose_name,                    -- 目的区分
@@ -1422,12 +1459,11 @@ BEGIN
                  )
                  AND tra.structure_id = use_segment_structure_id
             ) AS use_segment_name,                         -- 使用区分
-			-- (CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN '非対象' ELSE '対象' END) AS circulation_target,                                           -- 循環対象
             (
                 CASE WHEN ISNULL(circulation_target_flg, 0) = 0 THEN 
-                    [dbo].[get_rep_translation_text](@w_key3, @TranslationIdCirculationTargetFalse, @w_key2)
+                    CirculationTargetFalse.translation_text
                 ELSE 
-                    [dbo].[get_rep_translation_text](@w_key3, @TranslationIdCirculationTargetTrue, @w_key2)
+                    CirculationTargetTrue.translation_text -- 対象
                 END
             ) AS circulation_target,                                           -- 循環対象
             fixed_asset_no,                  -- 固定資産番号
@@ -1839,6 +1875,14 @@ BEGIN
 	            ) app5                      -- 適用法規５
 	        ON mc.machine_id = app5.machine_id,
 	    ma_history_failure hf
+    CROSS JOIN
+       CirculationTargetTrue --「対象」の翻訳
+    CROSS JOIN
+       CirculationTargetFalse -- 「非対象」の翻訳
+    CROSS JOIN
+       TransExists --「あり」の翻訳
+    CROSS JOIN
+       TransNotExists -- 「なし」の翻訳
         WHERE
             sm.summary_id = hs.summary_id
         and hs.history_id = hf.history_id

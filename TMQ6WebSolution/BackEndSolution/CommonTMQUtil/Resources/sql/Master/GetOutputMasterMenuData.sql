@@ -11,6 +11,7 @@ WITH max_loc AS -- 構成IDに対する翻訳の工場IDを取得(ユーザの�
         LEFT JOIN
             ms_translation mt
         ON  mi.item_translation_id = mt.translation_id
+        AND mt.language_id = @LanguageId
         -- 共通ID(0)とユーザの本務工場IDが対象
     AND mt.location_structure_id IN @FactoryIdList
     GROUP BY
@@ -57,6 +58,7 @@ master_name AS( --マスタ種類
         LEFT JOIN
             ms_translation mt
         ON  msg.structure_group_translation_id = mt.translation_id
+        AND mt.language_id = @LanguageId
         AND mt.location_structure_id = 0
 ),
 item_order AS( -- 表示順

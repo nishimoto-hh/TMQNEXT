@@ -57,6 +57,10 @@ namespace CommonSTDUtil.CommonBusinessLogic
             public const string InsertTempJob = "InsertTempJob";
             /// <summary>SQL名：上位の中で対象階層の構成リスト取得 </summary>
             public const string GetTargetLayerList = "Structure_GetTargetLayerList";
+            /// <summary>画面項目定義翻訳リスト取得用SQL</summary>
+            public const string GetControlDefineTransList = "GetControlDefineTransList";
+            /// <summary>画面項目定義翻訳リスト取得用SQL(共通定義)</summary>
+            public const string GetControlDefineTransListCom = "GetControlDefineTransListCommon";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
         }
@@ -138,6 +142,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected List<Dictionary<string, object>> ResultList;
         /// <summary>ユーザー情報の更新</summary>
         protected bool UpdateUserInfo;
+        /// <summary>画面定義翻訳リスト</summary>
+        protected List<Dictionary<string, object>> DefineTransList;
 
         /// <summary>ログ出力</summary>
         protected static CommonLogger.CommonLogger logger = CommonLogger.CommonLogger.GetInstance("logger");
@@ -212,6 +218,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected string OutputFileName { get; set; }
         /// <summary>検索総件数チェックが必要かどうか(true:必要/false:不要)</summary>
         protected bool NeedsTotalCntCheck { get; set; }
+        /// <summary>翻訳工場ID</summary>
+        protected int TransFactoryId { get; set; }
         #endregion
 
         #region publicメソッド
@@ -501,6 +509,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 outParam.FileName = this.OutputFileName;
 
                 outParam.UpdateUserInfo = this.UpdateUserInfo;
+
+                outParam.DefineTransList = this.DefineTransList;
 
                 //logger.Debug(string.Format("ResultJson : {0}", JsonSerializer.Serialize(this.ResultList)));
 
@@ -1803,6 +1813,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             this.InputStream = param.InputStream;
             this.GUID = param.GUID;
             this.BrowserTabNo = param.BrowserTabNo;
+            this.TransFactoryId = param.TransFactoryId;
 
             return true;
         }
@@ -6946,6 +6957,68 @@ namespace CommonSTDUtil.CommonBusinessLogic
             }
 
             return checkFlg;
+        }
+
+        /// <summary>
+        /// 画面定義の翻訳情報取得
+        /// </summary>
+        /// <param name="targetFactoryId">対象工場ID</param>
+        protected void GetContorlDefineTransData(int targetFactoryId)
+        {
+            this.DefineTransList = new();
+
+            if (this.TransFactoryId == targetFactoryId)
+            {
+                // 翻訳工場IDと対象工場IDが一致する場合は取得不要
+                return;
+            }
+
+            // 画面定義の翻訳情報取得用SQL取得
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetControlDefineTransList, out string sql);
+            // 実行パラメータ
+            var param = new
+            {
+                FactoryId = targetFactoryId,
+                LanguageId = this.LanguageId,
+                UserId = this.UserId,
+                PgmId = this.PgmId,
+                FormNo = this.FormNo
+            };
+
+            // SQL実行
+            using (var reader = this.db.ExecuteReader(sql, param))
+            {
+                while (reader.Read())
+                {
+                    var dic = new Dictionary<string, object>();
+                    for (var i = 0; i < reader.FieldCount; i++)
+                    {
+                        dic[reader.GetName(i)] = reader.GetValue(i);
+                    }
+                    this.DefineTransList.Add(dic);
+                }
+            }
+
+            // 画面定義の翻訳情報取得用SQL取得(共通定義)
+            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetControlDefineTransListCom, out sql);
+            // SQL実行
+            using (var reader = this.db.ExecuteReader(sql, param))
+            {
+                while (reader.Read())
+                {
+                    var dic = new Dictionary<string, object>();
+                    for (var i = 0; i < reader.FieldCount; i++)
+                    {
+                        dic[reader.GetName(i)] = reader.GetValue(i);
+                    }
+                    this.DefineTransList.Add(dic);
+                }
+            }
+            if (this.DefineTransList.Count > 0)
+            {
+                // 先頭に対象の工場IDを挿入
+                this.DefineTransList.Insert(0, new Dictionary<string, object> { { "FACTORYID", targetFactoryId } });
+            }
         }
 
         //↓↓↓2022/12/14 CommonSTDUtilへ移植↓↓↓

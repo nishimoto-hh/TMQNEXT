@@ -905,6 +905,8 @@ namespace CommonWebTemplate.Models.Common
             public const short Invalid = 0;
             /// <summary>ソート有効</summary>
             public const short Valid = 1;
+            /// <summary>ソート有効(数値のソート)</summary>
+            public const short ValidNumber = 2;
         }
 
         /// <summary>

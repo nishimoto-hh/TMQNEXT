@@ -542,3 +542,16 @@ function removeLoading() {
     // 実行タイミングを描画完了後になるようずらす
     setTimeout(removeFunc, 0);
 }
+
+/*
+* メッセージに引数を設定する処理
+* @message {string} :メッセージ(P_ComMsgTranslated.ID(例： P_ComMsgTranslated.MS00073))
+* @arrParam {array[string]}:引数の配列、順番に0から設定
+*/
+function getMessageParam(message, arrParam) {
+    var returnMessage = message;
+    for (var i = 0; i < arrParam.length; i++) {
+        returnMessage = returnMessage.replace('{' + i.toString() + '}', arrParam[i]);
+    }
+    return returnMessage;
+}

@@ -22,7 +22,7 @@ WITH factory AS(
 )
 /*END*/
 select item.factory_id as factoryId,
-       item.location_structure_id as translationFactoryId,
+       case when item.location_structure_id = 0 then coalesce(ex_item_1.location_structure_id,item.location_structure_id) else item.location_structure_id end as translationFactoryId,
        item.structure_id as 'values',
        item.translation_text as labels,
        item_ex.extension_data as exparam1,

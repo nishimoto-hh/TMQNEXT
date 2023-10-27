@@ -643,6 +643,10 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 原因性格2名称</summary>
             /// <value>原因性格2名称</value>
             public string FailureCausePersonality2StructureName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            /// <remarks>原因性格の翻訳取得に使用</remarks>
+            public int? FactoryId { get; set; }
         }
 
         /// <summary>
@@ -1231,7 +1235,7 @@ namespace BusinessLogic_MA0001
         /// <summary>
         /// ExcelPort 保全活動のデータクラス
         /// </summary>
-        public class excelPortMaintenance : ComDao.MaSummaryEntity
+        public class excelPortMaintenance : ComDao.CommonTableItem
         {
             /// <summary>Gets or sets 行番号</summary>
             /// <value>行番号</value>
@@ -1239,6 +1243,90 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 送信時処理ID</summary>
             /// <value>送信時処理ID</value>
             public long? ProcessId { get; set; }
+            /// <summary>Gets or sets 保全活動件名ID</summary>
+            /// <value>保全活動件名ID</value>
+            public long? SummaryId { get; set; }
+            /// <summary>Gets or sets 長期計画件名ID</summary>
+            /// <value>長期計画件名ID</value>
+            public long? LongPlanId { get; set; }
+            /// <summary>Gets or sets 活動区分ID</summary>
+            /// <value>活動区分ID</value>
+            public int? ActivityDivision { get; set; }
+            /// <summary>Gets or sets フォロー計画キーID</summary>
+            /// <value>フォロー計画キーID</value>
+            public long? FollowPlanKeyId { get; set; }
+            /// <summary>Gets or sets 件名</summary>
+            /// <value>件名</value>
+            public string Subject { get; set; }
+            /// <summary>Gets or sets 作業計画・実施内容</summary>
+            /// <value>作業計画・実施内容</value>
+            public string PlanImplementationContent { get; set; }
+            /// <summary>Gets or sets 件名メモ</summary>
+            /// <value>件名メモ</value>
+            public string SubjectNote { get; set; }
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets MQ分類ID</summary>
+            /// <value>MQ分類ID</value>
+            public int? MqClassStructureId { get; set; }
+            /// <summary>Gets or sets 修繕費分類ID</summary>
+            /// <value>修繕費分類ID</value>
+            public int? RepairCostClassStructureId { get; set; }
+            /// <summary>Gets or sets 予算性格区分ID</summary>
+            /// <value>予算性格区分ID</value>
+            public int? BudgetPersonalityStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理区分ID</summary>
+            /// <value>予算管理区分ID</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 突発区分ID</summary>
+            /// <value>突発区分ID</value>
+            public int? SuddenDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 系停止ID</summary>
+            /// <value>系停止ID</value>
+            public int? StopSystemStructureId { get; set; }
+            /// <summary>Gets or sets 系停止時間</summary>
+            /// <value>系停止時間</value>
+            public decimal? StopTime { get; set; }
+            /// <summary>Gets or sets カウント件数</summary>
+            /// <value>カウント件数</value>
+            public int? MaintenanceCount { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public int? ChangeManagementStructureId { get; set; }
+            /// <summary>Gets or sets 環境安全管理区分ID</summary>
+            /// <value>環境安全管理区分ID</value>
+            public int? EnvSafetyManagementStructureId { get; set; }
+            /// <summary>Gets or sets 着工日</summary>
+            /// <value>着工日</value>
+            public DateTime? ConstructionDate { get; set; }
+            /// <summary>Gets or sets 完了日</summary>
+            /// <value>完了日</value>
+            public DateTime? CompletionDate { get; set; }
+            /// <summary>Gets or sets 完了時刻</summary>
+            /// <value>完了時刻</value>
+            public DateTime? CompletionTime { get; set; }
             /// <summary>Gets or sets 地区ID</summary>
             /// <value>地区ID</value>
             public int? DistrictId { get; set; }

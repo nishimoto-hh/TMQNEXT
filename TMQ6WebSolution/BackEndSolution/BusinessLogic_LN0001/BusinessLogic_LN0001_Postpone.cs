@@ -45,7 +45,7 @@ namespace BusinessLogic_LN0001
             SetSearchResultsByDataClass<Dao.Detail.List>(pageInfo, list, list.Count);
 
             // スケジュール情報のセット
-            setSchedule(listCtrlId, false, param.LongPlanId, factoryId, SchedulePlanContent.Maintainance, true);
+            setSchedule(isMaintKind, listCtrlId, false, param.LongPlanId, factoryId, SchedulePlanContent.Maintainance, true);
 
             return true;
         }

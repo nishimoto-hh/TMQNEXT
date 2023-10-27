@@ -3,31 +3,27 @@
 --******************************************************************
 WITH department AS ( 
     --拡張データ、翻訳を取得(部門)
-    SELECT DISTINCT
+    SELECT
         structure_id
         , ie.extension_data
     FROM
-        v_structure_item_all si 
+        ms_structure ms 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1760 
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1760 
             AND ie.sequence_no = 1
-    WHERE
-        si.language_id = @LanguageId
 ) 
 , account AS ( 
     --拡張データ、翻訳を取得(勘定科目)
-    SELECT DISTINCT
+    SELECT
         structure_id
         , ie.extension_data
     FROM
-        v_structure_item_all si 
+        ms_structure ms 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1770 
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1770
             AND ie.sequence_no = 1
-    WHERE
-        si.language_id = @LanguageId
 ) 
 , location_stock AS ( 
    --在庫データ
@@ -77,18 +73,16 @@ WITH department AS (
 , number_unit AS(
     --数量管理単位
     SELECT
-        structure_id AS unit_id,
-        translation_text AS unit_name,
+        ms.structure_id AS unit_id,
         ex.extension_data AS unit_digit
     FROM
-        v_structure_item_all unit
+        ms_structure ms
         LEFT JOIN
             ms_item_extension ex
-        ON  unit.structure_item_id = ex.item_id
+        ON  ms.structure_item_id = ex.item_id
         AND ex.sequence_no = 2
     WHERE
-        unit.structure_group_id = 1730
-    AND unit.language_id = @LanguageId
+        ms.structure_group_id = 1730
 )
 , unit_round AS(
     --丸め処理区分
@@ -96,33 +90,46 @@ WITH department AS (
         ms.factory_id,
         ex.extension_data AS round_division
     FROM
-        ms_structure ms
+        (
+            SELECT
+                ms.factory_id,
+                MAX(ms.structure_id) AS structure_id
+            FROM
+                ms_structure ms
+            WHERE
+                ms.structure_group_id = 2050
+            GROUP BY
+                ms.factory_id
+        ) ms
         LEFT JOIN
-            ms_item item
-        ON  ms.structure_item_id = item.item_id
-        AND item.delete_flg = 0
-        LEFT JOIN
-            ms_item_extension ex
-        ON  item.item_id = ex.item_id
-        AND ex.sequence_no = 1
-    WHERE
-        ms.structure_group_id = 2050
-        AND ms.delete_flg = 0
+            (
+                SELECT
+                    ms.structure_id,
+                    ex.extension_data
+                FROM
+                    ms_structure ms
+                    LEFT JOIN
+                        ms_item_extension ex
+                    ON  ms.structure_item_id = ex.item_id
+                    AND ex.sequence_no = 1
+                WHERE
+                    ms.structure_group_id = 2050
+            ) ex
+        ON  ms.structure_id = ex.structure_id
 )
 , currency_unit AS(
     --金額管理単位
     SELECT
-        structure_id AS currency_id
-        , translation_text AS currency_name
-        , ex.extension_data AS currency_digit
+        ms.structure_id AS currency_id,
+        ex.extension_data AS currency_digit
     FROM
-        v_structure_item_all unit 
-        LEFT JOIN ms_item_extension ex 
-            ON unit.structure_item_id = ex.item_id 
-            AND ex.sequence_no = 2 
+        ms_structure ms
+        LEFT JOIN
+            ms_item_extension ex
+        ON  ms.structure_item_id = ex.item_id
+        AND ex.sequence_no = 2
     WHERE
-        unit.structure_group_id = 1740 
-        AND unit.language_id = @LanguageId
+        ms.structure_group_id = 1740
 )
 , structure_factory AS ( 
     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
@@ -133,7 +140,7 @@ WITH department AS (
         v_structure_item_all 
     WHERE
         structure_group_id IN ( 
-            1760,1770
+            1730,1740,1760,1770
         ) 
         AND language_id = @LanguageId
 ) 
@@ -145,9 +152,45 @@ SELECT
     pls.parts_location_detail_no,                                       --棚枝番
     plt.old_new_structure_id,                                           --新旧区分ID
     plt.unit_price,                                                     --入庫単価
-    currency_unit.currency_name,                                        --(金額単位名称)
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = plt.currency_structure_id
+              AND st_f.factory_id IN(0, pps.factory_id)
+           )
+      AND tra.structure_id = plt.currency_structure_id
+    ) AS currency_name,                                    -- 金額単位名称
+    --currency_unit.currency_name,                                        --(金額単位名称)
     pls.stock_quantity AS inventry,                                     --在庫数
-    number_unit.unit_name,                                              --(数量単位名称)
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = plt.unit_structure_id
+              AND st_f.factory_id IN(0, pps.factory_id)
+           )
+      AND tra.structure_id = plt.unit_structure_id
+    ) AS unit_name,                                    -- 数量単位名称
+    --number_unit.unit_name,                                              --(数量単位名称)
     COALESCE(pih.inout_quantity,0) AS issue_quantity,                   --受払数(画面：出庫数)
     dpm.extension_data AS department_cd,                                --部門CD
     COALESCE(

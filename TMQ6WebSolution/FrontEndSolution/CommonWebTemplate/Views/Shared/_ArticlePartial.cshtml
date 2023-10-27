@@ -79,7 +79,7 @@
         .OrderBy(y => y.FORMDEFINE.DISPORDER)
         .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
 
-    @:<article name="main_area" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@ViewBag.ParentConductId" class="@articleCss" data-formtitle="@formTitle">
+    @:<article name="main_area" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@ViewBag.ParentConductId" class="@articleCss" data-formtitle="@formTitle" data-transfactoryid="@ViewBag.TransFactoryId">
         @*メインエリア*@
         CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = Model.CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists };
         <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />
@@ -114,7 +114,7 @@
                 .OrderBy(y => y.FORMDEFINE.DISPORDER)
                 .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
 
-            @:<article name="common_area" data-conductid="@conductMst.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@Model.CONDUCTMST.CONDUCTID" data-fromctrlid="" data-formtitle="@formTitle" data-selflg="" class="@articleCss" hidden>
+            @:<article name="common_area" data-conductid="@conductMst.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@Model.CONDUCTMST.CONDUCTID" data-fromctrlid="" data-formtitle="@formTitle" data-selflg="" class="@articleCss" hidden data-transfactoryid="@ViewBag.TransFactoryId">
                 @*共通機能エリア*@
                 CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = conductMst.CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists, IsComForm = true };
                 <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />

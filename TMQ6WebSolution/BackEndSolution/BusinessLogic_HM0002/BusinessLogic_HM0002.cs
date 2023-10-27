@@ -818,6 +818,7 @@ namespace BusinessLogic_HM0002
         /// <summary>
         /// 保全情報一覧に紐づけるスケジュールリストを取得する処理
         /// </summary>
+        /// <param name="isDisplayMaintainanceKind">点検種別毎工場フラグ</param>
         /// <param name="listCtrlId">一覧のコントロールID</param>
         /// <param name="isDetail">参照画面の場合True(仕様が異なる、リンク有)</param>
         /// <param name="longPlanId">長期計画ID</param>
@@ -826,7 +827,7 @@ namespace BusinessLogic_HM0002
         /// <param name="historyManagementId">変更管理ID</param>
         /// <param name="schedulePlanContent">スケジュールの表示単位</param>
         /// <param name="isUnComp">未完了のデータを表示する場合True</param>
-        private void setSchedule(string listCtrlId, bool isDetail, long longPlanId, int factoryId, int processMode, long? historyManagementId, SchedulePlanContent schedulePlanContent, bool isUnComp = false)
+        private void setSchedule(bool isDisplayMaintainanceKind, string listCtrlId, bool isDetail, long longPlanId, int factoryId, int processMode, long? historyManagementId, SchedulePlanContent schedulePlanContent, bool isUnComp = false)
         {
             // 実行するSQL文を取得
             string fileNameSelect = string.Empty;
@@ -877,7 +878,7 @@ namespace BusinessLogic_HM0002
 
             // 画面表示データの取得
             List<TMQDao.ScheduleList.Display> scheduleDisplayList;
-            if (schedulePlanContent == SchedulePlanContent.Maintainance)
+            if (schedulePlanContent == SchedulePlanContent.Maintainance && isDisplayMaintainanceKind)
             {
                 // 保全項目単位の場合、上位ランクのステータスを取得
                 scheduleDisplayList = getScheduleDisplayList<TMQUtil.ScheduleListConverter>(execSql, cond);

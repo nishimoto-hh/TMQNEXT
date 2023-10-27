@@ -1,17 +1,35 @@
-select
+select distinct
     parts_id,              -- 予備品ID
     parts_no,              -- 予備品番号
     parts_name,            -- 予備品名称
     standard_size,         -- 規格・寸法
 	manufacturer_structure_id, -- メーカID
-    maker.translation_text as maker -- メーカー
+    --maker.translation_text as maker -- メーカー
+		( 
+		SELECT
+			tra.translation_text 
+		FROM
+			v_structure_item_all AS tra 
+		WHERE
+			tra.language_id = @LanguageId
+			AND tra.location_structure_id = ( 
+				SELECT
+					MAX(st_f.factory_id) 
+				FROM
+					structure_factory AS st_f 
+				WHERE
+					st_f.structure_id = pt.manufacturer_structure_id
+					AND st_f.factory_id IN (0, pt.factory_id)
+			) 
+			AND tra.structure_id = pt.manufacturer_structure_id
+		) AS maker -- メーカー
 from
     pt_parts pt
     left join
         v_structure_item maker
     on  pt.manufacturer_structure_id = maker.structure_id
     and maker.structure_group_id = 1150
-    and maker.language_id = /*languageId*/'ja'
+    and maker.language_id = @LanguageId
 WHERE   (pt.factory_id = (SELECT v.factory_id 
 						FROM mc_machine m,
 							ms_structure v

@@ -308,7 +308,7 @@ namespace BusinessLogic_PT0004
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetInventoryFirmList, out string withSql);
 
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereClause, out dynamic whereParam, out bool isDetailConditionApplied))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereClause, out dynamic whereParam, out bool isDetailConditionApplied, unUseLocation: true))
             {
                 return false;
             }

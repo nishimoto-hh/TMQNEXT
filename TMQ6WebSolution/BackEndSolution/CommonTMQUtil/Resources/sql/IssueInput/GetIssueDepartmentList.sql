@@ -18,31 +18,26 @@ WITH department AS (
     SELECT
         structure_id
         , ie.extension_data
-        , translation_text 
     FROM
-        v_structure_item_all si 
+        ms_structure ms 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1770 
+            ON ms.structure_item_id = ie.item_id 
+            AND ms.structure_group_id = 1770
             AND ie.sequence_no = 1
-    WHERE
-        si.language_id = @LanguageId
 ) 
 , number_unit AS(
     --数量管理単位
     SELECT
-        structure_id AS unit_id,
-        translation_text AS unit_name,
+        ms.structure_id AS unit_id,
         ex.extension_data AS unit_digit
     FROM
-        v_structure_item_all unit
+        ms_structure ms
         LEFT JOIN
             ms_item_extension ex
-        ON  unit.structure_item_id = ex.item_id
+        ON  ms.structure_item_id = ex.item_id
         AND ex.sequence_no = 2
     WHERE
-        unit.structure_group_id = 1730
-    AND unit.language_id = @LanguageId
+        ms.structure_group_id = 1730
 )
 , unit_round AS(
     --丸め処理区分
@@ -50,18 +45,32 @@ WITH department AS (
         ms.factory_id,
         ex.extension_data AS unit_round_division
     FROM
-        ms_structure ms
+        (
+            SELECT
+                ms.factory_id,
+                MAX(ms.structure_id) AS structure_id
+            FROM
+                ms_structure ms
+            WHERE
+                ms.structure_group_id = 2050
+            GROUP BY
+                ms.factory_id
+        ) ms
         LEFT JOIN
-            ms_item item
-        ON  ms.structure_item_id = item.item_id
-        AND item.delete_flg = 0
-        LEFT JOIN
-            ms_item_extension ex
-        ON  item.item_id = ex.item_id
-        AND ex.sequence_no = 1
-    WHERE
-        ms.structure_group_id = 2050
-        AND ms.delete_flg = 0
+            (
+                SELECT
+                    ms.structure_id,
+                    ex.extension_data
+                FROM
+                    ms_structure ms
+                    LEFT JOIN
+                        ms_item_extension ex
+                    ON  ms.structure_item_id = ex.item_id
+                    AND ex.sequence_no = 1
+                WHERE
+                    ms.structure_group_id = 2050
+            ) ex
+        ON  ms.structure_id = ex.structure_id
 )
 , structure_factory AS ( 
     -- 使用する構成グループの構成IDを絞込、工場の指定に用いる
@@ -72,10 +81,11 @@ WITH department AS (
         v_structure_item_all 
     WHERE
         structure_group_id IN ( 
-            1760,1770
+            1730,1760,1770
         ) 
         AND language_id = @LanguageId
-) 
+)
+,target AS (
 SELECT DISTINCT
     plt.old_new_structure_id,                          --新旧区分ID
     dpm.extension_data AS department_cd,               --部門CD
@@ -154,8 +164,27 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = plt.account_structure_id
     )) AS subject_nm,                                  --勘定科目名
-    SUM(pls.stock_quantity) AS inventry,               --在庫数
-    number_unit.unit_name AS unit,                     --(数量単位名称)
+    --SUM(pls.stock_quantity) AS inventry,               --在庫数
+    pls.stock_quantity AS inventry,
+    (
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = plt.unit_structure_id
+              AND st_f.factory_id IN(0, pps.factory_id)
+           )
+      AND tra.structure_id = plt.unit_structure_id
+    ) AS unit,                                    -- 数量管理単位
+    --number_unit.unit_name AS unit,                     --(数量単位名称)
     plt.old_new_structure_id AS old_new_nm,            --新旧区分(在庫一覧検索用)
     plt.department_structure_id AS to_department_nm,   --部門(在庫一覧検索用)
     plt.account_structure_id AS to_subject_nm,         --勘定科目(在庫一覧検索用)
@@ -189,15 +218,34 @@ FROM
 WHERE
     plt.parts_id = @PartsId 
     AND pls.stock_quantity > 0                 --在庫数が0以上のものを表示
+)
+
+SELECT DISTINCT
+old_new_structure_id
+,department_cd
+,department_nm
+,subject_cd
+,subject_nm
+,unit
+,old_new_nm
+,to_department_nm
+,to_subject_nm
+,unit_digit
+,unit_round_division
+,SUM(inventry) AS inventry
+FROM
+ target
+
 GROUP BY
-    plt.old_new_structure_id
-    , dpm.extension_data
-    , act.extension_data
-    , act.translation_text
-    , number_unit.unit_name
-    , plt.department_structure_id
-    , plt.account_structure_id
-    , number_unit.unit_digit
-    , unit_round.unit_round_division
-    , pps.factory_id
+old_new_structure_id
+,department_cd
+,department_nm
+,subject_cd
+,subject_nm
+,unit
+,old_new_nm
+,to_department_nm
+,to_subject_nm
+,unit_digit
+,unit_round_division
 ORDER BY old_new_structure_id,to_department_nm,to_subject_nm

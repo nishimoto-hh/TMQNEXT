@@ -13,6 +13,7 @@ FROM
 WHERE
     item.structure_group_id = 1040
 AND item.structure_layer_no = 3
+AND item.language_id =/*languageId*/'ja'
 AND (item.location_structure_id IN(
         SELECT
             dbo.get_target_layer_id(mub.location_structure_id, 1)

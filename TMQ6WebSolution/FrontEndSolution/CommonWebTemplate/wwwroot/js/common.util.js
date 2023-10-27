@@ -278,6 +278,13 @@ function separateDicReturn(dicReturn, conductId) {
             P_buttonDefine[conductId] = dicReturn["ButtonStatus"];  // List<Dictionary<string, object>>
         }
         /* ボタン権限制御 切替 end ================================================== */
+
+        if ("DefineTransList" in dicReturn) {
+            P_DefineTransList = dicReturn["DefineTransList"];   // List<Dictionary<string, object>>
+        } else {
+            P_DefineTransList = [];
+        }
+
     }
     return resultData;
 
@@ -1775,4 +1782,130 @@ function addValidatorRuleForInvalidKeyword(ele) {
     rule['comInvalidKeyword'] = true;
     rule['messages'] = message;
     $(ele).rules('add', rule);
+}
+
+/**
+ * 翻訳工場IDの取得
+ * @param {string} conductId    : 機能ID
+ * @param {number} formNo       : 画面番号
+ */
+function getTransFactoryId(conductId, formNo) {
+    return P_Article.data('transfactoryid');
+}
+
+/**
+ * 翻訳工場IDの設定
+ * @param {string} conductId    : 機能ID
+ * @param {number} formNo       : 画面番号
+ * @param {number} factoryId    : 対象工場ID
+ */
+function setTransFactoryId(conductId, formNo, factoryId) {
+    setAttrByNativeJs(P_Article, 'data-transfactoryid', factoryId);
+}
+
+/**
+ * 画面定義項目の翻訳の反映
+ * @param {string} conductId    : 機能ID
+ * @param {number} formNo       : 画面番号
+ */
+function setFormDefineTransData(conductId, formNo) {
+    if (P_DefineTransList == null || P_DefineTransList.length == 0) {
+        return;
+    }
+
+    // 画面定義翻訳リストの先頭に対象の工場IDが格納されている
+    const targetFactoryId = P_DefineTransList[0].FACTORYID;
+
+    // 連想配列をkeyでグループ化
+    var groupByData = function (data, key) {
+        return data.reduce(function (rv, x) {
+            (rv[x[key]] = rv[x[key]] || []).push(x);
+            return rv;
+        }, {});
+    };
+
+    var ctrlIdList = [];
+    // CTRLIDでグルーピング
+    var list = groupByData(P_DefineTransList, 'CTRLID');
+    $.each(groupByData(P_DefineTransList, 'CTRLID'), function (ctrlId, defineList) {
+        if (ctrlId == null || ctrlId == '') { return true; }
+        switch (defineList[0].CTRLTYPE) {
+            case ctrlTypeDef.ControlGroup:
+                setFormDefineTransDataForButton(P_Article, defineList);
+                break;
+            case ctrlTypeDef.IchiranPtn1:
+            case ctrlTypeDef.IchiranPtn2:
+            case ctrlTypeDef.BatStatus:
+                setFormDefineTransDataForList(P_Article, ctrlId, defineList);
+                break;
+            case ctrlTypeDef.IchiranPtn3:
+                setFormDefineTransDataForTabulator(P_Article, defineList[0].CTRLGRPID, defineList);
+                break;
+        }
+    });
+
+    // atricle要素の翻訳工場IDの更新
+    setTransFactoryId(conductId, formNo, targetFactoryId);
+
+    P_DefineTransList = null;
+}
+
+/**
+ * 画面定義項目の翻訳の反映(ボタン用)
+ * @param {string} ctrlId               : コントロールID
+ * @param {Array.<Object>} defineList   : 画面定義情報リスト
+ */
+function setFormDefineTransDataForButton(article, defineList) {
+    $.each(defineList, function (idx, define) {
+        var btn = $(article).find('input[name="' + define.BTN_CTRLID + '"]');
+        if (btn != null && btn.length > 0) {
+            $(btn).val(define.ITEM_TEXT);
+        }
+    });
+}
+
+/**
+ * 画面定義項目の翻訳の反映(一覧用)
+ * @param {string} ctrlId               : コントロールID
+ * @param {Array.<Object>} defineList   : 画面定義情報リスト
+ */
+function setFormDefineTransDataForList(article, ctrlId, defineList) {
+    var div = $(article).find('div#' + ctrlId);
+    var isVerticalTbl = $(div).hasClass('vertical_tbl');
+    $.each(defineList, function (idx, define) {
+        var headerCell;
+        if (isVerticalTbl) {
+            // 縦型一覧の場合
+            headerCell = $(div).find('th[data-name="' + define.ITEM_NAME + '"]');
+        } else {
+            // 横型一覧の場合
+            headerCell = $(div).find('th.title[data-name="' + define.ITEM_NAME + '"]');
+        }
+        if (headerCell != null && headerCell.length > 0) {
+            var temp = $(headerCell).find("*"); // 子孫要素を退避
+            $(headerCell).text(define.ITEM_TEXT);
+            // 退避した子孫要素を戻す
+            $(headerCell).append(temp);
+        }
+    });
+}
+
+/**
+ * 画面定義項目の翻訳の反映(tabulator用)
+ * @param {string} ctrlId               : コントロールID
+ * @param {Array.<Object>} defineList   : 画面定義情報リスト
+ */
+function setFormDefineTransDataForTabulator(article, ctrlId, defineList) {
+    var tabulatorHeader = $(article).find('div.' + ctrlId + '.tabulatorHeader');
+    if (tabulatorHeader != null && tabulatorHeader.length > 0) {
+        var headerList = $(tabulatorHeader).data('header');
+        $.each(defineList, function (idx, define) {
+            headerList.find(header => {
+                if (header.field == define.ITEM_NAME) {
+                    header.title = define.ITEM_TEXT
+                };
+            });
+            setAttrByNativeJs(tabulatorHeader, 'data-header', headerList);
+        });
+    }
 }

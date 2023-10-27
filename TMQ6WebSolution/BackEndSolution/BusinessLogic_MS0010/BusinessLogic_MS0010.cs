@@ -438,8 +438,18 @@ namespace BusinessLogic_MS0010
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.locationList>(ref locationList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
 
+            // 本務工場
+            int? dutyFactoryId = locationList.Where(x => x.DutyFlg == 1).Select(x => x.FactoryId).FirstOrDefault();
+            // 本務工場配下が所属マスタに登録されている場合、本務工場のレコードを除外してツリー選択ラベルに設定する
+            int count = locationList.Where(x => x.DutyFlg != 1 && x.FactoryId == dutyFactoryId).Count();
+            IList<Dao.locationList> treeLocationList = new List<Dao.locationList>(locationList);
+            if (count > 0)
+            {
+                treeLocationList = locationList.Where(x => x.DutyFlg != 1).ToList();
+            }
+
             // 検索結果の設定
-            if (!SetSearchResultsByDataClass<Dao.locationList>(locationPageInfo, locationList, locationList.Count))
+            if (!SetSearchResultsByDataClass<Dao.locationList>(locationPageInfo, treeLocationList, treeLocationList.Count))
             {
                 return false;
             }

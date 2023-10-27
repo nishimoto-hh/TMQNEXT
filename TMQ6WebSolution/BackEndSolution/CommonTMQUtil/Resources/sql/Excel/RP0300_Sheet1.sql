@@ -70,20 +70,18 @@ FROM
     LEFT JOIN 
         (
             SELECT inventory_id, SUM(ISNULL(inout_quantity, 0)) AS in_quantity FROM pt_inventory_difference
-            -- 受払区分 1：受入（構成グループID：1950、受入：412）
-            -- WHERE inout_division_structure_id = 412
+            -- 受払区分 1：受入（構成グループID：1950、受入）
             WHERE inout_division_structure_id IN
             (
                 SELECT
                     structure_id
                 FROM
-                    v_structure_item_all AS si 
+                    v_structure_all AS si 
                 INNER JOIN ms_item_extension AS ie 
                 ON si.structure_item_id = ie.item_id 
                 AND si.structure_group_id = 1950 
                 WHERE
-                    language_id = 'ja'
-                AND ie.extension_data = '1'
+                    ie.extension_data = '1'
             )
             AND   delete_flg = 0
             GROUP BY inventory_id
@@ -92,20 +90,18 @@ FROM
     LEFT JOIN 
         (
             SELECT inventory_id, SUM(ISNULL(inout_quantity, 0)) AS out_quantity FROM pt_inventory_difference
-            -- 受払区分 2：払出 （構成グループID：1950、払出：413）
-            -- WHERE inout_division_structure_id = 413
+            -- 受払区分 2：払出 （構成グループID：1950、払出）
             WHERE inout_division_structure_id IN
             (
                 SELECT
                     structure_id
                 FROM
-                    v_structure_item_all AS si 
+                    v_structure_all AS si 
                 INNER JOIN ms_item_extension AS ie 
                 ON si.structure_item_id = ie.item_id 
                 AND si.structure_group_id = 1950 
                 WHERE
-                    language_id = 'ja'
-                AND ie.extension_data = '2'
+                    ie.extension_data = '2'
             )
             AND   delete_flg = 0
             GROUP BY inventory_id

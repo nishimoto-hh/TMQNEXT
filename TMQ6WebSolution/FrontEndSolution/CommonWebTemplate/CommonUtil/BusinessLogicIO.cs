@@ -560,6 +560,9 @@ namespace CommonWebTemplate.CommonUtil
                     break;
             }
 
+            // 翻訳工場IDリスト
+            this.inParam.TransFactoryId = procData.TransFactoryId;
+
             //業務ロジックDLLコール
             // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
             object results;
@@ -1832,6 +1835,11 @@ namespace CommonWebTemplate.CommonUtil
                                 //blogic.callPush(targets);
                             }
                         }
+                    }
+
+                    if (this.outParam.DefineTransList != null && this.outParam.DefineTransList.Count > 0)
+                    {
+                        retResultW.Add("DefineTransList", this.outParam.DefineTransList);
                     }
 
                     retResult = retResultW;

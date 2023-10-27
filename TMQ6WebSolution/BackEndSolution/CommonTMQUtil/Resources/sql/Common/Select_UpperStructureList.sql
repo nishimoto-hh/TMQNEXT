@@ -52,6 +52,7 @@ rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) 
 SELECT
     vs.structure_id,
     vs.translation_text,
+    vs.location_structure_id,
     vs.structure_group_id,
     vs.structure_layer_no,
     up.org_structure_id

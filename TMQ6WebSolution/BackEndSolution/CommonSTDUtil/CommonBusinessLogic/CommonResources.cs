@@ -1785,6 +1785,18 @@
             /// 指定できない文字列が含まれています。
             /// </summary>
             public const string ID941120018 = "941120018";
+            /// <summary>
+            /// 変更管理承認者とExcelPort使用権限は同時に設定できません。
+            /// </summary>
+            public const string ID141290010 = "141290010";
+            /// <summary>
+            /// 時刻で入力してください。
+            /// </summary>
+            public const string ID941120015 = "941120015";
+            /// <summary>
+            /// 入力内容が不正です。
+            /// </summary>
+            public const string ID141220008 = "141220008";       
         }
     }
 }

@@ -29,15 +29,13 @@ SELECT
             )
     ) AS subject_nm -- 勘定科目コード + 勘定科目名
 FROM
-    v_structure_item_all item
+    v_structure_all item
     LEFT JOIN
         ms_item_extension ex
     ON  item.structure_item_id = ex.item_id
     AND ex.sequence_no = 1
 WHERE
-    item.language_id = @LanguageId
-AND item.structure_group_id = 1770
-AND item.delete_flg = 0
+item.structure_group_id = 1770
 GROUP BY
     ex.extension_data
 

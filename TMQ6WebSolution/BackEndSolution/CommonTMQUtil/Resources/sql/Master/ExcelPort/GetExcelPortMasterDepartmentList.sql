@@ -41,9 +41,10 @@ SELECT
             AND tra.structure_id = item.structure_id
         ) AS department_name_before,                                     -- 部門名(変更前)
     ex1.extension_data AS department_code,                               -- 部門コード
+    ex2.extension_data AS fix_division_val,                              -- 修理部門
     ex2.extension_data AS fix_division                                   -- 修理部門
 FROM
-    v_structure_item item
+    v_structure item
     LEFT JOIN
         ms_item_extension ex1 -- 部門コード
     ON  item.structure_item_id = ex1.item_id
@@ -54,7 +55,6 @@ FROM
     AND ex2.sequence_no = 2
 WHERE
     item.structure_group_id = 1760
-AND item.language_id = @LanguageId
 AND item.factory_id in @FactoryIdList
 AND EXISTS (SELECT * FROM ms_structure ms WHERE ms.structure_id = item.factory_id AND ms.delete_flg = 0)
 

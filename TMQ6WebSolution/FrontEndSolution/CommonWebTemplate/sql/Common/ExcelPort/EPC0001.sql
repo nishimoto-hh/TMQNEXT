@@ -38,6 +38,7 @@ SELECT DISTINCT
     ,item_ex18.extension_data AS exparam18
     ,item_ex19.extension_data AS exparam19
     ,item_ex20.extension_data AS exparam20
+    ,unused_factory.unuse_factory_id
     ,coalesce(order_common.display_order, order_factory.display_order, item.structure_id) AS display_order
 
 FROM v_structure_item AS item
@@ -138,6 +139,32 @@ AND item_ex19.sequence_no=19
 LEFT OUTER JOIN ms_item_extension AS item_ex20
 ON item.structure_item_id=item_ex20.item_id 
 AND item_ex20.sequence_no=20
+
+LEFT OUTER JOIN
+(
+    SELECT
+        unuse_a.structure_id,
+        trim(
+            '|'
+            FROM
+                (
+                    SELECT
+                        cast(unuse_b.factory_id AS varchar) + '|'
+                    FROM
+                        ms_structure_unused unuse_b
+                    WHERE
+                        unuse_b.structure_group_id = /*param1*/1000
+                    AND unuse_b.structure_id = unuse_a.structure_id FOR XML PATH('')
+                )
+        ) AS unuse_factory_id
+    FROM
+        ms_structure_unused unuse_a
+    WHERE
+        unuse_a.structure_group_id = /*param1*/1000
+    GROUP BY
+        unuse_a.structure_id
+) unused_factory -- 標準アイテム未使用工場
+ON item.structure_id = unused_factory.structure_id
 
 WHERE 
     item.structure_group_id = /*param1*/1000

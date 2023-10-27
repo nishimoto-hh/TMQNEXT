@@ -1,10 +1,20 @@
+WITH DateFormat AS (--「yyyy年MM月dd日」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 150000014
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
 SELECT
     manager.family_name AS manager                                                              -- 課長
     , chief.family_name AS chief                                                                -- 係長
     , foreman.family_name AS foreman                                                                -- 職長
     , personnel.family_name AS person                                                           -- 担当
-    , '''' + FORMAT(ma_request.issue_date, 'yyyy年MM月dd日') AS drafting                        -- 起票
-    , '''' + FORMAT(ma_request.desired_start_date, 'yyyy年MM月dd日') AS construction            -- 着工
+    , '''' + FORMAT(ma_request.issue_date, DateFormat.translation_text) AS drafting                        -- 起票
+    , '''' + FORMAT(ma_request.desired_start_date, DateFormat.translation_text) AS construction            -- 着工
     , ma_summary.location_structure_id                                                          -- 機能場所階層id(工程取得用)
     , '' AS stroke_name                                                                         -- 工程
     , ma_summary.subject AS subject                                                             -- 件名
@@ -26,5 +36,6 @@ FROM
         ON ma_request.request_personnel_id = personnel.user_id
     LEFT JOIN ms_user foreman                                           -- 職長
         ON ma_request.request_department_foreman_id = foreman.user_id
-
+    CROSS JOIN
+       DateFormat -- 「yyyy年MM月dd日」の翻訳
  

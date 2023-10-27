@@ -83,6 +83,8 @@
     <None Remove="Resources\sql\Attachment\WITH_AttachmentList.sql" />
     <None Remove="Resources\sql\Common\CreateTableTempJob.sql" />
     <None Remove="Resources\sql\Common\CreateTableTempLocation.sql" />
+    <None Remove="Resources\sql\Common\GetControlDefineTransList.sql" />
+    <None Remove="Resources\sql\Common\GetControlDefineTransListCommon.sql" />
     <None Remove="Resources\sql\Common\GetNextSequence.sql" />
     <None Remove="Resources\sql\Common\GetPartsLocationTranslation.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetApplicationStatus.sql" />
@@ -735,7 +737,6 @@
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\GetLFailureCausePersonalityStructureItemInfo.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\GetStructureId.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\InsertFailureCausePersonalityStructureInfo.sql" />
-    <None Remove="Resources\sql\Master\GetCountAllTranslation.sql" />
     <None Remove="Resources\sql\Master\GetCountFactoryTranslation.sql" />
     <None Remove="Resources\sql\Master\GetCountTranslation.sql" />
     <None Remove="Resources\sql\Master\GetCountTranslationWithStandardItem.sql" />
@@ -902,6 +903,7 @@
     <None Remove="Resources\sql\Report\UpdateOutputTemplate.sql" />
     <None Remove="Resources\sql\SelectItem\GetItemList.sql" />
     <None Remove="Resources\sql\SelectParts\GetPartsList.sql" />
+    <None Remove="Resources\sql\SelectParts\WITH_GetPartsList.sql" />
     <None Remove="Resources\sql\SelectUser\GetUserList.sql" />
     <None Remove="Resources\sql\SelectUser\SELECT_UserList.sql" />
     <None Remove="Resources\sql\TOP\HistoryManagement\GetApplicationCount.sql" />
@@ -928,8 +930,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\sql\Attachment\GetCountAttachmentList.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\GetControlDefineTransListCommon.sql" />
     <EmbeddedResource Include="Resources\sql\Common\ListPerformance\InsertTempTranslationLayer.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\GetControlDefineTransList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\CreateTableTempGetLongPlanList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetCountHistoryManagementList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\InsertTempGetLongPlanList.sql" />
@@ -1136,7 +1139,6 @@
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertEquipmentInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertEquipmentInfoTransaction.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertHmManagementStandardsComponentInfo.sql" />
-    <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertHmManagementStandardsContentInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertMachineInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertMachineInfoTransaction.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\InsertMaintainanceScheduleInfo.sql" />
@@ -1214,7 +1216,6 @@
     <EmbeddedResource Include="Resources\sql\Excel\RP0250_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0260_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\UpdateEnterInfoList.sql" />
-    <EmbeddedResource Include="Resources\sql\InventoryControl\WITH_GetSpareInfoList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\WITH_GetEnterList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\WITH_GetInoutHistryList.sql" />
     <EmbeddedResource Include="Resources\sql\Inventory\WITH_GetIssueList.sql" />
@@ -1234,9 +1235,6 @@
     <EmbeddedResource Include="Resources\sql\IssueInput\Select_where_by_inout_history_id.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\WITH_GetList.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\GetExcelPortManagementStandard.sql" />
-    <EmbeddedResource Include="Resources\sql\Machine\WITH_GetExcelPortManagementStandard.sql" />
-    <EmbeddedResource Include="Resources\sql\Machine\WITH_GetMachineList.sql" />
-    <EmbeddedResource Include="Resources\sql\Machine\WITH_GetExcelPortMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\GetMaintainanceKindManageDataUpdContent.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\GetMaintainanceScheduleLankUpdCheck.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\GetMaintainanceScheduleUpdCheck.sql" />
@@ -1267,7 +1265,6 @@
     <EmbeddedResource Include="Resources\sql\Master\FailureCausePersonalityStructure\GetFailureCausePersonalityStructureFactoryItemList.sql" />
     <EmbeddedResource Include="Resources\sql\Master\FailureCausePersonalityStructure\GetLFailureCausePersonalityStructureItemInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Master\FailureCausePersonalityStructure\InsertFailureCausePersonalityStructureInfo.sql" />
-    <EmbeddedResource Include="Resources\sql\Master\GetCountAllTranslation.sql" />
     <EmbeddedResource Include="Resources\sql\Master\GetCountTranslation.sql" />
     <EmbeddedResource Include="Resources\sql\Master\GetExtensionItemCountAll.sql" />
     <EmbeddedResource Include="Resources\sql\Master\GetExtensionItemCount.sql" />
@@ -1742,6 +1739,7 @@
     <EmbeddedResource Include="Resources\sql\Report\UpdateOutputTemplate.sql" />
     <EmbeddedResource Include="Resources\sql\SelectItem\GetItemList.sql" />
     <EmbeddedResource Include="Resources\sql\SelectParts\GetPartsList.sql" />
+    <EmbeddedResource Include="Resources\sql\SelectParts\WITH_GetPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\SelectUser\GetUserList.sql" />
     <EmbeddedResource Include="Resources\sql\TOP\HistoryManagement\GetApprovalCount.sql" />
     <EmbeddedResource Include="Resources\sql\TOP\HistoryManagement\GetApprovalUserByLogin.sql" />

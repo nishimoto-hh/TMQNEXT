@@ -19,6 +19,30 @@ FROM
     STRING_SPLIT(@JobStructureIds, ',');
 @JobStructureIds*/
 
+--変更管理対象の工場を取得
+DROP TABLE IF EXISTS #temp_history_factory; 
+CREATE TABLE #temp_history_factory(structure_id INT); 
+INSERT 
+INTO #temp_history_factory 
+SELECT
+    vs.structure_id
+FROM
+    v_structure AS vs
+WHERE
+    EXISTS(
+        SELECT
+            *
+        FROM
+            ms_item_extension AS ex
+        WHERE
+            ex.item_id = vs.structure_item_id
+        -- 拡張項目4の値がNullでなければ承認者が設定されていて、変更履歴管理を行う工場となる。
+        AND ex.sequence_no = 4
+        AND coalesce(ex.extension_data, '') != ''
+    )
+AND vs.structure_group_id = 1000
+AND vs.structure_layer_no = 1;
+
 DROP TABLE IF EXISTS #temp_target_data; 
 CREATE TABLE #temp_target_data( 
     long_plan_id bigint
@@ -28,7 +52,9 @@ INSERT INTO #temp_target_data
 SELECT DISTINCT
     hlp.long_plan_id 
 FROM
-    hm_ln_long_plan AS hlp 
+    hm_history_management hm 
+    LEFT JOIN hm_ln_long_plan hlp 
+        ON hm.history_management_id = hlp.history_management_id 
     LEFT JOIN hm_mc_management_standards_content hmcon 
         ON hlp.long_plan_id = hmcon.long_plan_id 
     LEFT JOIN hm_mc_management_standards_component hmcom 
@@ -37,6 +63,14 @@ FROM
         ON hmcom.machine_id = hmma.machine_id 
 WHERE
     1 = 1
+    AND EXISTS ( 
+        SELECT
+            * 
+        FROM
+            #temp_history_factory temp 
+        WHERE
+            hm.factory_id = temp.structure_id
+    ) 
     /*@Subject
     AND hlp.subject LIKE @Subject
     @Subject*/
@@ -564,6 +598,10 @@ FROM
     INNER JOIN #temp_division_info AS div 
         ON (div.structure_id = hm.application_division_id) 
 ;
+CREATE NONCLUSTERED INDEX idx_temp_history_data_01
+    ON #temp_history_data(long_plan_id); 
+CREATE NONCLUSTERED INDEX idx_temp_history_data_02
+    ON #temp_history_data(history_management_id);
 
 --保全部位、保全項目の変更履歴
 DROP TABLE IF EXISTS #temp_history_maintainance_data; 
@@ -833,6 +871,10 @@ FROM
     LEFT JOIN #temp_division_info AS div 
         ON (div.structure_id = hm.application_division_id) 
 ;
+CREATE NONCLUSTERED INDEX idx_temp_history_maintainance_data_01
+    ON #temp_history_maintainance_data(long_plan_id); 
+CREATE NONCLUSTERED INDEX idx_temp_history_maintainance_data_02
+    ON #temp_history_maintainance_data(history_management_id);
 
 DROP TABLE IF EXISTS #report_col_info; 
 
@@ -911,6 +953,32 @@ WHERE
             AND temp.ex_data = '4' --保全部位、保全項目
     ) 
     AND rci.sequence_no = 2; 
+    
+/*@GetData
+DROP TABLE IF EXISTS #temp_output_data; 
+CREATE TABLE #temp_output_data( 
+    long_plan_id bigint
+    , history_management_id bigint
+    , job_name nvarchar(400)
+    , subject nvarchar(400)
+    , machine_no nvarchar(400)
+    , machine_name nvarchar(400)
+    , inspection_site_name nvarchar(400)
+    , inspection_content_name nvarchar(400)
+    , col_name nvarchar(400)
+    , col_value_before nvarchar(MAX)
+    , col_value_after nvarchar(MAX)
+    , application_reason nvarchar(400)
+    , application_user_name nvarchar(400)
+    , application_date DATE
+    , approval_user_name nvarchar(400)
+    , approval_date DATE
+    , status nvarchar(400)
+    , division nvarchar(400)
+    , col_no INT
+    , management_standards_content_id bigint
+); 
+@GetData*/
 
 WITH history_data_vertical AS ( 
     -- 項目ごとの縦持ちに変更
@@ -929,324 +997,332 @@ WITH history_data_vertical AS (
         ln_long_plan lp
 ) 
 -- history_orderの前後で紐づけて、変更前後を横持ちにした帳票を出力
+/*@GetCount
+, get_count AS (
+@GetCount*/
+/*@GetData
+    INSERT INTO #temp_output_data
+@GetData*/
+    SELECT
+        /*@GetCount
+        COUNT(*) AS cnt
+        @GetCount*/
+        /*@GetData
+        a.long_plan_id
+        , a.history_management_id
+        , CASE 
+            WHEN lp.job_structure_id IS NOT NULL 
+                THEN ( 
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = @LanguageId 
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = lp.job_kind_structure_id 
+                            AND st_f.factory_id IN (0, lp.factory_id)
+                    ) 
+                    AND tra.structure_id = lp.job_kind_structure_id
+            )
+            ELSE hd.job_name 
+            END AS job_name                         --職種
+        , COALESCE(lp.subject, hd.subject) AS subject -- 長計件名
+        , NULL AS machine_no
+        , NULL AS machine_name
+        , NULL AS inspection_site_name
+        , NULL AS inspection_content_name
+        , a.col_name                                --変更項目
+        , CASE a.division_cd 
+            WHEN '10' THEN '' 
+            ELSE b.col_value 
+            END AS col_value_before                 -- 変更前の値、新規の場合はブランク
+        , CASE a.division_cd 
+            WHEN '30' THEN '' 
+            ELSE a.col_value 
+            END AS col_value_after                  -- 変更後の値、削除の場合はブランク
+        , a.application_reason
+        , a.application_user_name
+        , a.application_date
+        , a.approval_user_name
+        , a.approval_date
+        , a.status
+        , a.division 
+        , a.col_no
+        , 0 AS management_standards_content_id 
+        @GetData*/
+    FROM
+        history_data_vertical AS a                  -- 変更後(aはAFTERのA)
+        LEFT OUTER JOIN history_data_vertical AS b  -- 変更前(bはBEFOREのB) 、新規申請の場合は紐づかないので外部結合
+            ON ( 
+                a.long_plan_id = b.long_plan_id 
+                AND a.history_order - 1 = b.history_order 
+                AND a.col_no = b.col_no
+            ) 
+        LEFT JOIN t_long_plan lp 
+            ON a.long_plan_id = lp.long_plan_id 
+        LEFT JOIN ( 
+            SELECT
+                max(hd.history_management_id) AS history_management_id
+                , hd.long_plan_id 
+            FROM
+                #temp_history_data hd 
+            GROUP BY
+                hd.long_plan_id
+        ) hmlp 
+            ON a.long_plan_id = hmlp.long_plan_id 
+        LEFT JOIN #temp_history_data hd 
+            ON hd.history_management_id = hmlp.history_management_id 
+    WHERE
+        (
+            COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
+            OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
+        )
+        /*@ApplicationStatusIdList
+        AND a.application_status_id IN @ApplicationStatusIdList
+        @ApplicationStatusIdList*/
+        /*@ApplicationDivisionIdList
+        AND a.application_division_id IN @ApplicationDivisionIdList
+        @ApplicationDivisionIdList*/
+        /*@ApplicationUserName
+        AND a.application_user_name LIKE @ApplicationUserName
+        @ApplicationUserName*/
+        /*@ApplicationDateFrom
+        AND a.application_date >= @ApplicationDateFrom
+        @ApplicationDateFrom*/
+        /*@ApplicationDateTo
+        AND a.application_date <= @ApplicationDateTo
+        @ApplicationDateTo*/
+        /*@ApprovalUserName
+        AND a.approval_user_name LIKE @ApprovalUserName
+        @ApprovalUserName*/
+        /*@ApprovalDateFrom
+        AND a.approval_date >= @ApprovalDateFrom
+        @ApprovalDateFrom*/
+        /*@ApprovalDateTo
+        AND a.approval_date <= @ApprovalDateTo
+        @ApprovalDateTo*/
+        /*@ApplicationReason
+        AND a.application_reason LIKE @ApplicationReason
+        @ApplicationReason*/
+
+        UNION ALL
+
+    SELECT
+        /*@GetCount
+        COUNT(*) AS cnt
+        @GetCount*/
+        /*@GetData
+        a.long_plan_id
+        , a.history_management_id
+        , CASE 
+            WHEN lp.job_structure_id IS NOT NULL 
+                THEN ( 
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = @LanguageId 
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = lp.job_kind_structure_id 
+                            AND st_f.factory_id IN (0, lp.factory_id)
+                    ) 
+                    AND tra.structure_id = lp.job_kind_structure_id
+            ) 
+            ELSE ( 
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = @LanguageId 
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = hmlp.job_kind_structure_id 
+                            AND st_f.factory_id IN (0, hmlp.location_factory_structure_id)
+                    ) 
+                    AND tra.structure_id = hmlp.job_kind_structure_id
+            ) 
+            END AS job_name                          --職種
+        , COALESCE(lp.subject, hmlp.subject) AS subject -- 長計件名
+        , COALESCE(mc.machine_no, hmc.machine_no) AS machine_no --機器番号
+        , COALESCE(mc.machine_name, hmc.machine_name) AS machine_name --機器名称
+        , ( 
+            SELECT
+                tra.translation_text 
+            FROM
+                v_structure_item_all AS tra 
+            WHERE
+                tra.language_id = @LanguageId 
+                AND tra.location_structure_id = ( 
+                    SELECT
+                        MAX(st_f.factory_id) 
+                    FROM
+                        #temp_structure_factory AS st_f 
+                    WHERE
+                        st_f.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id) 
+                        AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
+                ) 
+                AND tra.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id)
+        ) AS inspection_site_name                   --保全部位(翻訳)
+        , ( 
+            SELECT
+                tra.translation_text 
+            FROM
+                v_structure_item_all AS tra 
+            WHERE
+                tra.language_id = @LanguageId 
+                AND tra.location_structure_id = ( 
+                    SELECT
+                        MAX(st_f.factory_id) 
+                    FROM
+                        #temp_structure_factory AS st_f 
+                    WHERE
+                        st_f.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id) 
+                        AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
+                ) 
+                AND tra.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id)
+        ) AS inspection_content_name                --保全項目(翻訳)
+        , a.col_name                                --変更項目
+        , CASE 
+            WHEN a.division_cd = '10' OR a.execution_division = 4 THEN '' 
+            ELSE b.col_value 
+            END AS col_value_before                 -- 変更前の値、新規の場合はブランク
+        , CASE
+            WHEN a.division_cd = '30' OR a.execution_division = 5 THEN '' 
+            ELSE a.col_value 
+            END AS col_value_after                  -- 変更後の値、削除の場合はブランク
+        , a.application_reason
+        , a.application_user_name
+        , a.application_date
+        , a.approval_user_name
+        , a.approval_date
+        , a.status
+        , a.division 
+        , a.col_no
+        , a.management_standards_content_id 
+        @GetData*/
+    FROM
+        history_maintainance_data_vertical AS a                  -- 変更後(aはAFTERのA)
+        LEFT OUTER JOIN history_maintainance_data_vertical AS b  -- 変更前(bはBEFOREのB) 、新規申請の場合は紐づかないので外部結合
+            ON ( 
+                a.management_standards_content_id = b.management_standards_content_id 
+                AND a.long_plan_id = b.long_plan_id
+                AND a.history_order - 1 = b.history_order 
+                AND a.col_no = b.col_no
+            ) 
+        LEFT JOIN t_long_plan lp 
+            ON a.long_plan_id = lp.long_plan_id 
+        LEFT JOIN mc_management_standards_content mscon 
+            ON a.management_standards_content_id = mscon.management_standards_content_id 
+        LEFT JOIN mc_management_standards_component mscom 
+            ON mscon.management_standards_component_id = mscom.management_standards_component_id 
+        LEFT JOIN mc_machine mc 
+            ON mscom.machine_id = mc.machine_id 
+        LEFT JOIN ( 
+            SELECT
+                max(hmlp.history_management_id) AS history_management_id
+                , hmlp.long_plan_id 
+            FROM
+                hm_ln_long_plan hmlp 
+            WHERE
+                EXISTS ( 
+                    SELECT
+                        * 
+                    FROM
+                        #temp_target_data temp 
+                    WHERE
+                        hmlp.long_plan_id = temp.long_plan_id
+                ) 
+            GROUP BY
+                long_plan_id
+        ) history --件名単位で最新の変更管理
+            ON a.long_plan_id = history.long_plan_id 
+        LEFT JOIN hm_ln_long_plan hmlp 
+            ON history.history_management_id = hmlp.history_management_id 
+        LEFT JOIN hm_mc_management_standards_content hcon 
+            ON history.history_management_id = hcon.history_management_id 
+            AND a.management_standards_content_id = hcon.management_standards_content_id 
+        LEFT JOIN mc_management_standards_component hmscom 
+            ON hcon.management_standards_component_id = hmscom.management_standards_component_id 
+        LEFT JOIN mc_machine hmc 
+            ON hmscom.machine_id = hmc.machine_id 
+    WHERE
+        (
+            COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
+            OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
+            OR a.execution_division IN (4, 5) -- 保全項目の追加または削除
+        )
+        /*@ApplicationStatusIdList
+        AND a.application_status_id IN @ApplicationStatusIdList
+        @ApplicationStatusIdList*/
+        /*@ApplicationDivisionIdList
+        AND a.application_division_id IN @ApplicationDivisionIdList
+        @ApplicationDivisionIdList*/
+        /*@ApplicationUserName
+        AND a.application_user_name LIKE @ApplicationUserName
+        @ApplicationUserName*/
+        /*@ApplicationDateFrom
+        AND a.application_date >= @ApplicationDateFrom
+        @ApplicationDateFrom*/
+        /*@ApplicationDateTo
+        AND a.application_date <= @ApplicationDateTo
+        @ApplicationDateTo*/
+        /*@ApprovalUserName
+        AND a.approval_user_name LIKE @ApprovalUserName
+        @ApprovalUserName*/
+        /*@ApprovalDateFrom
+        AND a.approval_date >= @ApprovalDateFrom
+        @ApprovalDateFrom*/
+        /*@ApprovalDateTo
+        AND a.approval_date <= @ApprovalDateTo
+        @ApprovalDateTo*/
+        /*@ApplicationReason
+        AND a.application_reason LIKE @ApplicationReason
+        @ApplicationReason*/
+
+/*@GetCount
+)
 SELECT
-    /*@GetCount
     SUM(cnt)
-    @GetCount*/
-    /*@GetData
-    DENSE_RANK() OVER ( 
-        ORDER BY
-            IIF(tbl.application_date IS NOT NULL, 0, 1)
-            , tbl.application_date
-            , tbl.long_plan_id
-            , tbl.history_management_id
-    ) AS row_num
-    , * 
-    @GetData*/
+FROM
+    get_count
+@GetCount*/
+/*@GetData
+;
+SELECT
+    *
 FROM
     ( 
         SELECT
-            /*@GetCount
-            COUNT(*) AS cnt
-            @GetCount*/
-            /*@GetData
-            a.long_plan_id
-            , a.history_management_id
-            , CASE 
-                WHEN lp.job_structure_id IS NOT NULL 
-                    THEN ( 
-                    SELECT
-                        tra.translation_text 
-                    FROM
-                        v_structure_item_all AS tra 
-                    WHERE
-                        tra.language_id = @LanguageId 
-                        AND tra.location_structure_id = ( 
-                            SELECT
-                                MAX(st_f.factory_id) 
-                            FROM
-                                #temp_structure_factory AS st_f 
-                            WHERE
-                                st_f.structure_id = lp.job_kind_structure_id 
-                                AND st_f.factory_id IN (0, lp.factory_id)
-                        ) 
-                        AND tra.structure_id = lp.job_kind_structure_id
-                )
-                ELSE hd.job_name 
-                END AS job_name                         --職種
-            , COALESCE(lp.subject, hd.subject) AS subject -- 長計件名
-            , NULL AS machine_no
-            , NULL AS machine_name
-            , NULL AS inspection_site_name
-            , NULL AS inspection_content_name
-            , a.col_name                                --変更項目
-            , CASE a.division_cd 
-                WHEN '10' THEN '' 
-                ELSE b.col_value 
-                END AS col_value_before                 -- 変更前の値、新規の場合はブランク
-            , CASE a.division_cd 
-                WHEN '30' THEN '' 
-                ELSE a.col_value 
-                END AS col_value_after                  -- 変更後の値、削除の場合はブランク
-            , a.application_reason
-            , a.application_user_name
-            , a.application_date
-            , a.approval_user_name
-            , a.approval_date
-            , a.status
-            , a.division 
-            , a.col_no
-            , 0 AS management_standards_content_id 
-            @GetData*/
+            DENSE_RANK() OVER ( 
+                ORDER BY
+                    IIF(application_date IS NOT NULL, 0, 1)
+                    , application_date
+                    , long_plan_id
+                    , history_management_id
+            ) AS row_num
+            , * 
         FROM
-            history_data_vertical AS a                  -- 変更後(aはAFTERのA)
-            LEFT OUTER JOIN history_data_vertical AS b  -- 変更前(bはBEFOREのB) 、新規申請の場合は紐づかないので外部結合
-                ON ( 
-                    a.long_plan_id = b.long_plan_id 
-                    AND a.history_order - 1 = b.history_order 
-                    AND a.col_no = b.col_no
-                ) 
-            LEFT JOIN t_long_plan lp 
-                ON a.long_plan_id = lp.long_plan_id 
-            LEFT JOIN ( 
-                SELECT
-                    max(hd.history_management_id) AS history_management_id
-                    , hd.long_plan_id 
-                FROM
-                    #temp_history_data hd 
-                GROUP BY
-                    hd.long_plan_id
-            ) hmlp 
-                ON a.long_plan_id = hmlp.long_plan_id 
-            LEFT JOIN #temp_history_data hd 
-                ON hd.history_management_id = hmlp.history_management_id 
-        WHERE
-            (
-                COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
-                OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
-            )
-            /*@ApplicationStatusIdList
-            AND a.application_status_id IN @ApplicationStatusIdList
-            @ApplicationStatusIdList*/
-            /*@ApplicationDivisionIdList
-            AND a.application_division_id IN @ApplicationDivisionIdList
-            @ApplicationDivisionIdList*/
-            /*@ApplicationUserName
-            AND a.application_user_name LIKE @ApplicationUserName
-            @ApplicationUserName*/
-            /*@ApplicationDateFrom
-            AND a.application_date >= @ApplicationDateFrom
-            @ApplicationDateFrom*/
-            /*@ApplicationDateTo
-            AND a.application_date <= @ApplicationDateTo
-            @ApplicationDateTo*/
-            /*@ApprovalUserName
-            AND a.approval_user_name LIKE @ApprovalUserName
-            @ApprovalUserName*/
-            /*@ApprovalDateFrom
-            AND a.approval_date >= @ApprovalDateFrom
-            @ApprovalDateFrom*/
-            /*@ApprovalDateTo
-            AND a.approval_date <= @ApprovalDateTo
-            @ApprovalDateTo*/
-            /*@ApplicationReason
-            AND a.application_reason LIKE @ApplicationReason
-            @ApplicationReason*/
-
-            UNION ALL
-
-        SELECT
-            /*@GetCount
-            COUNT(*) AS cnt
-            @GetCount*/
-            /*@GetData
-            a.long_plan_id
-            , a.history_management_id
-            , CASE 
-                WHEN lp.job_structure_id IS NOT NULL 
-                    THEN ( 
-                    SELECT
-                        tra.translation_text 
-                    FROM
-                        v_structure_item_all AS tra 
-                    WHERE
-                        tra.language_id = @LanguageId 
-                        AND tra.location_structure_id = ( 
-                            SELECT
-                                MAX(st_f.factory_id) 
-                            FROM
-                                #temp_structure_factory AS st_f 
-                            WHERE
-                                st_f.structure_id = lp.job_kind_structure_id 
-                                AND st_f.factory_id IN (0, lp.factory_id)
-                        ) 
-                        AND tra.structure_id = lp.job_kind_structure_id
-                ) 
-                ELSE ( 
-                    SELECT
-                        tra.translation_text 
-                    FROM
-                        v_structure_item_all AS tra 
-                    WHERE
-                        tra.language_id = @LanguageId 
-                        AND tra.location_structure_id = ( 
-                            SELECT
-                                MAX(st_f.factory_id) 
-                            FROM
-                                #temp_structure_factory AS st_f 
-                            WHERE
-                                st_f.structure_id = hmlp.job_kind_structure_id 
-                                AND st_f.factory_id IN (0, hmlp.location_factory_structure_id)
-                        ) 
-                        AND tra.structure_id = hmlp.job_kind_structure_id
-                ) 
-                END AS job_name                          --職種
-            , COALESCE(lp.subject, hmlp.subject) AS subject -- 長計件名
-            , COALESCE(mc.machine_no, hmc.machine_no) AS machine_no --機器番号
-            , COALESCE(mc.machine_name, hmc.machine_name) AS machine_name --機器名称
-            , ( 
-                SELECT
-                    tra.translation_text 
-                FROM
-                    v_structure_item_all AS tra 
-                WHERE
-                    tra.language_id = @LanguageId 
-                    AND tra.location_structure_id = ( 
-                        SELECT
-                            MAX(st_f.factory_id) 
-                        FROM
-                            #temp_structure_factory AS st_f 
-                        WHERE
-                            st_f.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id) 
-                            AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
-                    ) 
-                    AND tra.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id)
-            ) AS inspection_site_name                   --保全部位(翻訳)
-            , ( 
-                SELECT
-                    tra.translation_text 
-                FROM
-                    v_structure_item_all AS tra 
-                WHERE
-                    tra.language_id = @LanguageId 
-                    AND tra.location_structure_id = ( 
-                        SELECT
-                            MAX(st_f.factory_id) 
-                        FROM
-                            #temp_structure_factory AS st_f 
-                        WHERE
-                            st_f.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id) 
-                            AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
-                    ) 
-                    AND tra.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id)
-            ) AS inspection_content_name                --保全項目(翻訳)
-            , a.col_name                                --変更項目
-            , CASE 
-                WHEN a.division_cd = '10' OR a.execution_division = 4 THEN '' 
-                ELSE b.col_value 
-                END AS col_value_before                 -- 変更前の値、新規の場合はブランク
-            , CASE
-                WHEN a.division_cd = '30' OR a.execution_division = 5 THEN '' 
-                ELSE a.col_value 
-                END AS col_value_after                  -- 変更後の値、削除の場合はブランク
-            , a.application_reason
-            , a.application_user_name
-            , a.application_date
-            , a.approval_user_name
-            , a.approval_date
-            , a.status
-            , a.division 
-            , a.col_no
-            , a.management_standards_content_id 
-            @GetData*/
-        FROM
-            history_maintainance_data_vertical AS a                  -- 変更後(aはAFTERのA)
-            LEFT OUTER JOIN history_maintainance_data_vertical AS b  -- 変更前(bはBEFOREのB) 、新規申請の場合は紐づかないので外部結合
-                ON ( 
-                    a.management_standards_content_id = b.management_standards_content_id 
-                    AND a.long_plan_id = b.long_plan_id
-                    AND a.history_order - 1 = b.history_order 
-                    AND a.col_no = b.col_no
-                ) 
-            LEFT JOIN t_long_plan lp 
-                ON a.long_plan_id = lp.long_plan_id 
-            LEFT JOIN mc_management_standards_content mscon 
-                ON a.management_standards_content_id = mscon.management_standards_content_id 
-            LEFT JOIN mc_management_standards_component mscom 
-                ON mscon.management_standards_component_id = mscom.management_standards_component_id 
-            LEFT JOIN mc_machine mc 
-                ON mscom.machine_id = mc.machine_id 
-            LEFT JOIN ( 
-                SELECT
-                    max(hmlp.history_management_id) AS history_management_id
-                    , hmlp.long_plan_id 
-                FROM
-                    hm_ln_long_plan hmlp 
-                WHERE
-                    EXISTS ( 
-                        SELECT
-                            * 
-                        FROM
-                            #temp_target_data temp 
-                        WHERE
-                            hmlp.long_plan_id = temp.long_plan_id
-                    ) 
-                GROUP BY
-                    long_plan_id
-            ) history --件名単位で最新の変更管理
-                ON a.long_plan_id = history.long_plan_id 
-            LEFT JOIN hm_ln_long_plan hmlp 
-                ON history.history_management_id = hmlp.history_management_id 
-            LEFT JOIN hm_mc_management_standards_content hcon 
-                ON history.history_management_id = hcon.history_management_id 
-                AND a.management_standards_content_id = hcon.management_standards_content_id 
-            LEFT JOIN mc_management_standards_component hmscom 
-                ON hcon.management_standards_component_id = hmscom.management_standards_component_id 
-            LEFT JOIN mc_machine hmc 
-                ON hmscom.machine_id = hmc.machine_id 
-        WHERE
-            (
-                COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
-                OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
-                OR a.execution_division IN (4, 5) -- 保全項目の追加または削除
-            )
-            /*@ApplicationStatusIdList
-            AND a.application_status_id IN @ApplicationStatusIdList
-            @ApplicationStatusIdList*/
-            /*@ApplicationDivisionIdList
-            AND a.application_division_id IN @ApplicationDivisionIdList
-            @ApplicationDivisionIdList*/
-            /*@ApplicationUserName
-            AND a.application_user_name LIKE @ApplicationUserName
-            @ApplicationUserName*/
-            /*@ApplicationDateFrom
-            AND a.application_date >= @ApplicationDateFrom
-            @ApplicationDateFrom*/
-            /*@ApplicationDateTo
-            AND a.application_date <= @ApplicationDateTo
-            @ApplicationDateTo*/
-            /*@ApprovalUserName
-            AND a.approval_user_name LIKE @ApprovalUserName
-            @ApprovalUserName*/
-            /*@ApprovalDateFrom
-            AND a.approval_date >= @ApprovalDateFrom
-            @ApprovalDateFrom*/
-            /*@ApprovalDateTo
-            AND a.approval_date <= @ApprovalDateTo
-            @ApprovalDateTo*/
-            /*@ApplicationReason
-            AND a.application_reason LIKE @ApplicationReason
-            @ApplicationReason*/
+            #temp_output_data
     ) tbl 
-/*@GetData
 ORDER BY
-    DENSE_RANK() OVER ( 
-        ORDER BY
-            IIF(tbl.application_date IS NOT NULL, 0, 1)
-            , tbl.application_date
-            , tbl.long_plan_id
-            , tbl.history_management_id
-    ) 
+    tbl.row_num
     , tbl.management_standards_content_id
     , tbl.col_no
 @GetData*/

@@ -81,6 +81,10 @@ namespace BusinessLogic_MS1760
             /// 部門コード
             /// </summary>
             public const int DepartmentCode = 27;
+            /// <summary>
+            /// 修理部門区分
+            /// </summary>
+            public const int DepartmentDivision = 29;
         }
 
         /// <summary>
@@ -558,8 +562,8 @@ namespace BusinessLogic_MS1760
                     record.DepartmentParentNumber = departmentResults[0].DepartmentParentNumber;           // 工場番号
                     record.DepartmentParentNumberBefore = departmentResults[0].DepartmentParentNumber;     // 工場番号
                     record.DepartmentCode = departmentResults[0].DepartmentCode;                           // 部門コード
+                    record.FixDivisionVal = departmentResults[0].FixDivisionVal;                           // 修理部門
                     record.FixDivision = departmentResults[0].FixDivision;                                 // 修理部門
-
                     departmentResults.RemoveAt(0); // 先頭のデータを削除
                 }
 
@@ -755,23 +759,50 @@ namespace BusinessLogic_MS1760
 
             // エラー情報リスト
             List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            // 部門 修理部門コードのリストを作成
+            List<string> fixDivisionList = new();
+            foreach (TMQConst.MsStructure.StructureId.DepartmentFixDivision fixDivision in Enum.GetValues(typeof(TMQConst.MsStructure.StructureId.DepartmentFixDivision)))
+            {
+                fixDivisionList.Add(((int)fixDivision).ToString());
+            }
 
             // 部門
             foreach (TMQUtil.CommonExcelPortMasterDepartmentList result in resultDepartmentList)
             {
+                rowErrFlg = false;
+
                 // 部門IDが入力されていない場合はエラー
                 if (result.DepartmentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 工場IDが入力されていない場合はエラー
                 if (result.DepartmentParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    rowErrFlg = true;
+                }
+
+                // 修理部門コード(コンボ)が入力されていて、選択が不正(指定されたコード以外)の場合はエラー
+                if (!string.IsNullOrEmpty(result.FixDivision) && !fixDivisionList.Contains(result.FixDivision))
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentDivision, null, GetResMessage(new string[] { ComRes.ID.ID141140004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1760.Department.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当業でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
+
+                // コンボに入力されている内容を正とする
+                result.FixDivisionVal = result.FixDivision; // 修理部門区分
             }
 
             // 各階層のID列が不正の場合はエラー
@@ -840,8 +871,17 @@ namespace BusinessLogic_MS1760
                 if (result.DepartmentNumber != null && string.IsNullOrEmpty(result.DepartmentName))
                 {
                     // 部門IDが入力されていて部門名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.DepartmentName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -858,8 +898,8 @@ namespace BusinessLogic_MS1760
                 if (result.DepartmentParentNumber != null && !factoryDic.ContainsKey(result.DepartmentParentNumber))
                 {
                     // 存在しない工場IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -869,15 +909,6 @@ namespace BusinessLogic_MS1760
                     // 部門コードが未入力の場合
                     // 必須項目です。入力してください。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentCode, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.DepartmentName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.DepartmentName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;

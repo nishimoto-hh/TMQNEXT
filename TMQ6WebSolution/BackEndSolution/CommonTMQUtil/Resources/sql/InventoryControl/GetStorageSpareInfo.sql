@@ -4,34 +4,49 @@
 WITH number_unit AS ( 
     -- 数量管理単位
     SELECT
-        structure_id AS unit_id
-        , translation_text AS unit_name
-        , ex.extension_data AS unit_digit 
+        ms.structure_id AS unit_id,
+        ex.extension_data AS unit_digit
     FROM
-        v_structure_item_all unit 
-        LEFT JOIN ms_item_extension ex 
-            ON unit.structure_item_id = ex.item_id 
-            AND ex.sequence_no = 2 
+        ms_structure ms
+        LEFT JOIN
+            ms_item_extension ex
+        ON  ms.structure_item_id = ex.item_id
+        AND ex.sequence_no = 2
     WHERE
-        unit.structure_group_id = 1730 
-        AND unit.language_id = @LanguageId
+        ms.structure_group_id = 1730
 ) 
 , unit_round AS ( 
     --丸め処理区分
     SELECT
-        ms.factory_id
-        , ex.extension_data AS round_division 
+        ms.factory_id,
+        ex.extension_data AS round_division 
     FROM
-        ms_structure ms 
-        LEFT JOIN ms_item item 
-            ON ms.structure_item_id = item.item_id 
-            AND item.delete_flg = 0 
-        LEFT JOIN ms_item_extension ex 
-            ON item.item_id = ex.item_id 
-            AND ex.sequence_no = 1 
-    WHERE
-        ms.structure_group_id = 2050 
-        --AND ms.delete_flg = 0
+        (
+            SELECT
+                ms.factory_id,
+                MAX(ms.structure_id) AS structure_id
+            FROM
+                ms_structure ms
+            WHERE
+                ms.structure_group_id = 2050
+            GROUP BY
+                ms.factory_id
+        ) ms
+        LEFT JOIN
+            (
+                SELECT
+                    ms.structure_id,
+                    ex.extension_data
+                FROM
+                    ms_structure ms
+                    LEFT JOIN
+                        ms_item_extension ex
+                    ON  ms.structure_item_id = ex.item_id
+                    AND ex.sequence_no = 1
+                WHERE
+                    ms.structure_group_id = 2050
+            ) ex
+        ON  ms.structure_id = ex.structure_id
 ) 
 ,structure_factory as( SELECT
         structure_id
@@ -39,7 +54,7 @@ WITH number_unit AS (
     FROM
         v_structure_item_all 
     WHERE
-        structure_group_id IN (1150) 
+        structure_group_id IN (1150, 1730) 
         AND language_id = @LanguageId
 )
 SELECT
@@ -51,7 +66,25 @@ SELECT
     , pp.model_type                             --型式
     , pp.standard_size AS dimensions            --規格・寸法
     , ppi.stock_quantity                        --在庫数
-    , number_unit.unit_name                     --数量管理単位
+    ,(
+      SELECT
+          tra.translation_text
+      FROM
+         v_structure_item_all AS tra
+      WHERE
+          tra.language_id = @LanguageId
+      AND tra.location_structure_id = (
+              SELECT
+                  MAX(st_f.factory_id)
+              FROM
+                  structure_factory AS st_f
+              WHERE
+                  st_f.structure_id = pp.unit_structure_id
+              AND st_f.factory_id IN(0, pp.factory_id)
+           )
+      AND tra.structure_id = pp.unit_structure_id
+    ) AS unit_name                                -- 数量管理単位
+    --, number_unit.unit_name                     --数量管理単位
     , pp.factory_id                             --工場ID
     , COALESCE(number_unit.unit_digit, 0) AS unit_digit     --小数点以下桁数(数量)
     , COALESCE(unit_round.round_division, 0) AS round_division  --丸め処理区分

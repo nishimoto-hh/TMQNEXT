@@ -149,6 +149,47 @@ WITH st_com(
         LEFT JOIN get_factory 
             ON su.location_structure_id = get_factory.org_structure_id
 ) 
+, TraFinish AS (-- 「完了済」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 131060003
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, TraRece AS (-- 「保全受付」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 131300002
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, TraCreated AS (-- 「作成済」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 131110001
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, DateFormat AS (--「yyyy/MM」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 150000002
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+
 
 SELECT * FROM (
 SELECT 
@@ -520,13 +561,13 @@ SELECT
           WHEN 1 THEN '○'
           ELSE ''
       END AS follow_flg                         --フォロー有無
-    , FORMAT(summary.follow_plan_date, 'yyyy/MM') AS follow_plan_date  --フォロー予定年月
+    , FORMAT(summary.follow_plan_date, DateFormat.translation_text) AS follow_plan_date  --フォロー予定年月
     , summary.follow_content                    --フォロー内容
     , summary.request_no                        --依頼No.
     , CASE progress_no
-          WHEN 1 THEN '完了済'
-          WHEN 2 THEN '保全受付'
-          ELSE '作成済'
+          WHEN 1 THEN TraFinish.translation_text -- 完了済
+          WHEN 2 THEN TraRece.translation_text   -- 保全受付
+          ELSE TraCreated.translation_text       -- 作成済
       END AS progress_name                      --進捗状況
     , summary.summary_id                        --保全活動件名ID(非表示)
     , '1' AS output_report_location_name_got_flg       -- 機能場所名称情報取得済フラグ（帳票用）
@@ -535,6 +576,14 @@ FROM
     summary_list summary 
     INNER JOIN #temp temp
     ON summary.summary_id = temp.Key1
+    CROSS JOIN
+       TraFinish --「完了済」の翻訳
+    CROSS JOIN
+       TraRece -- 「保全受付」の翻訳
+    CROSS JOIN
+       TraCreated --「作成済」の翻訳
+    CROSS JOIN
+       DateFormat -- 「yyyy/MM」の翻訳
 ) tbl
 ORDER BY
 occurrence_date desc

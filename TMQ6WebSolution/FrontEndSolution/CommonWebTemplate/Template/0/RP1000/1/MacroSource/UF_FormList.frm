@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} UF_FormList
    ClientHeight    =   5448
    ClientLeft      =   105
    ClientTop       =   450
-   ClientWidth     =   9165.001
+   ClientWidth     =   9165
    OleObjectBlob   =   "UF_FormList.frx":0000
    StartUpPosition =   1  'オーナー フォームの中央
 End
@@ -69,7 +69,7 @@ Private Sub CommandButton_Select_Click()
         Dim lstWs As Worksheet
         Set lstWs = ActiveSheet
         lstWs.Cells(g_objRange.row, g_objRange.Column).Value = Me.ListBox1.List(Me.ListBox1.ListIndex, 3)
-        lstWs.Cells(g_objRange.row, g_LongIdCol).Value = Me.ListBox1.List(Me.ListBox1.ListIndex, 2)
+        lstWs.Cells(g_objRange.row, g_LongIdCol).Value = Me.ListBox1.List(Me.ListBox1.ListIndex, 1)
     End If
     
     '画面を閉じる
@@ -150,11 +150,11 @@ Private Sub sub_Find()
         'テキストボックス未入力時、全件リストボックス（非表示）より全件表示する
         For i = 0 To ListBox_ALL.ListCount - 1
             ListBox1.AddItem ""
-            '
+            '選択項目グループID
             ListBox1.List(i, 0) = ListBox_ALL.List(i, 0)
-            '
+            'ID
             ListBox1.List(i, 1) = ListBox_ALL.List(i, 1)
-            '
+            '親ID
             ListBox1.List(i, 2) = ListBox_ALL.List(i, 2)
             '名称
             ListBox1.List(i, 3) = ListBox_ALL.List(i, 3)
@@ -169,11 +169,11 @@ Private Sub sub_Find()
         '入力値と一致した場合、表示
         If InStr(ListBox_ALL.List(i, 3), sKey) > 0 Then
             ListBox1.AddItem ""
-            'ID
+            '選択項目グループID
             ListBox1.List(ListBox1.ListCount - 1, 0) = ListBox_ALL.List(i, 0)
             'ID
             ListBox1.List(ListBox1.ListCount - 1, 1) = ListBox_ALL.List(i, 1)
-            '名称
+            '親ID
             ListBox1.List(ListBox1.ListCount - 1, 2) = ListBox_ALL.List(i, 2)
             '名称
             ListBox1.List(ListBox1.ListCount - 1, 3) = ListBox_ALL.List(i, 3)
@@ -234,6 +234,7 @@ End Property
 Friend Property Let prpDateFormat(ByVal strFormat As String)
     g_strDateFormat = strFormat
 End Property
+
 
 
 

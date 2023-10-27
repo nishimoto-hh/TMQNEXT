@@ -217,6 +217,22 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
+            // ★画面定義の翻訳情報取得★
+            int factoryId = 0;
+            ComDao.HmHistoryManagementEntity historyInfo = new ComDao.HmHistoryManagementEntity().GetEntity(condition.HistoryManagementId, this.db);
+            if (historyInfo == null)
+            {
+                // 機番情報の工場ID
+                ComDao.McMachineEntity machineInfo = new ComDao.McMachineEntity().GetEntity(condition.MachineId, this.db);
+                factoryId = Convert.ToInt32(machineInfo.LocationFactoryStructureId);
+            }
+            else
+            {
+                // 変更管理情報の工場ID
+                factoryId = historyInfo.FactoryId;
+            }
+            GetContorlDefineTransData(factoryId);
+
             return true;
         }
 

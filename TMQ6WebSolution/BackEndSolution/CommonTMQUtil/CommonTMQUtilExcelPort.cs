@@ -2169,10 +2169,10 @@ namespace CommonTMQUtil
                     // フォーマット設定
                     string format = null;
 
-                        if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
-                        {
-                            format = ComReport.StrFormat;
-                        }
+                    if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
+                    {
+                        format = ComReport.StrFormat;
+                    }
                     // マッピング情報設定
                     info.SetExlSetValueByAddress(address, null, format);
                     info.SetAddress(address);
@@ -2630,7 +2630,7 @@ namespace CommonTMQUtil
             /// </summary>
             /// <param name="lastRowNo">最終行番号</param>
             /// <returns></returns>
-            private　List<string> getErrorCellRangeList(int lastRowNo)
+            private List<string> getErrorCellRangeList(int lastRowNo)
             {
                 List<string> rangeList = new();
 
@@ -2640,9 +2640,9 @@ namespace CommonTMQUtil
                 {
                     for (int i = 0; i < values.GetLength(0); i++)
                     {
-                        if(values.GetLength(1) > 1)
+                        if (values.GetLength(1) > 1)
                         {
-                            if(!string.IsNullOrEmpty(values[i,0]) && !string.IsNullOrEmpty(values[i, 1]))
+                            if (!string.IsNullOrEmpty(values[i, 0]) && !string.IsNullOrEmpty(values[i, 1]))
                             {
                                 rangeList.Add(values[i, 1] + values[i, 0]);
                             }
@@ -2789,6 +2789,7 @@ namespace CommonTMQUtil
 
                     bool flg = false; // データ存在チェックフラグ
                     object tmpResult = Activator.CreateInstance<T>();
+                    bool rowCheckFlg = checkFlg; // 行の入力チェック実施フラグ
 
                     if (index > 0)
                     {
@@ -2809,12 +2810,26 @@ namespace CommonTMQUtil
                     }
 
                     string sendProcIdName = getCellValueBySheetNo(sheetNo, sendProcNameDefine.StartColumnNo, rowNo);
-                    if (string.IsNullOrEmpty(sendProcIdStr) && !string.IsNullOrEmpty(sendProcIdName))
+                    if (!string.IsNullOrEmpty(sendProcIdName))
                     {
+                        //ラベルを正とする
                         var tmpId = getItemValue(procDivItemList, TMQConsts.CommonFactoryId, ColName.Name, sendProcIdName, ColName.Id).ToString();
                         if (tmpId != null)
                         {
                             sendProcIdStr = tmpId.ToString();
+                        }
+                    }
+                    else
+                    {
+                        //ラベルが空の場合、ラベルを正として処理対象外とする
+                        //ただし、場所階層・職種機種・予備品ロケーション・部門は全件登録のため処理対象とする
+                        if (this.UploadCondition.SheetNo != SheetNo.SheetNoOfStructureGroup1000 &&
+                            this.UploadCondition.SheetNo != SheetNo.SheetNoOfStructureGroup1010 &&
+                            this.UploadCondition.SheetNo != SheetNo.SheetNoOfStructureGroup1040 &&
+                            this.UploadCondition.SheetNo != SheetNo.SheetNoOfStructureGroup1760
+                            )
+                        {
+                            sendProcIdStr = string.Empty;
                         }
                     }
 
@@ -2855,7 +2870,6 @@ namespace CommonTMQUtil
                             tmpErrorInfo.Add(setTmpErrorInfo(rowNo, sendProcNameDefine.StartColumnNo, sendProcNameDefine.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
                             setErrorInfo(ref errorInfo, tmpErrorInfo);
                             index++;
-                            continue;
                         }
                     }
                     else
@@ -2868,8 +2882,12 @@ namespace CommonTMQUtil
                             tmpErrorInfo.Add(setTmpErrorInfo(rowNo, sendProcNameDefine.StartColumnNo, sendProcNameDefine.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
                             setErrorInfo(ref errorInfo, tmpErrorInfo);
                             index++;
-                            continue;
                         }
+                    }
+                    if (sendProcId == TMQConsts.SendProcessId.Delete)
+                    {
+                        //削除行は入力チェックしない
+                        rowCheckFlg = false;
                     }
 
                     // 工場IDを取得
@@ -2877,8 +2895,9 @@ namespace CommonTMQUtil
                     if (factoryIdDefine != null)
                     {
                         string factoryIdStr = getCellValueBySheetNo(sheetNo, factoryIdDefine.StartColumnNo, rowNo);
-                        if (string.IsNullOrEmpty(factoryIdStr) && factoryNameDefine != null)
+                        if (factoryNameDefine != null)
                         {
+                            //ラベルを正として工場IDを取得する
                             string factoryName = getCellValueBySheetNo(sheetNo, factoryNameDefine.StartColumnNo, rowNo);
                             if (!string.IsNullOrEmpty(factoryName))
                             {
@@ -2993,7 +3012,7 @@ namespace CommonTMQUtil
                             {
                                 // スケジュールチェック処理実行
                                 scheduleInfoList = new List<ScheduleInfo>();
-                                checkScheduleColumns(checkFlg, sheetNo, targetFactoryId, dataDirection, sendProcIdStr, sendProcIdName,
+                                checkScheduleColumns(rowCheckFlg, sheetNo, targetFactoryId, dataDirection, sendProcIdStr, sendProcIdName,
                                     reportInfo, itemDataDic[reportInfo.EpSelectGroupId], this.UploadCondition.OutputDate, scheduleInfoList, tmpErrorInfo);
                                 continue;
                             }
@@ -3001,6 +3020,20 @@ namespace CommonTMQUtil
 
                         // 設定値を取得
                         string val = getCellValueBySheetNo(sheetNo, reportInfo.StartColumnNo, reportInfo.StartRowNo);
+                        // 連動元列番号値を取得
+                        string linkColumnVal = getLinkColumnVal(reportInfo, tmpErrorInfo);
+                        // 連動元による絞り込み有無（連動元が工場IDの場合は除外）
+                        bool linkColumnFlg;
+
+                        // 階層系マスタの場合は対象外
+                        if (isStructureMaster())
+                        {
+                            linkColumnFlg = false;
+                        }
+                        else
+                        {
+                            linkColumnFlg = reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
+                        }
 
                         if (string.IsNullOrEmpty(val))
                         {
@@ -3010,7 +3043,7 @@ namespace CommonTMQUtil
                                 reportInfo.ColumnType != ColumnType.FormSelect)
                             {
                                 // 選択項目でない場合、スキップ
-                                if (checkFlg)
+                                if (rowCheckFlg)
                                 {
                                     if (reportInfo.RequiredFlg != null && (bool)reportInfo.RequiredFlg)
                                     {
@@ -3033,7 +3066,7 @@ namespace CommonTMQUtil
                             reportInfo.ColumnType != ColumnType.MultiListBox &&
                             reportInfo.ColumnType != ColumnType.FormSelect)
                         {
-                            if (checkFlg)
+                            if (rowCheckFlg)
                             {
                                 // アップロード共通チェック実行
                                 if (!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, this.db, tmpErrorInfo))
@@ -3041,6 +3074,20 @@ namespace CommonTMQUtil
                                     tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDiv = sendProcIdStr;
                                     tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDivName = sendProcIdName;
                                     continue;
+                                }
+
+                                //書式チェック
+                                if (!string.IsNullOrEmpty(reportInfo.FormatText))
+                                {
+                                    if (!checkFormat(reportInfo, val))
+                                    {
+                                        // 書式チェックエラーの場合、エラーを設定し、スキップ
+                                        // 「{0}で入力してください。」
+                                        string error = GetResMessage(new string[] { ComRes.ID.ID941190002, reportInfo.FormatText }, languageId, msgResources);
+                                        tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection, sendProcIdStr, sendProcIdName));
+                                        continue;
+                                    }
+
                                 }
                             }
 
@@ -3108,80 +3155,90 @@ namespace CommonTMQUtil
                                     // 選択項目の場合、ここで必須チェックする
                                     if (!string.IsNullOrEmpty(val))
                                     {
-                                        object transText = null;
-                                        if (!string.IsNullOrEmpty(selectId))
+                                        //object transText = null;
+                                        //if (!string.IsNullOrEmpty(selectId))
+                                        //{
+                                        //    if (!selectId.Contains("|"))
+                                        //    {
+                                        //        // 標準アイテム未使用 の場合はtargetFactoryIdを「0」としているため、tmpIdを代入
+                                        //        if (isMasterUnuse)
+                                        //        {
+                                        //            targetFactoryId = Convert.ToInt32(selectId);
+                                        //        }
+
+                                        //        // 選択項目IDと工場IDから翻訳を取得
+                                        //        transText = getItemValue(itemList, targetFactoryId, ColName.Id, selectId, ColName.Name, linkColumnFlg, linkColumnVal);
+                                        //    }
+                                        //    else
+                                        //    {
+                                        //        // バー区切りの場合、分割して取得
+                                        //        var selectIds = selectId.Split("|");
+                                        //        foreach (var tmpId in selectIds)
+                                        //        {
+                                        //            // 標準アイテム未使用 の場合はtargetFactoryIdを「0」としているため、tmpIdを代入
+                                        //            if (isMasterUnuse)
+                                        //            {
+                                        //                targetFactoryId = Convert.ToInt32(tmpId);
+                                        //            }
+
+                                        //            var text = getItemValue(itemList, targetFactoryId, ColName.Id, tmpId, ColName.Name, linkColumnFlg, linkColumnVal);
+                                        //            if (!ComUtil.IsNullOrEmpty(text))
+                                        //            {
+                                        //                if (transText != null)
+                                        //                {
+                                        //                    transText += ",";
+                                        //                }
+                                        //                transText += text.ToString();
+                                        //            }
+                                        //        }
+                                        //    }
+                                        //}
+                                        //if (ComUtil.IsNullOrEmpty(transText) || val != transText.ToString())
+                                        //{
+                                        //    // 対象工場の翻訳でない場合、翻訳からIDを取得
+
+                                        //翻訳を正として、翻訳からIDを取得
+                                        object tmpId = null;
+                                        // 複数選択項目の場合、いずれかが不正なアイテムであればエラー
+                                        bool multErrorFlg = false;
+                                        if (!val.Contains(","))
                                         {
-                                            if (!selectId.Contains("|"))
+                                            tmpId = getItemValue(itemList, targetFactoryId, ColName.Name, val, ColName.Id, linkColumnFlg, linkColumnVal);
+                                        }
+                                        else
+                                        {
+                                            // カンマ区切りの場合、分割して取得
+                                            var vals = val.Split(",");
+                                            foreach (var tmpVal in vals)
                                             {
-                                                // 標準アイテム未使用 の場合はtargetFactoryIdを「0」としているため、tmpIdを代入
-                                                if (isMasterUnuse)
+                                                var id = getItemValue(itemList, targetFactoryId, ColName.Name, tmpVal, ColName.Id, linkColumnFlg, linkColumnVal);
+                                                if (!ComUtil.IsNullOrEmpty(id))
                                                 {
-                                                    targetFactoryId = Convert.ToInt32(selectId);
+                                                    if (tmpId != null)
+                                                    {
+                                                        tmpId += "|";
+                                                    }
+                                                    tmpId += id.ToString();
                                                 }
-
-                                                // 選択項目IDと工場IDから翻訳を取得
-                                                transText = getItemValue(itemList, targetFactoryId, ColName.Id, selectId, ColName.Name);
-                                            }
-                                            else
-                                            {
-                                                // バー区切りの場合、分割して取得
-                                                var selectIds = selectId.Split("|");
-                                                foreach (var tmpId in selectIds)
+                                                else
                                                 {
-                                                    // 標準アイテム未使用 の場合はtargetFactoryIdを「0」としているため、tmpIdを代入
-                                                    if (isMasterUnuse)
-                                                    {
-                                                        targetFactoryId = Convert.ToInt32(tmpId);
-                                                    }
-
-                                                    var text = getItemValue(itemList, targetFactoryId, ColName.Id, tmpId, ColName.Name);
-                                                    if (!ComUtil.IsNullOrEmpty(text))
-                                                    {
-                                                        if (transText != null)
-                                                        {
-                                                            transText += ",";
-                                                        }
-                                                        transText += text.ToString();
-                                                    }
+                                                    //選択項目IDが取得できない
+                                                    multErrorFlg = true;
+                                                    break;
                                                 }
                                             }
                                         }
-                                        if (ComUtil.IsNullOrEmpty(transText) || val != transText.ToString())
+                                        if (!ComUtil.IsNullOrEmpty(tmpId) && !multErrorFlg)
                                         {
-                                            // 対象工場の翻訳でない場合、翻訳からIDを取得
-                                            object tmpId = null;
-                                            if (!val.Contains(","))
-                                            {
-                                                tmpId = getItemValue(itemList, targetFactoryId, ColName.Name, val, ColName.Id);
-                                            }
-                                            else
-                                            {
-                                                // カンマ区切りの場合、分割して取得
-                                                var vals = val.Split(",");
-                                                foreach (var tmpVal in vals)
-                                                {
-                                                    var id = getItemValue(itemList, targetFactoryId, ColName.Name, tmpVal, ColName.Id);
-                                                    if (!ComUtil.IsNullOrEmpty(id))
-                                                    {
-                                                        if (tmpId != null)
-                                                        {
-                                                            tmpId += "|";
-                                                        }
-                                                        tmpId += id.ToString();
-                                                    }
-                                                }
-                                            }
-                                            if (!ComUtil.IsNullOrEmpty(tmpId))
-                                            {
-                                                // 選択項目IDが取得できた場合、Excelへ値をセット
-                                                selectId = tmpId.ToString();
-                                                setCellValueBySheetNo(sheetNo, selectIdDefine.StartColumnNo, reportInfo.StartRowNo, selectId);
-                                            }
-                                            else
-                                            {
-                                                selectId = string.Empty;
-                                            }
+                                            // 選択項目IDが取得できた場合、Excelへ値をセット
+                                            selectId = tmpId.ToString();
+                                            setCellValueBySheetNo(sheetNo, selectIdDefine.StartColumnNo, reportInfo.StartRowNo, selectId);
                                         }
+                                        else
+                                        {
+                                            selectId = string.Empty;
+                                        }
+                                        //}
                                     }
                                     else
                                     {
@@ -3199,7 +3256,7 @@ namespace CommonTMQUtil
                                             }
                                             else
                                             {
-                                                if (checkFlg)
+                                                if (rowCheckFlg)
                                                 {
                                                     // 選択項目でない場合、エラー内容を設定
                                                     // 「必須項目です。入力してください。」
@@ -3228,13 +3285,21 @@ namespace CommonTMQUtil
                             else
                             {
                                 // 選択項目IDが空の場合
-                                if (checkFlg && !string.IsNullOrEmpty(val))
+                                if (rowCheckFlg && !string.IsNullOrEmpty(val))
                                 {
                                     // 選択項目が空でない場合
                                     // 「選択内容が不正です。」
                                     var msg = GetResMessage(ComRes.ID.ID141140004, languageId, msgResources);
                                     tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
                                 }
+
+                                // 階層系マスタか判定
+                                if (isStructureMaster())
+                                {
+                                    // 入力チェックを個別に行うため値をデータクラスに設定
+                                    setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+                                }
+
                                 continue;
                             }
                         }
@@ -3271,6 +3336,29 @@ namespace CommonTMQUtil
                     index++;
                 }
                 return errorInfo;
+
+                // 連動元の値を取得
+                string getLinkColumnVal(InputDefineForExcelPort reportInfo,  List<ComBase.UploadErrorInfo> tmpErrorInfo)
+                {
+                    // 連動元の値を取得
+                    string linkColumnVal = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectLinkColumnNo, reportInfo.StartRowNo);
+
+                    //連動元は基本ID列なので、ラベル列の定義を取得
+                    InputDefineForExcelPort linkReportInfo = reportInfoList.Where(x => x.EpSelectIdColumnNo == reportInfo.EpSelectLinkColumnNo).FirstOrDefault();
+                    if (linkReportInfo == null)
+                    {
+                        //ラベル列が無い場合は連動元列番号に設定された列を取得
+                        linkReportInfo = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectLinkColumnNo).FirstOrDefault();
+                    }
+                    //連動元にエラーがあるか
+                    bool linkErrorFlg = tmpErrorInfo.Any(x => x.RowNo.Contains(rowNo) && x.ColumnNo.Contains(linkReportInfo.StartColumnNo));
+                    if (linkErrorFlg)
+                    {
+                        //連動元にエラーがある場合（IDが設定されていて、ラベルが適切でない等）、連動元の値は空とする
+                        linkColumnVal = string.Empty;
+                    }
+                    return linkColumnVal;
+                }
             }
 
             /// <summary>
@@ -3281,13 +3369,17 @@ namespace CommonTMQUtil
             /// <param name="keyName">キー項目名</param>
             /// <param name="keyVal">キー項目値</param>
             /// <param name="valName">取得対象項目名</param>
+            /// <param name="linkColumnFlg">選択項目連動元の値による絞り込み有無</param>
+            /// <param name="linkColumnVal">選択項目連動元の値</param>
             /// <returns></returns>
-            private object getItemValue(List<Dictionary<string, object>> itemList, int targetFactoryId, string keyName, string keyVal, string valName)
+            private object getItemValue(List<Dictionary<string, object>> itemList, int targetFactoryId, string keyName, string keyVal, string valName, bool linkColumnFlg = false, string linkColumnVal = null)
             {
                 return itemList.Where(x =>
                     x[keyName].ToString() == keyVal &&
                     (x["factory_id"].ToString() == targetFactoryId.ToString() ||
-                    x["factory_id"].ToString() == TMQConsts.CommonFactoryId.ToString()))
+                    x["factory_id"].ToString() == TMQConsts.CommonFactoryId.ToString()) &&
+                    (linkColumnFlg ? x["parent_id"].ToString() == linkColumnVal : true) &&
+                    (x.ContainsKey("unuse_factory_id") ? !x["unuse_factory_id"].ToString().Split("|").Contains(targetFactoryId.ToString()) : true)) //未使用標準アイテムは除外
                     .Select(x => x[valName]).FirstOrDefault();
             }
 
@@ -4013,6 +4105,74 @@ namespace CommonTMQUtil
                         });
                     }
                 }
+            }
+
+            /// <summary>
+            /// 階層系マスタか判定
+            /// </summary>
+            /// <returns></returns>
+            private bool isStructureMaster()
+            {
+                // 階層系マスタかどうかを判定
+                if (this.UploadCondition.SheetNo == SheetNo.SheetNoOfStructureGroup1000 || // 場所階層
+                    this.UploadCondition.SheetNo == SheetNo.SheetNoOfStructureGroup1010 || // 職種機種
+                    this.UploadCondition.SheetNo == SheetNo.SheetNoOfStructureGroup1040 || // 予備品ロケーション
+                    this.UploadCondition.SheetNo == SheetNo.SheetNoOfStructureGroup1760)   // 部門
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// 取込処理 書式チェック
+            /// </summary>
+            /// <param name="reportInfoList">ファイル入力項目定義情報</param>
+            /// <param name="val">文字列</param>
+            /// <returns>true:正常、false:異常</returns>
+            private static bool checkFormat(InputDefineForExcelPort reportInfo, string val)
+            {
+                if (reportInfo.ColumnType == ColumnType.Numeric)
+                {
+                    //数値###
+                    if (val.IndexOf(".") >= 0)
+                    {
+                        //小数点以下がある場合、チェック
+
+                        if (reportInfo.FormatText.IndexOf(".") < 0)
+                        {
+                            //書式に小数点以下がない場合、エラー
+                            return false;
+                        }
+                        decimal? workVal = ComUtil.ConvertDecimal(val);
+                        if (workVal == null)
+                        {
+                            //変換できない場合、正常で処理を戻す ※型チェックなどのエラーは他で判定しているため
+                            return true;
+                        }
+                        //値の小数部桁数
+                        int inputLen = workVal.ToString().Length - workVal.ToString().IndexOf(".") - 1;
+                        //書式の小数部桁数
+                        int formatLen = reportInfo.FormatText.Length - reportInfo.FormatText.IndexOf(".") - 1;
+                        if (inputLen > formatLen)
+                        {
+                            //小数部の桁数が大きい場合、エラー
+                            return false;
+                        }
+                    }
+                }
+                else if (reportInfo.ColumnType == ColumnType.Date || reportInfo.ColumnType == ColumnType.Time)
+                {
+                    //日付、時刻
+                    if (!ComUtil.IsDateTimeFormat(val, reportInfo.FormatText))
+                    {
+                        return false;
+                    }
+                }
+                return true;
             }
             #endregion
         }

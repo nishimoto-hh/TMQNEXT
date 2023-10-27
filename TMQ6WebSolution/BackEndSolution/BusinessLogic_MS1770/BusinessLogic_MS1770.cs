@@ -652,6 +652,15 @@ namespace BusinessLogic_MS1770
                     }
                 }
 
+                // 勘定科目コード(拡張項目1)の半角英数字入力チェック
+                var enc = Encoding.GetEncoding("Shift_JIS");
+                if (enc.GetByteCount(registInfo.ExData1) != registInfo.ExData1.Length)
+                {
+                    // 半角英数字で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)registInfo.RowNo, ExcelPortMasterListInfo.ExData1ColumnNo, GetResMessage(new string[] { ComRes.ID.ID111060062 }), GetResMessage(new string[] { ComRes.ID.ID141260002 }), TMQUtil.ComReport.LongitudinalDirection, registInfo.ProcessId.ToString()));
+                    return true;
+                }
+
                 // 勘定科目コード(拡張項目1)が既に登録されている場合はエラー
                 if (!TMQUtil.GetCountDb(registInfo, Master.SqlName.GetExtensionItemCountAll, ref cnt, db))
                 {

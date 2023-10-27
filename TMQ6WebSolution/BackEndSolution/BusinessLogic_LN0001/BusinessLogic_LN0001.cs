@@ -1508,7 +1508,7 @@ namespace BusinessLogic_LN0001
                 List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
 
                 // 機器別管理基準登録チェック処理
-                if(isErrorDetailListForExcelPort(excelPort.UploadCondition, ref resultList, ref errorInfoList))
+                if (isErrorDetailListForExcelPort(excelPort.UploadCondition, ref resultList, ref errorInfoList))
                 {
                     if (errorInfoList.Count > 0)
                     {
@@ -1933,13 +1933,14 @@ namespace BusinessLogic_LN0001
         /// <summary>
         /// 保全情報一覧に紐づけるスケジュールリストを取得する処理
         /// </summary>
+        /// <param name="isDisplayMaintainanceKind">点検種別毎工場フラグ</param>
         /// <param name="listCtrlId">一覧のコントロールID</param>
         /// <param name="isDetail">参照画面の場合True(仕様が異なる、移動可、リンク有)</param>
         /// <param name="longPlanId">長期計画ID</param>
         /// <param name="factoryId">長期計画IDの工場ID</param>
         /// <param name="schedulePlanContent">スケジュールの表示単位</param>
         /// <param name="isUnComp">未完了のデータを表示する場合True</param>
-        private void setSchedule(string listCtrlId, bool isDetail, long longPlanId, int factoryId, SchedulePlanContent schedulePlanContent, bool isUnComp = false)
+        private void setSchedule(bool isDisplayMaintainanceKind, string listCtrlId, bool isDetail, long longPlanId, int factoryId, SchedulePlanContent schedulePlanContent, bool isUnComp = false)
         {
             // 実行するSQL文を取得
             string fileNameSelect = string.Empty;
@@ -1984,7 +1985,7 @@ namespace BusinessLogic_LN0001
 
             // 画面表示データの取得
             List<TMQDao.ScheduleList.Display> scheduleDisplayList;
-            if (schedulePlanContent == SchedulePlanContent.Maintainance)
+            if (schedulePlanContent == SchedulePlanContent.Maintainance && isDisplayMaintainanceKind)
             {
                 // 保全項目単位の場合、上位ランクのステータスを取得
                 scheduleDisplayList = getScheduleDisplayList<TMQUtil.ScheduleListConverter>(execSql, cond);
@@ -2125,7 +2126,7 @@ namespace BusinessLogic_LN0001
 
             // 送信時処理が削除のデータを抽出
             var deleteList = resultList.Where(x => x.ProcessId == TMQConst.SendProcessId.Delete);
-            if(deleteList == null || deleteList.Count() == 0)
+            if (deleteList == null || deleteList.Count() == 0)
             {
                 return isError;
             }
@@ -2167,7 +2168,7 @@ namespace BusinessLogic_LN0001
             {
                 var unComment = !string.IsNullOrEmpty(condition.LongPlanIdList) ? "LongPlan" : "Content";
                 list = TMQUtil.SqlExecuteClass.SelectList<Dao.ExcelPort.Result>(
-                    SqlName.ExcelPort.GetScheduleForUpload, SqlName.ExcelPort.SubDir, condition, this.db, listUnComment:new List<string> { unComment });
+                    SqlName.ExcelPort.GetScheduleForUpload, SqlName.ExcelPort.SubDir, condition, this.db, listUnComment: new List<string> { unComment });
             }
             else
             {
@@ -2199,7 +2200,7 @@ namespace BusinessLogic_LN0001
                     ScheduleDateTo = uploadCondition.ScheduleDateTo.ToString(ScheduleDateConditionFormat),
                     LanguageId = this.LanguageId
                 });
-            if(scheduleListAll == null || scheduleListAll.Count == 0)
+            if (scheduleListAll == null || scheduleListAll.Count == 0)
             {
                 return isError;
             }

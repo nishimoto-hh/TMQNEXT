@@ -79,6 +79,10 @@ namespace BusinessLogic_MS1010
             /// </summary>
             public const int JobParentNumber = 26;
             /// <summary>
+            /// 保全実績集計コード
+            /// </summary>
+            public const int JobCode = 28;
+            /// <summary>
             /// 機種大分類ID
             /// </summary>
             public const int LargeClassNo = 38;
@@ -725,6 +729,7 @@ namespace BusinessLogic_MS1010
                     record.JobParentId = jobResults[0].JobParentId;                   // 職種の親構成ID
                     record.JobParentNumber = jobResults[0].JobParentNumber;           // 工場番号
                     record.JobParentNumberBefore = jobResults[0].JobParentNumber;     // 工場番号
+                    record.JobCodeVal = jobResults[0].JobCodeVal;                     // 保全実績集計職種コード
                     record.JobCode = jobResults[0].JobCode;                           // 保全実績集計職種コード
                     jobResults.RemoveAt(0); // 先頭のデータを削除
                 }
@@ -1056,24 +1061,51 @@ namespace BusinessLogic_MS1010
 
             // エラー情報リスト
             List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+            // 行単位エラー存在フラグ
+            bool rowErrFlg = false;
+
+            // 保全実績集計職種コードのリストを作成
+            List<string> jobCodeList = new();
+            foreach (TMQConst.MsStructure.StructureId.JobCode jobCode in Enum.GetValues(typeof(TMQConst.MsStructure.StructureId.JobCode)))
+            {
+                jobCodeList.Add(((int)jobCode).ToString());
+            }
 
             // 職種
             Dictionary<int?, ExcelPortStructureList> jobDic = new();
             foreach (TMQUtil.CommonExcelPortMasterJobList result in resultJobList)
             {
+                rowErrFlg = false;
+
                 // 職種IDが入力されていない場合はエラー
                 if (result.JobNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 工場IDが入力されていない場合はエラー
                 if (result.JobParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 保全実績集計職種コード(コンボ)が入力されていて、選択が不正(指定されたコード以外)の場合はエラー
+                if (!string.IsNullOrEmpty(result.JobCode) && !jobCodeList.Contains(result.JobCode))
+                {
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobCode, null, GetResMessage(new string[] { ComRes.ID.ID141140004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
+
+                // コンボに入力されている内容を正とする
+                result.JobCodeVal = result.JobCode; // 保全実績集計職種コード
 
                 // 職種リスト
                 if (result.JobNumber != null)
@@ -1089,18 +1121,25 @@ namespace BusinessLogic_MS1010
             Dictionary<int?, ExcelPortStructureList> largeDic = new();
             foreach (TMQUtil.CommonExcelPortMasterJobList result in resultLargeList)
             {
+                rowErrFlg = false;
 
                 // 機種大分類IDが入力されていない場合はエラー
                 if (result.LargeClassNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 職種IDが入力されていない場合はエラー
                 if (result.LargeClassParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1118,17 +1157,25 @@ namespace BusinessLogic_MS1010
             Dictionary<int?, ExcelPortStructureList> middleDic = new();
             foreach (TMQUtil.CommonExcelPortMasterJobList result in resultMiddleList)
             {
+                rowErrFlg = false;
+
                 // 機種中分類IDが入力されていない場合はエラー
                 if (result.MiddleClassNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 機種大分類IDが入力されていない場合はエラー
                 if (result.MiddleClassParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1146,17 +1193,25 @@ namespace BusinessLogic_MS1010
             Dictionary<int?, ExcelPortStructureList> smallDic = new();
             foreach (TMQUtil.CommonExcelPortMasterJobList result in resultSmallList)
             {
+                rowErrFlg = false;
+
                 // 機種中分類IDが入力されていない場合はエラー
                 if (result.SmallClassNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassNo, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
-                    continue;
+                    rowErrFlg = true;
                 }
 
                 // 機種大分類IDが入力されていない場合はエラー
                 if (result.SmallClassParentNumber == null)
                 {
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941130004 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
+                    rowErrFlg = true;
+                }
+
+                // 該当行でエラーがある場合はここで終了
+                if (rowErrFlg)
+                {
                     continue;
                 }
 
@@ -1269,8 +1324,17 @@ namespace BusinessLogic_MS1010
                 if (result.JobNumber != null && string.IsNullOrEmpty(result.JobName))
                 {
                     // 職種IDが入力されていて職種名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.JobName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1287,17 +1351,8 @@ namespace BusinessLogic_MS1010
                 if (result.JobParentNumber != null && !factoryDic.ContainsKey(result.JobParentNumber))
                 {
                     // 存在しない工場IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.JobName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.JobParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Job.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1376,8 +1431,17 @@ namespace BusinessLogic_MS1010
                 if (result.LargeClassNumber != null && string.IsNullOrEmpty(result.LargeClassName))
                 {
                     // 機種大分類IDが入力されていて機種大分類名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.LargeClassName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1394,17 +1458,8 @@ namespace BusinessLogic_MS1010
                 if (result.LargeClassParentNumber != null && !jobDic.ContainsKey(result.LargeClassParentNumber))
                 {
                     // 存在しない職種IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.LargeClassName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.LargeClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Large.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1484,8 +1539,17 @@ namespace BusinessLogic_MS1010
                 if (result.MiddleClassNumber != null && string.IsNullOrEmpty(result.MiddleClassName))
                 {
                     // 機種中分類IDが入力されていて機種中分類名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.MiddleClassName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1502,17 +1566,8 @@ namespace BusinessLogic_MS1010
                 if (result.MiddleClassParentNumber != null && !largeDic.ContainsKey(result.MiddleClassParentNumber))
                 {
                     // 存在しない機種大分類IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.MiddleClassName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.MiddleClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Middle.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1593,8 +1648,17 @@ namespace BusinessLogic_MS1010
                 if (result.SmallClassNumber != null && string.IsNullOrEmpty(result.SmallClassName))
                 {
                     // 機種小分類IDが入力されていて機種小分類名が未入力の場合
-                    // 必須項目です。入力してください。
+                    // アイテム翻訳は○○桁以下で入力して下さい。
                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, TMQUtil.ItemTranslasionMaxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
+                    errFlg = true;
+                    rowErrFlg = true;
+                    continue;
+                }
+                if (!TMQUtil.commonTextByteCheckExcelPort(result.SmallClassName, out int maxLength))
+                {
+                    // 文字数チェック
+                    // アイテム翻訳は○○桁以下で入力してください。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;
@@ -1611,17 +1675,8 @@ namespace BusinessLogic_MS1010
                 if (result.SmallClassParentNumber != null && !middleDic.ContainsKey(result.SmallClassParentNumber))
                 {
                     // 存在しない機種中分類IDが入力されている場合
-                    // 必須項目です。入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID941270001 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
-                    errFlg = true;
-                    rowErrFlg = true;
-                    continue;
-                }
-                if (!TMQUtil.commonTextByteCheckExcelPort(result.SmallClassName, out int maxLength))
-                {
-                    // 文字数チェック
-                    // アイテム翻訳は○○桁以下で入力してください。
-                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassName, null, GetResMessage(new string[] { ComRes.ID.ID941260004, ComRes.ID.ID111010005, maxLength.ToString() }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
+                    // 入力内容が不正です。
+                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ExcelPortMasterListInfo.SmallClassParentNumber, null, GetResMessage(new string[] { ComRes.ID.ID141220008 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString(), string.Empty, TMQUtil.ComExcelPort.MasterColumnInfo.StructureGroup1010.Small.ControlGroupId));
                     errFlg = true;
                     rowErrFlg = true;
                     continue;

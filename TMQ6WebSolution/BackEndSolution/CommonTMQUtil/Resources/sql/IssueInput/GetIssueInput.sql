@@ -1,25 +1,39 @@
 --******************************************************************
 --出庫情報取得
 --******************************************************************
-WITH unit AS ( 
-    --翻訳を取得(単位)
+WITH structure_factory AS(
+-- 使用する構成グループの構成IDを絞込、工場の指定に用いる
     SELECT
-        structure_id
-        , translation_text 
+         structure_id
+        ,location_structure_id AS factory_id
     FROM
-        v_structure_item_all si 
-        INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1730
+        v_structure_item
     WHERE
-        si.language_id = @LanguageId
-) 
+        structure_group_id IN(1730)
+    AND language_id = @LanguageId
+)
 SELECT DISTINCT
-    unt.translation_text AS unit_translation_text, --単位
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = ppt.unit_structure_id
+                AND st_f.factory_id IN(0, ppt.factory_id)
+            )
+        AND tra.structure_id = ppt.unit_structure_id
+    ) AS unit_translation_text, --単位
     ppt.parts_id
 FROM
     pt_parts ppt
-    LEFT JOIN unit unt 
-        ON ppt.unit_structure_id = unt.structure_id 
 WHERE
     parts_id = @PartsId
+

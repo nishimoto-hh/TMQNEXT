@@ -29,6 +29,10 @@ namespace CommonWebTemplate.Models.Common
         /// </summary>
         public string LoginUserId { get; set; }
         /// <summary>
+        /// ﾛｸﾞｲﾝID
+        /// </summary>
+        public string LoginId { get; set; }
+        /// <summary>
         /// ﾛｸﾞｲﾝﾕｰｻﾞｰ表示名
         /// </summary>
         public string LoginUserName { get; set; }
@@ -194,6 +198,11 @@ namespace CommonWebTemplate.Models.Common
         /// 言語コンボボックスで選択した言語ID
         /// </summary>
         public string SelectLanguageId { get; set; }
+
+        /// <summary>
+        /// 翻訳に使用している工場ID
+        /// </summary>
+        public int TransFactoryId { get; set; }
 
         #region === コンストラクタ ===
         /// <summary>

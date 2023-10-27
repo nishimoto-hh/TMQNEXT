@@ -46,6 +46,10 @@ namespace CommonWebTemplate.Models.Common
         /// <summary>Gets or sets 翻訳文字列</summary>
         /// <value>翻訳文字列</value>
         public string TranslationText { get; set; }
+        /// <summary>Gets or sets 翻訳工場ID</summary>
+        /// <value>翻訳工場ID</value>
+        /// <remarks>原因性格のみ工場個別の翻訳が必要</remarks>
+        public int? LocationStructureId { get; set; }
     }
 
     /// <summary>
@@ -128,6 +132,11 @@ namespace CommonWebTemplate.Models.Common
         /// </summary>
         [JsonPropertyName("data-structureid")]
         public int? StructureId { get; set; }
+        /// <summary>
+        /// 翻訳用工場ID
+        /// </summary>
+        [JsonPropertyName("data-translatefactoryid")]
+        public int LocationStructureId { get; set; }
 
         #region === コンストラクタ ===
         /// <summary>
@@ -138,12 +147,14 @@ namespace CommonWebTemplate.Models.Common
             this.StructureNo = null;
             this.FactoryId = 0;
             this.StructureId = null;
+            this.LocationStructureId = 0;
         }
         public CommonTreeViewAttribute(CommonStructure structureInfo)
         {
             this.StructureNo = structureInfo.StructureLayerNo;
             this.FactoryId = structureInfo.FactoryId;
             this.StructureId = structureInfo.StructureId;
+            this.LocationStructureId = structureInfo.LocationStructureId ?? 0;
         }
         #endregion
 

@@ -70,7 +70,7 @@ namespace CommonWebTemplate.Controllers.Common
                 List<CommonConductMst> results = null;
                 if (!string.IsNullOrEmpty(key))
                 {
-                    if(procData.ConditionData == null)
+                    if (procData.ConditionData == null)
                     {
                         procData.ConditionData = new List<Dictionary<string, object>>();
                     }
@@ -118,6 +118,9 @@ namespace CommonWebTemplate.Controllers.Common
                 }
                 // - JSON形式に変換してｾｯﾄ
                 ViewBag.UserAuthConductShorisJson = JsonSerializer.Serialize(UserAuthConductShoris);
+
+                // 翻訳に使用した工場ID(本務工場ID)を設定する
+                ViewBag.TransFactoryId = procData.BelongingInfo.DutyFactoryId;
 
                 return View(results);
             }
@@ -434,6 +437,8 @@ namespace CommonWebTemplate.Controllers.Common
         ///  </returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [DisableRequestSizeLimit]
+        [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue, ValueLengthLimit = int.MaxValue)]
         public ActionResult FileUpload(CommonProcData procData)
         {
             //代表ﾒｯｾｰｼﾞを初期化
@@ -508,6 +513,8 @@ namespace CommonWebTemplate.Controllers.Common
         ///  </returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [DisableRequestSizeLimit]
+        [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue, ValueLengthLimit = int.MaxValue)]
         public ActionResult ExcelPortUpload(CommonProcData procData)
         {
             //代表ﾒｯｾｰｼﾞを初期化
@@ -706,7 +713,7 @@ namespace CommonWebTemplate.Controllers.Common
                 string contentType = SystemUtil.GetContentType(filePath);
                 //ﾌｧｲﾙ読込み
                 byte[] btf_fata = null;
-                using (FileStream fs = new (filePath, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new(filePath, FileMode.Open, FileAccess.Read))
                 {
                     using (var memStream = new MemoryStream())
                     {
@@ -810,6 +817,9 @@ namespace CommonWebTemplate.Controllers.Common
                 // - JSON形式に変換してｾｯﾄ
                 ViewBag.UserAuthConductShorisJson = JsonSerializer.Serialize(UserAuthConductShoris);
 
+                // 翻訳に使用した工場ID(本務工場ID)を設定する
+                ViewBag.TransFactoryId = procData.BelongingInfo.DutyFactoryId;
+
                 return View("Index", results);
 
             }
@@ -880,6 +890,9 @@ namespace CommonWebTemplate.Controllers.Common
                 }
                 // - JSON形式に変換してｾｯﾄ
                 ViewBag.UserAuthConductShorisJson = JsonSerializer.Serialize(UserAuthConductShoris);
+
+                // 翻訳に使用した工場ID(本務工場ID)を設定する
+                ViewBag.TransFactoryId = procData.BelongingInfo.DutyFactoryId;
 
                 return PartialView("_ArticlePartial", results[0]);
 

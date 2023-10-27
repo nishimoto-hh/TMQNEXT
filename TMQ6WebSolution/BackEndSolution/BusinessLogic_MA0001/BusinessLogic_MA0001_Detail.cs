@@ -107,6 +107,7 @@ namespace BusinessLogic_MA0001
                     //対象機器
                     setMachineList<Dao.detailMachine>(conditionObj, machineListId, SqlName.Detail.GetFailureMachineList, result.ActivityDivision);
                     //故障情報
+                    conditionObj.FactoryId = result.FactoryId;
                     getDetailInfo<Dao.historyFailure>(conditionObj, failureInfoIdList, SqlName.Detail.GetFailureInfo, new List<StructureType> { StructureType.FailureCause });
                     //故障分析情報
                     getDetailInfo<Dao.FailureAnalyzeInfo>(conditionObj, new List<string> { failureAnalyzeInfoId }, SqlName.Detail.GetFailureAnalyzeInfo, null);
@@ -127,6 +128,8 @@ namespace BusinessLogic_MA0001
             //保全履歴情報（個別工場）の取得
             Dao.historyInfo historyIndividualInfo = getDetailInfo<Dao.historyInfo>(conditionObj, historyIndividualInfoIdList, SqlName.Detail.GetHistoryIndividualInfo, null);
 
+            // 画面定義の翻訳情報取得
+            GetContorlDefineTransData(result.FactoryId ?? -1);
             return true;
         }
 
@@ -227,7 +230,7 @@ namespace BusinessLogic_MA0001
                 IList<T> results = new List<T>();
                 results.Add(result);
                 // 階層情報を設定
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<T>(ref results, setStructureType, this.db, this.LanguageId, true);
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<T>(ref results, setStructureType, this.db, this.LanguageId, true, condition.FactoryId ?? 0);
             }
 
             foreach (string id in detailInfoIds)

@@ -1103,7 +1103,19 @@
         var title = define.ITEMNAME;
         var headerAlign = "";
         var isReadOnly = formDefine.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly || (formDefine.REFERENCE_MODE ?? 0 == FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Reference);
-        var isSort = isReadOnly && define.SORT_DIVISION == LISTITEM_DEFINE_CONSTANTS.SORT_DIVISION.Valid;
+        var isSort = isReadOnly && (define.SORT_DIVISION == LISTITEM_DEFINE_CONSTANTS.SORT_DIVISION.Valid || define.SORT_DIVISION == LISTITEM_DEFINE_CONSTANTS.SORT_DIVISION.ValidNumber);
+        string sorter = "string";
+        Dictionary<string, object> sorterParams = null;
+        if (define.SORT_DIVISION == LISTITEM_DEFINE_CONSTANTS.SORT_DIVISION.ValidNumber)
+        {
+            //数値列の場合、数値としてソート
+            sorter = "number";
+            sorterParams = new Dictionary<string, object>
+            {
+                { "thousandSeparator", "," }, //桁区切り文字
+            };
+
+        }
         Dictionary<string, object> headerFilterParams = null;
         var headerFilter = isReadOnly && define.FILTERUSEKBN == LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.Use ? "input" : "";
         // 必須項目設定
@@ -1302,6 +1314,8 @@
             //{ "tooltip", define.TOOLTIP },
             // ソート 直接編集可の場合、列フィルターは無し
             { "headerSort", isSort },
+            { "sorter", sorter },
+            { "sorterParams", sorterParams },
         };
         return colHeader;
     }

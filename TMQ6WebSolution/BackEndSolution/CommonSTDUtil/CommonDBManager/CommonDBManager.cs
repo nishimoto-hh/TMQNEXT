@@ -491,6 +491,22 @@ namespace CommonSTDUtil.CommonDBManager
 
             return table;
         }
+
+        /// <summary>
+        /// SQL実行結果(IDataReader)取得処理(SQL文字列指定)
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        public IDataReader ExecuteReader(string sql, object param = null)
+        {
+            if (!this.IsOpened)
+            {
+                if (!Connect()) { return null; }
+            }
+
+            return this.Connection.ExecuteReader(sql, param, this.transaction, commandTimeout: this.TimeOutSeconds);
+        }
         #endregion
 
         #region 外部SQL使用
@@ -711,7 +727,7 @@ namespace CommonSTDUtil.CommonDBManager
         }
 
         /// <summary>
-        /// 登録/更新処理(SQL文字列指定＆キー取得)
+        /// 登録/更新処理(外部SQL名指定＆キー取得)
         /// </summary>
         /// <param name="sqlName">外部SQL名</param>
         /// <param name="subDirName">外部SQL格納先サブディレクトリ名</param>
@@ -735,6 +751,29 @@ namespace CommonSTDUtil.CommonDBManager
             table.Load(reader);
 
             return table;
+        }
+
+        /// <summary>
+        /// SQL実行結果(IDataReader)取得処理(外部SQL名指定)
+        /// </summary>
+        /// <param name="sqlName">外部SQL名</param>
+        /// <param name="subDirName">外部SQL格納先サブディレクトリ名</param>
+        /// <param name="param">実行パラメータ</param>
+        /// <returns>SQL実行結果(IDataReader)</returns>
+        public IDataReader ExecuteReaderByOutsideSql(string sqlName, string subDirName = "", object param = null)
+        {
+            if (!this.IsOpened)
+            {
+                if (!Connect()) { return null; }
+            }
+
+            string path = getSqlPath(sqlName, subDirName);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                return null;
+            }
+
+            return this.Connection.ExecuteReaderOutsideSql(path, param, this.transaction, commandTimeout: this.TimeOutSeconds);
         }
         #endregion
 

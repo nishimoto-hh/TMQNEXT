@@ -1,7 +1,23 @@
-DECLARE @TranslationIdCirculationTargetTrue int;
-DECLARE @TranslationIdCirculationTargetFalse int;
-SET @TranslationIdCirculationTargetTrue = 111160071;    -- 対象
-SET @TranslationIdCirculationTargetFalse = 111270034;   -- 非対象
+WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111160071
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, CirculationTargetFalse AS (-- 「非対象」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 111270034
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
 
 SELECT
       mc.machine_no                                     -- 機器番号
@@ -201,10 +217,8 @@ SELECT
             AND tra.structure_id = eq.use_segment_structure_id
       ) AS use_segment_name                        -- 使用区分名称
     , CASE
-        -- WHEN eq.circulation_target_flg = 1 THEN '対象'
-        -- WHEN eq.circulation_target_flg = 0 THEN '非対象'
-        WHEN eq.circulation_target_flg = 1 THEN [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetTrue, temp.languageId)
-        WHEN eq.circulation_target_flg = 0 THEN [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetFalse, temp.languageId)
+        WHEN eq.circulation_target_flg = 1 THEN CirculationTargetTrue.translation_text -- 対象
+        WHEN eq.circulation_target_flg = 0 THEN CirculationTargetFalse.translation_text -- 非対象
         ELSE ''
     END AS circulation_target                           -- 循環対象
     , eq.fixed_asset_no                                 -- 固定資産番号
@@ -486,5 +500,9 @@ FROM
                 app.rnk = 5
             ) app5                      -- 適用法規５
         ON mc.machine_id = app5.machine_id
+    CROSS JOIN
+       CirculationTargetTrue --「対象」の翻訳
+    CROSS JOIN
+       CirculationTargetFalse -- 「非対象」の翻訳
 ORDER BY
     mc.machine_no                                       -- 機器番号

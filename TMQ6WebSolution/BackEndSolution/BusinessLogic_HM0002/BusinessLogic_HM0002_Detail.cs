@@ -67,6 +67,9 @@ namespace BusinessLogic_HM0002
             // 一覧の設定
             setDetailList(isDisplayMaintainanceKind, factoryId);
 
+            // ★画面定義の翻訳情報取得★
+            GetContorlDefineTransData(factoryId);
+
             return true;
 
             // 画面タイプの再設定
@@ -130,7 +133,7 @@ namespace BusinessLogic_HM0002
                 // 画面にセット
                 SetSearchResultsByDataClass<Dao.Detail.List>(pageInfo, list, list.Count);
                 // スケジュール情報のセット
-                setSchedule(listCtrlId, true, param.LongPlanId, factoryId, param.ProcessMode, param.HistoryManagementId, contentType);
+                setSchedule(isDisplayMaintainanceKind, listCtrlId, true, param.LongPlanId, factoryId, param.ProcessMode, param.HistoryManagementId, contentType);
             }
         }
 

@@ -58,30 +58,27 @@ exdata AS (
         structure_id
         , ie.extension_data 
     FROM
-        v_structure_item_all si 
+        ms_structure st 
         INNER JOIN ms_item_extension ie 
-            ON si.structure_item_id = ie.item_id 
-            AND si.structure_group_id = 1000
-            AND si.structure_layer_no = 1
+            ON st.structure_item_id = ie.item_id 
+            AND st.structure_group_id = 1000
+            AND st.structure_layer_no = 1
             AND ie.sequence_no = 1
-            AND si.language_id = @LanguageId
 )
 SELECT DISTINCT
-    vs.structure_id,
-    vs.structure_group_id,
+    st.structure_id,
+    st.structure_group_id,
     ex.extension_data
 FROM
     rec_up AS up
     LEFT OUTER JOIN
-        v_structure_item_all AS vs
-    ON up.structure_id = vs.structure_id
+        ms_structure AS st
+    ON up.structure_id = st.structure_id
     LEFT JOIN
         exdata AS ex
     ON up.structure_id = ex.structure_id
 
 WHERE
-    vs.language_id = @LanguageId
-AND
     up.structure_layer_no = 1--工場
 ORDER BY
-    vs.structure_id
+    st.structure_id

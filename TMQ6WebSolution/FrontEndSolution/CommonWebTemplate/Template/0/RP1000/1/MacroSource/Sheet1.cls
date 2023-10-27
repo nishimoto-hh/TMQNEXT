@@ -45,6 +45,8 @@ Private Const Col_HistoryIndividual As String = "CQ:" & Col_End_HistoryIndividua
 Private Const Col_OccurrenceDate As String = "BP"
 '保全履歴（個別工場） 発生日列
 Private Const Col_HistoryIndividual_OccurrenceDate As String = "CX"
+'保全履歴（個別工場） 予備品(有無)ID列
+Private Const Col_HistoryIndividual_PartsExistence As String = "DJ"
 '保全依頼入力有無フラグ
 Private Const Col_Request_Input_Flg As String = "DR"
 '保全計画入力有無フラグ
@@ -193,7 +195,15 @@ On Error GoTo ErrHandler
             
             '保全履歴（個別工場）の発生日の次の列～保全履歴（個別工場）の最後の列まで
             Set history = Range(ColConv(colNum + 1) & Target.row & ":" & Col_End_HistoryIndividual & Target.row)
-            If WorksheetFunction.CountBlank(history) = history.Count Then
+            '予備品(有無)ID列が0(選択なし)の場合は、入力無しと扱う
+            Dim partsExistenceFlg As String
+            partsExistenceFlg = Range(Col_HistoryIndividual_PartsExistence & Target.row).Value
+            Dim cnt As Integer
+            cnt = 0
+            If partsExistenceFlg = "0" Then
+                cnt = 1
+            End If
+            If WorksheetFunction.CountBlank(history) + cnt = history.Count Then
                 '指定範囲の項目に入力が無い場合
                 Range(Col_History_Input_Flg & Target.row).Value = 0
             Else

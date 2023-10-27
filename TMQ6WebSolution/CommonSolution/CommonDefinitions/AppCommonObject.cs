@@ -116,6 +116,7 @@ namespace CommonWebTemplate
         public string AzureADEntityId { get; set; }
         public string AzureADSingleSignOnServiceUrl { get; set; }
         public string AzureADSingleLogoutServiceUrl { get; set; }
+        public string AzureADMetadataLocation { get; set; }
 
         /// <summary>ログアウト後に遷移するURL</summary>
         /// <remarks>

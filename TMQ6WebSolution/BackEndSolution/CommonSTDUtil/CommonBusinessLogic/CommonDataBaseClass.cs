@@ -207,6 +207,9 @@ namespace CommonSTDUtil
             /// <summary>Gets or sets 項目名翻訳</summary>
             /// <value>項目名翻訳</value>
             public string TranslationText { get; set; }
+            /// <summary>Gets or sets 書式文字列</summary>
+            /// <value>書式文字列</value>
+            public string FormatText { get; set; }
         }
 
         /// <summary>

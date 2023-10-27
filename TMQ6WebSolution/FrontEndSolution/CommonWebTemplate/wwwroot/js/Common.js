@@ -94,6 +94,9 @@ var P_TabulatorFilteringFlag = false;
 /*Public変数：無効なキーワード*/
 var P_InvalidKeywords = [];
 
+/**Public変数：画面定義翻訳リスト */
+var P_DefineTransList = [];
+
 /*Public変数：選択行のみ取得フラグ*/
 var P_IsSelectedOnly = false;
 /**定義 帳票出力の場合は、以下の機能の時に選択行のみ取得フラグをTrueにする*/
@@ -633,6 +636,8 @@ const structureGroupDef = {
     LocationForUserMst: 1004,
     //職種機種
     Job: 1010,
+    // 原因性格
+    FailureCausePersonality: 1020,
     //系停止
     StopSystem: 1130,
     //突発区分
@@ -3974,6 +3979,10 @@ function initValidatorAddMethod() {
         return false;   //ﾁｪｯｸｴﾗｰ
     }, null);
 
+    // 規定の文字数チェックが動作してしまうので、常にTrueを返してエラーとならないようにする
+    $.validator.addMethod('maxlength', function (value, element, param) {
+        return true;
+    });
     //数値範囲ﾁｪｯｸ
     $.validator.addMethod('comNumRange', function (value, element, param) {
         //param[0]：最小値
@@ -6931,12 +6940,15 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
     conditionDataList = outConditionDataList;
     W_listDefines = outListDefines;
 
+    // 翻訳工場IDを取得
+    var transFactoryId = getTransFactoryId(conductId, formNo);
+
     // POSTデータを生成
     var postdata = {
         conductId: conductId,                   // メニューの機能ID
         pgmId: pgmId,                           // メニューのプログラムID
         formNo: formNo,                         // 画面番号
-        ctrlId: btnCtrlIdW,                      // 「Init」、またはBackアクションのCTRLID
+        ctrlId: btnCtrlIdW,                     // 「Init」、またはBackアクションのCTRLID
         conditionData: conditionDataList,       // 検索条件入力データ
         listDefines: W_listDefines,             // 一覧定義情報
         listData: listData,                     // 明細一覧の入力データ（更新列情報受け渡し用）
@@ -6944,12 +6956,13 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         ListIndividual: P_dicIndividual,           // 個別実装用汎用ﾘｽﾄ
 
         confirmNo: confirmNo,                   //確認ﾒｯｾｰｼﾞ番号
-        buttonDefines: btnDefines,          //ﾎﾞﾀﾝ権限情報　※ﾎﾞﾀﾝｽﾃｰﾀｽを取得
+        buttonDefines: btnDefines,              //ﾎﾞﾀﾝ権限情報　※ﾎﾞﾀﾝｽﾃｰﾀｽを取得
 
         browserTabNo: P_BrowserTabNo,           // ブラウザタブ識別番号
 
         locationIdList: locationIdList,         // 場所階層構成IDリスト
         jobIdList: jobIdList,                   // 職種機種構成IDリスト
+        transFactoryId: transFactoryId,         // 翻訳工場ID
     };
 
     // 初期化処理実行
@@ -6988,6 +7001,9 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
             setEventForEditFlg(false, null, "#" + P_formTopId);
             setEventForEditFlg(false, null, "#" + P_formDetailId);
             setEventForEditFlg(false, null, "#" + P_formBottomId);
+
+            // 画面定義項目の翻訳を反映
+            setFormDefineTransData(conductId, formNo);
 
             var pageRowCount = 0;
             if (conductPtn == conPtn.Bat) {
@@ -9424,12 +9440,18 @@ function reportCreate(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtr
             //処理結果ｽﾃｰﾀｽ(CommonProcReturn)
             var result = resultInfo.responseJSON;
             var status;
-            if (result.length > 1) {
+            if (result && result.length > 1) {
                 status = result[0];
                 var data = separateDicReturn(result[1], conductId);
 
                 //エラー詳細を表示
                 dispErrorDetail(data);
+            }
+            else if (!result) {
+                status = {
+                    STATUS: procStatus.Error,
+                    MESSAGE: getMessageParam(P_ComMsgTranslated[941220002], [P_ComMsgTranslated[911040001]]) //Excel出力に失敗しました。
+                }
             }
             else {
                 status = result;
@@ -12784,6 +12806,8 @@ function initComUploadBtn(appPath, btn, FileSize) {
                 var fileType = file.type;
 
                 // ③ファイルサイズが大きすぎる
+                /*
+                 * ファイルサイズ入力チェックはWAFで行うので不要
                 if (fileSize > FileSize) {
                     if (isformPopup) {
                         //『ファイルサイズが大きすぎます。』
@@ -12797,6 +12821,7 @@ function initComUploadBtn(appPath, btn, FileSize) {
                     errorFlg = 1;
                     return true;    //※continue
                 }
+                */
 
                 // ④ファイル拡張子が指定されたものに一致しない
                 //  ※ファイルタイプ
@@ -14976,10 +15001,11 @@ function transForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ct
 
         //選択ﾃﾞｰﾀ取得
         var rowData = null;
+        var tbl = $(P_Article).find("#" + transTarget + "_" + formNo);  //選択一覧
+        var ctrlType = $(tbl).data('ctrltype');
         if (rowNo > 0) {
             //※新規モード以外の場合
-            var tbl = $(P_Article).find("#" + transTarget + "_" + formNo);  //選択一覧
-            var ctrlType = $(tbl).data('ctrltype');
+
             if (ctrlType == ctrlTypeDef.IchiranPtn3) {
                 rowData = getTempDataForTabulator(formNo, rowNo, "#" + transTarget + "_" + formNo);  //※常にｺｰﾄﾞ値
             } else {
@@ -14987,8 +15013,18 @@ function transForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ct
             }
         }
 
+        // 詳細画面翻訳対応　単票画面の場合、詳細画面の翻訳と同じ翻訳で表示するよう対応
+        var headerLabels = $(tbl).find(".tabulator-col-title"); // 一覧ヘッダのラベルリスト(文字列を取得)
+        // 変更する列名のリスト、"VAL1"："機器番号"のような連想配列を作成
+        var headerChanges = {};
+        $.each(headerLabels, function (idx, elm) {
+            var colVal = $(elm).closest(".tabulator-col").attr("tabulator-field");
+            var colLabel = $(elm).text();
+            headerChanges[colVal] = colLabel;
+        });
+
         //単票表示処理
-        transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo, rowData, modalNo);
+        transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo, rowData, modalNo, headerChanges);
 
     }
     else if (transPtn == transPtnDef.CmConduct) {
@@ -15174,8 +15210,9 @@ function transChildForm(appPath, childNo, dispPtn, transDiv, parentNo, btn_ctrlI
  * @param {number} formNo       :画面NO
  * @param {Dictionary<string, string>} rowData    :選択ﾃﾞｰﾀ
  * @param {number} modalNo      :現在のモーダル画面番号
+ * @param {Array<Dictionary<string, string>>} headerChanges : 置換を行うためのヘッダのラベル(キーに列のdata-name、値にラベル)
 */
-function transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo, rowData, modalNo) {
+function transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo, rowData, modalNo, headerChanges) {
 
     //単票表示ｴﾘｱ
     var editDivBase = $(P_Article).find('#' + transTarget + "_" + formNo + '_edit_div');
@@ -15209,6 +15246,17 @@ function transEditForm(appPath, transPtn, transTarget, transDiv, dispPtn, formNo
                 setAttrByNativeJs(elm, 'id', id + '_base');
             }
         });
+
+        // 単票の元の一覧に合わせてラベルを置換
+        for (var key in headerChanges) {
+            var target = $(editDiv).find("th[data-name='" + key + "']"); // 対象のthタグ
+            var temp = $(target).find("*"); // 子孫要素を退避
+            // ラベルを置換
+            var value = headerChanges[key] + '';
+            $(target).text(value);
+            // 退避した子孫要素を戻す
+            $(target).append(temp);
+        }
 
         //ﾓｰﾀﾞﾙ画面設定
         var modal = getNextModalElement(modalNo);
@@ -17406,8 +17454,10 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
             // 左側ツリーメニューの場合、表示中の画面ではなくツリーから取得
             var getFromArticle = !isTreeMenu;
             var factoryIdList = getSelectedFactoryIdList(null, getFromArticle, false);
+            // 翻訳で絞り込むかどうか判定
+            var isFilterTranslation = grpId == structureGroupDef.FailureCausePersonality;
             // JSONデータを工場IDで絞り込み
-            jsonDataW = filterTreeViewJsonDataByFactoryId(jsonDataW, factoryIdList);
+            jsonDataW = filterTreeViewJsonDataByFactoryId(jsonDataW, factoryIdList, isFilterTranslation);
         }
         if (isTreeMenu) {
             // 左側メニューの(職種機種の)場合、マージ処理を実行
@@ -17759,8 +17809,9 @@ function filterTreeViewJsonDataByStructureNo(jsonList, minLayerNo, maxLayerNo) {
  * ツリービューJSONデータの工場IDによる絞り込み
  * @param {Array.<Object>} jsonList         :JSONデータ配列
  * @param {Array.<number>} factoryIdList    :工場ID配列
+ * @param {boolean} isFilterTranslation     :翻訳で絞り込みを行う場合True(原因性格)
  */
-function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList) {
+function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList, isFilterTranslation) {
     var resultList = jsonList;
     if (factoryIdList == null || factoryIdList.length == 0) {
         // 工場が未指定の場合、ルート要素のみ表示
@@ -17768,28 +17819,58 @@ function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList) {
             return (data.parent == '#');
         });
     } else {
-        //resultList = $.grep(resultList, function (data, idx) {
-        //    var factoryId = getTreeViewFacrotyId(data);
-        //    return (data.parent == '#' || factoryId <= 0 || factoryIdList.indexOf(factoryId) >= 0);
-        //});
         var resultList2 = [];
-        $.each(resultList, function (idx, data) {
-            var factoryId = getTreeViewFacrotyId(data);
-            if (data.parent == '#' || (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0)) {
-                // ルート要素または指定工場の要素の場合、結果リストに追加
-                resultList2.push(data);
-            } else if (factoryId == 0) {
-                // 共通工場の要素の場合、構成IDが同一の要素を検索
-                var structureId = getTreeViewStructureId(data);
-                var duplicatedData = $.grep(resultList, function (x, i) {
-                    return (structureId == getTreeViewStructureId(x));
-                });
-                if (duplicatedData.length == 1) {
-                    // 自分自身しか存在しない場合、結果リストに追加
+        if (!isFilterTranslation) {
+            // 翻訳を行わない場合は、リビジョン3734の対応前の処理と同じ
+            $.each(resultList, function (idx, data) {
+                var factoryId = getTreeViewFacrotyId(data);
+                if (data.parent == '#' || (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0)) {
+                    // ルート要素または指定工場の要素の場合、結果リストに追加
                     resultList2.push(data);
+                } else if (factoryId == 0) {
+                    // 共通工場の要素の場合、構成IDが同一の要素を検索
+                    var structureId = getTreeViewStructureId(data);
+                    var duplicatedData = $.grep(resultList, function (x, i) {
+                        return (structureId == getTreeViewStructureId(x));
+                    });
+                    if (duplicatedData.length == 1) {
+                        // 自分自身しか存在しない場合、結果リストに追加
+                        resultList2.push(data);
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            // 翻訳を行う場合
+            $.each(resultList, function (idx, data) {
+                var factoryId = getTreeViewFacrotyId(data);
+                if (data.parent == '#') {
+                    // ルート要素の場合、結果リストに追加
+                    resultList2.push(data);
+                } else if (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0) {
+                    // 工場指定の場合(ツリーで翻訳工場指定の場合、全工場分のデータを保持)
+                    var structureId = getTreeViewStructureId(data);
+                    // 同一の構成ID、工場IDで絞り込み
+                    var duplicatedData = $.grep(resultList, function (x, i) {
+                        return (structureId == getTreeViewStructureId(x) && factoryId == getTreeViewFacrotyId(x));
+                    });
+                    // 工場個別の翻訳がある場合、複数取得される
+                    // 共通の翻訳と個別の工場の翻訳を取得し、個別→共通の順に優先して取得
+                    var targetFactoryId = factoryIdList[0]; // 個別の工場のID、工場IDが複数の場合は無いと思われる
+                    var targetData = $.grep(duplicatedData, function (x, i) {
+                        // 個別工場IDの翻訳があるかどうかを取得
+                        return (targetFactoryId == getTreeViewTranslationFactoryId(x));
+                    });
+                    if (targetData.length == 0) {
+                        // 無い場合、共通工場の翻訳を追加する
+                        targetFactoryId = 0;
+                    }
+                    if (getTreeViewTranslationFactoryId(data) == targetFactoryId) {
+                        // 要素の翻訳IDと対象の工場IDが同じ場合、追加
+                        resultList2.push(data);
+                    }
+                }
+            });
+        }
         resultList = resultList2;
     }
     return resultList;
@@ -17922,6 +18003,19 @@ function getTreeViewFacrotyId(data) {
 function getTreeViewStructureId(data) {
     if (data.li_attr) {
         return data.li_attr['data-structureid'];
+    } else {
+        return -1;
+    }
+}
+
+/**
+ * ツリービューの構成ID取得
+ * @param {Object} data :JSONデータ
+ * @return {number} 翻訳の工場ID
+ */
+function getTreeViewTranslationFactoryId(data) {
+    if (data.li_attr) {
+        return data.li_attr['data-translatefactoryid'];
     } else {
         return -1;
     }
@@ -19336,6 +19430,20 @@ function resizeColumn(id) {
  *  @param {string} ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  */
 function setHeader(head, id, editptn, referenceMode, appPath) {
+    if (!head.mutator) {
+        head.mutator = function (value, data, type, params, component) {
+            if (value == null && data[component.getField()] != null) {
+                //update等で特定の列を更新した際に他の列が空に変換されないよう対策
+                value = data[component.getField()];
+            } else if (value == null) {
+                //NULLを空文字に変換（NULLが含まれるとソートが機能しなくなるため）
+                value = "";
+            }
+
+            return value;
+        }
+    }
+
     if (head.formatter && head.formatter == "link") {
         //NOリンク列の場合
         setHeaderNoLink(head, id, editptn, referenceMode, appPath);

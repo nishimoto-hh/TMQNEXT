@@ -1,3 +1,23 @@
+WITH TraExists AS(-- 「有」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 131010001
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
+, TraNotExists AS (-- 「無」の翻訳を取得
+    SELECT
+        tra.translation_text
+    FROM
+        ms_translation tra
+    WHERE
+        tra.location_structure_id = 0
+    AND tra.translation_id = 131210002
+    AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
+)
 SELECT
     sm.location_structure_id,                           -- 機能場所階層ID
     mc.job_structure_id AS job_structure_id2,           -- 職種機種階層ID(機器)
@@ -74,8 +94,8 @@ SELECT
     mc.machine_name,                   -- 機器名称
     pl.occurrence_date,                -- 発生日
     sm.completion_date,                -- 完了日
-    CASE WHEN ISNULL(hi.stop_count, 0) >= 1 THEN '有' ELSE '無' END AS stop_count_name,  -- P停
-    CASE WHEN ISNULL(hi.call_count, 0) >= 1 THEN '有' ELSE '無' END AS call_count_name,  -- 呼出          
+    CASE WHEN ISNULL(hi.stop_count, 0) >= 1 THEN TraExists.translation_text ELSE TraNotExists.translation_text END AS stop_count_name,  -- P停
+    CASE WHEN ISNULL(hi.call_count, 0) >= 1 THEN TraExists.translation_text ELSE TraNotExists.translation_text END AS call_count_name,  -- 呼出          
     [dbo].[get_v_structure_item](rq.discovery_methods_structure_id, tmp.factoryId, tmp.languageId) AS discovery_methods_name,                  -- 発見方法
     [dbo].[get_v_structure_item](phenomenon_structure_id, tmp.factoryId, tmp.languageId) AS phenomenon_name,                                   -- 現象
     [dbo].[get_v_structure_item](hf.failure_cause_structure_id, tmp.factoryId, tmp.languageId) AS failure_cause_addition_note,                 -- 故障原因
@@ -107,6 +127,10 @@ FROM
     LEFT JOIN ma_plan pl
     ON pl.summary_id = sm.summary_id,
     (SELECT TOP 1 * FROM #temp) tmp
+    CROSS JOIN
+       TraExists --「有」の翻訳
+    CROSS JOIN
+       TraNotExists --「無」の翻訳
 WHERE
     hi.summary_id = tmp.Key1
 

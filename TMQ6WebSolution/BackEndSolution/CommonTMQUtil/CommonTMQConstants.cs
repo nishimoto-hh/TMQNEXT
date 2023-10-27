@@ -619,6 +619,17 @@
                     /// </summary>
                     Completion = 2
                 }
+
+                /// <summary>
+                /// 部門 修理部門
+                /// </summary>
+                public enum DepartmentFixDivision
+                {
+                    /// <summary>
+                    /// 全件
+                    /// </summary>
+                    Fix = 1
+                }
             }
         }
 
