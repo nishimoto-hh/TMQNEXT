@@ -1,0 +1,823 @@
+﻿@* セルコントロール　部分ビュー *@
+@* 　－　CELLTYPEで設定されるコントロール *@
+
+@*受け渡しパラメータ：一覧列定義 *@
+@using CommonWebTemplate.Models.Common;
+@model COM_LISTITEM_DEFINE
+
+@using CommonWebTemplate.CommonUtil;
+
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+    var id = ViewBag.ctrlId;
+    var idTo = "";
+    bool isFromTo = Model.FROMTOKBN == LISTITEM_DEFINE_CONSTANTS.FROMTOKBN.FromTo;
+    if (isFromTo)
+    {
+        idTo = id + "To";
+    }
+
+    var inival = Model.INITVAL;  //定義：初期値
+    var val = "";
+    var valTo = "";
+    var unit = "";
+    var unitFlg = false;
+    if (!string.IsNullOrEmpty(inival))
+    {
+        //数値の場合は、先に単位を分割しておく
+        if (Model.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number)
+        {
+            var inivals = inival.Split('@'); // '@'(ｱｯﾄﾏｰｸ)区切りで分割
+            if (inivals.Count() > 1)
+            {
+                unit = inivals[1];
+                unitFlg = true;
+            }
+            val = inivals[0];
+        }
+        else
+        {
+            val = inival;
+        }
+        if (isFromTo) // FromToフラグ=trueの場合
+        {
+            string[] fromTo = val.Split('|');   // '|'(縦棒)区切りで分割
+            val = fromTo[0];
+            if (fromTo.Count() > 1)
+            {
+                valTo = fromTo[1];
+            }
+        }
+    }
+    var maxLen = "";
+    if (Model.MAXLENGTH > 0)
+    {
+        maxLen = Model.MAXLENGTH.ToString();
+    }
+    var format = (Model.FORMAT == null) ? "" : Model.FORMAT.ToLower();
+    var formatLen = "";
+    if (!string.IsNullOrEmpty(format))
+    {
+        formatLen = format.Length.ToString();
+    }
+    var minVal = (Model.MINVAL == null) ? "" : Model.MINVAL; //定義：最小値
+    var minValTo = "";
+    if (string.IsNullOrEmpty(minVal))
+    {
+        minVal = "";
+    }
+    else if (isFromTo) // FromToフラグ=trueの場合
+    {
+        string[] fromTo = minVal.Split('|');   // '|'(縦棒)区切りで分割
+        minVal = fromTo[0];
+        if (fromTo.Count() > 1)
+        {
+            minValTo = fromTo[1];
+        }
+    }
+    var maxVal = (Model.MAXVAL == null) ? "" : Model.MAXVAL; //定義：最大値
+    var maxValTo = "";
+    if (string.IsNullOrEmpty(maxVal))
+    {
+        maxVal = "";
+    }
+    else if (isFromTo) // FromToフラグ=trueの場合
+    {
+        string[] fromTo = maxVal.Split('|');   // '|'(縦棒)区切りで分割
+        maxVal = fromTo[0];
+        if (fromTo.Count() > 1)
+        {
+            maxValTo = fromTo[1];
+        }
+    }
+    var autoCompDiv = "0";
+    var isAutoComp = Model.TXT_AUTOCOMPKBN >= LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoComp;
+    if (isAutoComp) // ｵｰﾄｺﾝﾌﾟﾘｰﾄ=trueの場合
+    {
+        autoCompDiv = Model.TXT_AUTOCOMPKBN.ToString();
+    }
+    //必須ｸﾗｽ付与
+    var ctrlClass = Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "validate_required" : "";
+    if (!string.IsNullOrEmpty(Model.CSSNAME))
+    {
+        //CSS名が指定されている場合、付与
+        ctrlClass += ((string.IsNullOrEmpty(Model.CSSNAME) ? "" : " ") + Model.CSSNAME);
+    }
+    if (isFromTo)
+    {
+        // FromToフラグがONの場合、FromToのコントロールか判断するクラスを付与
+        ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "fromto");
+    }
+    var divClass = "";
+    //if (isFromTo)
+    //{
+    //    // FromToフラグがONの場合、コントロールの幅を調整するスタイルを付与
+    //    divClass = "fromto_design";
+    //}
+
+    //name属性
+    var ctrlName = ViewBag.ctrlId;  //要素名=id名
+    var ctrlNameTo = "";
+    if (isFromTo)
+    {
+        ctrlNameTo = ctrlName + "To";
+    }
+
+    //var keyflg = Model.C_KEYFLG ? "1" : "0";
+
+    DateTime dt, dtTo;
+
+    var relationId = Model.RELATIONID;  //定義：初期値
+    var conductId = "";
+    var formNo = "";
+    if (!string.IsNullOrEmpty(relationId))
+    {
+        string[] otherLink = relationId.Split(',');   // ','(カンマ)区切りで分割
+        if (otherLink.Count() > 1)
+        {
+            conductId = otherLink[0];
+            formNo = otherLink[1];
+        }
+    }
+
+    short colwidth;
+
+    var colWidth = Model.COLWIDTH;
+    if (Model.COLWIDTH.Contains("||"))
+    {
+        colWidth = Model.COLWIDTH.Split("||")[1];
+    }
+    var colWidthStyle = "width: " + colWidth + "px;";
+    var style = "";
+    string dispVal = "";    //表示文字列
+    string href = "";       //ファイル相対パス
+    switch (Model.CELLTYPE)
+    {
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Text: // テキスト
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (ViewBag.isEditForm)
+                {
+                    id = id + "E";
+                }
+                ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + divClass);
+                style = colWidthStyle;
+                @:<input type="text" id="@id" name="@ctrlName" value="@val" data-value="" data-type="text" data-colname="@Model.ITEMNAME" data-maxlength="@maxLen" data-autocompdiv="@autoCompDiv" maxlength="@maxLen" class="@ctrlClass" placeholder="@Model.TXT_PLACEHOLDER" title="@Model.TOOLTIP" style="@style">
+                if (isAutoComp)
+                {
+                    //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
+                    var autoComp = new List<string>();
+                    autoComp.Add(Model.RELATIONID);
+                    autoComp.Add(Model.RELATIONPARAM);
+                    autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
+                    autoComp.Add(Model.OPTIONINFO);
+                    ViewBag.AutoCompDefDatas.Add(id, autoComp);
+                }
+                if (isFromTo)
+                {
+                    if (ViewBag.isEditForm)
+                    {
+                        idTo = idTo + "E";
+                    }
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-value="" data-type="text" data-colname="@Model.ITEMNAME" data-maxlength="@maxLen" data-autocompdiv="@autoCompDiv" maxlength="@maxLen" class="@ctrlClass" placeholder="@Model.TXT_PLACEHOLDER" title="@Model.TOOLTIP" style="@style">
+                    if (isAutoComp)
+                    {
+                        //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
+                        var autoComp = new List<string>();
+                        autoComp.Add(Model.RELATIONID);
+                        autoComp.Add(Model.RELATIONPARAM);
+                        autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
+                        autoComp.Add(Model.OPTIONINFO);
+                        ViewBag.AutoCompDefDatas.Add(idTo, autoComp);
+                    }
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Button: // ボタン
+            @*val = Model.ITEMNAME;
+                if (!string.IsNullOrEmpty(Model.INITVAL))
+                {
+                    //初期値が設定されている場合はボタン文言に採用
+                    val = Model.INITVAL;
+                }
+                @:<input type="button" id="@id" name="@ctrlName" value="@val" data-type="button" class="@ctrlClass" title="@Model.TOOLTIP" />*@
+            // ボタンを出力
+            <partial name="_ButtonControlPartial" model="Model" />
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBox: // チェックボックス
+            @:<span class="labeling checkbox"></span>
+            @:<div class="substance">
+                if (val == "1")
+                {
+                    //チェック：あり
+                    @:<input type="checkbox" id="@id" name="@ctrlName" value="1" checked="checked" class="@ctrlClass" title="@Model.TOOLTIP" />
+                }
+                else
+                {
+                    //チェック：なし
+                    @:<input type="checkbox" id="@id" name="@ctrlName" value="0" class="@ctrlClass" title="@Model.TOOLTIP" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBoxDel: // 削除チェックボックス
+            @:<span class="labeling checkbox"></span>
+            @:<div class="substance">
+                if (val == "1")
+                {
+                    //チェック：あり
+                    @:<input type="checkbox" id="@id" name="@ctrlName" data-type="ckdel" value="1" checked="checked" class="@ctrlClass" title="@Model.TOOLTIP" />
+                }
+                else
+                {
+                    //チェック：なし
+                    @:<input type="checkbox" id="@id" name="@ctrlName" data-type="ckdel" value="0" class="@ctrlClass" title="@Model.TOOLTIP" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton: // ラジオボタン
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                //idは無し
+                @:<label><input type="radio" name="@ctrlName" data-value="@val" class="@ctrlClass baseradio" title="@Model.TOOLTIP" /></label>
+                var radioData = new List<string>();
+                radioData.Add(Model.RELATIONID);
+                radioData.Add(Model.RELATIONPARAM);
+                radioData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
+                ViewBag.RadioDatas.Add(ctrlName, radioData);
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox: // コンボボックス
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                id = "cbo" + ViewBag.CboDatas.Count.ToString();
+
+                var sqlId = Model.RELATIONID;
+                var relationParam = Model.RELATIONPARAM;
+                var parameters = !string.IsNullOrWhiteSpace(relationParam) ? relationParam.Split(',') : new string[0];
+                var param1 = parameters != null && parameters.Length > 0 ? parameters[0] : "";
+                var param2 = parameters != null && parameters.Length > 1 ? parameters[1] : "";
+                var param3 = parameters != null && parameters.Length > 2 ? parameters[2] : "";
+                var isFacroty = false;
+                if (STRUCTURE_CONSTANTS.SQLIDs.Contains(sqlId))
+                {
+                    // 構成マスタのコンボボックスの場合、工場のコントロールかどうかチェックする
+                    // 構成グループIDを他コントロールから取得する場合、工場コントロール判定対象外とする
+                    var grpId = !string.IsNullOrWhiteSpace(param1) && !param1.StartsWith("@") ? Convert.ToInt32(param1) : -1;
+                    var layerNo = !string.IsNullOrWhiteSpace(param2) && param2 != "''" ? Convert.ToInt32(param2) : -1;
+                    isFacroty = STRUCTURE_CONSTANTS.SQLIDs.Contains(sqlId) && grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location && layerNo == STRUCTURE_CONSTANTS.LAYER_NO.Factory;
+                    if (!isFacroty && (grpId != STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location || layerNo > STRUCTURE_CONSTANTS.LAYER_NO.Factory))
+                    {
+                        // 4つ目のパラメータに工場IDの連動を追加
+                        for (int i = parameters.Length; i < 3; i++) { relationParam += ","; }
+                        relationParam += ",@9999";
+                    }
+                }
+                @:<select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" title="@Model.TOOLTIP"
+                          if (isFacroty) { @: data-factoryctrl="@isFacroty"
+                          } @:></select>
+                var cboData = new List<string>();
+                cboData.Add(sqlId);
+                cboData.Add(relationParam);
+                cboData.Add((string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO);
+                cboData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
+                ViewBag.CboDatas.Add(id, cboData);
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox: // リストボックス
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                id = "cbo" + ViewBag.CboDatas.Count.ToString();
+                //リスト行数 | 選択区分
+                string[] listboxFormat = Model.FORMAT.Split('|');
+                if (listboxFormat[1] == LISTITEM_DEFINE_CONSTANTS.LISTBOXKBN.Single.ToString())
+                {
+                    @:<select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" title="@Model.TOOLTIP" size="@listboxFormat[0]"></select>
+                }
+                else
+                {
+                    @:<select id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" data-create="1" title="@Model.TOOLTIP" size="@listboxFormat[0]" multiple></select>
+                }
+
+                var listData = new List<string>();
+                listData.Add(Model.RELATIONID);
+                listData.Add(Model.RELATIONPARAM);
+                listData.Add((string.IsNullOrEmpty(Model.OPTIONINFO)) ? "0" : Model.OPTIONINFO);
+                listData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
+                ViewBag.CboDatas.Add(id, listData);
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Date: // 日付(ブラウザ標準)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + divClass);
+                style = colWidthStyle;
+                @:<input type="date" id="@id" name="@ctrlName" data-type="date" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-minval="@minVal" data-maxval="@maxVal" data-def="@val" title="@Model.TOOLTIP" style="@style" />
+                if (isFromTo)
+                {
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<input type="date" id="@idTo" name="@ctrlNameTo" data-type="date" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-minval="@minValTo" data-maxval="@maxValTo" data-def="@valTo" title="@Model.TOOLTIP" style="@style" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time:   // 時刻(ブラウザ標準)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + divClass);
+                style = colWidthStyle;
+                @:<input type="time" id="@id" name="@ctrlName" data-type="time" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-format="@format" data-def="@val" title="@Model.TOOLTIP" style="@style" />
+                if (isFromTo)
+                {
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<input type="time" id="@idTo" name="@ctrlNameTo" data-type="time" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-format="@format" data-def="@valTo" title="@Model.TOOLTIP" style="@style" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime: // 日時(ブラウザ標準)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + divClass);
+                style = colWidthStyle;
+                @:<input type="datetime-local" id="@id" name="@ctrlName" data-type="datetime-local" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-format="@format" data-minval="@minVal" data-maxval="@maxVal" data-def="@val" title="@Model.TOOLTIP" style="@style" />
+                if (isFromTo)
+                {
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<input type="datetime-local" id="@idTo" name="@ctrlNameTo" data-type="datetime-local" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-format="@format" data-minval="@minValTo" data-maxval="@maxValTo" data-def="@valTo" title="@Model.TOOLTIP" style="@style" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number: // 数値
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (unitFlg) { ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "unitnum"); };
+                divClass += ((string.IsNullOrEmpty(divClass) ? "" : " ") + "date_div");
+                style = colWidthStyle;
+                @:<div class="@divClass">
+                    @:<input type="text" id="@id" name="@ctrlName" value="@val" data-type="num" data-colname="@Model.ITEMNAME" data-format="@format" data-min="@Model.MINVAL" data-max="@Model.MAXVAL" data-maxlength="@maxLen" maxlength="@maxLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style" onfocus="onFocusNum(this);">
+                    @:<span class="unit">@unit</span>
+                @:</div>
+                if (isFromTo)
+                {
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<div class="@divClass">
+                        @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-type="num" data-colname="@Model.ITEMNAME" data-format="@format" data-min="@Model.MINVAL" data-max="@Model.MAXVAL" data-maxlength="@maxLen" maxlength="@maxLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style" onfocus="onFocusNum(this);">
+                        @:<span class="unit">@unit</span>
+                    @:</div>
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox: // 複数選択チェックボックス
+                                                               //ﾁｪｯｸﾎﾞｯｸｽ付きﾘｽﾄのｶｽﾀﾑｺﾝﾄﾛｰﾙとする
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                id = "mlt" + ViewBag.MltSelDatas.Count.ToString();
+
+                //ｺﾝﾎﾞ要素の設定情報を退避
+                var msData = new List<string>();
+                msData.Add(Model.RELATIONID);
+                msData.Add(Model.RELATIONPARAM);
+                msData.Add((Model.OPTIONINFO == null || "1" != Model.OPTIONINFO) ? "0" : "1");
+                msData.Add(Model.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
+                ViewBag.MltSelDatas.Add(id, msData);
+                var ctrlName_check = ctrlName + "[]";
+                //C_OPTIONINFO=1の場合、「0:全て」を表示
+                var classCtrlOption = (Model.OPTIONINFO == null || "1" != Model.OPTIONINFO) ? "ctrloption hide" : "ctrloption";
+
+                ctrlClass += (string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "multiSelect";  // 複数選択ｺﾝﾎﾞ
+                if (format != "1")
+                {
+                    //ﾄﾞﾛｯﾌﾟﾀﾞｳﾝ表示の場合
+                    @:<div class="multisel-parent">
+                        @:<a href="" target="" class="btn multisel-text"></a><span class="glyphicon glyphicon-chevron-down multisel-icon"></span>
+                        @:<div class="multisel-drop disabled">
+                        }
+                        @:<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@Model.ITEMNAME" data-value="@val" title="@Model.TOOLTIP">
+                            @:<li class="@classCtrlOption">
+                                @*C_OPTIONINFO=1の場合、「全て」を表示*@
+                                @:<label>
+                                    @:<input type="checkbox" name="@ctrlName_check" class="ctrloption" value="0" />
+                                    @:<span>@blogic.ConvertResourceName("911130001", ViewBag.TransDictionary)</span>@*「すべて」*@
+                                @:</label>
+                            @:</li>
+                        @:</ul>
+                        if (format != "1")
+                        {
+                            //ﾄﾞﾛｯﾌﾟﾀﾞｳﾝ表示の場合
+                        @:</div>
+                    @:</div>
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Textarea: // テキストエリア
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (ViewBag.isEditForm)
+                {
+                    id = id + "E";
+                }
+                style = colWidthStyle;
+                @:<textarea id="@id" name="@ctrlName" data-type="textarea" data-autocompdiv="@autoCompDiv" class="@ctrlClass" maxlength="@Model.MAXLENGTH" placeholder="@Model.TXT_PLACEHOLDER" title="@Model.TOOLTIP" style="@style">@Model.INITVAL</textarea>
+                if (isAutoComp)
+                {
+                    //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
+                    var autoComp = new List<string>();
+                    autoComp.Add(Model.RELATIONID);
+                    autoComp.Add(Model.RELATIONPARAM);
+                    autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
+                    autoComp.Add(Model.OPTIONINFO);
+                    ViewBag.AutoCompDefDatas.Add(id, autoComp);
+                }
+            @:</div>
+            break;
+
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DatePicker: // 日付(DatePicker)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                      //ﾚｲｱｳﾄ定義以外の場合、id名を変更
+                    id = "datepicker" + ViewBag.DatePickers.Count.ToString();
+                }
+
+                //fromtoの幅はdivに設定
+                divClass += ((string.IsNullOrEmpty(divClass) ? "" : " ") + "date_div");
+                style = colWidthStyle;
+                @:<div class="@divClass">
+                    @:<input type="text" id="@id" name="@ctrlName" value="@val" data-value="" data-type="date" data-colname="@Model.ITEMNAME" data-format="@format" data-def="@val" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minVal" data-maxval="@maxVal" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                    @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                @:</div>
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                    ViewBag.DatePickers.Add(id);
+                }
+                if (isFromTo)
+                {
+                    idTo = id + "To";
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<div class="@divClass">
+                        @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-value="" data-type="date" data-colname="@Model.ITEMNAME" data-format="@format" data-def="@valTo" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minValTo" data-maxval="@maxValTo" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                        @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                    @:</div>
+                    if (!ViewBag.isLayoutRow)
+                    {
+                        ViewBag.DatePickers.Add(idTo);
+                    }
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TimePicker:   // 時刻(TimePicker)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                      //ﾚｲｱｳﾄ定義以外の場合、id名を変更
+                    id = "timepicker" + ViewBag.TimePickers.Count.ToString();
+                }
+
+                //fromtoの幅はdivに設定
+                divClass += ((string.IsNullOrEmpty(divClass) ? "" : " ") + "date_div");
+                style = colWidthStyle;
+
+                @:<div class="@divClass">
+                    @:<input type="text" id="@id" name="@ctrlName" value="@val" data-value="" data-type="time" data-colname="@Model.ITEMNAME" data-def="@val" data-format="@format" maxlength="@formatLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                    @:<span class="glyphicon glyphicon-time date_icon" aria-hidden="true"></span>
+                @:</div>
+                if (!ViewBag.isLayoutRow)
+                {
+                    ViewBag.TimePickers.Add(id);
+                }
+                if (isFromTo)
+                {
+                    idTo = id + "To";
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<div class="@divClass">
+                        @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-value="" data-type="time" data-colname="@Model.ITEMNAME" data-def="@valTo" data-format="@format" maxlength="@formatLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                        @:<span class="glyphicon glyphicon-time date_icon" aria-hidden="true"></span>
+                    @:</div>
+                    if (!ViewBag.isLayoutRow)
+                    {
+                        ViewBag.TimePickers.Add(idTo);
+                    }
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTimePicker:   // 日時(DateTimePicker)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                      //ﾚｲｱｳﾄ定義以外の場合、id名を変更
+                    id = "datetimepicker" + ViewBag.DateTimePickers.Count.ToString();
+                }
+
+                //fromtoの幅はdivに設定
+                divClass += ((string.IsNullOrEmpty(divClass) ? "" : " ") + "date_div");
+                style = colWidthStyle;
+                @:<div class="@divClass">
+                    @:<input type="text" id="@id" name="@ctrlName" value="@val" data-value="" data-type="datetime" data-colname="@Model.ITEMNAME" data-def="@val" data-format="@format" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minVal" data-maxval="@maxVal" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                    @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                @:</div>
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                    ViewBag.DateTimePickers.Add(id);
+                }
+                if (isFromTo)
+                {
+                    idTo = id + "To";
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<div class="@divClass">
+                        @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-value="" data-type="datetime" data-colname="@Model.ITEMNAME" data-def="@valTo" data-format="@format" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minValTo" data-maxval="@maxValTo" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                        @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                    @:</div>
+                    if (!ViewBag.isLayoutRow)
+                    {
+                        ViewBag.DateTimePickers.Add(idTo);
+                    }
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker:   // 年月(YearMonthPicker)
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                      //ﾚｲｱｳﾄ定義以外の場合、id名を変更
+                    id = "yearmonthpicker" + ViewBag.YearMonthPickers.Count.ToString();
+                }
+
+                //fromtoの幅はdivに設定
+                divClass += ((string.IsNullOrEmpty(divClass) ? "" : " ") + "date_div");
+                style = colWidthStyle;
+                @:<div class="@divClass">
+                    @:<input type="text" id="@id" name="@ctrlName" value="@val" data-value="" data-type="yearmonth" data-colname="@Model.ITEMNAME" data-def="@val" data-format="@format" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minVal" data-maxval="@maxVal" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                    @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                @:</div>
+                if (!ViewBag.isLayoutRow)
+                {     //ﾚｲｱｳﾄ定義にはｶﾚﾝﾀﾞｰの初期化を行わない
+                    ViewBag.YearMonthPickers.Add(id);
+                }
+                if (isFromTo)
+                {
+                    idTo = id + "To";
+                    @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                    @:<div class="@divClass">
+                        @:<input type="text" id="@idTo" name="@ctrlNameTo" value="@valTo" data-value="" data-type="yearmonth" data-colname="@Model.ITEMNAME" data-def="@valTo" data-format="@format" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minValTo" data-maxval="@maxValTo" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                        @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                    @:</div>
+                    if (!ViewBag.isLayoutRow)
+                    {
+                        ViewBag.YearMonthPickers.Add(idTo);
+                    }
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Image:  // 画像
+            colwidth = Convert.ToInt16(colWidth);
+
+            // 画像フォルダパス
+            //var imageDirUrl = AppCommonObject.Config.AppSettings.ImageDirURL;
+            //if (string.IsNullOrEmpty(imageDirUrl))
+            //{
+            //    //※未設定の場合、アプリルート
+            //    imageDirUrl = ViewBag.AppRoutePath;
+            //}
+            var imageDirUrl = ViewBag.AppRoutePath;
+            if (!string.IsNullOrEmpty(imageDirUrl))
+            {
+                // アプリルート＋設定されたディレクトリパス
+                imageDirUrl = AppCommonObject.Config.AppSettings.ImageDirURL;
+            }
+            var imageVal = imageDirUrl + val;
+            var srcUrl = ViewBag.AppRoutePath + "Common/Image?file=";
+            @:<img id="@id" name="@ctrlName" class="@ctrlClass" data-type="img" data-imgpath="@imageDirUrl" data-def="@imageVal" src="@srcUrl" alt="@Model.TOOLTIP" width="@colwidth" title="@Model.TOOLTIP" />
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Graph:  // グラフ
+            colwidth = Convert.ToInt16(colWidth);
+            @:<canvas id="@id" name="@ctrlName" class="@ctrlClass" data-type="graph" width="@colwidth" title="@Model.TOOLTIP" />
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.File:   // ファイル選択
+            string fmt = "";
+            if (!string.IsNullOrEmpty(Model.FORMAT)) { fmt = Model.FORMAT; }
+            @:<input type="file" accept="@fmt" name="@ctrlName" data-type="file" data-colname="@Model.ITEMNAME" class="@ctrlClass" placeholder="@Model.TXT_PLACEHOLDER" title="@Model.TOOLTIP" />
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Download:   // ダウンロードリンク
+            dispVal = "";    //表示文字列
+            href = "";       //ファイル相対パス
+            val = "";
+            if (!string.IsNullOrEmpty(Model.INITVAL) && Model.INITVAL.Length > 0)
+            {
+                val = Model.INITVAL;
+                string[] vals = val.Split('|');   // '|'(パイプ)区切りで分割
+                if (vals.Length > 0) { dispVal = vals[0]; }
+                if (vals.Length > 1) { href = vals[1]; }
+            }
+            @:<a onclick="fileDownloadLink('@ViewBag.AppRoutePath', '@Model.FORMNO', '@Model.CTRLID', this); return false;" target="_blank" rel="noopener noreferrer" href="" data-type="download" class="@ctrlClass" title="@Model.TOOLTIP" download>@dispVal</a>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FileOpen:   // ファイル参照リンク
+            dispVal = "";    //表示文字列
+            href = "";       //ファイル相対パス
+            val = "";
+            if (!string.IsNullOrEmpty(Model.INITVAL) && Model.INITVAL.Length > 0)
+            {
+                val = Model.INITVAL;
+                string[] vals = val.Split('|');   // '|'(パイプ)区切りで分割
+                if (vals.Length > 0) { dispVal = vals[0]; }
+                if (vals.Length > 1) { href = vals[1]; }
+            }
+            @:<a href="@href" target="_blank" rel="noopener noreferrer" data-type="fileOpen" class="@ctrlClass" title="@Model.TOOLTIP">@dispVal</a>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans:  // コード＋翻訳
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                if (ViewBag.isEditForm)
+                {
+                    id = id + "E";
+                }
+                int textWidth = CommonDataUtil.GetCodeTransTextBoxWidth(Model);
+                style = "width:" + textWidth + "px;";
+                bool isFilter = false;
+                string optionInfo = Model.OPTIONINFO;
+                if (!string.IsNullOrEmpty(optionInfo) && !isAutoComp)
+                {
+                    //※設定ありの場合
+
+                    //[0]:表示設定、[1]:子画面番号
+                    //string[] aInfo = optionInfo.Split(',');
+                    string[] aInfo = optionInfo.Split('|');
+                    if (aInfo.Length >= 1)
+                    {
+                        //表示設定
+                        //4：虫眼鏡アイコンリンク・翻訳両方表示、コード非表示※コードを内部で使用する場合
+                        if (aInfo[0].Equals("4"))
+                        {
+                            style += "display:none;";
+                        }
+
+                        if (aInfo[1].Equals("FILTER"))
+                        {
+                            isFilter = true;
+                        }
+                    }
+                }
+                string type = !isFilter ? "text" : "search";
+                @:<input type="@type" id="@id" name="@ctrlName" value="@val" data-type="codeTrans" data-colname="@Model.ITEMNAME" data-maxlength="@maxLen" data-autocompdiv="@autoCompDiv" maxlength="@maxLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+                var codeTrans = new List<string>();
+            codeTrans.Add(Model.RELATIONID);
+            codeTrans.Add(Model.RELATIONPARAM);
+            ViewBag.CodeTransDatas.Add(id, codeTrans);
+
+            //string optionInfo = Model.OPTIONINFO;
+            bool btnDisp = false;           //ﾃﾞﾌｫﾙﾄ：「選」ﾎﾞﾀﾝ非表示
+            bool transDisp = true;          //ﾃﾞﾌｫﾙﾄ：「翻訳」表示
+            bool hideCode = false;          //ﾃﾞﾌｫﾙﾄ：「コード」hidden要素出力
+            var childNo = "";               //子画面NO
+            if (isAutoComp) //ｵｰﾄｺﾝﾌﾟﾘｰﾄON
+            {
+                //ｵｰﾄｺﾝﾌﾟﾘｰﾄの定義情報を保持
+                var autoComp = new List<string>();
+                autoComp.Add(Model.RELATIONID);
+                autoComp.Add(Model.RELATIONPARAM);
+                autoComp.Add(Model.TXT_AUTOCOMPKBN.ToString());
+                autoComp.Add(Model.OPTIONINFO);
+                ViewBag.AutoCompDefDatas.Add(id, autoComp);
+                // 翻訳のみ表示の場合、コードのhidden要素出力
+                if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompTransOnly)
+                {
+                    hideCode = true;
+                    transDisp = false;
+                }
+                else if (Model.TXT_AUTOCOMPKBN == LISTITEM_DEFINE_CONSTANTS.TXT_AUTOCOMPKBN.AutoCompCodeOnly)
+                {
+                    transDisp = false;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(optionInfo) && !isAutoComp)
+            {
+                //※設定ありの場合
+
+                //[0]:表示設定、[1]:子画面番号
+                //string[] aInfo = optionInfo.Split(',');
+                string[] aInfo = optionInfo.Split('|');
+                if (aInfo.Length >= 1)
+                {
+                    //表示設定
+                    //1：選ボタン表示、翻訳非表示
+                    //2：選ボタン・翻訳両方表示
+                    //3：選ボタン・翻訳両方非表示
+                    //4：虫眼鏡アイコンリンク・翻訳両方表示、コード非表示※コードを内部で使用する場合
+                    if (aInfo[0].Equals("1"))
+                    {
+                        btnDisp = true;     // 選ボタン表示
+                        transDisp = false;  // 翻訳非表示
+                    }
+                    else if (aInfo[0].Equals("2"))
+                    {
+                        btnDisp = true;     // 選ボタン表示
+                        transDisp = true;  // 翻訳表示
+                    }
+                    else if (aInfo[0].Equals("3"))
+                    {
+                        btnDisp = false;     // 選ボタン非表示
+                        transDisp = false;  // 翻訳非表示
+                    }
+                    else if (aInfo[0].Equals("4"))
+                    {
+                        btnDisp = true;     // 選ボタン表示
+                        transDisp = true;  // 翻訳表示
+                    }
+
+                    //子画面NO
+                    if (btnDisp && aInfo.Length >= 2)
+                    {
+                        childNo = aInfo[1];
+                    }
+                }
+            }
+            if (btnDisp)
+            {
+
+                    @*-- (stt)template2.0標準 --*@
+                    @*// 選ボタン
+                        var idBtn = id + "Btn";
+                        @:<input type="button" id="@idBtn" name="@ctrlName" value="選択" data-type="codeTransBtn" data-childno="@childNo" class="codeTransBtn"/>*@
+                    @*-- (stt)template2.0標準 --*@
+
+                    @*-- (stt)AKAP2.0標準 --*@
+                    // 選ボタン(虫眼鏡)
+                    var idBtn = id + "Btn";
+                    // アイコン
+                    var iconStyle = isFilter ? "glyphicon-filter" : "glyphicon-search";
+                    @:<div class="select-button">
+                        @:<span data-type="codeTransBtn" class="glyphicon @iconStyle withstr"></span>
+                        @:<input type="button" id="@idBtn" name="@ctrlName" value="@blogic.ConvertResourceName("111140002", ViewBag.TransDictionary)" data-type="codeTransBtn" data-childno="@childNo" class="codeTransBtn" />@*選択*@
+                    @:</div>
+                    if (!isFilter)
+                    {
+                        @:<div class="select-button">
+                            @:<span class="glyphicon glyphicon-remove-circle withstr codeTransBtnOthers"></span>
+                            var idBtnC = idBtn + "C";
+                            @:<input type="button" id="@idBtnC" value="@blogic.ConvertResourceName("111080001", ViewBag.TransDictionary)" class="codeTransBtnOthers" onclick="clearTrans(this); return false;" />@*クリア*@
+                        @:</div>
+                    }
+                    @*-- (stt)AKAP2.0標準 --*@
+                }
+                if (transDisp)
+                {
+                    // 翻訳
+                    <span class="honyaku"></span>
+                }
+                if (hideCode)
+                {
+                    // コード
+                    id += "Code";
+                    ctrlName += "Code";
+                    <input type="hidden" id="@id" name="@ctrlName" data-colname="@Model.ITEMNAME" class="autocomp_code" />
+                }
+            @:</div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FormTransition:  // 画面遷移リンク
+            string confirmFlg = "true";
+            if ((!string.IsNullOrEmpty(Model.RELATIONPARAM) && Model.RELATIONPARAM.Equals("0")) ||
+                Model.DAT_TRANSITION_PATTERN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct ||
+                Model.DAT_TRANSITION_PATTERN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab)
+            {
+                confirmFlg = "false";
+            }
+            @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@Model.DAT_TRANSITION_PATTERN', '@Model.DAT_TRANSITION_ACTION_DIVISION', '@Model.RELATIONID', '@Model.OPTIONINFO', '@Model.FORMNO', '@Model.CTRLID', null, 'rowNo', this, @confirmFlg); return false;" href="" data-type="transLink" class="@ctrlClass" title="@Model.TOOLTIP"></a>
+            break;
+        @*case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransChild:  // 子画面遷移リンク
+                string confirmFlg = "true";
+                if (!string.IsNullOrEmpty(Model.RELATIONPARAM) && Model.RELATIONPARAM.Equals("0"))
+                {
+                    confirmFlg = "false";
+                }
+                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Child', '@Model.RELATIONID', '@Model.OPTIONINFO', '@Model.FORMNO', '@Model.CTRLID', null, 'rowNo', null, @confirmFlg); return false;" href="" data-type="transLink" class="@ctrlClass" title="@Model.TOOLTIP"></a>
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransCm:// 共通機能ポップアップリンク
+                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct', '@Model.RELATIONID', null, '@Model.FORMNO', '@Model.CTRLID', null, 'rowNo', null, false); return false;" href="" data-type="transLink" class="@ctrlClass" title="@Model.TOOLTIP"></a>
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherTab:  // 他機能遷移リンク(別タブ)
+                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab', '@Model.RELATIONID', null, '@Model.FORMNO', '@Model.CTRLID', null, 'rowNo', this, false); return false;" href="" data-type="transLink" class="@ctrlClass" title="@Model.TOOLTIP"></a>
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherShift:// 他機能遷移リンク(同一タブ遷移)
+                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherShift', '@Model.RELATIONID', null, '@Model.FORMNO', '@Model.CTRLID', null, 'rowNo', this, true); return false;" href="" data-type="transLink" class="@ctrlClass" title="@Model.TOOLTIP"></a>
+                break;*@
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.PassWord: // パスワード
+            @:<span class="labeling"></span>
+            @:<div class="substance">
+                ctrlClass += ((string.IsNullOrEmpty(ctrlClass) ? "" : " ") + divClass);
+                style = colWidthStyle;
+                @:<input type="password" id="@id" name="@ctrlName" value="@val" data-value="" data-type="text" data-colname="@Model.ITEMNAME" data-maxlength="@maxLen" maxlength="@maxLen" class="@ctrlClass" title="@Model.TOOLTIP" style="@style">
+            @: </div>
+            break;
+        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Custom: // カスタムコントロール
+                                                        //CSS名が指定されている場合、付与
+            ctrlClass = ((string.IsNullOrEmpty(Model.CSSNAME) ? "" : " ") + Model.CSSNAME);
+            @:<div id="@Model.BTN_CTRLID" class="@ctrlClass" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-opioninfo="@Model.OPTIONINFO" title="@Model.TOOLTIP"></div>
+            break;
+        default:
+            break;
+    }
+}
+

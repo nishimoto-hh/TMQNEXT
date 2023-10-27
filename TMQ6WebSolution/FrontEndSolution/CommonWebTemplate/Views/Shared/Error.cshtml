@@ -1,0 +1,130 @@
+﻿@using CommonWebTemplate.CommonUtil;
+@using CommonSTDUtil
+@using CommonSTDUtil.CommonSTDUtil
+
+@{
+    Layout = "~/Views/Shared/_LayoutSub.cshtml";
+
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+
+    if (string.IsNullOrEmpty(ViewBag.Title))
+    {
+        ViewBag.Title = "Error";
+    }
+
+    if (!string.IsNullOrEmpty(ViewBag.SourceURL))
+    {
+        string url = ViewBag.SourceURL;
+        if (url.StartsWith(BaseController.SiteBaseURL))
+        {
+            //※先頭にｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽが指定された場合
+
+            //先頭をｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽに変換
+            ViewBag.SourceURL = url.Replace(BaseController.SiteBaseURL, Url.Content(BaseController.SiteBaseURL));
+        }
+    }
+    if (string.IsNullOrEmpty(ViewBag.BackTitle))
+    {
+        //※未設定の場合、ﾃﾞﾌｫﾙﾄﾒｯｾｰｼﾞ
+        //ブラウザの言語を取得
+        var browserLang = Context.Request.Headers["Accept-Language"].ToString().Split(";").FirstOrDefault()?.Split(",").FirstOrDefault();
+        ViewBag.BackTitle = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID111350001, browserLang);   // 戻る
+    }
+}
+
+<article name="error_area">
+    <h3 class="text-danger">@ViewBag.Title</h3>
+    @*<h2 class="text-danger">An error occurred while processing your request.</h2>*@
+
+    @*=====メッセージエリア=====*@
+    <div id="message_divid" class="message_div">
+        @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+        {
+            foreach (string message in ViewBag.ErrorMessage)
+            {
+                <div class="error">@message</div>
+            }
+        }
+        else if (!string.IsNullOrEmpty(ViewBag.Message))
+        {
+            <div class="success">@ViewBag.Message</div>
+        }
+    </div>
+    @if (ViewBag.AdditionalInfo != null && ViewBag.AdditionalInfo.Count > 0)
+    {
+        <div id="additionalinfo_divid" class="additionalinfo_div">
+            @foreach (string info in ViewBag.AdditionalInfo)
+            {
+                <div class="info">@info</div>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.SourceURL))
+    {
+        <p></p>
+        using (Html.BeginForm(
+        null,                   // アクション名
+        null,                   // コントローラー名
+        new { id = "" },        // ルートパラメーター
+        FormMethod.Post,        // HTTP メソッド
+        true,
+        new { id = "formError", enctype = "multipart/form-data" } // その他の属性
+    ))
+        {
+            <div>
+                <input type="button" id="error" class="btn btn-primary btn-Cover" value="@ViewBag.BackTitle" />
+            </div>
+        }
+    }
+
+</article>
+
+<script>
+    $(function () {
+
+        @* 遷移ﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
+        $("#error").on('click', function () {
+            var formError = $("#formError");
+            $(formError).attr("action", "@ViewBag.SourceURL");
+            $(formError).submit();
+        });
+
+        $(document).keydown(function (event) {
+            // クリックされたキーのコード
+            var keyCode = event.keyCode;
+
+            // Ctrlキーがクリックされたか(true or false)
+            var ctrlClick = event.ctrlKey;
+
+            // Altキーがクリックされたか(true or false)
+            var altClick = event.altKey;
+
+            // キーイベントが発生した対象のオブジェクト
+            var obj = event.target;
+
+            // バックスペースキーを制御
+            if (keyCode == 8) {
+                // テキストボックス／テキストエリアを制御
+                if ((obj.tagName == "INPUT"
+                    && (obj.type == "text" || obj.type == "password" || obj.type == "num" || obj.type == "date" || obj.type == "time" || obj.type == "search"))
+                    || obj.tagName == "TEXTAREA") {
+                    if (!obj.readOnly && !obj.disable) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Alt + ←を制御する
+            if (altClick && (keyCode == 37 || keyCode == 39)) {
+                return false;
+            }
+
+            return true;
+        })
+    });
+</script>

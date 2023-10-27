@@ -1,0 +1,150 @@
+﻿@* ボタンエリア　部分ビュー *@
+@* 　－　該当エリアに必要なボタンを横一列に表示 *@
+
+@using CommonWebTemplate.Models.Common;
+@model COM_LISTITEM_DEFINE
+
+@using CommonWebTemplate.CommonUtil;
+
+@{
+    /* ボタン権限制御 切替 start ==================================================================== */
+    ////KEY：CTRLID、VALUE：0(非表示),1(表示・活性),2(表示・非活性)
+    //IDictionary<string, int> userAuthShori = ViewBag.UserAuthConductShoris;
+    /* ============================================================================================ */
+    IList<Dictionary<string, object>> userAuthShoris = ViewBag.UserAuthConductShoris[ViewBag.curConductId];
+    /* ボタン権限制御 切替 end ==================================================================== */
+
+    var btnText = string.IsNullOrEmpty(Model.INITVAL) ? Model.ITEMNAME : Model.INITVAL;
+
+    var cssClass = "btn func_button";
+    if (!string.IsNullOrEmpty(Model.CSSNAME))
+    {
+        //CSS名が指定されている場合、付与
+        cssClass += (" " + Model.CSSNAME);
+    }
+
+    //ﾎﾞﾀﾝ権限設定
+    var authKbn = LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free;
+    var isAuth = true;     //権限あり
+    // ボタン表示区分
+    var btnDispKbn = USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Active;
+    var isDisp = true;  // 表示
+    if (Model.BTN_AUTHCONTROLKBN != LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free)
+    {
+        //※権限付きボタンの場合
+
+        authKbn = Model.BTN_AUTHCONTROLKBN;    //権限区分
+
+        //権限チェック
+        isAuth = false;
+        /* ボタン権限制御 切替 start ==================================================================== */
+        //if (userAuthShori.Keys.Contains(Model.BTN_CTRLID))
+        //{
+        //    int status = userAuthShori[Model.BTN_CTRLID];
+        //    if (0 != status)    //※非表示でない場合
+        //    {
+        //        //※権限あり
+        //        isAuth = true;
+        //    }
+        //}
+        /* ============================================================================================ */
+        btnDispKbn = Convert.ToInt16(userAuthShoris.Where(x =>
+            x["FORMNO"].ToString() == Model.FORMNO.ToString() &&
+            x.ContainsKey("CTRLID") && x["CTRLID"].ToString() == Model.BTN_CTRLID)
+            .Select(x => x["DISPKBN"]).FirstOrDefault());
+        isDisp = btnDispKbn != USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Hide;
+        /* ボタン権限制御 切替 end ==================================================================== */
+    }
+
+    //ﾊﾞｯﾁ再表示ﾎﾞﾀﾝ
+    if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComBatRefresh)
+    {
+        var btnCtrlid = Model.BTN_CTRLID;
+        ViewBag.BatRefleshBtns.Add(btnCtrlid);  //ﾎﾞﾀﾝｺﾝﾄﾛｰﾙIDを退避
+    }
+
+    //if (ViewBag.IsEditForm &&       //明細入力画面
+    //    ViewBag.isNewCreation &&    //新規モード
+    //    Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Delete)  //削除ボタン
+    //{
+    //    // 新規入力画面の場合は削除ボタンを出力しない
+    //    return;
+    //}
+    var style = "";
+    if (false == ViewBag.isCtrlGrp)
+    {
+        style = "width: " + Model.COLWIDTH + "px";
+    }
+
+    //if (isAuth)
+    if (isDisp)
+    {
+        var disabled = btnDispKbn == USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Disabled ? "disabled" : "";
+
+        //※権限あり⇒表示対象
+        if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Back)
+        {
+            if (ViewBag.IsEditForm)
+            {
+                //単票入力ﾎﾟｯﾌﾟｱｯﾌﾟの場合、ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
+                @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-dismiss="modal" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled  />
+            }
+            else
+            {
+                @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled  />
+            }
+        }
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Upload)
+        {
+            //CSV取込ボタン - 取込ダイアログ表示情報を追加
+            int fileCnt = Model.MAXLENGTH > 0 ? Model.MAXLENGTH : 1;
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-filecnt="@fileCnt" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled  />
+        }
+        @*else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ChildNew)
+        {
+            //子画面新規ボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" />
+        }
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.EditNew)
+        {
+            //単票入力新規ボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" />
+        }
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.TransCm)
+        {
+            //共通機能ポップアップボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" />
+        }
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.TransOtherTab || Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.TransOtherShift)
+        {
+            //他機能遷移(別タブ/同タブ表示切替)
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" />
+        }*@
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.FormTransition)
+        {
+            //画面遷移ボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-transptn="@Model.DAT_TRANSITION_PATTERN" data-transdiv="@Model.DAT_TRANSITION_ACTION_DIVISION" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />
+        }
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Execute)
+        {
+            //実行ボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-afterexeckbn="@Model.BTN_AFTEREXECKBN" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />
+        }
+        @*else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Select)
+        {
+            //選択ボタン ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
+            <input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-dismiss="modal" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style"/>
+        }*@
+        else
+        {
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationparam="@Model.RELATIONPARAM" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />
+        }
+    }
+    else
+    {   //※権限なし
+        //非表示
+        @*<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editKbn" data-authshori="none"  data-message="@Model.BTN_MESSAGE"/>*@
+        //生成されなかったtd削除の目印
+        @:<span class="empty hide"/>
+    }
+}

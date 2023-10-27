@@ -1,0 +1,20 @@
+INSERT INTO ms_structure_order(
+    [structure_id]
+    ,[factory_id]
+    ,[structure_group_id]
+    ,[display_order]
+    ,[insert_datetime]
+    ,[insert_user_id]
+    ,[update_datetime]
+    ,[update_user_id]
+)
+VALUES(
+    @StructureId
+    ,@FactoryId
+    ,@StructureGroupId
+    ,@DisplayOrder
+    ,@InsertDatetime
+    ,@InsertUserId
+    ,@UpdateDatetime
+    ,@UpdateUserId
+)

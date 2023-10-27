@@ -1,0 +1,55 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model CommonWebTemplate.Models.Common.CommonTabControlGroupData
+
+@{
+    IList<CommonFormDefine> tabCtrlDefines = Model.TabCtrlDefines;
+    int lastCtrlgrpNo = Model.LastCtrlGrpNo;
+    string grpIdStr = Model.GrpIdStr;
+
+    // コントロールグループを表示
+    foreach (var tabCtrlDefine in tabCtrlDefines)
+    {
+        if (tabCtrlDefine.FORMDEFINE.CTRLGRPNO >= 1)  // グループが設定されている場合
+        {
+            if (tabCtrlDefine.FORMDEFINE.CTRLGRPNO <= lastCtrlgrpNo)
+            {
+                continue;
+            }
+            if (lastCtrlgrpNo == -1 || tabCtrlDefine.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+            {
+                var grpId = grpIdStr + tabCtrlDefine.FORMDEFINE.CTRLGRPNO;
+                //グループ表示名と表示切替アイコンを表示
+                @:<div class="tbl_title">
+                    @:<span class="title">@tabCtrlDefine.FORMDEFINE.CTRLGRPNAME</span>
+                    @:<a href="#" data-switchid="@grpId" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitchTable" style="margin-left:5px;"><span class="glyphicon glyphicon-chevron-up"></span></a>
+                @:</div>
+
+                //グループのまとまりをdivで囲む
+                var divId = grpId + "_" + tabCtrlDefine.FORMDEFINE.FORMNO;
+                @:<div id="@divId" class="grouping_ctrl">
+                }
+
+                // 同一グループ番号の一覧をすべて取得
+                var sameGrpLists = tabCtrlDefines.Where(x => x.FORMDEFINE.CTRLGRPNO == tabCtrlDefine.FORMDEFINE.CTRLGRPNO)
+                            .OrderBy(x => x.FORMDEFINE.DISPORDER).ToList();
+                foreach (var grpList in sameGrpLists)
+                {
+                    <partial name="_ControlGrpAreaPartial.cshtml" model="grpList" />
+                }
+
+                if (lastCtrlgrpNo == -1 || tabCtrlDefine.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+                {
+                    //divを閉じる
+                @:</div>
+            }
+            // グループ番号を保持
+            lastCtrlgrpNo = tabCtrlDefine.FORMDEFINE.CTRLGRPNO;
+        }
+        else
+        {
+            <partial name="_ControlGrpAreaPartial.cshtml" model="tabCtrlDefine" />
+        }
+    }
+}

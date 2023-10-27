@@ -1,0 +1,58 @@
+INSERT INTO ma_summary(
+    [summary_id]
+    ,[long_plan_id]
+    ,[activity_division]
+    ,[follow_plan_key_id]
+    ,[subject]
+    ,[plan_implementation_content]
+    ,[subject_note]
+    ,[location_structure_id]
+    ,[job_structure_id]
+    ,[mq_class_structure_id]
+    ,[repair_cost_class_structure_id]
+    ,[budget_personality_structure_id]
+    ,[budget_management_structure_id]
+    ,[sudden_division_structure_id]
+    ,[stop_system_structure_id]
+    ,[stop_time]
+    ,[maintenance_count]
+    ,[change_management_structure_id]
+    ,[env_safety_management_structure_id]
+    ,[construction_date]
+    ,[completion_date]
+    ,[completion_time]
+    ,[update_serialid]
+    ,[insert_datetime]
+    ,[insert_user_id]
+    ,[update_datetime]
+    ,[update_user_id]
+) OUTPUT inserted.summary_id
+VALUES(
+    NEXT VALUE FOR seq_ma_summary_summary_id
+    ,@LongPlanId
+    ,@ActivityDivision
+    ,@FollowPlanKeyId
+    ,@Subject
+    ,@PlanImplementationContent
+    ,@SubjectNote
+    ,@LocationStructureId
+    ,@JobStructureId
+    ,@MqClassStructureId
+    ,@RepairCostClassStructureId
+    ,@BudgetPersonalityStructureId
+    ,@BudgetManagementStructureId
+    ,@SuddenDivisionStructureId
+    ,@StopSystemStructureId
+    ,@StopTime
+    ,@MaintenanceCount
+    ,@ChangeManagementStructureId
+    ,@EnvSafetyManagementStructureId
+    ,@ConstructionDate
+    ,@CompletionDate
+    ,@CompletionTime
+    ,@UpdateSerialid
+    ,@InsertDatetime
+    ,@InsertUserId
+    ,@UpdateDatetime
+    ,@UpdateUserId
+)

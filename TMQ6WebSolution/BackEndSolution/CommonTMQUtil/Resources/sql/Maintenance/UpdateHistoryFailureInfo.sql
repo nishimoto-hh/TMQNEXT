@@ -1,0 +1,40 @@
+UPDATE ma_history_failure 
+SET
+    [machine_id] = @MachineId
+    , [equipment_id] = @EquipmentId
+    , [maintenance_site] = @MaintenanceSite
+    , [maintenance_content] = @MaintenanceContent
+    , [phenomenon_structure_id] = @PhenomenonStructureId
+    , [phenomenon_note] = @PhenomenonNote
+    , [failure_cause_structure_id] = @FailureCauseStructureId
+    , [failure_cause_note] = @FailureCauseNote
+    , [failure_cause_personality_structure_id] = @FailureCausePersonalityStructureId
+    , [failure_cause_personality_note] = @FailureCausePersonalityNote
+    , [treatment_measure_structure_id] = @TreatmentMeasureStructureId
+    , [treatment_measure_note] = @TreatmentMeasureNote
+    , [failure_status] = @FailureStatus
+    , [failure_cause_addition_note] = @FailureCauseAdditionNote
+    , [previous_situation] = @PreviousSituation
+    , [recovery_action] = @RecoveryAction
+    , [improvement_measure] = @ImprovementMeasure
+    , [system_feed_back] = @SystemFeedBack
+    , [lesson] = @Lesson
+    , [failure_note] = @FailureNote
+    , [failure_analysis_structure_id] = @FailureAnalysisStructureId
+    , [failure_personality_factor_structure_id] = @FailurePersonalityFactorStructureId
+    , [failure_personality_class_structure_id] = @FailurePersonalityClassStructureId
+    , [treatment_status_structure_id] = @TreatmentStatusStructureId
+    , [necessity_measure_structure_id] = @NecessityMeasureStructureId
+    , [measure_plan_date] = @MeasurePlanDate
+    , [measure_class1_structure_id] = @MeasureClass1StructureId
+    , [measure_class2_structure_id] = @MeasureClass2StructureId
+    , [follow_flg] = @FollowFlg
+    , [follow_plan_date] = @FollowPlanDate
+    , [follow_content] = @FollowContent
+    , [follow_completion_date] = @FollowCompletionDate
+    , [used_days_machine] = @UsedDaysMachine
+    , [update_serialid] = update_serialid + 1
+    , [update_datetime] = @UpdateDatetime
+    , [update_user_id] = @UpdateUserId 
+WHERE
+    [history_failure_id] = @HistoryFailureId

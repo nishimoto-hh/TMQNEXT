@@ -1,0 +1,91 @@
+﻿@* 設定メニュー部分ビュー*@
+@using CommonWebTemplate;
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@* 画面定義(※表示中の機能) *@
+@model CommonConductMst
+
+@{
+    //メニュー表示位置
+    var menuPlace = AppCommonObject.Config.AppSettings.AppMenuPlace;
+    //マニュアルルートパス
+    var manualUrl = AppCommonObject.Config.AppSettings.ManualRootURL;
+    if (string.IsNullOrEmpty(manualUrl))
+    {
+        //※未設定の場合、アプリルート
+        manualUrl = ViewBag.AppRoutePath;
+    }
+    manualUrl += AppCommonObject.Config.AppSettings.ManualRootPath;   //manualﾌｫﾙﾀﾞ
+
+
+    var fileName = AppCommonObject.Config.AppSettings.ManualFilePrefix; // マニュアルのファイル名
+    var ext = AppCommonObject.Config.AppSettings.ManualFileExt;         // 拡張子
+    var pageNo = 1;                                                     // ページ番号
+
+    // 機能IDを判定しマニュアルのページ番号を取得
+    var conductId = Model.CONDUCTMST.CONDUCTID;
+    if (AppCommonObject.Config.AppSettings.ManualPageNo.ContainsKey(conductId))
+    {
+        pageNo = AppCommonObject.Config.AppSettings.ManualPageNo[conductId];
+    }
+
+    // ファイル名 + 拡張子 + ページ番号
+    manualUrl += fileName + ext + "#page=" + pageNo.ToString();
+
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+    //セッションからユーザ情報取得
+    UserInfoDef userInfo = Context.Session.GetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO);
+
+}
+
+@using (Html.BeginForm(
+           null,      // アクション名
+null,    // コントローラー名
+new { id = "" },        // ルートパラメーター
+FormMethod.Post,                               // HTTP メソッド
+true,
+new { id = "formTop", enctype = "multipart/form-data" } // その他の属性
+))
+{
+    @*@Html.AntiForgeryToken()*@
+}
+
+@*---ｱﾌﾟﾘﾒﾆｭ(Top右上)ｰ---*@
+<span id="app_navi_title">
+    <span>@ViewBag.UserName</span>
+</span>
+@*言語切り替え*@
+<span id="app_navi_language">
+    <select id="language_select" name="language_select" data-userlanguage="@userInfo.LanguageId"></select>
+</span>
+<span id="app_navi_icon">
+    @*<a href="#" data-switchid="app_navi_notice" data-actionkbn="@FORM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch"><span class="glyphicon glyphicon-bell" style="font-size: 17px; padding-bottom: 5px; color:white;"></span></a>
+        <a href="#" data-switchid="app_navi_menu" data-actionkbn="@FORM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch"><span class="glyphicon glyphicon-th" style="font-size: 17px; margin-left: 10px; padding-bottom: 7px; color:white;"></span></a>*@
+    <a href="#" data-switchid="app_navi_notice" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch"><span class="glyphicon glyphicon-bell"></span></a>
+    <a href="#" data-switchid="app_navi_menu" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch"><span class="glyphicon glyphicon-cog"></span></a>
+</span>
+<ul id="app_navi_menu" class="hide">
+    @*新規ウィンドウ*@
+    <li><a href="#" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911120002", ViewBag.TransDictionary)</a></li>
+    @*ヘルプ*@
+    <li><a href="@manualUrl" target="_blank" rel="noopener noreferrer">@blogic.ConvertResourceName("911290001", ViewBag.TransDictionary)</a></li>
+    @*パスワード変更*@
+    <li><a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComPassChangeForm">@blogic.ConvertResourceName("911260001", ViewBag.TransDictionary)</a></li>
+
+    @{
+        var isSiteMinder = AppCommonObject.Config.AppSettings.SiteMinderLogin;
+        if (isSiteMinder)
+        {
+            @*ID切替*@
+            @:<li><a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComIdChange">@blogic.ConvertResourceName("911010001", ViewBag.TransDictionary)</a></li>
+        }
+        else
+        {
+            @*ログアウト*@
+            @:<li><a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComLogout">@blogic.ConvertResourceName("911430001", ViewBag.TransDictionary)</a></li>
+        }
+    }
+    @*<li><a href="#" data-actionkbn="@FORM_DEFINE_CONSTANTS.ACTIONKBN.ReleaseInfo">リリース情報</a></li>*@
+</ul>
+

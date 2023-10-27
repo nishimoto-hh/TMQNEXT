@@ -1,0 +1,260 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model CommonConductMst
+
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+<div class="main_div">
+    <span class="title glyphicon glyphicon-search"></span><span class="title">@blogic.ConvertResourceName("111120084", ViewBag.TransDictionary)</span>@*詳細検索条件*@
+    <div class="message_div">
+    </div>
+    @*機能の画面数分、ﾚｲｱｳﾄ出力*@
+    @foreach (short curformNo in Model.FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+    {
+        // 画面NO、一覧、詳細検索対象項目有りで絞込
+        var curformDefines = Model.FORMDEFINES.Where(
+            y => y.FORMDEFINE.FORMNO == curformNo &&
+            (y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+             y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+             y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3) &&
+             //y.LISTITEMDEFINES.Count(z => z.DETAILED_SEARCH_FLG.HasValue && z.DETAILED_SEARCH_FLG.Value) > 0).ToList();
+             y.LISTITEMDEFINES.Count(z => z.DETAILED_SEARCH_DIVISION.HasValue && z.DETAILED_SEARCH_DIVISION.Value > 0) > 0).ToList();
+
+        foreach (var formDefine in curformDefines)
+        {
+            //ﾃﾞｰﾀ行定義を取得
+            var dataItems = formDefine.LISTITEMDEFINES.Where(
+                z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow &&
+                //(z.DETAILED_SEARCH_FLG.HasValue && z.DETAILED_SEARCH_FLG.Value)).ToList();
+                (z.DETAILED_SEARCH_DIVISION.HasValue && z.DETAILED_SEARCH_DIVISION.Value > 0)).ToList();
+
+            var ctrlId = formDefine.FORMDEFINE.CTRLID;
+            var idfmt = ctrlId + "_" + curformNo + "VAL{0}_D";
+            @:<form>
+                @:<table class="detailsearch" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-parentid="@ctrlId" data-formno="@curformNo">
+                    @:<tbody>
+                        foreach (var item in dataItems)
+                        {
+                            var id = string.Format(idfmt, item.ITEMNO);
+                            var ctrlName = id;
+                            var format = string.IsNullOrEmpty(item.FORMAT) ? "" : item.FORMAT.ToLower();
+                            var ctrlClass = "";
+                            @*var dispAddBtn = true;*@
+                            @:<tr class="default_tr" data-itemno="@item.ITEMNO">
+                                @:<td class="select"><input type="checkbox" /></td>
+                                @:<td class="item_name">@item.ITEMNAME</td>
+                                @:<td class="input_td">
+                                    //switch (item.CELLTYPE)
+                                    switch (item.DETAILED_SEARCH_CELLTYPE)
+                                    {
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Text:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Textarea:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Label:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Download:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FileOpen:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FormTransition:
+                                            @:<input type="text" id="@id" name="@ctrlName" data-value="" data-type="text" data-colname="@item.ITEMNAME" class="@ctrlClass" placeholder="@item.TXT_PLACEHOLDER" title="@item.TOOLTIP" />
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number:
+                                            var inival = !string.IsNullOrEmpty(item.INITVAL) ? item.INITVAL : "";  //定義：初期値
+                                            var unit = "";
+                                            var unitFlg = false;
+                                            var inivals = inival.Split('@'); // '@'(ｱｯﾄﾏｰｸ)区切りで分割
+                                            if (inivals.Count() > 1)
+                                            {
+                                                unit = inivals[1];
+                                                unitFlg = true;
+                                            }
+                                            ctrlClass += (string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "fromto";
+                                            if (unitFlg) { ctrlClass += " unitnum"; }
+                                            var idTo = id + "To";
+                                            var ctrlNameTo = ctrlName + "To";
+                                            @:<div class="date_div">
+                                                @:<input type="text" id="@id" name="@ctrlName" value="" data-type="num" data-colname="@item.ITEMNAME" data-format="@format" data-min="@item.MINVAL" data-max="@item.MAXVAL" class="@ctrlClass" title="@item.TOOLTIP" />
+                                                @:<span class="unit">@unit</span>
+                                            @:</div>
+                                            @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                                            @:<div class="date_div">
+                                                @:<input type="text" id="@idTo" name="@ctrlNameTo" value="" data-type="num" data-colname="@item.ITEMNAME" data-format="@format" data-min="@item.MINVAL" data-max="@item.MAXVAL" class="@ctrlClass" title="@item.TOOLTIP" />
+                                                @:<span class="unit">@unit</span>
+                                            @:</div>
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans:
+                                            @:<input type="text" id="@id" name="@ctrlName" data-value="" data-type="text" data-colname="@item.ITEMNAME" class="@ctrlClass" placeholder="@item.TXT_PLACEHOLDER" title="@item.TOOLTIP" />
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DatePicker:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TimePicker:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTimePicker:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker:
+                                            var dataType = "";
+                                            //if (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time)
+                                            if (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time)
+                                            {
+                                                id = "timepicker" + ViewBag.TimePickers.Count.ToString();
+                                                idTo = id + "To";
+                                                dataType = "time";
+                                                ViewBag.TimePickers.Add(id);
+                                                ViewBag.TimePickers.Add(idTo);
+
+                                            }
+                                            //else if (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime)
+                                            else if (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime)
+                                            {
+                                                id = "datetimepicker" + ViewBag.DateTimePickers.Count.ToString();
+                                                idTo = id + "To";
+                                                dataType = "datetime";
+                                                ViewBag.DateTimePickers.Add(id);
+                                                ViewBag.DateTimePickers.Add(idTo);
+                                            }
+                                            //else if (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker)
+                                            else if (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker)
+                                            {
+                                                id = "yearmonthpicker" + ViewBag.YearMonthPickers.Count.ToString();
+                                                idTo = id + "To";
+                                                dataType = "yearmonth";
+                                                ViewBag.YearMonthPickers.Add(id);
+                                                ViewBag.YearMonthPickers.Add(idTo);
+                                            }
+                                            else
+                                            {
+                                                id = "datepicker" + ViewBag.DatePickers.Count.ToString();
+                                                idTo = id + "To";
+                                                dataType = "date";
+                                                ViewBag.DatePickers.Add(id);
+                                                ViewBag.DatePickers.Add(idTo);
+                                            }
+                                            ctrlNameTo = ctrlName + "To";
+                                            ctrlClass += (string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "fromto";
+                                            var formatLen = !string.IsNullOrEmpty(format) ? format.Length.ToString() : "";
+                                            var maxLen = item.MAXLENGTH > 0 ? item.MAXLENGTH.ToString() : "";
+                                            var minVal = !string.IsNullOrEmpty(item.MINVAL) ? item.MINVAL : "";
+                                            var maxVal = !string.IsNullOrEmpty(item.MAXVAL) ? item.MAXVAL : "";
+                                            @:<div class="date_div">
+                                                @:<input type="text" id="@id" name="@ctrlName" value="" data-value="" data-type="@dataType" data-colname="@item.ITEMNAME" data-format="@format" data-def="" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minVal" data-maxval="@maxVal" class="@ctrlClass" title="@item.TOOLTIP" autocomplete="off" />
+                                                @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                                            @:</div>
+                                            @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                                            @:<div class="date_div">
+                                                @:<input type="text" id="@idTo" name="@ctrlNameTo" value="" data-value="" data-type="@dataType" data-colname="@item.ITEMNAME" data-format="@format" data-def="" maxlength="@formatLen" data-maxlength="@maxLen" data-minval="@minVal" data-maxval="@maxVal" class="@ctrlClass" title="@item.TOOLTIP" autocomplete="off" />
+                                                @:<span class="glyphicon glyphicon-calendar date_icon" aria-hidden="true"></span>
+                                            @:</div>
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBox:
+                                            @:<input type="checkbox" id="@id" name="@ctrlName" class="@ctrlClass" title="@item.TOOLTIP" />
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton:
+                                            id = "mlt" + ViewBag.MltSelDatas.Count.ToString();
+                                            @*dispAddBtn = false;*@
+
+                                            //ｺﾝﾎﾞ要素の設定情報を退避
+                                            var msData = new List<string>
+                                                ();
+                                            msData.Add(item.RELATIONID);
+                                            msData.Add(item.RELATIONPARAM);
+                                            msData.Add((item.OPTIONINFO == null || "1" != item.OPTIONINFO) ? "0" : "1");
+                                            msData.Add(item.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "1" : "0");
+                                            ViewBag.MltSelDatas.Add(id, msData);
+                                            var ctrlName_check = ctrlName + "[]";
+                                            //C_OPTIONINFO=1の場合、「0:全て」を表示
+                                            var classCtrlOption = (item.OPTIONINFO == null || "1" != item.OPTIONINFO) ? "ctrloption hide" : "ctrloption";
+
+                                            ctrlClass += (string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "multiSelect";  // 複数選択ｺﾝﾎﾞ
+                                            //var isDropDown = (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox && format != "1") ||
+                                            //item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox ||
+                                            //item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton;
+                                            var isDropDown = (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox && format != "1") ||
+                                            item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox ||
+                                            item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton;
+                                            if (isDropDown)
+                                            {
+                                                //ﾄﾞﾛｯﾌﾟﾀﾞｳﾝ表示の場合
+                                                @:<div class="multisel-parent">
+                                                    @:<a href="" target="" class="btn multisel-text"></a><span class="glyphicon glyphicon-chevron-down multisel-icon"></span>
+                                                    @:<div class="multisel-drop disabled">
+                                                    }
+                                                    @:<ul id="@id" name="@ctrlName" class="@ctrlClass" data-colname="@item.ITEMNAME" data-value="" title="@item.TOOLTIP">
+                                                        @:<li class="ctrloption">
+                                                            @*C_OPTIONINFO=1の場合、「すべて」を表示*@
+                                                            @:<label>
+                                                                @:<input type="checkbox" name="@ctrlName_check" class="ctrloption" value="0" />
+                                                                @:<span>@blogic.ConvertResourceName("911130001", ViewBag.TransDictionary)</span>@*「すべて」*@
+                                                            @:</label>
+                                                        @:</li>
+                                                    @:</ul>
+                                                    if (isDropDown)
+                                                    {
+                                                        //ﾄﾞﾛｯﾌﾟﾀﾞｳﾝ表示の場合
+                                                    @:</div>
+                                                @:</div>
+                                            }
+                                            break;
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Date:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time:
+                                        case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime:
+                                            dataType = "date";
+                                            //if (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time)
+                                            if (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time)
+                                            {
+                                                dataType = "time";
+                                            }
+                                            //else if (item.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime)
+                                            else if (item.DETAILED_SEARCH_CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime)
+                                            {
+                                                dataType = "datetime-local";
+                                            }
+                                            idTo = id + "To";
+                                            ctrlNameTo = ctrlName + "To";
+                                            ctrlClass += (string.IsNullOrEmpty(ctrlClass) ? "" : " ") + "fromto";
+                                            @:<input type="@dataType" id="@id" name="@ctrlName" data-type="@dataType" class="@ctrlClass" data-colname="@item.ITEMNAME" data-format="@format" data-def="" title="@item.TOOLTIP" autocomplete="off" />
+                                            @:<span>@blogic.ConvertResourceName("911060006", ViewBag.TransDictionary)</span>
+                                            @:<input type="@dataType" id="@idTo" name="@ctrlNameTo" data-type="@dataType" class="@ctrlClass" data-colname="@item.ITEMNAME" data-format="@format" data-def="" title="@item.TOOLTIP" autocomplete="off" />
+                                            break;
+                                    }
+                                @:</td>
+                                @* 条件追加ボタンは不要
+                                    @:<td>
+                                        if (dispAddBtn)
+                                        {
+                                            @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComDetailSearchAddCond" style="margin-left:5px;" title="OR条件追加">
+                                                @:<span class="glyphicon glyphicon-circle-arrow-down"></span>
+                                            @:</a>
+                                        }
+                                    @:</td>
+                                *@
+                            @:</tr>
+                            if (item.DETAILED_SEARCH_DIVISION == LISTITEM_DEFINE_CONSTANTS.DETAILED_SEARCH_DIV.EnabledNullSearch)
+                            {
+                                var ctlrNameNullSearch = ctrlName + "_NullSearch";
+                                @:<tr class="null_search_tr" data-itemno="@item.ITEMNO">
+                                    @:<td></td>
+                                    @:<td colspan="2">
+                                        @:<input type="checkbox" name="@ctlrNameNullSearch" />
+                                        @:<label for="@ctlrNameNullSearch">@blogic.ConvertResourceName("911320001", ViewBag.TransDictionary)</label>@*未入力の場合、未設定のデータのみを対象に検索する*@
+                                    @:</td>
+                                @:</tr>
+                            }
+                        }
+                    @:</tbody>
+                @:</table>
+            @:</form>
+        }
+    }
+</div>
+<form>
+
+    <div class="footer_div_option">
+        <input type="checkbox" id="ComDetailSearchSave" name="ComDetailSearchSave">
+        <label for="ComDetailSearchSave">@blogic.ConvertResourceName("111300056", ViewBag.TransDictionary)</label>@*保存して次回検索時に使用する*@
+    </div>
+    <div class="footer_div">
+        <div>
+            <input type="button" name="ComDetailSearch" id="ComDetailSearch" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComDetailSearchExec" value="@blogic.ConvertResourceName("111090030", ViewBag.TransDictionary)" class="btn func_button">@*検索*@
+            <input type="button" id="ComDetailSearchHide" value="@blogic.ConvertResourceName("111200005", ViewBag.TransDictionary)" class="btn func_button">@*閉じる*@
+        </div>
+    </div>
+</form>

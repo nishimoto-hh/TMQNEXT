@@ -1,0 +1,1424 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@using System.Text.Json
+@using System.Text.Encodings.Web;
+@using System.Text.Unicode;
+@model CommonFormDefine
+
+@{
+    bool pagerDisp = false;     //ﾍﾟｰｼﾞｬｰ表示ﾌﾗｸﾞ
+    int pageCount = (Model.FORMDEFINE.DAT_PAGEROWS == null) ? 0 : (int)Model.FORMDEFINE.DAT_PAGEROWS;
+    if (pageCount > 0)     //ページ行数指定ありの場合
+    {
+        //ﾍﾟｰｼﾞｬｰ表示
+        pagerDisp = true;
+    }
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+    //ﾍｯﾀﾞ非表示設定
+    var tableClass = "ctrlId";
+    if (Model.FORMDEFINE.DAT_HEADERDISPKBN != FORM_DEFINE_CONSTANTS.DAT_HEADERDISPKBN.Disp)
+    {
+        tableClass = tableClass + " headerHide";
+    }
+
+    //更新列出力判定
+    bool isDispUpdFlg = false;
+    //if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit &&
+    //    Model.FORMDEFINE.DAT_TRANSDISPPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.Popup)   //明細入力
+    if (Model.FORMDEFINE.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.Input)   //直接入力可
+    {
+        isDispUpdFlg = true;
+    }
+
+    //NOﾘﾝｸ出力判定
+    bool isListReadOnly = (Model.FORMDEFINE.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly ? true : false);
+    bool isEditIconDisp = (Model.FORMDEFINE.DAT_TRANSICONKBN == FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.PencilIcon ? true : false);
+    bool isDetailIconDisp = (Model.FORMDEFINE.DAT_TRANSICONKBN == FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.ArrowIcon ? true : false);
+    bool isDispNoLink = false;
+    bool isDispNoEdit = false;       //遷移先：明細入力画面
+    bool isDispNoIndex = false;      //遷移先：子画面
+    bool isDispNoCom = false;        //遷移先：共通機能画面
+    //bool isDispNoLinkNone = false;   //ﾘﾝｸなしNO列
+    bool isDispNoLinkNone =
+        (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.None &&
+         Model.FORMDEFINE.DAT_TRANSICONKBN == FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.RowNumLink) ||
+         Model.FORMDEFINE.DAT_TRANSICONKBN == FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.RowNumLabel;   //ﾘﾝｸなしNO列
+
+    // リンク項目有無
+    bool existsTransLink = Model.LISTITEMDEFINES.Where(z =>
+            z.DISPLAY_FLG &&
+            z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Download ||
+            z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FileOpen ||
+            z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FormTransition).Count() > 0;
+    //z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransChild ||
+    //z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransCm ||
+    //z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherTab ||
+    //z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherShift).Count() > 0;
+
+    switch (Model.FORMDEFINE.DAT_TRANSPTN)
+    {
+        //case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit:       //単票入力表示
+        //case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference:  //単票参照表示
+        //    isDispNoEdit = true;
+        //    existsTransLink = true; // 画面遷移有り
+        //    break;
+        //case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Child:     //子画面表示
+        //    isDispNoIndex = true;
+        //    existsTransLink = true; // 画面遷移有り
+        //    break;
+        //case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct: //共通機能表示
+        //    isDispNoCom = true;
+        //    existsTransLink = true; // 画面遷移有り
+        //    break;
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit:       //単票入力表示
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference:  //単票参照表示
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Child:      //子画面表示
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct:  //共通機能表示
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab:   //他機能遷移(別タブ)
+        case FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherShift: //他機能遷移(同タブ表示切替)
+            isDispNoLink = true;
+            existsTransLink = true; // 画面遷移有り
+            break;
+        default:
+            // リンクなしNOの表示が必要な場合はレイアウト定義で指定する
+            //if (pagerDisp)
+            //{
+            //    //ページャー表示時、リンクなしNOを表示
+            //    isDispNoLinkNone = true;
+            //}
+            break;
+    }
+    if (existsTransLink)
+    {
+        tableClass = (tableClass.Length > 0 ? tableClass + " transLink" : "transLink");  //CSS：画面遷移あり
+    }
+
+    if (!string.IsNullOrEmpty(Model.FORMDEFINE.CSSNAME))
+    {
+        //CSS名が指定されている場合、付与
+        tableClass = (tableClass.Length > 0 ? tableClass + " " + Model.FORMDEFINE.CSSNAME : Model.FORMDEFINE.CSSNAME);
+    }
+
+    // Template2.0 ADD start
+    bool isDispSelect = false;      //選択チェックボックス列表示
+    bool isListSwitch = false;      //一覧表示切替切替ボタン表示
+    bool isListAddRow = false;      //一覧行追加ボタン表示
+    bool isListCopyRow = false;      //一覧行コピーボタン表示
+    bool isListDelRow = false;      //一覧行削除ボタン表示
+    bool isListSelect = false;      //一覧行ページ内全選択／全解除ボタン表示
+    bool isListSelectAll = false;   //一覧行全選択／全解除ボタン表示
+    bool isListSetDispItem = false; //一覧表示列設定ボタン表示
+    bool isDetailSearch = false;    //詳細検索ボタン表示
+    bool isItemCustomize = false;   //一覧表示項目カスタマイズボタン表示
+
+    if (Model.FORMDEFINE.DAT_SWITCHKBN == FORM_DEFINE_CONSTANTS.DAT_SWITCHKBN.Disp)
+    {
+        isListSwitch = true;
+    }
+    if (Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.AddNewRow ||
+        Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.TransNewForm)
+    {
+        isListAddRow = true;
+        if (Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.AddNewRow)
+        {
+            isDispSelect = true;
+        }
+    }
+    if (Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.AddNewOrCopyRow ||
+        Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.TransNewOrCopyForm)
+    {
+        isListAddRow = true;
+        isListCopyRow = true;
+        if (Model.FORMDEFINE.DAT_ROWADDKBN == FORM_DEFINE_CONSTANTS.DAT_ROWADDKBN.AddNewOrCopyRow)
+        {
+            isDispSelect = true;
+        }
+
+    }
+    if (Model.FORMDEFINE.DAT_ROWDELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWDELKBN.Disp)
+    {
+        isListDelRow = true;
+        isDispSelect = true;
+    }
+    if (Model.FORMDEFINE.DAT_ROWSELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWSELKBN.AllPages ||
+        Model.FORMDEFINE.DAT_ROWSELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWSELKBN.CurrentPage ||
+        Model.FORMDEFINE.DAT_ROWSELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWSELKBN.Both)
+    {
+        isDispSelect = true;
+        if (Model.FORMDEFINE.DAT_ROWSELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWSELKBN.AllPages)
+        {
+            isListSelectAll = true;
+        }
+        else if (Model.FORMDEFINE.DAT_ROWSELKBN == FORM_DEFINE_CONSTANTS.DAT_ROWSELKBN.CurrentPage)
+        {
+            isListSelect = true;
+        }
+        else
+        {
+            isListSelectAll = true;
+            isListSelect = true;
+        }
+    }
+    if (Model.FORMDEFINE.DAT_COLSELKBN == FORM_DEFINE_CONSTANTS.DAT_COLSELKBN.Disp)
+    {
+        isListSetDispItem = true;
+    }
+
+    // 行追加/行コピー/行削除リンク表示区分の取得
+    IList<Dictionary<string, object>> userAuthShoris = ViewBag.UserAuthConductShoris[ViewBag.curConductId];
+    var linkDispKbn = Convert.ToInt16(userAuthShoris.Where(x =>
+        x["FORMNO"].ToString() == Model.FORMDEFINE.FORMNO.ToString() &&
+        x.ContainsKey("CTRLGRPID") && x["CTRLGRPID"].ToString() == Model.FORMDEFINE.CTRLID)
+        .Select(x => x["DISPKBN"]).FirstOrDefault());
+
+    // 詳細検索対象項目の取得
+    //var detailSearchItems = Model.LISTITEMDEFINES.Where(x => x.DETAILED_SEARCH_FLG.HasValue && x.DETAILED_SEARCH_FLG.Value);
+    var detailSearchItems = Model.LISTITEMDEFINES.Where(x => x.DETAILED_SEARCH_DIVISION.HasValue && x.DETAILED_SEARCH_DIVISION.Value > 0);
+    if (detailSearchItems != null && detailSearchItems.Count() > 0)
+    {
+        isDetailSearch = true;
+    }
+    // 項目カスタマイズ対象項目の取得
+    if (Model.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3)
+    {
+        // 103一覧のみを対象とする
+        var customizeItems = Model.LISTITEMDEFINES.Where(x => x.ITEM_CUSTOMIZE_FLG.HasValue && x.ITEM_CUSTOMIZE_FLG.Value);
+        if (customizeItems != null && customizeItems.Count() > 0)
+        {
+            isItemCustomize = true;
+        }
+    }
+    // Template2.0 ADD end
+
+    //ﾃﾞｰﾀ行定義を取得
+    var dataItems = Model.LISTITEMDEFINES.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow && z.DISPLAY_FLG).ToList();
+
+    if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit)
+    {
+        //明細入力ﾊﾟﾀｰﾝの場合
+        //dataItems = dataItems.Where(z =>
+        //        z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN.InputOnly    // 入力画面のみ表示列を除外
+        //    ).ToList();
+        // 単票入力表示の場合
+        dataItems = dataItems.ToList();
+    }
+
+    //ﾍｯﾀﾞ行定義を取得
+    IList<COM_LISTITEM_DEFINE> headerItems = null;
+    if (Model.FORMDEFINE.DAT_HEADERDISPKBN == FORM_DEFINE_CONSTANTS.DAT_HEADERDISPKBN.Disp)
+    {
+        //ﾍｯﾀﾞ行用定義を取得
+        headerItems = Model.LISTITEMDEFINES.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.HeadRow && z.DISPLAY_FLG).ToList();
+        if (headerItems.Count <= 0)
+        {
+            //※ﾍｯﾀﾞ行用定義が設定されていない場合
+
+            //ﾃﾞｰﾀ行定義を採用
+            headerItems = dataItems;
+        }
+
+    }
+
+    //ﾌｯﾀ行用定義を取得
+    IList<COM_LISTITEM_DEFINE> footerItems = Model.LISTITEMDEFINES.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.FootRow && z.DISPLAY_FLG).ToList();
+
+    //ﾃｰﾌﾞﾙ幅
+    var dispItems = dataItems.Where(z =>
+            z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide &&     // 非表示列を除外
+            z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide &&  // デフォルト非表示を除外
+            z.COLSPAN == 1 &&      // 列結合なし
+            z.ROWNO == 1
+        );
+
+    // ※コード＋翻訳列は別に幅を集計する
+    var cdTransItems = dispItems.Where(z => z.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans);
+    dispItems = dispItems.Where(z => z.CELLTYPE != LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans);
+
+    var tblWidth = dispItems.Sum(z => Convert.ToInt32(z.COLWIDTH) + 3);// borderとpaddingの分調整
+    if (cdTransItems.Count() > 0)
+    {
+        tblWidth += cdTransItems.Sum(z => CommonDataUtil.GetCodeTransColWidth(z) + 4);// borderとpaddingの分調整
+    }
+
+    //ﾃｰﾌﾞﾙ高さ
+    var ctrlIdParentClass = "ctrlId_parent";
+    var height = "";
+    if (Model.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3 &&
+        Model.FORMDEFINE.DAT_HEIGHT > 0)
+    {
+        // 103一覧以外は親のdivに高さを設定
+        height = "height: " + Model.FORMDEFINE.DAT_HEIGHT.ToString() + "px;";
+        ctrlIdParentClass += " headerFix";
+    }
+
+    //Noリンク幅
+    var widthNoLink = 30;
+
+    //ﾎﾟｯﾌﾟｱｯﾌﾟ画面ﾀｲﾄﾙ(単票画面)
+    //var popName = Model.FORMDEFINE.DAT_TITLE;
+    var popName = Model.FORMDEFINE.DAT_FORMTITLE;
+    //if (string.IsNullOrEmpty(popName))
+    //{
+    //    popName = Model.FORMDEFINE.CTRLNAME;
+    //}
+
+    // 最大行数
+    var maxrows = (Model.FORMDEFINE.DAT_MAXROWS == null) ? -1 : Model.FORMDEFINE.DAT_MAXROWS;
+
+    // 列固定の有無
+    var colFix = false;
+    var colFixItems = dataItems.Where(z => z.COLFIXKBN == LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol);
+    if (colFixItems.Count() > 0)
+    {
+        colFix = true;
+    }
+    var fixCol = "fixCol";  //列固定のｸﾗｽ
+
+    IList<CommonFormDefine> ctrGrpDefinesUpeer = null;
+    IList<CommonFormDefine> ctrGrpDefinesLower = null;
+    if (Model.CTR_FORMDEFINES != null && Model.CTR_FORMDEFINES.Count() > 0)
+    {
+        IList<CommonFormDefine> ctrGrpDefines = null;
+        if (ViewBag.IsEditForm)
+        {
+            ctrGrpDefines = Model.CTR_FORMDEFINES
+                .Where(z => z.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Input).ToList();
+        }
+        else
+        {
+            ctrGrpDefines = Model.CTR_FORMDEFINES
+                .Where(z => z.FORMDEFINE.AREAKBN != FORM_DEFINE_CONSTANTS.AREAKBN.Input).ToList();
+        }
+        if (ctrGrpDefines != null && ctrGrpDefines.Count() > 0)
+        {
+            ctrGrpDefinesUpeer = ctrGrpDefines
+                .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper)
+                .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+
+            ctrGrpDefinesLower = ctrGrpDefines
+                .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower)
+                .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+        }
+    }
+
+    @*--横方向一覧　実装部分--*@
+
+    // Template2.0 ADD start
+    @:<div class="tbl_title" style="width:100%;">
+	    // 一覧タイトル表示
+	    if (Model.FORMDEFINE.DAT_TITLE != null)
+	    {
+	        var info = Model.FORMDEFINE.DAT_TITLE;
+	        @:<span class="title">@info</span>
+	    }
+	    // 一覧表示切替ボタン
+	    if (isListSwitch)
+	    {
+	        // 後で要修正　実際に切替を行う関数にて対象特定に必要
+	        @:<a href="#" data-switchid="@Model.FORMDEFINE.CTRLID" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitchTable" style="margin-left:5px;"><span class="glyphicon glyphicon-chevron-up"></span></a>
+	    }
+	    // 行追加ボタン
+	    if (isListAddRow)
+	    {
+            if (linkDispKbn != USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Disabled)
+            {
+	            @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.AddNewRow" data-parentid="@Model.FORMDEFINE.CTRLID" data-addkbn="@Model.FORMDEFINE.DAT_ROWADDKBN" style="margin-left:5px;" title="@blogic.ConvertResourceName("911070003", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-plus"></span></a>
+            }
+            else
+            { 
+                @:<span style="margin-left:5px;" title="@blogic.ConvertResourceName("911070003", ViewBag.TransDictionary)" class="glyphicon glyphicon-plus link-disabled"></span>
+            }
+	    }
+	    // 行コピーボタン
+	    if (isListCopyRow)
+	    {
+            if (linkDispKbn != USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Disabled)
+            {
+	            @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.AddCopyRow" data-parentid="@Model.FORMDEFINE.CTRLID" data-addkbn="@Model.FORMDEFINE.DAT_ROWADDKBN" style="margin-left:5px;" title="@blogic.ConvertResourceName("911070006", ViewBag.TransDictionary)">
+	                @:<i class="far fa-copy fa-lg"></i>
+	            @:</a>
+            }
+            else
+            { 
+	            @:<span style="margin-left:5px;" title="@blogic.ConvertResourceName("911070006", ViewBag.TransDictionary)">
+	                @:<i class="far fa-copy fa-lg link-disabled"></i>
+	            @:</span>
+            }
+	    }
+	    // 行削除ボタン
+	    if (isListDelRow)
+	    {
+            if (linkDispKbn != USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Disabled)
+            {
+    	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.DeleteRow" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911070004", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-minus"></span></a>
+            }
+            else
+            { 
+	            @:<span style="margin-left:5px;" title="@blogic.ConvertResourceName("911070004", ViewBag.TransDictionary)" class="glyphicon glyphicon-minus link-disabled"></span>
+            }
+	    }
+	    // 一覧全選択・全解除ボタン
+	    if (isListSelectAll)
+	    {
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.SelectAll" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911020001", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-check"></span></a>
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.CancelAll" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911020002", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-unchecked"></span></a>
+	    }
+	    // ページ内全選択・全解除ボタン
+	    if (isListSelect)
+	    {
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.SelectAll" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911290003", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-check"></span></a>
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.CancelAll" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911290004", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-unchecked"></span></a>
+	    }
+	    @*// 一覧表示列設定ボタン
+	    if (isListSetDispItem)
+	    {
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSetDispItem" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911270006", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-list-alt"></span></a>
+	    }*@
+	    // 詳細検索ボタン
+	    if (isDetailSearch) 
+	    {
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComDetailSearch" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="@blogic.ConvertResourceName("911120017", ViewBag.TransDictionary)"><span class="glyphicon glyphicon-search"></span></a>
+	    }
+	
+	    // 項目カスタマイズメニューボタン
+	    if (isItemCustomize)
+	    {
+	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComItemCustomize" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="項目カスタマイズ" class="item_customize"><span class="glyphicon glyphicon-list-alt"></span></a>
+	    }
+	
+	    // ページサイズ変更コンボボックス
+	    if (Model.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3)
+	    {
+	        @*@:<span class="@Model.FORMDEFINE.CTRLID tabulatorPaginationCounter" style="margin-left:50px;" ></span>*@
+	        @:<span class="@Model.FORMDEFINE.CTRLID tabulatorPagination" style="margin-left:50px;" data-pagestr="@blogic.ConvertResourceName("111290001", ViewBag.TransDictionary)" ></span>
+		}
+    @:</div>
+
+    // 一覧上部コントロールグループ
+    if (ctrGrpDefinesUpeer != null)
+    {
+        foreach (var ctrlGrpDefine in ctrGrpDefinesUpeer)
+        {
+            <partial name="_ControlGrpAreaPartial" model="ctrlGrpDefine" />
+        }
+    }
+
+    // Template2.0 ADD end
+    @:<div class="@ctrlIdParentClass" style="@height">
+        var idName = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO.ToString();
+        var baseTableId = idName + "_tablebase";
+        var width = "width:" + tblWidth + "px;";
+        //表示モード
+        var referenceMode = (Model.FORMDEFINE.REFERENCE_MODE ?? false) ? FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Reference : FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Edit;
+
+        if (Model.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3)
+        {
+            // 103一覧の場合は子のdivに高さを設定
+            height = Model.FORMDEFINE.DAT_HEIGHT > 0 ? "max-height:" + Model.FORMDEFINE.DAT_HEIGHT + "px;" : "";
+            @:<div id="@idName" data-ctrlid="@Model.FORMDEFINE.CTRLID" data-ctrltype="@Model.FORMDEFINE.CTRLTYPE" data-transtarget="@Model.FORMDEFINE.DAT_TRANSTARGET" data-editptn="@Model.FORMDEFINE.DAT_EDITPTN" data-transptn="@Model.FORMDEFINE.DAT_TRANSPTN" data-transdispptn="@Model.FORMDEFINE.DAT_TRANSDISPPTN" data-pagerows="@pageCount" data-maxrows="@maxrows" data-headerdispkbn="@Model.FORMDEFINE.DAT_HEADERDISPKBN" style="@height" data-ctrlname="@popName" class="@tableClass" data-referencemode="@referenceMode"></div>
+            @*@:<div class="@Model.FORMDEFINE.CTRLID tabulatorHeader" data-header="@headerInfo(isDispUpdFlg, isDispSelect, colFix, isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone, blogic, widthNoLink, isListDelRow)" hidden></div>*@
+            @:<div class="@Model.FORMDEFINE.CTRLID tabulatorHeader" data-header="@headerInfo(isDispUpdFlg, isDispSelect, colFix, isEditIconDisp, isDetailIconDisp, isDispNoLink, isDispNoLinkNone, blogic, widthNoLink, isListDelRow)" hidden></div>
+            //ベーステーブル
+            @:<table id="@baseTableId" data-ctrlid="@Model.FORMDEFINE.CTRLID" data-ctrltype="@Model.FORMDEFINE.CTRLTYPE" data-transtarget="@Model.FORMDEFINE.DAT_TRANSTARGET" data-editptn="@Model.FORMDEFINE.DAT_EDITPTN" data-transptn="@Model.FORMDEFINE.DAT_TRANSPTN" data-transdispptn="@Model.FORMDEFINE.DAT_TRANSDISPPTN" data-rowno="-1" data-pagerows="@pageCount" data-maxrows="@maxrows" style="@width" data-ctrlname="@popName" data-maxidx="0" class="@tableClass" data-rowsortkbn="@Model.FORMDEFINE.DAT_ROWSORTKBN" data-referencemode="@referenceMode" hidden>    
+        }
+        else
+        {
+            @:<table id="@idName" data-ctrlid="@Model.FORMDEFINE.CTRLID" data-ctrltype="@Model.FORMDEFINE.CTRLTYPE" data-transtarget="@Model.FORMDEFINE.DAT_TRANSTARGET" data-editptn="@Model.FORMDEFINE.DAT_EDITPTN" data-transptn="@Model.FORMDEFINE.DAT_TRANSPTN" data-transdispptn="@Model.FORMDEFINE.DAT_TRANSDISPPTN" data-rowno="-1" data-pagerows="@pageCount" data-maxrows="@maxrows" style="@width" data-ctrlname="@popName" data-maxidx="0" class="@tableClass" data-rowsortkbn="@Model.FORMDEFINE.DAT_ROWSORTKBN" data-referencemode="@referenceMode">
+        }
+                @:<thead>
+                    // サイズ指定用の行を出力
+
+                    //行単位にグループ化
+                    var sizeGroups = dataItems.GroupBy(z => z.ROWNO).ToList();
+                    var isFirst0 = true;
+
+                    foreach (var items in sizeGroups)
+                    {
+                        @:<tr class="base_tr_width" data-rownoidx="@items.Key">
+                            if (isFirst0)
+                            {
+                                //--排他ﾃﾞｰﾀ保持用列--
+                                @:<td colspan="1" rowspan="@sizeGroups.Count" style="width:0px;" class="hide" data-name="lockData" />
+                                //--更新列--
+                                if (isDispUpdFlg || isDispSelect)
+                                {
+                                    @:<td colspan="1" rowspan="@sizeGroups.Count" style="width:0px;" data-name="UPDTAG" class="hide" />
+                                }
+                                //--選択チェック列--
+                                if (isDispSelect)
+                                {
+                                    @:<td colspan="1" rowspan="@sizeGroups.Count" style="width:40px;" data-name="SELTAG" />
+                                    tblWidth += 40;
+                                }
+                                //--NOﾘﾝｸ列--
+                                if (isDispNoLink)
+                                {
+                                    width = "width:" + widthNoLink + "px;";
+                                    @:<td colspan="1" rowspan="@sizeGroups.Count" style="@width" data-name="ROWNO" class="td_width_rowNo" />
+                                }
+                                @*if (isDispNoLinkNone)*@
+                                else if (isDispNoLinkNone)
+                                {
+                                    width = "width:" + widthNoLink + "px;";
+                                    @:<td colspan="1" rowspan="@sizeGroups.Count" style="@width" data-name="ROWNO" class="td_width_rowNo" />
+                                }
+                                @*else if ((isDispNoEdit || isDispNoIndex || isDispNoCom) || isEditIconDisp)
+                                    {
+                                        width = "width:" + widthNoLink + "px;";
+                                        @:<td colspan="1" rowspan="@sizeGroups.Count" style="@width" data-name="ROWNO" class="td_width_rowNo" />
+                                    }*@
+                                isFirst0 = false;
+                            }
+
+                            //--一覧項目定義列--
+                            foreach (var listItem in items)
+                            {
+                                short rowSpan = 1;
+                                if (listItem.ROWSPAN > 0)
+                                {
+                                    rowSpan = listItem.ROWSPAN;
+                                }
+                                short colSpan = 1;
+                                if (listItem.COLSPAN > 0)
+                                {
+                                    colSpan = listItem.COLSPAN;
+                                }
+
+                                var d_name = "VAL" + listItem.ITEMNO.ToString();
+                                int colWidth = !listItem.COLWIDTH.Contains("|") ? (Convert.ToInt32(listItem.COLWIDTH) + 6) : 0;
+                                width = "width:" + colWidth + "px;";
+                                if (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)   // 非表示
+                                {
+                                    //非表示列
+                                    @:<td colspan="@colSpan" rowspan="@rowSpan" class="hide" style="width:0px;" data-name="@d_name" data-itemname="@listItem.ITEMNAME" />
+                                }
+                                else
+                                {
+                                    //一覧項目ユーザの非表示列取得
+                                    if (Model.LISTITEMUSERS.Where(z => z.ITEMNO == listItem.ITEMNO).Count() > 0)   // ユーザ非表示
+                                    {
+                                        //非表示列
+                                        @:<td colspan="@colSpan" rowspan="@rowSpan" class="hide userhide" style="@width" data-name="@d_name" data-itemname="@listItem.ITEMNAME" />
+                                    }
+                                    else
+                                    {
+                                        if (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide)   // デフォルト非表示
+                                        {
+                                            //非表示列
+                                            @:<td colspan="@colSpan" rowspan="@rowSpan" class="hide defhide" style="@width" data-name="@d_name" data-itemname="@listItem.ITEMNAME" />
+                                        }
+                                        else
+                                        {
+                                            // コード＋翻訳、FROMTO項目は1セルの幅が広い
+                                            if (listItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans)
+                                            {
+                                                colWidth = CommonDataUtil.GetCodeTransColWidth(listItem);
+                                            }
+                                            if (listItem.FROMTOKBN == LISTITEM_DEFINE_CONSTANTS.FROMTOKBN.FromTo)
+                                            {
+                                                colWidth = colWidth = CommonDataUtil.GetFromToColWidth(colWidth);
+                                            }
+                                            width = "width:" + colWidth + "px;";
+                                            @:<td colspan="@colSpan" rowspan="@rowSpan" style="@width" data-name="@d_name" data-itemname="@listItem.ITEMNAME" />
+                                        }
+                                    }
+                                }
+                            }
+                        @:</tr>
+                    }
+                    //ﾍｯﾀﾞ行を出力 - ※ﾍｯﾀﾞ表示区分：「表示」の場合
+                    if (headerItems != null)
+                    {
+                        //行単位にグループ化
+                        var headerGroups = headerItems.GroupBy(z => z.ROWNO).ToList();
+                        var isFirst = true;
+                        var colFixIdx = 0;
+
+                        //ﾍｯﾀﾞ行
+                        foreach (var items in headerGroups)
+                        {
+                            @:<tr data-rownoidx="@items.Key">
+                                if (isFirst)
+                                {
+                                    //先頭行に行結合して出力
+                                    var firstClass = "";    // ｸﾗｽ
+                                    //--排他ﾃﾞｰﾀ保持用列--
+                                    @:<th colspan="1" rowspan="@headerGroups.Count" data-name="lockData" class="hide">lockData</th>
+                                    //--更新列--
+                                    if (isDispUpdFlg || isDispSelect)
+                                    {
+                                        if (colFix)
+                                        {
+                                            //列固定がある場合
+                                            colFixIdx += 1;
+                                            firstClass = fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                        }
+                                        @:<th colspan="1" rowspan="@headerGroups.Count" data-name="UPDTAG" class="hide @firstClass">@*@blogic.ConvertResourceName("911100003", ViewBag.TransDictionary)*@</th>
+                                    }
+                                    //--選択チェック列--
+                                    if (isDispSelect)
+                                    {
+                                        if (colFix)
+                                        {
+                                            //列固定がある場合
+                                            colFixIdx += 1;
+                                            firstClass = fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                        }
+                                        @:<th colspan="1" rowspan="@headerGroups.Count" data-name="SELTAG" class="@firstClass">@blogic.ConvertResourceName("111140002", ViewBag.TransDictionary)</th>
+                                    }
+                                    //--NOﾘﾝｸ列--
+                                    if (isDispNoLink)
+                                    {
+                                        if (colFix)
+                                        {
+                                            //列固定がある場合
+                                            colFixIdx += 1;
+                                            firstClass += " " + fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                        }
+                                        @:<th colspan="1" rowspan="@headerGroups.Count" data-name="ROWNO" class="@firstClass"></th>
+                                    }
+                                    @*if (isDispNoLinkNone)*@
+                                    else if (isDispNoLinkNone)
+                                    {
+                                        //firstClass = "hide";
+                                        firstClass = "";
+                                        if (colFix)
+                                        {
+                                            //列固定がある場合
+                                            colFixIdx += 1;
+                                            firstClass += " " + fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                        }
+                                        @:<th colspan="1" rowspan="@headerGroups.Count" data-name="ROWNO" class="@firstClass">NO</th>
+                                    }
+                                    @*if ((isDispNoEdit || isDispNoIndex || isDispNoCom) || isEditIconDisp)
+                                        {
+                                            if (colFix)
+                                            {
+                                                //列固定がある場合
+                                                colFixIdx += 1;
+                                                firstClass += " " + fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                            }
+                                            @:<th colspan="1" rowspan="@headerGroups.Count" data-name="ROWNO" class="@firstClass"></th>
+                                        }*@
+                                    isFirst = false;
+                                }
+
+                                //--一覧項目定義列--
+                                foreach (var item in items)
+                                {
+                                    short rowSpan = 1;
+                                    if (item.HEADER_ROWSPAN.HasValue)
+                                    {
+                                        rowSpan = item.HEADER_ROWSPAN.Value;
+                                    }
+                                    else if (item.ROWSPAN > 0)
+                                    {
+                                        rowSpan = item.ROWSPAN;
+                                    }
+                                    short colSpan = 0;
+                                    if (item.HEADER_COLSPAN.HasValue)
+                                    {
+                                        colSpan = item.HEADER_COLSPAN.Value;
+                                    }
+                                    else
+                                    {
+                                        colSpan = item.COLSPAN;
+                                    }
+                                    if (colSpan <= 0) { continue; }
+
+                                    var dataItemName = "VAL" + item.ITEMNO.ToString();    //例)「VAL1」
+                                    //必須項目設定
+                                    //※必須項目の場合、ﾍｯﾀﾞ列右上に「*」(赤字)で表記
+                                    var thClass = item.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "required" : "";
+                                    if (item.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+                                    {
+                                        thClass += " hide";  //非表示
+                                    }
+                                    else
+                                    {
+                                        //一覧項目ユーザの非表示列取得
+                                        if (Model.LISTITEMUSERS.Where(z => z.ITEMNO == item.ITEMNO).Count() > 0)
+                                        {
+                                            thClass += " hide userhide";  //ユーザ非表示
+                                        }
+                                        else
+                                        {
+                                            if (item.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide)
+                                            {
+                                                thClass += " hide defhide";  //デフォルト非表示
+                                            }
+                                        }
+                                    }
+                                    if (item.COLFIXKBN == LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol)
+                                    {
+                                        //列固定がある場合
+                                        colFixIdx += 1;
+                                        thClass += " " + fixCol + " " + fixCol + "_" + colFixIdx.ToString();
+                                    }
+                                    @:<th colspan="@colSpan" rowspan="@rowSpan" data-name="@dataItemName" class="@thClass" title="@item.TOOLTIP">
+                                        @item.ITEMNAME
+                                        if (item.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required)
+                                        {
+                                            @:<span class="mark"></span>
+                                        }
+                                    @:</th>
+                                }
+                            @:</tr>
+                        }
+                    }
+                @:</thead>
+                @:<tbody>
+                    //行単位にグループ化
+                    var dataGroups = dataItems.GroupBy(z => z.ROWNO).ToList();
+                    var isFirst2 = true;
+                    var rowCnt = dataGroups.Count;
+                    var colFixIdx2 = 0;
+
+                    //レイアウト定義用の行 ※非表示
+                    foreach (var items in dataGroups)
+                    {
+                        @:<tr class="base_tr" data-datatype="" data-rowno="" data-rowstatus="" data-rownoidx="@items.Key">
+                            if (isFirst2)
+                            {  //先頭行に行結合して出力
+                               //--排他ﾃﾞｰﾀ保持用列--
+                                @:<td data-name="lockData" rowspan="@rowCnt" class="hide"></td>
+                                // --更新列--
+                                if (isDispUpdFlg || isDispSelect)
+                                {
+                                    //var updClass = "updflg";
+                                    var updClass = "updflg hide";
+                                    if (colFix)
+                                    {
+                                        //列固定がある場合
+                                        colFixIdx2 += 1;
+                                        updClass += " " + fixCol + " " + fixCol + "_" + colFixIdx2.ToString();
+                                    }
+                                    @:<td data-name="UPDTAG" class="@updClass" rowspan="@rowCnt">
+                                        @:<input type="hidden" name="UPDTAG" data-type="updflg" />
+                                    @:</td>
+                                }
+
+                                // --削除ﾁｪｯｸ列--
+                                if (isDispSelect)
+                                {
+                                    var delClass = "control center";
+                                    if (colFix)
+                                    {
+                                        //列固定がある場合
+                                        colFixIdx2 += 1;
+                                        delClass += " " + fixCol + " " + fixCol + "_" + colFixIdx2.ToString();
+                                    }
+                                    @:<td data-name="SELTAG" class="@delClass" rowspan="@rowCnt">
+                                        @:<span class="labeling"></span>
+                                        @:<div class="substance">
+                                            @:<input type="checkbox" data-type="ckdel" value="1" />
+                                        @:</div>
+                                    @:</td>
+                                }
+
+                                // --NOﾘﾝｸ列--
+                                //name属性
+                                var name = "ROWNO";
+                                //class属性
+                                var tdClass = "center";
+                                @*//if (!(isDispNoLinkNone || isDispNoEdit || isDispNoIndex))   //NOﾘﾝｸ非表示の場合
+                                    //if (!((isDispNoEdit || isDispNoIndex || isDispNoCom) || isEditIconDisp))   //NOﾘﾝｸ非表示の場合
+                                    if (isDispNoLinkNone)
+                                    {
+                                        tdClass += " hide";
+                                    }
+                                    if (!((isDispNoEdit || isDispNoIndex || isDispNoCom) || isEditIconDisp))   //NOﾘﾝｸ非表示の場合
+                                    {
+                                        tdClass += " hide";
+                                    }
+                                    else if (colFix)
+                                    {
+                                        //列固定がある場合
+                                        colFixIdx2 += 1;
+                                        tdClass += " " + fixCol + " " + fixCol + "_" + colFixIdx2.ToString();
+                                    }*@
+                                //if (isDispNoLink)   //NOﾘﾝｸ表示の場合
+                                if (isDispNoLink || isDispNoLinkNone)   //NOﾘﾝｸ表示またはリンクなし行番号表示の場合
+                                {
+                                    if (colFix)
+                                    {
+                                        //列固定がある場合
+                                        colFixIdx2 += 1;
+                                        tdClass += " " + fixCol + " " + fixCol + "_" + colFixIdx2.ToString();
+                                    }
+                                }
+                                else //NOﾘﾝｸ非表示の場合
+                                {
+                                    tdClass += " hide";
+                                }
+                                var rowNoStr = "rowNo";
+                                @:<td data-name="@name" class="@tdClass" rowspan="@rowCnt">
+                                    @:<span class="labeling"></span>
+                                    @:<div class="substance">
+                                        @*//ﾎﾟｯﾌﾟｱｯﾌﾟ設定
+                                            //var popupFlg = 0;
+                                            if (isDispNoEdit)
+                                            {
+                                                //遷移先：単票入力画面
+                                                //popupFlg = 1;    //ﾎﾟｯﾌﾟｱｯﾌﾟ（固定）
+                                                //@:<a onclick="selectRowNo('@ViewBag.AppRoutePath', @Model.FORMDEFINE.FORMNO, '@Model.FORMDEFINE.CTRLID', @rowNoStr, false, @popupFlg); return false;" href="" data-type="transLink"><span class="glyphicon glyphicon-pencil"></span></a>
+                                                var dispConfirmMsg = (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit) ? "true" : "false";
+                                                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@Model.FORMDEFINE.DAT_TRANSPTN', '@Model.FORMDEFINE.CTRLID', '@Model.FORMDEFINE.DAT_TRANSDISPPTN', @Model.FORMDEFINE.FORMNO, null, null, @rowNoStr, null, @dispConfirmMsg); return false;" href="" data-type="transLink">
+                                                    if (isEditIconDisp) { <span class="glyphicon glyphicon-pencil"></span> }
+                                                @:</a>
+                                            }
+                                            else if (isDispNoIndex)
+                                            {
+                                                //遷移先：子画面
+                                                //if (Model.FORMDEFINE.DAT_TRANSDISPPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.Popup)
+                                                //{
+                                                //    popupFlg = 1;    //ﾎﾟｯﾌﾟｱｯﾌﾟ
+                                                //}
+                                                //@:<a onclick="selectRowNo('@ViewBag.AppRoutePath', @Model.FORMDEFINE.FORMNO, '@Model.FORMDEFINE.CTRLID', @rowNoStr, true, @popupFlg); return false;" href="" data-type="transLink"><span class="glyphicon glyphicon-pencil"></span></a>
+                                                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@Model.FORMDEFINE.DAT_TRANSPTN', '@Model.FORMDEFINE.DAT_TRANSTARGET', '@Model.FORMDEFINE.DAT_TRANSDISPPTN', @Model.FORMDEFINE.FORMNO, '@Model.FORMDEFINE.CTRLID', null, @rowNoStr, null, true); return false;" href="" data-type="transLink">
+                                                    if (isEditIconDisp)
+                                                    { <span class="glyphicon glyphicon-pencil"></span> }
+                                                @:</a>
+                                            }
+                                            else if (isDispNoCom)
+                                            {
+                                                //遷移先：共通機能画面
+                                                @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@Model.FORMDEFINE.DAT_TRANSPTN', '@Model.FORMDEFINE.DAT_TRANSTARGET', null, @Model.FORMDEFINE.FORMNO, '@Model.FORMDEFINE.CTRLID', null, @rowNoStr, null, false); return false;" href="" data-type="transLink">
+                                                    if (isEditIconDisp) { <span class="glyphicon glyphicon-pencil"></span> }
+                                                @:</a>
+                                            }*@
+                                        if (isDispNoLink)
+                                        {
+                                            var transTarget = Model.FORMDEFINE.DAT_TRANSTARGET;
+                                            if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+                                                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)
+                                            {
+                                                transTarget = Model.FORMDEFINE.CTRLID;
+                                            }
+
+                                            var dispConfirmMsg = "true";
+                                            if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference ||
+                                                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct ||
+                                                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab)
+                                            {
+                                                dispConfirmMsg = "false";
+                                            }
+                                            @:<a onclick="confirmScrapBeforeTrans('@ViewBag.AppRoutePath', '@Model.FORMDEFINE.DAT_TRANSPTN', @LISTITEM_DEFINE_CONSTANTS.DAT_TRANS_ACTION_DIV.None, '@transTarget', '@Model.FORMDEFINE.DAT_TRANSDISPPTN', @Model.FORMDEFINE.FORMNO, '@Model.FORMDEFINE.CTRLID', null, @rowNoStr, this, @dispConfirmMsg); return false;" href="" data-type="transLink">
+                                                if (isEditIconDisp) { <span class="glyphicon glyphicon-pencil"></span> }
+                                            @:</a>
+                                        }
+                                        else if (isDispNoLinkNone)
+                                        {
+                                            @rowNoStr
+                                        }
+                                    @:</div>
+                                @:</td>
+                                isFirst2 = false;
+                            }
+
+                            @*--一覧項目定義列--*@
+                            foreach (var item in items)
+                            {
+                                if (item.COLFIXKBN == LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol)
+                                {
+                                    //列固定がある場合
+                                    colFixIdx2 += 1;
+                                }
+                                //ShowDataCell(item, true, 0, true, isDispNoEdit, isDispNoIndex, isListReadOnly, colFixIdx2);
+                                var data = new CommonDataCellData()
+                                {
+                                    FORMDEFINE = Model.FORMDEFINE,
+                                    LISTITEMUSERS = Model.LISTITEMUSERS,
+                                    ListItem = item,
+                                    IsLayoutRow = true,
+                                    Index = 0,
+                                    IsHorizontal = true,
+                                    //IsDispNoEdit = isDispNoEdit,
+                                    //IsDispNoIndex = isDispNoIndex,
+                                    IsDispNoLink = isDispNoLink,
+                                    IsListReadOnly = isListReadOnly,
+                                    ColFixIdx = colFixIdx2
+                                };
+                                <partial name="_DataCellPartial.cshtml" model="data" />
+                            }
+                        @:</tr>
+                    }
+
+                @:</tbody>
+            @:</table>
+            //}
+        @:</div>
+
+        // 一覧下部コントロールグループ
+        if (ctrGrpDefinesLower != null)
+        {
+            foreach (var ctrlGrpDefine in ctrGrpDefinesLower)
+            {
+                <partial name="_ControlGrpAreaPartial" model="ctrlGrpDefine" />
+            }
+        }
+}
+
+@functions {
+    //Tabulatorのヘッダー定義を作成
+    //string headerInfo(bool isDispUpdFlg, bool isDispSelect, bool colFix, bool isEditIconDisp, bool isDispNoEdit, bool isDispNoIndex, bool isDispNoCom, bool isDispNoLinkNone, BusinessLogicUtil blogic, int widthNoLink, bool isListDelRow)
+    string headerInfo(bool isDispUpdFlg, bool isDispSelect, bool colFix, bool isEditIconDisp, bool isDetailIconDisp, bool isDispNoLink, bool isDispNoLinkNone, BusinessLogicUtil blogic, int widthNoLink, bool isListDelRow)
+    {
+        var formDefine = Model.FORMDEFINE;
+        var listItemDefine = Model.LISTITEMDEFINES;
+        // 一覧のヘッダー情報を作成
+        List<Dictionary<string, object>> headerDatas = new List<Dictionary<string, object>>();
+        // tabulator表示の場合、一覧のヘッダー情報を取得する
+        var multHeaderFlag = true;
+        //ヘッダー行定義を取得
+        IList<COM_LISTITEM_DEFINE> headerItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.HeadRow && z.DISPLAY_FLG).OrderBy(z => z.ITEMNO).ToList();
+        //データ行定義を取得
+        IList<COM_LISTITEM_DEFINE> dataItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow && z.DISPLAY_FLG).OrderBy(z => z.ITEMNO).ToList();
+        if (headerItems == null || headerItems.Count == 0)
+        {
+            //データ行定義を取得
+            headerItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow && z.DISPLAY_FLG).ToList();
+            multHeaderFlag = false;
+        }
+
+        //lockData列
+        Dictionary<string, object> lockDataHeader = new Dictionary<string, object>
+            {
+                // ヘッダー表示名
+                { "title", "" },
+                // ヘッダー項目名
+                { "field", "lockData" },
+                // ヘッダーの左右中央寄せ
+                { "headerHozAlign", "center" },
+                // ラベルの左右中央寄せ
+                { "hozAlign", "center" },
+                // 列幅
+                { "width", 30 },
+                // 列固定
+                { "frozen", colFix },
+                // 列の表示/非表示
+                { "visible", false },
+                // ソート無効
+                { "headerSort", false }
+            };
+        headerDatas.Add(lockDataHeader);
+
+        //UPDTAG列
+        if (isDispUpdFlg || isDispSelect)
+        {
+            Dictionary<string, object> colHeader = new Dictionary<string, object>
+            {
+                // ヘッダー表示名
+                { "title", "" },
+                // ヘッダー項目名
+                { "field", "UPDTAG" },
+                // ヘッダーの左右中央寄せ
+                { "headerHozAlign", "center" },
+                // ラベルの左右中央寄せ
+                { "hozAlign", "center" },
+                // 列幅
+                { "width", 30 },
+                // フォーマット
+                { "formatter", "UPDTAG" },
+                // 列固定
+                { "frozen", colFix },
+                // 列の表示/非表示
+                { "visible", false },
+                // ソート無効
+                { "headerSort", false }
+            };
+            headerDatas.Add(colHeader);
+        }
+        //SELTAG列
+        if (isDispSelect)
+        {
+            Dictionary<string, object> colHeader = new Dictionary<string, object>
+            {
+                // ヘッダー表示名
+                { "title", blogic.ConvertResourceName("111140002", ViewBag.TransDictionary) },
+                // ヘッダー項目名
+                { "field", "SELTAG" },
+                // ヘッダーの左右中央寄せ
+                { "headerHozAlign", "center" },
+                // ラベルの左右中央寄せ
+                { "hozAlign", "center" },
+                // 列幅
+                { "width", 40 },
+                // フォーマット
+                { "formatter", "SELTAG" },
+                // 列固定
+                { "frozen", colFix },
+                // 列の表示/非表示
+                { "visible", true },
+                // ソート無効
+                { "headerSort", false }
+            };
+            headerDatas.Add(colHeader);
+        }
+        //ROWSTATUS列
+        if (isListDelRow)
+        {
+            //行削除ボタンを表示する場合は、ROWSTATUS列を追加する（data-rowstatus属性の代用）
+            Dictionary<string, object> colHeader = new Dictionary<string, object>
+            {
+                // ヘッダー表示名
+                { "title", "" },
+                // ヘッダー項目名
+                { "field", "ROWSTATUS" },
+                // ヘッダーの左右中央寄せ
+                { "headerHozAlign", "center" },
+                // ラベルの左右中央寄せ
+                { "hozAlign", "center" },
+                // 列幅
+                { "width", 40 },
+                // 列固定
+                { "frozen", colFix },
+                // 列の表示/非表示
+                { "visible", false },
+                // ソート無効
+                { "headerSort", false }
+            };
+            headerDatas.Add(colHeader);
+        }
+
+        //行番号列
+        //var rowNo = createNoLinkColmun(colFix, isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone, widthNoLink);
+        var rowNo = createNoLinkColmun(colFix, isEditIconDisp, isDetailIconDisp, isDispNoLink, isDispNoLinkNone, widthNoLink);
+
+        headerDatas.Add(rowNo);
+
+        if (multHeaderFlag)
+        {
+            //ヘッダー複数行の場合
+            //TODO:ヘッダー3行以上には未対応
+            // ヘッダ上段
+            IList<COM_LISTITEM_DEFINE> headerLine1 = headerItems.Where(z => z.ROWNO == 1).OrderBy(z => z.ITEMNO).ToList();
+            // ヘッダ下段
+            IList<COM_LISTITEM_DEFINE> headerLine2 = headerItems.Where(z => z.ROWNO != 1).OrderBy(z => z.ITEMNO).ToList();
+
+            var dataSize = dataItems.Count;
+            int startIdx = 0;
+            for (var j = 0; j < dataSize; j++)
+            {
+                var define = headerItems[j];
+                if (define.HEADER_ROWSPAN != 1 && headerLine1.Where(z => z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN.Hide).ToList().Count != headerLine2.Count
+                    || define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN.Hide)
+                {
+                    //headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone));
+                    headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
+                }
+                else if (define.HEADER_ROWSPAN == 1)
+                {
+                    // 対応する上段の定義を取得
+                    var headerDefine = headerItems[dataSize + startIdx];
+                    //列固定
+                    bool isFrozen = false;
+                    // 下段の定義を作成
+                    List<Dictionary<string, object>> line2Colums = new List<Dictionary<string, object>>();
+                    for (var i = j; i < j + headerDefine.HEADER_COLSPAN; i++)
+                    {
+                        //line2Colums.Add(createColmunHeader(formDefine, headerItems[i], isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone));
+                        line2Colums.Add(createColmunHeader(formDefine, headerItems[i], isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
+                        if (Convert.ToBoolean(headerItems[i].COLFIXKBN))
+                        {
+                            //下段の列固定フラグがtrueの場合、上段の列固定を設定する
+                            isFrozen = true;
+                        }
+                    }
+                    startIdx++;
+                    int headerColspan = headerDefine.HEADER_COLSPAN ?? 0;
+                    j = j + (headerColspan == 0 ? 0 : headerColspan - 1);
+
+                    var headerAlign = "";
+                    //ヘッダ行定義の場合はパイプ以降が設定されていても使用しない
+                    var position = define.POSITION.Split('|')[0];
+                    switch (position)
+                    {
+                        case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.left:
+                            headerAlign = "left";
+                            break;
+                        case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.center:
+                            headerAlign = "center";
+                            break;
+                        case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.right:
+                            headerAlign = "right";
+                            break;
+                        default:
+                            headerAlign = "center";
+                            break;
+                    }
+                    Dictionary<string, object> colHeader = new Dictionary<string, object>
+                    {
+                        // ヘッダー表示名
+                        { "title", headerDefine.ITEMNAME },
+                        // ヘッダーの左右中央寄せ
+                        { "headerHozAlign", headerAlign },
+                        // 列固定
+                        { "frozen", isFrozen },
+                        // 下段の定義
+                        { "columns", line2Colums }
+                    };
+                    headerDatas.Add(colHeader);
+                }
+            }
+        }
+        else
+        {
+            //ヘッダー１行の場合
+            foreach (var define in headerItems)
+            {
+                //headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone));
+                headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
+            }
+        }
+
+        ViewBag.isCtrlGrp = true;
+        return JsonSerializer.Serialize(headerDatas, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), });
+    }
+
+    //各列のヘッダー定義を作成
+    //Dictionary<string, object> createColmunHeader(COM_FORM_DEFINE formDefine, COM_LISTITEM_DEFINE define, bool isEditIconDisp, bool isDispNoEdit, bool isDispNoIndex, bool isDispNoCom, bool isDispNoLinkNone)
+    Dictionary<string, object> createColmunHeader(COM_FORM_DEFINE formDefine, COM_LISTITEM_DEFINE define, bool isEditIconDisp, bool isDispNoLink, bool isDispNoLinkNone, IList<COM_LISTITEM_DEFINE> dataItems)
+    {
+        //name属性
+        var name = "VAL" + (define.ITEMNO + 0).ToString();
+        //_CellControlPartialで使用する引数受け渡し用
+        ViewBag.isLayoutRow = true;
+        ViewBag.ctrlId = formDefine.CTRLID + "_" + formDefine.FORMNO + name;
+        ViewBag.isCtrlGrp = false;
+
+        // セルタイプ毎の設定
+        var editor = "";
+        Dictionary<string, object> editorParams = null;
+        var align = "";
+        var formatter = "";
+        Dictionary<string, object> formatterParams = null;
+        var cellClick = "";
+        // タイトル
+        var title = define.ITEMNAME;
+        var headerAlign = "";
+        var isReadOnly = formDefine.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly || (formDefine.REFERENCE_MODE ?? 0 == FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Reference);
+        var isSort = isReadOnly && define.SORT_DIVISION == LISTITEM_DEFINE_CONSTANTS.SORT_DIVISION.Valid;
+        Dictionary<string, object> headerFilterParams = null;
+        var headerFilter = isReadOnly && define.FILTERUSEKBN == LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.Use ? "input" : "";
+        // 必須項目設定
+        var mark_required = !isReadOnly && define.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required ? "<span class=\"required\"><span class=\"mark\"></span></span>" : "";
+        List<string> cssClassList = new List<string>();
+        if (!isReadOnly && define.UNCHANGEABLEKBN == LISTITEM_DEFINE_CONSTANTS.UNCHANGEABLEKBN.Unchangeable)
+        {
+            //変更不可項目の設定
+            cssClassList.Add("unchange_exist");
+        }
+        cssClassList.Add(define.CSSNAME);
+
+        //ヘッダの表示位置
+        var headerPosition = LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.None;
+        //データの表示位置
+        var dataPosition = LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.None;
+        if (define.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.HeadRow)
+        {
+            //ヘッダ行定義の場合はパイプ以降が設定されていても使用しない
+            headerPosition = define.POSITION.Split('|')[0];
+            //データの表示位置はデータ行定義より取得する
+            var dataPositionStr = dataItems.Where(x => x.ITEMNO == define.ITEMNO).Select(x => x.POSITION).First();
+            if(dataPositionStr != null && dataPositionStr.Length > 0)
+            {
+                //パイプ以降が設定されていても使用しない
+                dataPosition = dataPositionStr.Split('|')[0];
+            }
+
+        }
+        else if (define.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow)
+        {
+            //ヘッダ行が定義されていない場合は「ヘッダの表示位置|データの表示位置」
+            var positions = define.POSITION.Split('|');
+            headerPosition = positions[0];
+            if (positions.Length > 1)
+            {
+                dataPosition = positions[1];
+            }
+
+        }
+        switch (headerPosition)
+        {
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.left:
+                headerAlign = "left";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.center:
+                headerAlign = "center";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.right:
+                headerAlign = "right";
+                break;
+            default:
+                headerAlign = "center";
+                break;
+        }
+        if (isReadOnly || define.UNCHANGEABLEKBN == LISTITEM_DEFINE_CONSTANTS.UNCHANGEABLEKBN.Unchangeable)
+        {
+            //ラベル表示の場合のみデータの表示位置を設定する（配置するコントロールも影響を受けてしまうため）
+            align = setAlign(dataPosition);
+        }
+
+        switch (define.CELLTYPE)
+        {
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Text:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DatePicker:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TimePicker:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTimePicker:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Textarea:
+                formatter = "text";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number:
+                formatter = "number";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBox:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBoxDel:
+                formatter = "checkBox";
+                align = setAlign(dataPosition);
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox:
+                formatter = "multiCheckBox";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton:
+                formatter = "radioButton";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox:
+                formatter = "selectBox";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Button:
+                formatter = "button";
+                isSort = false;
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Image:
+                // 画像フォルダパス
+                var imageDirUrl = AppCommonObject.Config.AppSettings.ImageDirURL;
+                if (string.IsNullOrEmpty(imageDirUrl))
+                {
+                    //※未設定の場合、アプリルート
+                    imageDirUrl = ViewBag.AppRoutePath;
+                }
+                formatter = "image";
+                formatterParams = new Dictionary<string, object>
+                {
+                    { "width", define.COLWIDTH + "px" },
+                    { "urlPrefix", imageDirUrl }
+                };
+                isSort = false;
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Date:
+                formatter = "date";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time:
+                formatter = "time";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime:
+                formatter = "datetime";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Download:
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FileOpen:
+                formatter = "fileLink";
+                align = setAlign(dataPosition);
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FormTransition:
+                //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransChild:
+                //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransCm:
+                //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherTab:
+                //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherShift:
+                formatter = "transLink";
+                align = setAlign(dataPosition);
+                break;
+            default:
+                break;
+        }
+
+        if(isReadOnly && define.FILTERUSEKBN == LISTITEM_DEFINE_CONSTANTS.FILTERUSEKBN.Use)
+        {
+            //列フィルターをコンボボックスとする（Tabulatorが候補を自動で生成）
+            switch (define.DETAILED_SEARCH_CELLTYPE)
+            {
+                case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox:
+                case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton:
+                case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox:
+                case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox:
+                    headerFilter = "select";
+                    headerFilterParams = new Dictionary<string, object>
+                {
+                    { "valuesLookup", true },
+                    //{ "clearable", true }//列フィルタのクリア用×ボタン表示 TODO:表示されない
+                };
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        Dictionary<string, object> colHeader = new Dictionary<string, object>
+        {
+            // ヘッダー表示名
+            { "title", title + mark_required },
+            // ヘッダー項目名
+            { "field", "VAL" + define.ITEMNO },
+            // ヘッダーの左右中央寄せ
+            { "headerHozAlign", headerAlign },
+            // データ部ラベルの左右中央寄せ
+            { "hozAlign", align },
+            // 列幅(コントロールが見切れないように列幅は少し広げる)
+            { "width", Convert.ToInt32(define.COLWIDTH) + 6 },
+            //{ "widthGrow", define.COLWIDTH },
+            //// テキストボックス、チェックボックス等の編集できるもの
+            //{ "editor", editor },
+            //{ "editorParams", editorParams },
+            // フォーマット
+            { "formatter", formatter },
+            { "formatterParams", formatterParams },
+            // セルクリック時イベント
+            { "cellClickVal", cellClick },
+            // 列固定
+            { "frozen", Convert.ToBoolean(define.COLFIXKBN) },
+            // 列の表示/非表示
+            { "visible", define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN.Both || define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN.ListOnly ? true : false },
+            // 列のフィルター 直接編集可の場合、列フィルターは無し
+            { "headerFilter", headerFilter },
+            // 列フィルター コンボのアイテムを作成
+            { "headerFilterParams", headerFilterParams },
+            // 列のフィルターのリアルタイムフィルターOFF（入力後確定が必要になる）
+            //{ "headerFilterLiveFilter", false },
+            // 列フィルターのプレースホルダ（列毎）
+            //{ "headerFilterPlaceholder", " "},
+            // 列に指定したいスタイル
+            //{ "cssClass", define.CSSNAME },//cssClassはヘッダー、セル両方に適用
+            { "cellClass", string.Join(" ", cssClassList) },//javascriptでセルにスタイルを設定する
+            // ツールチップ
+            //{ "headerTooltip", define.TOOLTIP },
+            //{ "tooltip", define.TOOLTIP },
+            // ソート 直接編集可の場合、列フィルターは無し
+            { "headerSort", isSort },
+        };
+        return colHeader;
+    }
+
+    //Noリンク列のヘッダー定義を作成
+    //Dictionary<string, object> createNoLinkColmun(bool colFix, bool isEditIconDisp, bool isDispNoEdit, bool isDispNoIndex, bool isDispNoCom, bool isDispNoLinkNone, int widthNoLink)
+    Dictionary<string, object> createNoLinkColmun(bool colFix, bool isEditIconDisp, bool isDetailIconDisp, bool isDispNoLink, bool isDispNoLinkNone, int widthNoLink)
+    {
+        // セルタイプ毎の設定
+        Dictionary<string, object> formatterParams = null;
+        var cellClick = "";
+        var formatter = "link";
+        var rowNoTitle = "NO";
+        var rowNoVisible = false;
+        if (isDispNoLinkNone)
+        {
+            //行番号ラベル
+            rowNoTitle = "NO";
+            formatter = "rownum";
+            rowNoVisible = true;
+        }
+        //リンクを押下した際に呼び出す関数に渡す情報をパイプ区切りで設定（javascriptで成形する）
+        //rowNoはjavascriptで設定
+        //if (isDispNoEdit)
+        //{
+        //    var dispConfirmMsg = (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit) ? "true" : "false";
+        //    cellClick = ViewBag.AppRoutePath + "|" + Model.FORMDEFINE.DAT_TRANSPTN + "|" + Model.FORMDEFINE.CTRLID + "|" + Model.FORMDEFINE.DAT_TRANSDISPPTN + "|" + Model.FORMDEFINE.FORMNO + "|" + "|" + "|" + "|" + dispConfirmMsg;
+        //}
+        //else if (isDispNoIndex)
+        //{
+        //    cellClick = ViewBag.AppRoutePath + "|" + Model.FORMDEFINE.DAT_TRANSPTN + "|" + Model.FORMDEFINE.DAT_TRANSTARGET + "|" + Model.FORMDEFINE.DAT_TRANSDISPPTN + "|" + Model.FORMDEFINE.FORMNO + "|" + Model.FORMDEFINE.CTRLID + "|" + "|" + "|" + true;
+        //}
+        //else if (isDispNoCom)
+        //{
+        //    cellClick = ViewBag.AppRoutePath + "|" + Model.FORMDEFINE.DAT_TRANSPTN + "|" + Model.FORMDEFINE.DAT_TRANSTARGET + "|" + "|" + Model.FORMDEFINE.FORMNO + "|" + Model.FORMDEFINE.CTRLID + "|" + "|" + "|" + false;
+        //}
+        if (isDispNoLink)
+        {
+            //Noリンク
+
+            rowNoVisible = true;
+
+            var transTarget = Model.FORMDEFINE.DAT_TRANSTARGET;
+            if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)
+            {
+                transTarget = Model.FORMDEFINE.CTRLID;
+            }
+
+            var dispConfirmMsg = "true";
+            if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference ||
+                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.CmConduct ||
+                Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab)
+            {
+                dispConfirmMsg = "false";
+            }
+            //cellClick = ViewBag.AppRoutePath + "|" + Model.FORMDEFINE.DAT_TRANSPTN + "|" + Model.FORMDEFINE.DAT_TRANSTARGET + "|" + Model.FORMDEFINE.DAT_TRANSDISPPTN + "|" + Model.FORMDEFINE.FORMNO + "|" + Model.FORMDEFINE.CTRLID + "|" + "|" + "|" + dispConfirmMsg;
+            cellClick = ViewBag.AppRoutePath + "|" + Model.FORMDEFINE.DAT_TRANSPTN + "|" + LISTITEM_DEFINE_CONSTANTS.DAT_TRANS_ACTION_DIV.None + "|" + transTarget + "|" + Model.FORMDEFINE.DAT_TRANSDISPPTN + "|" + Model.FORMDEFINE.FORMNO + "|" + Model.FORMDEFINE.CTRLID + "|" + "|" + dispConfirmMsg;
+        }
+        if (isEditIconDisp || isDetailIconDisp)
+        {
+            //ペンアイコン、矢印アイコン表示
+
+            rowNoVisible = true;
+            rowNoTitle = "";
+            var icon = isEditIconDisp ? FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.PencilIcon : FORM_DEFINE_CONSTANTS.DAT_TRANSICONKBN.ArrowIcon;
+
+            formatterParams = new Dictionary<string, object>
+            {
+                { "label", icon }
+            };
+        }
+
+        Dictionary<string, object> colHeader = new Dictionary<string, object>
+        {
+            // ヘッダー表示名
+            { "title", rowNoTitle },
+            // ヘッダー項目名
+            { "field", "ROWNO" },
+            // ヘッダーの左右中央寄せ
+            { "headerHozAlign", "center" },
+            // ラベルの左右中央寄せ
+            { "hozAlign", "center" },
+            // 列幅
+            // TODO:TMQではフレキシブルレイアウトのため、幅指定しない？
+            { "width", widthNoLink + 20 },//ツリー表示の場合のアイコン分を加算
+            // フォーマット
+            { "formatter", formatter },
+            { "formatterParams", formatterParams },
+            // セルクリック時イベント
+            { "cellClickVal", cellClick },
+            // 列固定
+            { "frozen", colFix },
+            // 列の表示/非表示
+            { "visible", rowNoVisible },
+            // ソート無効
+            { "headerSort", false }
+        };
+        return colHeader;
+    }
+
+    //データの表示位置を設定
+    string setAlign(string dataPosition)
+    {
+        var align = "";
+        //データの表示位置を設定する
+        switch (dataPosition)
+        {
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.left:
+                align = "left";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.center:
+                align = "center";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.right:
+                align = "right";
+                break;
+            default:
+                align = "left";
+                break;
+        }
+        return align;
+    }
+}

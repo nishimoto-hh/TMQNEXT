@@ -1,0 +1,78 @@
+﻿@* 【共通】一覧表示列設定ダイアログ 部分ビュー *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model string
+
+@{ 
+    //name属性
+    var ctrlName = ViewBag.ctrlId;  //要素名=id名
+
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+
+@*一覧表示列設定ﾀﾞｲｱﾛｸﾞを配置*@
+
+@*-- Modal --*@
+<section class="modal fade" id="setDispItemModal" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911020003", ViewBag.TransDictionary)</span>@*一覧表示列設定*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                <div id="setDispItem_div">
+                    <div id="setDispItem_message_div">
+                        @*<div class="error">@Model</div>*@
+                    </div>
+                    <div id="setDispItem_detail_div">
+
+                    @using (Html.BeginForm(
+                        null,      // アクション名
+                        null,    // コントローラー名
+                        new { id = "" },        // ルートパラメーター
+                        FormMethod.Post,                               // HTTP メソッド
+                        false,
+                        new { id = "setDispItem_detail_div", enctype = "multipart/form-data", autocomplete = "nope" } // その他の属性
+                    ))
+                    {
+                        @:<ul id="mltItem" name="@ctrlName" class="multiSelect" data-value>
+                            @:<li class="ctrloption">
+                                @*C_OPTIONINFO=1の場合、「すべて」を表示*@
+                                @:<label>
+                                    @:<input type="checkbox" name="@ctrlName" class="ctrloption" value="0" />
+                                    @:<span>@blogic.ConvertResourceName("911130001", ViewBag.TransDictionary)</span>@*すべて*@
+                                @:</label>
+                            @:</li>
+                        @:</ul>
+                    }
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-my">
+                <div id="action_setDispItem_div">
+                    <table>
+                        <tbody>
+                            <tr>
+                                @*適 用*@
+                                <td><input type="button" id="ComSetDispItemExec" class="btn func_button" value="@blogic.ConvertResourceName("911190001", ViewBag.TransDictionary)" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSetDispItemExec" data-dismiss="modal" /></td>
+                                @*登 録*@
+                                <td><input type="button" id="ComSetDispItemSave" class="btn func_button" value="@blogic.ConvertResourceName("911200001", ViewBag.TransDictionary)" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSetDispItemSave" data-dismiss="modal" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@

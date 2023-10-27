@@ -1,0 +1,91 @@
+﻿@charset "utf-8";
+
+/*********************************************
+ *** _template：機能個別設定用テンプレート *** 
+ *********************************************/
+
+/*タブ、タブ内の一覧*/
+#detail_divid_0 /* > #tab_btn_detail_0, .tab_contents*/ {
+    /*検索ボタンと距離が近いので少し下にずらす*/
+    position: relative;
+    top: 15px;
+}
+
+
+/***********モーダル表示した「移庫入力画面-棚番移庫タブ」**********/
+
+/*移庫先情報　「移庫先」の背景色を変更*/
+.ctrlId[data-ctrlid="CBODY_020_00_LST_7"] tr td[data-name="VAL1"] {
+    background-color: #f3f3f3;
+}
+/*移庫情報　ヘッダー部分の「移庫日」を非表示*/
+.ctrlId[data-ctrlid="CBODY_020_00_LST_7"] tr th[data-name="VAL1"] {
+    text-indent: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/*枝番を標準棚番の横に配置*/
+#CBODY_070_00_LST_7_0_div {
+    float: left;
+}
+
+/*棚番と枝番のコントトールが重ならないように調整*/
+#CBODY_080_00_LST_7_0_div {
+    margin-left: 300px;
+}
+
+/*枝番のテキストボックスの幅調整*/
+input.DetailNo {
+    width: 110px !important;
+}
+
+/*移庫数のテキストボックスの幅調整*/
+input#CBODY_090_00_LST_7_0VAL1 {
+    width: 110px !important;
+}
+/*********************************************************/
+
+
+
+
+/**********モーダル表示した「移庫入力画面－部門移庫タブ」のスタイル**********/
+
+/*移庫先情報　「移庫先」の背景色を変更*/
+.ctrlId[data-ctrlid="CBODY_050_00_LST_7"] tr td[data-name="VAL1"] {
+    background-color: #f3f3f3;
+}
+/*移庫情報　ヘッダー部分の「移庫日」を非表示*/
+.ctrlId[data-ctrlid="CBODY_050_00_LST_7"] tr th[data-name="VAL1"] {
+    text-indent: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+/*********************************************************/
+
+
+
+/***********モーダル表示した「入庫入力画面」**********/
+
+/*棚枝番を棚番の横に配置*/
+#CBODY_030_00_LST_5_0_div {
+    float: left;
+}
+
+/*棚番と棚枝番のコントトールが重ならないように調整*/
+#CBODY_050_00_LST_5_0_div {
+    margin-left: 300px;
+}
+
+/*棚枝番のテキストボックスの幅調整*/
+input.DetailNo {
+    width: 110px !important;
+}
+
+/*入庫情報 グループ化した要素の折り畳みリンクを非表示*/
+#detail_divid_PT0005 > .tbl_title > a {
+    display: none;
+}
+
+
+/*********************************************************/

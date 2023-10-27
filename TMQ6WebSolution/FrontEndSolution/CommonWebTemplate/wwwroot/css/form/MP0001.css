@@ -1,0 +1,417 @@
+﻿@charset "utf-8";
+
+/*
+    処理のためにCSSスタイルを設定している要素があると、ファイルが無い場合に読み込みエラーとなるので作成。
+*/
+
+/*「累計」の背景色を変更(概要)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_040_00_LST_0"] tr[data-rowno="3"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*「累計」の背景色を変更(系の停止)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="6"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="9"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="12"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(系の停止)*/
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_050_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}
+
+/*「累計」の背景色を変更(故障修理件数)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="24"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="6"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="9"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="12"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="15"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="18"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="21"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="24"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(故障修理件数)*/
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="24"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="24"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="24"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="22"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="22"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="22"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="23"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="23"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_060_00_LST_0"] tr[data-rowno="23"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}
+
+/*「累計」の背景色を変更(作業計画性分類1)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="6"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="9"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="12"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="15"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="18"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="21"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(作業計画性分類1)*/
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="18"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="21"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="19"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="16"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="17"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_070_00_LST_0"] tr[data-rowno="20"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}
+
+/*「累計」の背景色を変更(作業計画性分類2)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="6"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="9"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="12"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="15"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(作業計画性分類2)*/
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_080_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}
+
+/*「累計」の背景色を変更(作業性格分類)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL4"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="6"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="9"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="12"] td[class="right ws_pre_wrap transLink unchange_exist"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="15"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(作業性格分類)*/
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="9"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="12"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="15"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="4"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="10"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="13"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="6"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="7"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="5"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="8"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="11"] td[data-name="VAL3"],
+.ctrlId[data-ctrlid="BODY_090_00_LST_0"] tr[data-rowno="14"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}
+
+/*「累計」の背景色を変更(その他)***************************************************************************************/
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL4"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="3"] td[class="right ws_pre_wrap transLink unchange_exist"] {
+    background-color: #ffcc66a8; /*橙色*/
+}
+
+/*線を消す(その他)*/
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="3"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上の線を消す*/
+}
+
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="1"] td[data-name="VAL3"] {
+    border-bottom: none; /*セルの下の線を消す*/
+}
+
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL1"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL2"],
+.ctrlId[data-ctrlid="BODY_100_00_LST_0"] tr[data-rowno="2"] td[data-name="VAL3"] {
+    border-top: none; /*セルの上下の線を消す*/
+    border-bottom: none;
+}

@@ -1,0 +1,44 @@
+-- –|–óƒ}ƒXƒ^
+WITH tr AS (  
+    SELECT
+        translation_id 
+    FROM
+        ms_translation 
+    WHERE
+        ( 
+            location_structure_id = 0 
+            OR location_structure_id = @LocationStructureId
+        ) 
+        AND language_id = @LanguageId 
+        AND translation_text = @TranslationText COLLATE Japanese_BIN
+        AND delete_flg = 0
+)
+
+SELECT
+    COUNT(st.structure_id) 
+FROM
+    ms_structure AS st 
+    INNER JOIN ms_item AS it 
+        ON st.structure_item_id = it.item_id 
+    INNER JOIN tr 
+        ON it.item_translation_id = tr.translation_id 
+WHERE
+    ( 
+        st.factory_id = 0 
+        OR st.factory_id = @LocationStructureId
+    ) 
+    AND st.structure_group_id = @StructureGroupId
+    AND ISNULL(st.structure_layer_no, 0) = ISNULL(@StructureLayerNo, 0)
+    AND ISNULL(st.parent_structure_id, 0) = ISNULL(@ParentStructureId, 0)
+/*@Extension
+    AND EXISTS(
+            SELECT
+                1
+            FROM
+                ms_item_extension AS ex
+            WHERE
+            it.item_id = ex.item_id
+            AND ex.sequence_no = @SequenceNo
+            AND ex.extension_data = @ExtensionData
+    )
+@Extension*/

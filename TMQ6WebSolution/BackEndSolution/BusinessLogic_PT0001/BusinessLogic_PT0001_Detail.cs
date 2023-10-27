@@ -1,0 +1,523 @@
+﻿using CommonExcelUtil;
+using CommonSTDUtil;
+using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.Models.Common;
+using System;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using ComRes = CommonSTDUtil.CommonResources;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using Dao = BusinessLogic_PT0001.BusinessLogicDataClass_PT0001;
+using DbTransaction = System.Data.IDbTransaction;
+using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+
+namespace BusinessLogic_PT0001
+{
+    /// <summary>
+    /// 詳細画面
+    /// </summary>
+    public partial class BusinessLogic_PT0001 : CommonBusinessLogicBase
+    {
+        /// <summary>
+        /// 詳細画面の表示種類
+        /// </summary>
+        private enum DetailDispType
+        {
+            /// <summary>初期表示</summary>
+            Init,
+            /// <summary>検索(ボタン処理後の再表示)</summary>
+            Search,
+            /// <summary>再表示(入出庫履歴タブの再表示ボタン)</summary>
+            Redisplay,
+            /// <summary>新規登録後</summary>
+            AfterRegist
+        }
+
+        /// <summary>
+        /// 詳細画面 検索処理
+        /// </summary>
+        /// <param name="detailType">画面の表示種類</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool searchDetailList(DetailDispType detailType)
+        {
+            // 検索条件を作成
+            Dao.detailSearchCondition condition = getDetailSearchCondition(judgeDetailPtn());
+
+            // 予備品情報
+            if (!searchPartsInfo(condition, ConductInfo.FormDetail.GroupNo))
+            {
+                return false;
+            }
+
+            // 棚別在庫一覧
+            if (!searchTabInventoryList<Dao.inventoryList>(condition, SqlName.Detail.GetInventoryParentList, SqlName.Detail.GetInventoryChildList, ConductInfo.FormDetail.ControlId.InventoryParentList, ConductInfo.FormDetail.ControlId.InventoryChildList, true))
+            {
+                return false;
+            }
+
+            // 部門別在庫一覧
+            if (!searchTabInventoryList<Dao.categoryList>(condition, SqlName.Detail.GetCategoryParentList, SqlName.Detail.GetCategoryChildList, ConductInfo.FormDetail.ControlId.CategoryParentList, ConductInfo.FormDetail.ControlId.CategoryChildList, false))
+            {
+                return false;
+            }
+
+            // 表示年度 初期表示
+            if (!setDispYear(ref condition, detailType == DetailDispType.Redisplay))
+            {
+                return false;
+            }
+
+            // 入出庫履歴一覧
+            if (!searchInoutHistoryInfo(condition))
+            {
+                return false;
+            }
+
+            // 正常終了
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            return true;
+
+            string judgeDetailPtn()
+            {
+                // 表示種類で値を取得するコントロールIDを判定
+                switch (detailType)
+                {
+                    case DetailDispType.Init:        // 初期表示
+                        return ConductInfo.FormList.ControlId.List;
+
+                    case DetailDispType.Search:      // ボタン処理後
+                    case DetailDispType.Redisplay:   // 詳細画面 再表示ボタン
+                        return ConductInfo.FormDetail.ControlId.PartsInfo;
+
+                    case DetailDispType.AfterRegist: // 詳細編集画面 登録後
+                        return ConductInfo.FormEdit.ControlId.PartsInfo;
+
+                    default:
+                        return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 予備品情報 検索処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="groupNo">値を取得する一覧のグループ番号</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool searchPartsInfo(Dao.detailSearchCondition condition, short groupNo)
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetDetailPartsInfo, out string executeSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetPartsList, out string withSql);
+
+            // SQL実行
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(withSql + executeSql, condition);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+            // 職種IDを非表示に項目に退避
+            results[0].JobId = int.Parse(results[0].JobStructureId.ToString());
+
+            // 丸め処理・数量と単位を結合
+            results.ToList().ForEach(x => x.JoinStrAndRound());
+
+            List<string> ctrlIdList = getResultMappingInfoByGrpNo(groupNo).CtrlIdList;
+            IList<Dao.searchResult> result = new List<Dao.searchResult> { results[0] };
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref result, new List<StructureType> { StructureType.Job, StructureType.SpareLocation }, this.db, this.LanguageId, true); // 職種、予備品場所階層
+
+            // 棚番の結合文字を取得し、棚番と枝番を結合する
+            if (!string.IsNullOrEmpty(results[0].RackName) && !string.IsNullOrEmpty(results[0].PartsLocationDetailNo))
+            {
+                string[] rack = results[0].RackName.Split("|");
+                results[0].RackName = TMQUtil.GetDisplayPartsLocation(rack[0], results[0].PartsLocationDetailNo, (int)result[0].FactoryId, this.LanguageId, this.db) + "|" + rack[1];
+            }
+
+            // 一覧に対して繰り返し値を設定する
+            foreach (var ctrlId in ctrlIdList)
+            {
+                // 画面項目に値を設定
+                if (!SetFormByDataClass(ctrlId, result))
+                {
+                    // エラーの場合
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 親子一覧(棚別在庫一覧、部門別在庫一覧) 検索処理
+        /// </summary>
+        /// <typeparam name="T">検索結果一覧のデータクラス</typeparam>
+        /// <param name="condition">検索条件</param>
+        /// <param name="parentSqlName">親一覧のSQL</param>
+        /// <param name="childSqlName">子一覧のSQL</param>
+        /// <param name="parentCtrlId">親一覧のコントロールID</param>
+        /// <param name="childCtrlId">子一覧のコントロールID</param>
+        /// <returns>エラーの場合False</returns>
+        private bool searchTabInventoryList<T>(Dao.detailSearchCondition condition, string parentSqlName, string childSqlName, string parentCtrlId, string childCtrlId, bool isInventory)
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, parentSqlName, out string parentSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, childSqlName, out string childSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.Common, out string withSql);
+
+            // SQL実行
+            IList<T> resultParent = db.GetListByDataClass<T>(withSql + parentSql, condition);
+            IList<T> resultChild = db.GetListByDataClass<T>(withSql + childSql, condition);
+
+            // ページ情報取得
+            var pageInfoParent = GetPageInfo(parentCtrlId, this.pageInfoList);
+            var pageInfoChild = GetPageInfo(childCtrlId, this.pageInfoList);
+
+            // 数量と単位を結合する
+            combineNumAndUnit(resultParent, resultChild, isInventory);
+
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<T>(pageInfoParent, resultParent, resultParent.Count) ||
+            !SetSearchResultsByDataClass<T>(pageInfoChild, resultChild, resultChild.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 棚別在庫一覧・部門別在庫一覧 丸め処理・数量と単位を結合
+        /// </summary>
+        /// <typeparam name="T">一覧の型</typeparam>
+        /// <param name="resultListParent">検索結果(親一覧)</param>
+        /// <param name="resultListChild">検索結果(子一覧)</param>
+        /// <param name="isInventory">棚別在庫一覧の場合True</param>
+        private void combineNumAndUnit<T>(IList<T> resultListParent, IList<T> resultListChild, bool isInventory)
+        {
+            // 棚別在庫一覧か部門別在庫一覧を判定
+            if (isInventory)
+            {
+                // 棚別在庫一覧
+                IList<Dao.inventoryList> parentList = (IList<Dao.inventoryList>)resultListParent; // 親一覧
+                IList<Dao.inventoryList> childList = (IList<Dao.inventoryList>)resultListChild;   // 子一覧
+
+                // 棚番と棚枝番の結合文字を取得
+                string strJoin = string.Empty;
+                if (parentList.Count > 0)
+                {
+                    strJoin = TMQUtil.GetJoinStrOfPartsLocation((int)parentList[0].FactoryId, this.LanguageId, this.db);
+                }
+
+                // 親一覧
+                Dao.inventoryList.joinStrAndRound(parentList, strJoin);
+                // 子一覧
+                Dao.inventoryList.joinStrAndRound(childList, strJoin);
+            }
+            else
+            {
+                // 部門別在庫一覧
+                IList<Dao.categoryList> parentList = (IList<Dao.categoryList>)resultListParent; // 親一覧
+                IList<Dao.categoryList> childList = (IList<Dao.categoryList>)resultListChild;   // 子一覧
+
+                // 棚番と棚枝番の結合文字を取得
+                string strJoin = string.Empty;
+                if (parentList.Count > 0)
+                {
+                    strJoin = TMQUtil.GetJoinStrOfPartsLocation((int)parentList[0].FactoryId, this.LanguageId, this.db);
+                }
+
+                // 親一覧
+                Dao.categoryList.joinStrAndRound(parentList, strJoin);
+                // 子一覧
+                Dao.categoryList.joinStrAndRound(childList, strJoin);
+            }
+        }
+
+        /// <summary>
+        /// 入出庫履歴タブ 表示年度 初期表示
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="isReDisp">再表示の場合True</param>
+        /// <returns>エラーの場合False</returns>
+        private bool setDispYear(ref Dao.detailSearchCondition condition, bool isReDisp)
+        {
+            // 工場の期首月を取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetStartMonthByFactoryId, out string outSql);
+            string startMonth = db.GetEntityByDataClass<string>(outSql, condition);
+            if(string.IsNullOrEmpty(startMonth))
+            {
+                startMonth = "04";
+            }
+
+            // 値を設定(初期表示は現在の年度)
+            if (isReDisp)
+            {
+                // 検索条件を作成
+                var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.DispYear);
+                SetDataClassFromDictionary(targetDic, ConductInfo.FormDetail.ControlId.DispYear, condition, new List<string> { "DispYear" });
+                condition.YearFrom = condition.DispYearFrom;
+                condition.YearTo = condition.DispYearTo;
+            }
+            else
+            {
+                // 現在の年度を求める
+                DateTime today = new DateTime(DateTime.Now.Year, int.Parse(startMonth), 1);
+                int bscktTo = (int.Parse(startMonth) - 1) * -1;
+                string year = DateTime.Now.AddMonths(bscktTo).ToString("yyyy");
+                condition.YearFrom = year;
+                condition.YearTo = year;
+            }
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.DispYear, this.pageInfoList);
+
+            // 検索結果の設定
+            int condCnt = 1; // マジックナンバー回避用
+            if (!SetSearchResultsByDataClass<Dao.detailSearchCondition>(pageInfo, new List<Dao.detailSearchCondition> { condition }, condCnt))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+
+            condition.DispYearFrom = new DateTime(int.Parse(condition.YearFrom), int.Parse(startMonth), 1).ToString();
+            condition.DispYearTo = new DateTime(int.Parse(condition.YearTo), int.Parse(startMonth), 1).AddYears(1).AddDays(-1).ToString();
+            return true;
+
+            string getValNoByKey(MappingInfo info, string keyName)
+            {
+                // 項目名と一致する項目番号を返す
+                return info.Value.First(x => x.KeyName.Equals(keyName)).ValName;
+            }
+        }
+
+        /// <summary>
+        /// 入出庫履歴一覧 検索処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合False</returns>
+        private bool searchInoutHistoryInfo(Dao.detailSearchCondition condition)
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetInoutHistoryList, out string executeSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.Common, out string withSql);
+
+            // SQL実行
+            IList<Dao.inoutHistoryList> results = db.GetListByDataClass<Dao.inoutHistoryList>(withSql + executeSql, condition);
+
+            if (results.Count == 0)
+            {
+                return true;
+            }
+
+            // 丸め処理・数量と単位を結合
+            Dao.inoutHistoryList.joinStrAndRound(results);
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.InOutHistoryList, this.pageInfoList);
+
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<Dao.inoutHistoryList>(pageInfo, results, results.Count))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 検索条件を取得
+        /// </summary>
+        /// <param name="fromCtrlId">値を取得する一覧のコントロールID</param>
+        /// <returns>検索条件</returns>
+        private Dao.detailSearchCondition getDetailSearchCondition(string fromCtrlId)
+        {
+            // 検索条件を作成
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
+            if(targetDic == null && fromCtrlId == ConductInfo.FormList.ControlId.List)
+            {
+                fromCtrlId = ConductInfo.FormDetail.ControlId.PartsInfo;
+                targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, fromCtrlId);
+            }
+            Dao.detailSearchCondition condition = new();
+            SetDataClassFromDictionary(targetDic, fromCtrlId, condition, new List<string> { "PartsId" });
+            condition.LanguageId = this.LanguageId;                              // 言語ID
+            condition.UserFactoryId = TMQUtil.GetUserFactoryId(this.UserId, db); // 本務工場
+            return condition;
+
+            /// <summary>
+            /// 予備品IDに紐付く工場IDを取得する
+            /// </summary>
+            /// <param name="partsId">予備品ID</param>
+            /// <returns>工場ID</returns>
+            int? getFactoryId(long partsId)
+            {
+                // 検索SQL取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetFactoryIdByPartsId, out string executeSql);
+                // 検索条件を設定
+                Dao.detailSearchCondition condition = new();
+                condition.PartsId = partsId; // 予備品ID
+                condition = db.GetEntityByDataClass<Dao.detailSearchCondition>(executeSql, condition);
+                // 取得した工場IDを返す
+                return condition.FactoryId;
+            }
+        }
+
+        /// <summary>
+        /// 予備品情報 削除処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deletePartsInfo()
+        {
+            // 削除条件を取得
+            Dao.detailSearchCondition condition = getDetailSearchCondition(ConductInfo.FormDetail.ControlId.PartsInfo);
+
+            // 排他チェック
+            if (!checkExclusiveSingle(ConductInfo.FormDetail.ControlId.PartsInfo))
+            {
+                return false;
+            }
+
+            // 添付情報排他チェック
+            if (!attachentcheckExclusive())
+            {
+                return false;
+            }
+
+            // 受払履歴に指定された予備品が存在するかどうかチェック
+            if (isExistsHistory(condition))
+            {
+                return false;
+            }
+
+            // 予備品情報削除
+            if (!new ComDao.PtPartsEntity().DeleteByPrimaryKey(condition.PartsId, this.db))
+            {
+                return false;
+            }
+
+            // 添付情報削除(画像)
+            if (!deleteAttachmentInfo(condition, TMQConst.Attachment.FunctionTypeId.SpareImage))
+            {
+                return false;
+            }
+
+            // 添付情報削除(文書)
+            if (!deleteAttachmentInfo(condition, TMQConst.Attachment.FunctionTypeId.SpareDocument))
+            {
+                return false;
+            }
+
+            return true;
+
+        }
+
+        /// <summary>
+        /// 添付情報排他チェック
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool attachentcheckExclusive()
+        {
+            // 登録対象の画面項目定義の情報
+            var mappingInfo = getResultMappingInfo(ConductInfo.FormDetail.ControlId.PartsInfo);
+            string partsIdVal = getValNoByParam(mappingInfo, "PartsId"); // MP情報ID
+            string maxUpdateDatetimeVal = getValNoByParam(mappingInfo, "MaxUpdateDatetime"); // 最大更新日時の項目番号
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormDetail.ControlId.PartsInfo);
+            DateTime? maxDateOfList = DateTime.TryParse(targetDic[maxUpdateDatetimeVal].ToString(), out DateTime outDate) ? outDate : null;
+            if (!CheckExclusiveStatusByUpdateDatetime(maxDateOfList, getMaxDateByMpInfoId(long.Parse(targetDic[partsIdVal].ToString()))))
+            {
+                // エラーの場合
+                return false;
+            }
+
+            return true;
+
+            DateTime? getMaxDateByMpInfoId(long id)
+            {
+                // 最大更新日時取得SQL
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaxDateByPartsId, out string outSql);
+                Dao.attachmentMaxDate getMaxDateParam = new();
+                getMaxDateParam.PartsId = id;
+                getMaxDateParam.FunctionTypeId = new List<int>();
+                getMaxDateParam.FunctionTypeId.Add((int)TMQConst.Attachment.FunctionTypeId.SpareImage);
+                getMaxDateParam.FunctionTypeId.Add((int)TMQConst.Attachment.FunctionTypeId.SpareDocument);
+                // SQL実行
+                var maxDateResult = db.GetEntity(outSql, getMaxDateParam);
+
+                return maxDateResult.max_update_datetime;
+            }
+        }
+
+        /// <summary>
+        /// 受払履歴に指定された予備品が存在するかどうか
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>存在する場合はTrue</returns>
+        private bool isExistsHistory(Dao.detailSearchCondition condition)
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetHistoryCountByPartsId, out string outSql);
+            if (db.GetEntityByDataClass<int>(outSql, condition) > 0)
+            {
+                // エラーメッセ―ジを設定
+                // 「入出庫データが存在するため、削除できません。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141220004 });
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 添付情報を削除
+        /// </summary>
+        /// <param name="condition">削除条件</param>
+        /// <param name="functionTypeId">機能タイプID</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteAttachmentInfo(Dao.detailSearchCondition condition, TMQConst.Attachment.FunctionTypeId functionTypeId)
+        {
+            // 削除対象の添付情報のキーIDを取得
+            condition.FunctionTypeId = (int)functionTypeId;
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetAttachmentInfo, out string outSql);
+            if (db.GetEntityByDataClass<int>(outSql, condition) == 0)
+            {
+                // 添付情報が存在しない場合は処理を行わない
+                return true;
+            }
+
+            // キーIDで削除
+            if (!new ComDao.AttachmentEntity().DeleteByKeyId(functionTypeId, (int)condition.PartsId, this.db))
+            {
+                return false;
+            }
+
+            return true;
+
+        }
+
+        /// <summary>
+        /// パラメータ名と一致する項目番号を返す
+        /// </summary>
+        /// <param name="info">一覧情報</param>
+        /// <param name="keyName">項目キー名</param>
+        /// <returns>項目番号</returns>
+        private string getValNoByParam(MappingInfo info, string keyName)
+        {
+            // パラメータ名と一致する項目番号を返す
+            return info.Value.First(x => x.ParamName.Equals(keyName)).ValName;
+        }
+    }
+}

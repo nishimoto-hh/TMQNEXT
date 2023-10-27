@@ -1,0 +1,771 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model CommonWebTemplate.Models.Common.CommonFormAreaData
+
+@{
+    short formNo = Model.FormNo;
+    COM_CONDUCT_MST conductMst = Model.ConductMst;
+    IList<CommonFormDefine> curformDefines = Model.FormDefines;
+    IList<CommonFormDefine> inputLists = Model.InputLists;
+    bool isComForm = Model.IsComForm;
+
+    var idStr = isComForm ? "_" + conductMst.CONDUCTID : "" + "_" + formNo.ToString();
+    string idName;
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+    Dictionary<string, string> transDictionary = ViewBag.TransDictionary;
+
+    @*=====トップエリア=====*@
+    using (Html.BeginForm(
+            null,                   // アクション名
+            "Index",                // コントローラー名
+            new { id = "" },        // ルートパラメーター
+            FormMethod.Post,        // HTTP メソッド
+            true,
+            new { id = "formTop" + idStr, enctype = "multipart/form-data", autocomplete = "off" } // その他の属性
+        ))
+    {
+        @*@Html.AntiForgeryToken()*@
+
+        //== ※post用ﾃﾞｰﾀ ==
+        @:<input name="CONDUCTID" type="hidden" value="@conductMst.CONDUCTID">
+        @:<input name="CONDUCTPTN" type="hidden" value="@conductMst.PTN">
+        @:<input name="PGMID" type="hidden" value="@conductMst.PGMID">
+        @:<input name="FORMNO" type="hidden" value="@formNo.ToString()">
+        @:<input name="CTRLID" type="hidden" value="">
+        @:<input name="TRANSACTIONDIV" type="hidden" value="">
+        @:<input name="ConditionData" type="hidden" value="">
+        @:<input name="ListDefines" type="hidden" value="">   @*post用：一覧定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ButtonDefines" type="hidden" value="">   @*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ListIndividual" type="hidden" value="">   @*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+        //== 上部コントロールエリア ==
+        idName = "action_top_top_divid" + idStr;
+        @:<div id="@idName" class="action_top_div">
+            // トップエリアの一覧に紐づいていない上部コントロールグループ定義を取得
+            var defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Top &&
+                    y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                    y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @: </div>
+
+        //== 一覧表示エリア ==
+        idName = "top_divid" + idStr;
+        @:<div id="@idName" class="top_div">
+            // トップエリアの一覧または一覧と配置区分に紐づいていないコントロールグループ定義を取得
+            defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Top &&
+                    (y.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||    // 一覧
+                     y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.None) // 配置区分未指定
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            foreach (var define in defines)
+            {
+                if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                {
+                    // 一覧を表示
+                    <partial name="_TableControlPartial.cshtml" model="define" />
+                }
+                else
+                {
+                    // コントロールグループを表示
+                    <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+                }
+            }
+        @:</div>
+
+
+        //== 下部コントロールエリア ==
+        idName = "action_top_bottom_divid" + idStr;
+        @:<div id="@idName" class="action_top_div">
+            // トップエリアの一覧に紐づいていない下部コントロールグループ定義を取得
+            defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Top &&
+                    y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                    y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+    }
+
+    @*=====検索条件エリア=====*@
+    using (Html.BeginForm(
+            null,                   // アクション名
+            "Index",                // コントローラー名
+            new { id = "" },        // ルートパラメーター
+            FormMethod.Post,        // HTTP メソッド
+            true,
+            new { id = "formSearch" + idStr, enctype = "multipart/form-data", autocomplete = "off" } // その他の属性
+        ))
+    {
+        @*@Html.AntiForgeryToken()*@
+
+        //== ※post用ﾃﾞｰﾀ ==
+        @:<input name="CONDUCTID" type="hidden" value="@conductMst.CONDUCTID">
+        @:<input name="CONDUCTPTN" type="hidden" value="@conductMst.PTN">
+        @:<input name="PGMID" type="hidden" value="@conductMst.PGMID">
+        @:<input name="FORMNO" type="hidden" value="@formNo.ToString()">
+        @:<input name="CTRLID" type="hidden" value="">
+        @:<input name="TRANSACTIONDIV" type="hidden" value="">
+        @:<input name="ConditionData" type="hidden" value="">
+        @:<input name="ListDefines" type="hidden" value="">   @*post用：一覧定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ButtonDefines" type="hidden" value="">   @*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ListIndividual" type="hidden" value="">   @*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+        //== 上部コントロールエリア ==
+        idName = "action_search_top_divid" + idStr;
+        @:<div id="@idName" class="action_search_div">
+            // 条件エリアの一覧に紐づいていないコントロールグループ定義を取得
+            var defines = curformDefines.Where(y =>
+                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper &&
+                y.FORMDEFINE.TABNO < FORM_DEFINE_CONSTANTS.TABNO.Tab
+                ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+
+
+        //== 一覧表示エリア ==
+        idName = "search_divid" + idStr;
+        @:<div id="@idName" class="search_div">
+            idName = "search_divid_switch" + idStr;
+
+            //--タブボタン--
+            // タブ切替用ボタン定義の取得
+            var tabButtons = curformDefines.Where(y =>
+                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                y.FORMDEFINE.TABNO >= FORM_DEFINE_CONSTANTS.TABNO.Tab).ToList();
+            if (tabButtons.Count > 0)
+            {
+                @:<div class="tab_btn search">
+                    var cnt = 0;
+                    foreach (var define in tabButtons)
+                    {
+                        if (cnt == 0)
+                        {
+                            // 初期表示時は先頭タブを選択状態にする
+                            @:<a href="#" data-tabno="@define.FORMDEFINE.TABNO" class="selected">@define.FORMDEFINE.TABNAME</a>
+                        }
+                        else
+                        {
+                            @:<a href="#" data-tabno="@define.FORMDEFINE.TABNO">@define.FORMDEFINE.TABNAME</a>
+                        }
+                        cnt++;
+                    }
+                @:</div>
+            }
+            else
+            {
+                //－　条件表示切替ボタン
+                //※表示仕様：検索条件一覧 - 縦方向かつ、画面遷移なし
+                /*
+                var checkDefines = curformDefines.Where(y =>
+                        y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                        (y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+                         y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+                         y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3 ||
+                         y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus) &&
+                        y.FORMDEFINE.DAT_DIRECTION == FORM_DEFINE_CONSTANTS.DAT_DIRECTION.Vertical &&
+                        y.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.None
+                    ).ToList();
+
+                if (checkDefines.Count > 0)
+                {
+                    @:<a href="#" data-switchid="@idName" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch">
+                        @:<span class="glyphicon glyphicon-search withstr"></span> @blogic.ConvertResourceName("911170002", transDictionary)
+                    @:</a>@*--抽出条件*@
+                }
+                */
+            }
+
+            //--一覧--
+            @:<div id="@idName" class="search_div_switch">
+                // 条件エリアの一覧または一覧と配置区分に紐づいていないコントロールグループ定義を取得
+                defines = curformDefines.Where(y =>
+                        y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                        (y.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||    // 一覧
+                         y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.None) // 配置区分未指定
+                        ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+                var tabNo = -1;
+                foreach (var define in defines)
+                {
+                    //表示区分：「切替表示」の場合、
+                    if (define.FORMDEFINE.TABNO >= FORM_DEFINE_CONSTANTS.TABNO.Tab)
+                    {
+                        // 表示区分毎にタブ切替用のdivタグを設定
+                        if (tabNo != define.FORMDEFINE.TABNO)
+                        {
+                            if (tabNo > -1)
+                            {
+                            @:</div>
+                            @:<div class="tab_contents" data-tabno="@define.FORMDEFINE.TABNO">
+                            }
+                            else
+                            {
+                                @:<div class="tab_contents selected" data-tabno="@define.FORMDEFINE.TABNO">
+                                }
+
+                                tabNo = define.FORMDEFINE.TABNO;
+                            }
+
+                            // タブ番号に紐づく上部コントロールグループ定義を取得
+                            var tabCtrlDefines = curformDefines.Where(y =>
+                                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper &&
+                                y.FORMDEFINE.TABNO == tabNo
+                                ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+                            // コントロールグループを表示
+                            foreach (var tabCtrlDefine in tabCtrlDefines)
+                            {
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="tabCtrlDefine" />
+                            }
+
+                            if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                            {
+                                if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                                {
+                                    // 一覧を表示
+                                    <partial name="_TableControlPartial.cshtml" model="define" />
+                                }
+                                else
+                                {
+                                    // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                    <partial name="_ComBatStatusPartial.cshtml" model="define" />
+                                }
+                            }
+                            else
+                            {
+                                // コントロールグループを表示
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+                            }
+
+                            // タブ番号に紐づく下部コントロールグループ定義を取得
+                            tabCtrlDefines = curformDefines.Where(y =>
+                                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower &&
+                                y.FORMDEFINE.TABNO == tabNo
+                                ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+                            // コントロールグループを表示
+                            foreach (var tabCtrlDefine in tabCtrlDefines)
+                            {
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="tabCtrlDefine" />
+                            }
+                        }
+                        else
+                        {
+                            if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                            {
+                                if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                                {
+                                    // 一覧を表示
+                                    <partial name="_TableControlPartial.cshtml" model="define" />
+                                }
+                                else
+                                {
+                                    // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                    <partial name="_ComBatStatusPartial.cshtml" model="define" />
+                                }
+                            }
+                            else
+                            {
+                                // コントロールグループを表示
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+                            }
+                        }
+
+                    }
+                    if (tabNo > -1)
+                    {
+                    @:</div>
+                }
+            @:</div>
+        @:</div>
+
+        //== 下部コントロールエリア ==
+        idName = "action_search_bottom_divid" + idStr;
+        @:<div id="@idName" class="action_search_div">
+            defines = curformDefines.Where(y =>
+                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Condition &&
+                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower &&
+                y.FORMDEFINE.TABNO < FORM_DEFINE_CONSTANTS.TABNO.Tab
+                ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+    }
+
+    @*=====詳細エリア=====*@
+    using (Html.BeginForm(
+        null,      // アクション名
+        "Index",    // コントローラー名
+        new { id = "" },        // ルートパラメーター
+        FormMethod.Post,                               // HTTP メソッド
+        true,
+        new { id = "formDetail" + idStr, enctype = "multipart/form-data", autocomplete = "off" } // その他の属性
+    ))
+    {
+        @*@Html.AntiForgeryToken()*@
+
+        @*== ※post用ﾃﾞｰﾀ ==*@
+        <input name="CONDUCTID" type="hidden" value="@conductMst.CONDUCTID">
+        <input name="PGMID" type="hidden" value="@conductMst.PGMID">
+        <input name="PGMPTN" type="hidden" value="@conductMst.PTN">
+        <input name="FORMNO" type="hidden" value="@formNo.ToString()">
+        <input name="ORIGINNO" type="hidden" value="">@*post用：遷移元の親画面番号保持用*@
+        <input name="ROWNO" type="hidden" value="">@*post用：NOﾘﾝｸ選択時、選択行番号保持用*@
+        @*<input name="CHILDNO" type="hidden" value="">*@ @*post用：NOﾘﾝｸ選択時、子画面番号保持用*@
+        <input name="CTRLID" type="hidden" value="">@*post用：処理対象CtrlId保持用*@
+        <input name="TRANSACTIONDIV" type="hidden" value="">@*post用：画面遷移アクション区分保持用*@
+        <input name="ListData" type="hidden" value="">@*post用：明細ﾃﾞｰﾀﾘｽﾄ保持用*@
+        <input name="ConditionData" type="hidden" value="">@*post用：条件ﾃﾞｰﾀ保持用*@
+        <input name="ListDefines" type="hidden" value="">@*post用：一覧定義ﾃﾞｰﾀ保持用*@
+        <input name="ButtonDefines" type="hidden" value="">@*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+        <input name="ListHonyaku" type="hidden" value="">@*post用：翻訳ﾃﾞｰﾀ保持用(ﾍﾞﾀ表出力用)*@
+        <input name="ListIndividual" type="hidden" value="">@*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+        //== 上部コントロールエリア ==
+        idName = "action_detail_top_divid" + idStr;
+        @:<div id="@idName" class="action_detail_div">
+            // 詳細エリアの一覧に紐づいていないコントロールグループ定義を取得
+            var defines = curformDefines.Where(y =>
+                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List &&
+                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper &&
+                y.FORMDEFINE.TABNO < FORM_DEFINE_CONSTANTS.TABNO.Tab
+                ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+
+        //== 一覧表示エリア ==
+        idName = "detail_divid" + idStr;
+        @:<div id="@idName" class="detail_div">
+            // 明細エリアの一覧または一覧と配置区分に紐づいていないコントロールグループ定義を取得
+            var lists = curformDefines.Where(y => y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List &&
+                                                    (y.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||    // 一覧
+                                                     y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.None) // 配置区分未指定
+                                                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            var tabNo = -1;
+            var lastTab = -1;
+            var lastCtrlgrpNo = -1;
+            var grpIdStr = "grp_id_detail";
+            for (short i = 0; i < lists.Count; i++)
+            {
+                ViewBag.IsEditForm = false;     //Index画面に戻す
+                var define = lists[i];
+                if (define.FORMDEFINE.TABNO >= FORM_DEFINE_CONSTANTS.TABNO.Tab) // タブの場合
+                {
+                    var latestTab = define.FORMDEFINE.TABNO;
+                    if (define.FORMDEFINE.TABNO <= lastTab)
+                    {
+                        continue;
+                    }
+                    if (tabNo == -1)  // タブのまとまりの最初の場合
+                    {
+                        // タブ切替ボタン設置
+                        idName = "tab_btn_detail" + idStr;
+                        @:<div id="@idName" class="tab_btn detail">
+                            var cnt = 0;
+                            //var latestTab = define.FORMDEFINE.TABNO;
+                            for (int j = i; j < lists.Count; j++)
+                            {
+                                var tab = lists[j];
+                                if (tab.FORMDEFINE.TABNO < FORM_DEFINE_CONSTANTS.TABNO.Tab)
+                                {
+                                    break; // タブのまとまりが終わったらタブ切替ボタン設置終了
+                                }
+                                if (cnt == 0)
+                                {
+                                    @:<a href="#" data-tabno="@tab.FORMDEFINE.TABNO" class="selected">@tab.FORMDEFINE.TABNAME</a>
+                                }
+                                else if (tab.FORMDEFINE.TABNO > latestTab)
+                                {
+                                    @:<a href="#" data-tabno="@tab.FORMDEFINE.TABNO">@tab.FORMDEFINE.TABNAME</a>
+                                    latestTab = tab.FORMDEFINE.TABNO;
+                                }
+                                cnt++;
+                            }
+                        @:</div>
+                    }
+
+                    // タブ毎にdivで囲う
+                    if (tabNo == -1)  // タブのまとまりの最初の場合
+                    {
+                        @:<div class="tab_contents selected" data-tabno="@define.FORMDEFINE.TABNO">
+                    }
+                    else if (define.FORMDEFINE.TABNO > tabNo)
+                    {
+                        @:<div class="tab_contents" data-tabno="@define.FORMDEFINE.TABNO">
+                    }
+
+                    // タブ番号に紐づく上部コントロールグループ定義を取得
+                    var tabCtrlDefines = curformDefines.Where(y =>
+                        y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List &&
+                        y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                        y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper &&
+                        y.FORMDEFINE.TABNO == define.FORMDEFINE.TABNO
+                        ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+                    // コントロールグループを表示
+                    CommonTabControlGroupData data = new CommonTabControlGroupData() 
+                        { TabCtrlDefines = tabCtrlDefines, LastCtrlGrpNo = lastCtrlgrpNo, GrpIdStr = grpIdStr};
+                    <partial name="_TabControlGrpPartial.cshtml" model="data" />
+
+                    // 同一タブの一覧をすべて取得
+                    var sameTabLists = lists.Where(x => x.FORMDEFINE.TABNO == define.FORMDEFINE.TABNO)
+                        .OrderBy(x => x.FORMDEFINE.DISPORDER).ToList();
+                    foreach (var tabList in sameTabLists)
+                    {
+                        if (tabList.FORMDEFINE.CTRLGRPNO >= 1)  // グループが設定されている場合
+                        {
+                            if (tabList.FORMDEFINE.CTRLGRPNO <= lastCtrlgrpNo)
+                            {
+                                continue;
+                            }
+                            if (lastCtrlgrpNo == -1 || tabList.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+                            {
+                                var grpId = grpIdStr + tabList.FORMDEFINE.CTRLGRPNO;
+                                //グループ表示名と表示切替アイコンを表示
+                                @:<div class="tbl_title">
+                                    @:<span class="title">@tabList.FORMDEFINE.CTRLGRPNAME</span>
+                                    @:<a href="#" data-switchid="@grpId" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitchTable" style="margin-left:5px;"><span class="glyphicon glyphicon-chevron-up"></span></a>
+                                @:</div>
+
+                                //グループのまとまりをdivで囲む
+                                var divId = grpId + "_" + tabList.FORMDEFINE.FORMNO;
+                                @:<div id="@divId" class="grouping_ctrl">
+                            }
+
+                            // 同一グループ番号の一覧をすべて取得
+                            var sameGrpLists = sameTabLists.Where(x => x.FORMDEFINE.CTRLGRPNO == tabList.FORMDEFINE.CTRLGRPNO)
+                                        .OrderBy(x => x.FORMDEFINE.DISPORDER).ToList();
+                            foreach (var grpList in sameGrpLists)
+                            {
+                                if (grpList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                                {
+                                    if (grpList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                                    {
+                                        // 一覧を表示
+                                        ViewBag.IsEditForm = false;
+                                        <partial name="_TableControlPartial.cshtml" model="grpList" />
+
+                                        // 単票一覧を取得
+                                        var editDefine = inputLists.Where(y =>
+                                            y.FORMDEFINE.FORMNO == formNo &&
+                                            y.FORMDEFINE.CTRLID.Equals(grpList.FORMDEFINE.CTRLID)).FirstOrDefault();
+                                        if (editDefine != null)
+                                        {
+                                            // 単票一覧を表示
+                                            ViewBag.IsEditForm = true;     //Edit画面
+                                            <partial name="_TableControlPartial.cshtml" model="editDefine" />
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                        <partial name="_ComBatStatusPartial.cshtml" model="grpList" />
+                                    }
+                                }
+                                else
+                                {
+                                    // コントロールグループを表示
+                                    <partial name="_ControlGrpAreaPartial.cshtml" model="grpList" />
+                                }
+                            }
+
+                            if (lastCtrlgrpNo == -1 || tabList.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+                            {
+                                //divを閉じる
+                                @:</div>
+                            }
+                            // グループ番号を保持
+                            lastCtrlgrpNo = tabList.FORMDEFINE.CTRLGRPNO;
+                        }
+                        else
+                        {
+                            if (tabList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                            {
+                                if (tabList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                                {
+                                    // 一覧を表示
+                                    ViewBag.IsEditForm = false;
+                                    <partial name="_TableControlPartial.cshtml" model="tabList" />
+                                    // 単票一覧を取得
+                                    var editDefine = inputLists.Where(y =>
+                                        y.FORMDEFINE.FORMNO == formNo &&
+                                        y.FORMDEFINE.CTRLID.Equals(tabList.FORMDEFINE.CTRLID)).FirstOrDefault();
+                                    if (editDefine != null)
+                                    {
+                                        // 単票一覧を表示
+                                        ViewBag.IsEditForm = true;     //Edit画面
+                                        <partial name="_TableControlPartial.cshtml" model="editDefine" />
+                                    }
+                                }
+                                else
+                                {
+                                    // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                    <partial name="_ComBatStatusPartial.cshtml" model="tabList" />
+                                }
+                            }
+                            else
+                            {
+                                // コントロールグループを表示
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="tabList" />
+                            }
+                        }
+                    }
+                    // タブ番号に紐づく下部コントロールグループ定義を取得
+                    tabCtrlDefines = curformDefines.Where(y =>
+                        y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List &&
+                        y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                        y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower &&
+                        y.FORMDEFINE.TABNO == define.FORMDEFINE.TABNO
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+                    // コントロールグループを表示
+                    data = new CommonTabControlGroupData() 
+                        { TabCtrlDefines = tabCtrlDefines, LastCtrlGrpNo = lastCtrlgrpNo, GrpIdStr = grpIdStr};
+                    <partial name="_TabControlGrpPartial.cshtml" model="data" />
+
+                    // タブ毎のdivを閉じる
+                    if (tabNo == -1)  // タブのまとまりの最初の場合
+                    {
+                        @:</div>
+                    }
+                    else if (define.FORMDEFINE.TABNO > tabNo)
+                    {
+                        @:</div>
+                    }
+
+                    // タブ番号を保持
+                    lastTab = define.FORMDEFINE.TABNO;
+                    tabNo = define.FORMDEFINE.TABNO;
+                }
+                else
+                {
+                    if (define.FORMDEFINE.CTRLGRPNO >= 1)  // グループが設定されている場合
+                    {
+                        if (define.FORMDEFINE.CTRLGRPNO <= lastCtrlgrpNo)
+                        {
+                            continue;
+                        }
+                        if (lastCtrlgrpNo == -1 || define.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+                        {
+                            var grpId = grpIdStr + define.FORMDEFINE.CTRLGRPNO;
+                            //グループ表示名と表示切替アイコンを表示
+                            @:<div class="tbl_title">
+                                @:<span class="title">@define.FORMDEFINE.CTRLGRPNAME</span>
+                                @:<a href="#" data-switchid="@grpId" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitchTable" style="margin-left:5px;"><span class="glyphicon glyphicon-chevron-up"></span></a>
+                            @:</div>
+
+                            //グループのまとまりをdivで囲む
+                            var divId = grpId + "_" + define.FORMDEFINE.FORMNO;
+                            @:<div id="@divId" class="grouping_ctrl">
+                        }
+
+                        // 同一グループ番号の一覧をすべて取得
+                        var sameGrpLists = lists.Where(x => x.FORMDEFINE.CTRLGRPNO == define.FORMDEFINE.CTRLGRPNO)
+                            .OrderBy(x => x.FORMDEFINE.DISPORDER).ToList();
+                        foreach (var grpList in sameGrpLists)
+                        {
+                            if (grpList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                            {
+                                if (grpList.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                                {
+                                    // 一覧を表示
+                                    ViewBag.IsEditForm = false;
+                                    <partial name="_TableControlPartial.cshtml" model="grpList" />
+                                    // 単票一覧を取得
+                                    var editDefine = inputLists.Where(y =>
+                                        y.FORMDEFINE.FORMNO == formNo &&
+                                        y.FORMDEFINE.CTRLID.Equals(grpList.FORMDEFINE.CTRLID)).FirstOrDefault();
+                                    if (editDefine != null)
+                                    {
+                                        // 単票一覧を表示
+                                        ViewBag.IsEditForm = true;     //Edit画面
+                                        <partial name="_TableControlPartial.cshtml" model="editDefine" />
+                                    }
+                                }
+                                else
+                                {
+                                    // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                    <partial name="_ComBatStatusPartial.cshtml" model="grpList" />
+                                }
+                            }
+                            else
+                            {
+                                // コントロールグループを表示
+                                <partial name="_ControlGrpAreaPartial.cshtml" model="grpList" />
+                            }
+                        }
+
+                        if (lastCtrlgrpNo == -1 || define.FORMDEFINE.CTRLGRPNO > lastCtrlgrpNo)
+                        {
+                            //divを閉じる
+                            @:</div>
+                        }
+                        // グループ番号を保持
+                        lastCtrlgrpNo = define.FORMDEFINE.CTRLGRPNO;
+                    }
+                    else
+                    {
+                        if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                        {
+                            if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.BatStatus)
+                            {
+                                // 一覧を表示
+                                ViewBag.IsEditForm = false;
+                                <partial name="_TableControlPartial.cshtml" model="define" />
+                                // 単票一覧を取得
+                                var editDefine = inputLists.Where(y =>
+                                    y.FORMDEFINE.FORMNO == formNo &&
+                                    y.FORMDEFINE.CTRLID.Equals(define.FORMDEFINE.CTRLID)).FirstOrDefault();
+                                if (editDefine != null)
+                                {
+                                    // 単票一覧を表示
+                                    ViewBag.IsEditForm = true;     //Edit画面
+                                    <partial name="_TableControlPartial.cshtml" model="editDefine" />
+                                }
+                            }
+                            else
+                            {
+                                // 【共通 - バッチ機能】処理ステータス、処理結果を出力
+                                <partial name="_ComBatStatusPartial.cshtml" model="define" />
+                            }
+                        }
+                        else
+                        {
+                            // コントロールグループを表示
+                            <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+                        }
+                    }
+                }
+            }
+    
+        @:</div>
+
+        //== 下部コントロールエリア ==
+        ViewBag.IsEditForm = false;     //Index画面に戻す
+        idName = "action_detail_bottom_divid" + idStr;
+        @:<div id="@idName" class="action_detail_div">
+            // 詳細エリアの一覧に紐づいていないコントロールグループ定義を取得
+            defines = curformDefines.Where(y =>
+                y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List &&
+                y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower &&
+                y.FORMDEFINE.TABNO < FORM_DEFINE_CONSTANTS.TABNO.Tab &&
+                (string.IsNullOrEmpty(y.FORMDEFINE.CTR_RELATIONCTRLID) ||
+                y.FORMDEFINE.CTR_RELATIONCTRLID.Equals("-"))
+            ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+    }
+
+    @*=====ボトムエリア=====*@
+    using (Html.BeginForm(
+            null,                   // アクション名
+            "Index",                // コントローラー名
+            new { id = "" },        // ルートパラメーター
+            FormMethod.Post,        // HTTP メソッド
+            true,
+            new { id = "formBottom" + idStr, enctype = "multipart/form-data", autocomplete = "off" } // その他の属性
+        ))
+    {
+        @*@Html.AntiForgeryToken()*@
+
+        //== ※post用ﾃﾞｰﾀ ==
+        @:<input name="CONDUCTID" type="hidden" value="@conductMst.CONDUCTID">
+        @:<input name="CONDUCTPTN" type="hidden" value="@conductMst.PTN">
+        @:<input name="PGMID" type="hidden" value="@conductMst.PGMID">
+        @:<input name="FORMNO" type="hidden" value="@formNo.ToString()">
+        @:<input name="CTRLID" type="hidden" value="">
+        @:<input name="TRANSACTIONDIV" type="hidden" value="">
+        @:<input name="ConditionData" type="hidden" value="">
+        @:<input name="ListDefines" type="hidden" value="">   @*post用：一覧定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ButtonDefines" type="hidden" value="">   @*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+        @:<input name="ListIndividual" type="hidden" value="">   @*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+        //== 上部コントロールエリア ==
+        idName = "action_bottom_top_divid" + idStr;
+        @:<div id="@idName" class="action_bottom_div">
+            // ボトムエリアの一覧に紐づいていない上部コントロールグループ定義を取得
+            var defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Bottom &&
+                    y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                    y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+
+
+        //== 一覧表示エリア ==
+        idName = "bottom_divid" + idStr;
+        @:<div id="@idName" class="bottom_div">
+            // トップエリアの一覧または一覧と配置区分に紐づいていないコントロールグループ定義を取得
+            defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Bottom &&
+                    (y.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||    // 一覧
+                     y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.None) // 配置区分未指定
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            foreach (var define in defines)
+            {
+                if (define.FORMDEFINE.CTRLTYPE != FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+                {
+                    // 一覧を表示
+                    <partial name="_TableControlPartial.cshtml" model="define" />
+                }
+                else
+                {
+                    // コントロールグループを表示
+                    <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+                }
+            }
+        @:</div>
+
+
+        //== 下部コントロールエリア ==
+        idName = "action_bottom_bottom_divid" + idStr;
+        @:<div id="@idName" class="action_bottom_div">
+            // ボトムエリアの一覧に紐づいていない下部コントロールグループ定義を取得
+            defines = curformDefines.Where(y =>
+                    y.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Bottom &&
+                    y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup &&
+                    y.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower
+                    ).OrderBy(y => y.FORMDEFINE.DISPORDER).ToList();
+            // コントロールグループを表示
+            foreach (var define in defines)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="define" />
+            }
+        @:</div>
+    }
+}

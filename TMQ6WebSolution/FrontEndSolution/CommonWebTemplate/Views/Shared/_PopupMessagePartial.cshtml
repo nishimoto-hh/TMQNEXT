@@ -1,0 +1,50 @@
+﻿@* 【共通】メッセージ表示ダイアログ 部分ビュー *@
+@using CommonWebTemplate.CommonUtil;
+
+@model string
+
+@*ﾒｯｾｰｼﾞﾀﾞｲｱﾛｸﾞﾀﾞｲｱﾛｸﾞを配置*@
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+
+@*-- Modal --*@
+<section class="modal fade" id="messageModal" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911340003", ViewBag.TransDictionary)</span>@*メッセージ*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                <div id="message_detail_div">
+                    <div id="ComMessage_div">
+                        <div class="error">@Model</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-my">
+                <div id="action_message_div">
+                    <table>
+                        <tbody>
+                            <tr>
+                                @*O K*@
+                                <td><input type="button" id="ComMessageOK" class="btn func_button" value="@blogic.ConvertResourceName("911050001", ViewBag.TransDictionary)" data-dismiss="modal" /></td>
+                                @*キャンセル*@
+                                <td><input type="button" id="ComMessageCancel" class="btn func_button" value="@blogic.ConvertResourceName("911070001", ViewBag.TransDictionary)" data-dismiss="modal" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@
+

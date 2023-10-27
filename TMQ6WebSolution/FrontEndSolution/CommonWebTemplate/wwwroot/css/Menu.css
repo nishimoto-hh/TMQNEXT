@@ -1,0 +1,743 @@
+﻿/*****************************************************************************
+ *** 概要
+ *** 　ページの枠関連のスタイルを設定する
+ *** 　(ロゴ、ヘッダ、メニュー、など)
+ *** 対応履歴
+ *** 　2021.04.01 ver2.0 アップグレード
+******************************************************************************/
+@charset "utf-8";
+
+/*=== ◆ページ全体の構成 ===*/
+
+/*★AKAP2.0 エリア全体 */
+body {
+    overflow: hidden;
+}
+
+/* エリア全体 */
+#container{
+	display: flex;
+    flex-direction: column;
+}
+/* +エリア設定 */
+#app_logo{  /* ロゴ */
+    width: 22rem;
+    height: 100%;
+
+    background-color: white;
+}
+#side_menu {     /* メニュー（左横表示用） */
+    width: 22rem;
+    height:100%;
+}
+#title {    /* アプリタイトル、メニューエリア */
+    display: flex;
+    flex-direction: row;
+
+    /*height: 30px;*/
+    /*background-color: gray;
+    color: white;*/
+    vertical-align: middle;
+    overflow:hidden;
+
+    /*height: 40px;*/
+    background-color: #FFF;
+    border-bottom: 1px solid #000;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.title_top_menu {
+    height: 80px;
+}
+
+.title_side_menu {
+    height: 40px;
+}
+
+/* メインフレーム（横メニュー＋コンテンツメイン） */
+#main_frame {
+    display: flex;
+}
+
+#main_frame.top_menu {
+    height: calc(100vh - 100px);
+}
+
+#main_frame.side_menu {
+    height: calc(100vh - 60px);
+}
+
+#main_contents {    /* コンテンツメイン */
+    width: 100%;
+    /*overflow:auto;*/
+    overflow-x:hidden;  /* AP固有 */
+    overflow-y:auto;  /* AP固有 */
+    /*position:relative;*/
+}
+
+#main_contents.top_menu {
+    max-height: calc(100vh - 100px);
+}
+
+#main_contents.side_menu {
+    max-height: calc(100vh - 60px);
+}
+
+#container.main #main_contents {    /* コンテンツメイン */
+    flex: 1;
+    min-width: 100px;
+}
+
+/*=== ◆ページヘッダエリア ===*/
+/*-- +アプリロゴ（top左上） -- */
+/*-- ++アプリロゴ画像 -- */
+.main #app_logo_img {
+    width: 15rem;
+
+    position: relative;
+    top: 5px;
+    left:50px;
+}
+/*-- ++ナビゲーションバー -- */
+.main #navbar-switch {
+    /*background-color:#f3f2f1;
+    color:black;
+    padding:7px;*/
+
+    width: 36px;
+    height: 36px;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    text-indent: 0px;
+    /*background-color: #F3F3F3;*/
+    /*border-radius: 23px;
+    -webkit-border-radius: 23px;*/
+    cursor: pointer;
+}
+
+/* +ログイン画面用 */
+body.login {
+    background-color: #F3F3F3;
+}
+section#container.login {
+    width: 500px;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    margin-top: -268px;
+    margin-left: -250px;
+}
+/* ++アプリヘッダ（top） */
+.login #title {
+	display: none;	
+}
+/*-- ++アプリロゴ画像 -- */
+.login #app_logo_img {
+    width: 200px;
+    /*height: 40px;*/
+}
+
+/* ++ログイン情報入力エリア */
+#login_area {
+    /*width: 200px;
+    margin:0 auto;*/
+
+    display: inline-block;
+    width: 100%;
+    background-color: #FFF;
+    border-radius: 6px;
+    -webkit-border-radius: 6px;
+    padding: 55px 90px;
+    box-sizing: border-box;
+    text-align: left;
+}
+#login_area label {
+    font-size: 14px;
+    font-weight: normal;
+}
+#login_area input[type="submit"] {
+    /*margin-top:20px;
+    height: 30px;
+    width:200px;*/
+
+    width: 160px;
+    height: 46px;
+    color: #FFF;
+    font-size: 15px;
+    background-color: #008ccf;
+    border: none;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+}
+#login_area .submit {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 0px;
+}
+#login_app_logo{  /* ロゴ */
+    /*width: 20rem;
+    height: 100%;
+    margin:0 auto;
+    margin-top:100px;*/
+    text-align:center;
+
+    margin-bottom: 30px;
+}
+#login_app_title{  /* タイトル */
+    /*width: 20rem;
+    height: 100%;
+    margin:0 auto;*/
+    text-align:center;
+
+    font-size: 18px;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+/* +業務画面用 */
+/* ++アプリヘッダ（top） */
+.main #title {
+    /*padding-top:5px;*/	
+}
+
+/*-- +アプリタイトル（top中央）  --*/
+#top_title_area{
+	flex: 1;
+
+	font-size: 1.45rem;
+    white-space:nowrap;
+    margin-top:5px;
+    margin-left:5px;
+
+    font-size: 15px;
+    margin-top: 7px;
+}
+
+/*-- +アプリメニュー（top右上） --*/
+#top_navi_area{
+    min-width: 150px;
+    height: 100%;
+    /*margin-top: 5px;*/
+
+    margin-top: 7px;
+    margin-right: 20px;
+}
+/* +プッシュ通知件数+ */
+div.count{   
+    width: 20px;
+    /*padding: 2px;*/
+    height: 13px;
+    bottom: 60%;
+    right: -10%;
+    position: absolute;
+    background: white;
+    border-radius: 10px;
+    /*box-shadow: 1px 1px 1px rgba(0, 0, 0, 100);*/
+    /*text-indent: 1px;*/
+    font-weight: lighter;
+    text-align: center;
+    font-size: 10px;
+    line-height: 10px;
+    color: white;
+    background-color:red;
+    /*-webkit-animation-duration: 3s;*/
+    /*-webkit-animation-timing-function: ease-in;*/
+    /*-webkit-animation-iteration-count: infinite;*/
+    /*-webkit-transform-origin: bottom center;*/
+    /*-webkit-animation-name: animation01;*/
+    /*-moz-animation-duration: 3s;*/
+    /*-moz-animation-timing-function: ease-in;*/
+    /*-moz-animation-iteration-count: infinite;*/
+    /*-moz-transform-origin: bottom center;*/
+    /*-moz-animation-name: animation01;*/
+    /*background-image: -ms-radial-gradient(right top, ellipse farthest-corner, #FFFFFF 0%, #EF0000 100%);*/
+    /*background-image: -moz-radial-gradient(right top, ellipse farthest-corner, #FFFFFF 0%, #EF0000 100%);*/
+    /*background-image: -o-radial-gradient(right top, ellipse farthest-corner, #FFFFFF 0%, #EF0000 100%);*/
+    /*background-image: -webkit-gradient(radial, right top, 0, right top, 1020, color-stop(0, #FFFFFF), color-stop(1, #EF0000));*/
+    /*background-image: -webkit-radial-gradient(right top, ellipse farthest-corner, #FFFFFF 0%, #EF0000 100%);*/
+    /*background-image: radial-gradient(right top, ellipse farthest-corner, #FFFFFF 0%, #EF0000 100%);*/
+}
+/*-- ++ユーザー名、など --*/
+#app_navi_title{
+    padding-right: 5px;
+}
+#app_navi_title > span{
+    font-size: 1.3rem;
+    font-weight:400;
+    font-style:normal;
+    font-variant:normal;
+    padding-left: 10px;
+    padding-right: 5px;
+}
+
+/*-- ++アプリ設定メニュー、ボタン・リスト項目 --*/
+/*#app_navi_icon,*/
+#app_navi_menu > li {
+    /*background-color: #f3f2f1;
+    border-color: black;
+    color: black;*/
+
+    color: #FFF;
+    background-color: #1256a3;
+}
+#app_navi_icon:hover,
+#app_navi_menu li:hover {   /* マウスオーバー時 */
+    /*background-color: #969292;*/
+    /*color: black;*/
+}
+
+/*-- ++アプリ設定メニューボタン --*/
+#app_navi_icon {
+    /*float: right;
+    width: 60px;
+    height: 28px;
+    padding-bottom:10px;
+    background-color: gray;*/
+}
+#app_navi_icon > a {
+    color: inherit;
+}
+#app_navi_icon > a > span {
+    /*background-color: inherit;
+    color: inherit;*/
+
+    font-size: 20px;
+    vertical-align: middle;
+
+    color:#1256a3;
+    background-color: #FFF;
+    font-size: 20px;    
+    padding: 5px 5px 10px 5px;
+}
+#app_navi_icon > a > span.glyphicon.glyphicon-cog.select {
+    color :#FFF;
+    background-color: #1256a3;
+    border-radius: 3px 3px 0 0;
+    -webkit-border-radius: 3px 3px 0 0;
+}
+
+/*-- ++アプリ設定メニュー --*/
+#app_navi_menu {        /* メニュー全体 */
+    min-width: 150px;
+    height: calc(33px * 4);     /* 33px * [ﾒﾆｭｰ項目数] */
+    position: absolute;
+    /*top: 32px;
+    right: 10px;*/
+    z-index: 10;
+
+    /*border-style: solid;
+    border-top-width: 1px;
+    border-right-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;*/
+
+    top: 38px;
+    right: 20px;
+    width: 170px;
+    border-radius: 3px 0 3px 3px;
+    -webkit-border-radius: 3px 0 3px 3px;
+}
+/* +++メニュー項目 */
+#app_navi_menu > li {
+    /*line-height: 30px;
+
+    border-style: solid;
+    border-top-width: 0px;
+    border-right-width: 0.5px;
+    border-bottom-width: 1px;
+    border-left-width: 0.5px;
+    padding-left: 10px;*/
+
+    border-bottom: 1px solid #2a67ac;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 18px;
+    box-sizing: border-box;
+}
+#app_navi_menu > li:hover {  /* マウスオーバー時 */
+    /*text-decoration: underline;*/ /* テキストの下線（あり） */
+
+    opacity:0.8;
+}
+#app_navi_menu li:last-child a {
+    border-bottom: 0px;
+}
+/* ++++メニュー項目リンク */
+#app_navi_menu > li > a {
+    background-color: inherit;
+    color: inherit;
+
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+/*=== ◆ページメニューエリア ===*/
+/*-- +メニュー（top表示用） --*/
+#top_menu {
+    position: absolute;
+    padding: 10px 0px;
+    margin: 0;
+    display: flex;
+}
+/*-- ++メニューリスト項目のスタイル --*/
+#top_menu ul > li{
+    background-color: white;
+    color: black;
+    border-color: #008ccf;
+    font-size: 13px;
+    font-weight: normal;
+    min-width: 100px;
+    line-height:2.5rem;
+
+	float:left;
+	position:relative;
+
+    /* 項目下の枠線 */
+    border-style: solid;
+    border-width: 1px;
+
+    margin-right: 5px;
+    text-align: center;
+}
+* html #top_menu ul > li{
+	display:inline;
+	zoom:1;
+}
+*+html #top_menu ul > li{
+	display:inline;
+	zoom:1;
+}
+#top_menu ul > li > a{  /*リスト項目リンク*/
+	width:100%;
+	height:100%;
+
+    color: inherit;
+    /*margin-left: 5px;*/
+    display: block;
+    padding: 0px 5px;
+}
+#top_menu ul li:hover
+{   /* マウスオーバー時 */
+    /*background-color: #969292;*/
+}
+#top_menu ul li.selected,
+#top_menu ul a.selected 
+{   /* 機能選択時 */
+    color: white;
+    font-weight: 600;
+    background-color: #008ccf;
+}
+
+/*-- ++サブメニューエリア --*/
+#top_menu ul.level1 > li{
+    border-radius: 2px;
+}
+
+/*-- ++機能メニューエリア --*/
+#top_menu ul.level2{
+	display:none;
+}
+/*-- +++リスト項目 --*/
+#top_menu ul.level2 li {
+    float: none;
+    z-index: 999;
+    margin: 0;
+    padding: 0 5px;
+    cursor: pointer;
+}
+
+/*-- +メニュー（side表示用） --*/
+#side_menu {
+    padding: 0;
+    margin: 0;
+    /*background-color: #f3f2f1;*/
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    background-color: #f3f3f3;
+}
+/*-- ++メニューリスト項目のスタイル --*/
+#side_menu ul > li{
+    /*background-color: #f3f2f1;
+    color: black;
+    border-color:white;
+    font-size: 13px;
+    font-weight: normal;*/
+
+    border-bottom: 1px solid #ececec;
+    box-sizing: border-box;
+    overflow:hidden;
+}
+* html #side_menu ul > li{
+	display:inline;
+	zoom:1;
+}
+*+html #side_menu ul > li{
+	display:inline;
+	zoom:1;
+}
+#side_menu ul > li > a{  /*リスト項目リンク*/
+	width:100%;
+	height:100%;
+
+    color: inherit;
+    /*margin-left: 2px;*/
+    display: block;
+
+    padding: 5px 10px;
+}
+#side_menu ul li:hover
+{   /* マウスオーバー時 */
+    /*background-color: #b7b1b1;*/
+    color: #000000;
+    /*font-weight: 600;*/
+}
+#side_menu ul li:hover > a
+{   /* マウスオーバー時 */
+    /*font-weight: 600;*/
+    text-decoration: none; /* テキストの下線（なし） */
+}
+#side_menu ul li.selected,
+#side_menu ul a.selected 
+{   /* 機能選択時 */
+    color: black;
+    /*font-weight: 600;*/
+}
+#side_menu ul.level2 li.selected 
+{   /* 機能選択時 */
+    /*border-left:solid 5px #0000ff;*/
+
+    border-left:solid 5px #1256a3;
+	border-radius: 0 1px 1px 0;
+	-webkit-border-radius: 0 1px 1px 0;
+}
+
+/*-- ++サブメニューエリア --*/
+/*-- +++リスト項目 --*/
+#side_menu ul.level1 li {
+    display: block;
+    /*padding-left: 5px;*/
+}
+#side_menu ul.level1 > li{
+    /*line-height:3.5rem;*/
+}
+#side_menu ul span.glyphicon {
+    float: right;
+    margin: 10px 5px;
+    font-size: 5px;
+    color: #d3d3d3;
+}
+/*-- ++機能メニューエリア --*/
+#side_menu ul.level2 {
+    display: none;
+
+    padding: 0 20px 15px 20px;
+    box-sizing: border-box;
+}
+#side_menu ul.level2 > li {
+    /*line-height:2.5rem;
+    margin-left: 10px;*/
+
+    margin-bottom: 5px;
+}
+#side_menu ul.level2 li a {    
+    font-size: 13px;
+    background-color: #FFF;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    padding: 2px 15px;
+    box-sizing: border-box;
+}
+#side_menu ul.level2 li a:hover {
+	color:#1256a3;
+}
+#side_menu ul.level2 li a:hover:before {
+	background-color: #1256a3;
+}
+#side_menu ul.level1 > li.selected > ul.level2 {    /* サブメニュー配下のピン止め */
+	display:block !important;
+}
+
+/*-- ++ハンバーガーメニュー --*/
+.ham {
+    position: relative;
+    /*height: 20px;
+    width: 20px;*/
+    display: inline-block;
+    box-sizing: border-box;
+
+    height: 36px;
+    width: 36px;
+    background-color: #FFF;
+    border-radius: 23px;
+    -webkit-border-radius: 23px;
+}
+.ham.select{
+    background-color: #f6f6f6;
+}
+.ham_line {
+	position: absolute;
+    /*left: 0;
+    height: 3px;
+    width: 20px;
+    background-color: #444;*/
+    border-radius: 2px;
+    display: inline-block;
+    box-sizing: border-box;
+
+    left: 10px;
+    height: 1px;
+    width: 16px;
+    background-color: #d3d3d3;
+}
+.ham_line1 {
+	/*top: 4px;*/
+
+    top: 10px;
+}
+.ham_line2 {
+	/*top: 12px;*/
+
+    top: 17px;
+}
+.ham_line3 {
+	/*top: 20px;*/
+
+    top: 24px;
+}
+
+/*-- ++ナビゲーションメニュー共通 --*/
+nav form{
+    height:100%;
+}
+
+nav .main_div{
+    width: 100%;
+    overflow: auto;
+    border-bottom: 1px solid lightgray;
+}
+
+nav .main_div span.title.glyphicon{
+    margin-right:5px;
+}
+
+nav .footer_div{
+    height: 7%;
+    width:100%;
+    text-align: right;
+    padding-right: 5px;
+    padding-top: 3%;
+}
+
+/*-- ++詳細検索メニュー --*/
+#detail_search {
+    width: 400px;
+    border-right: 1px solid lightgray;
+    padding: 5px;
+}
+
+#detail_search .main_div{
+    height: 90%;
+}
+
+#detail_search td.item_name {
+    width: 120px;
+    padding-right:5px;
+}
+
+#detail_search .input_td input[type="text"]{
+    width:220px;
+}
+
+#detail_search .input_td input[data-type="num"]{
+    width:100px;
+}
+
+#detail_search .input_td input[data-type='date'],
+#detail_search .input_td input[data-type='time'],
+#detail_search .input_td input[data-type='datetime'],
+#detail_search .input_td input[data-type='datetime-local'],
+#detail_search .input_td input[data-type='yearmonth'] {
+        width: 100px;
+    }
+
+#detail_search .ui-datepicker select.ui-datepicker-month,
+#detail_search .ui-datepicker select.ui-datepicker-year {
+	width: 40%;
+}
+
+#detail_search .input_td .unit{
+    width:auto;
+    padding-left:0px;
+}
+
+#detail_search .input_td label{
+    margin-bottom:0px;
+}
+
+#detail_search .input_td a.multisel-text{
+    width:220px;
+}
+
+#detail_search .input_td .multisel-icon {
+    right: 30px;
+    margin-right: -15px;
+    top: 7px;
+}
+
+
+#detail_search .footer_div_option{
+    height: 3%;
+    width: 100%;
+    padding-left: 10px;
+}
+
+#detail_search .footer_div_option div{
+    /*margin:0 0 0 auto;*/
+}
+
+/*-- ++表示項目カスタマイズメニュー --*/
+#item_customize {
+    width: 250px;
+    border-left: 1px solid lightgray;
+    padding: 5px;
+}
+
+#item_customize form{
+    height: 100%;
+}
+
+#item_customize .main_div{
+    /*height: 90%;*/
+    height: 93%;
+}
+
+
+/*item_customize .footer_div_option {
+    height: 3%;
+    width: 100%;
+    padding-left: 10px;
+}
+*/
+#item_customize ul.itemcustomize.fixed{
+    margin-bottom: 0;
+}
+
+/*ﾌｯﾀｰ*/
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    /*height: 15px;
+    background-color:#ffffff;*/
+    font-size: 10px;
+    font-weight:500;
+    /*padding-right:40px;*/
+    text-align:right;
+
+    height: 20px;
+    background-color:#f2f2f2;
+    padding-right:10px;
+}

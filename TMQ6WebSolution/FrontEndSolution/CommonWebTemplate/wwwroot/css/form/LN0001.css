@@ -1,0 +1,7 @@
+﻿@charset "utf-8";
+
+/*担当者検索画面*/
+.SU0001_SelectUser {
+    /*検索結果一覧の「選択」列のボタン幅を変更*/
+    min-width: 50px !important;
+}

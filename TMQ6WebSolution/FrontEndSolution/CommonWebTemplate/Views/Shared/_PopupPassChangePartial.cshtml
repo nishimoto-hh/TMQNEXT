@@ -1,0 +1,91 @@
+﻿@* 【共通】パスワード変更ダイアログ 部分ビュー *@
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model string
+
+@*ﾊﾟｽﾜｰﾄﾞ変更ﾀﾞｲｱﾛｸﾞを配置*@
+@{
+    //翻訳取得
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+    var pw = blogic.ConvertResourceName("911090004", ViewBag.TransDictionary);            // 現在のパスワード
+    var pwNew = blogic.ConvertResourceName("911010003", ViewBag.TransDictionary);         // 新しいパスワード
+    var pwNewConf = blogic.ConvertResourceName("911010004", ViewBag.TransDictionary);     // 新しいパスワード（確認）
+
+}
+@*-- Modal --*@
+<section class="modal fade" id="passwordChangeModal" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911260001", ViewBag.TransDictionary)</span>@*パスワード変更*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                <div id="passwordChange_div">
+                    <div id="passwordChange_message_div">
+                        @*<div class="error">@Model</div>*@
+                    </div>
+                    @*<div id="passwordChange_detail_div">*@
+
+                    @using (Html.BeginForm(
+                        null,      // アクション名
+                        null,    // コントローラー名
+                        new { id = "" },        // ルートパラメーター
+                        FormMethod.Post,                               // HTTP メソッド
+                        false,
+                        new { id = "passwordChange_detail_div", enctype = "multipart/form-data", autocomplete = "nope" } // その他の属性
+                    ))
+                    {
+                        @*現在のパスワード*@
+                        <div class="required">@pw<span class="mark"></span></div>
+                        <div>
+                            <input type="password" id="LoginPassword_text" class="validate_required" data-colname="@pw" data-minlength="8" data-type="text" name="LoginPassword_text" >
+                            @*フォームのオートコンプリートを無効にする対策*@
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                        </div>
+                        @*新しいパスワード*@
+                        <div class="required">@pwNew<span class="mark"></span></div>
+                        <div>
+                            <input type="password" id="NewLoginPassword_text" class="validate_required" data-colname="@pwNew" data-minlength="8" data-type="text" name="NewLoginPassword_text">
+                            @*フォームのオートコンプリートを無効にする対策*@
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                        </div>
+                        @*新しいパスワード（確認）*@
+                        <div class="required">@pwNewConf<span class="mark"></span></div>
+                        <div>
+                            <input type="password" id="NewLoginPasswordConfirm_text" class="validate_required" data-colname="@pwNewConf" data-minlength="8" data-type="text" name="NewLoginPasswordConfirm_text">
+                            @*フォームのオートコンプリートを無効にする対策*@
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                            <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                        </div>
+                    }
+                    @*</div>*@
+                </div>
+            </div>
+            <div class="modal-footer-my">
+                <div id="action_passChange_div">
+                    <table>
+                        <tbody>
+                            <tr>
+                                @*変 更*@
+                                <td><input type="button" id="ComPassChangeOK" class="btn func_button" value="@blogic.ConvertResourceName("911290002", ViewBag.TransDictionary)" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComPassChangeExec" data-dismiss="modal" /></td>
+                                @*キャンセル*@
+                                <td><input type="button" id="ComPassChangeCancel" class="btn func_button" value="@blogic.ConvertResourceName("911070001", ViewBag.TransDictionary)" data-dismiss="modal" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@

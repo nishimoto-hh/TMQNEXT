@@ -1,0 +1,139 @@
+[
+  {
+    "outputFileName": "wwwroot/css/bundles/common.min.css",
+    // An array of relative input file paths. Globbing patterns supported
+    "inputFiles": [
+      "wwwroot/css/Site.css",
+      "wwwroot/css/common.pagination.css",
+      "wwwroot/css/common.css",
+      "wwwroot/css/Menu.css",
+      "wwwroot/css/common.responsive.css",
+      "wwwroot/css/form/_template.css",
+      "wwwroot/css/jquery-ui-timepicker-addon.css",
+      "wwwroot/css/tabulator.min.css",
+      "wwwroot/css/style.min.css"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/jquery.min.js",
+    // An array of relative input file paths. Globbing patterns supported
+    "inputFiles": [
+      "wwwroot/js/jquery-1.10.2.js",
+      "wwwroot/js/jquery-ui-1.10.2.js",
+      "wwwroot/js/jquery.validate.js",
+      "wwwroot/js/jquery-ex-resize/jquery.exresize.js",
+      "wwwroot/js/jquery-ui-timepicker-addon.js",
+      "wwwroot/js/i18n/jquery-ui-timepicker-ja.js",
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/jqueryval.min.js",
+    "inputFiles": [
+      "wwwroot/js/jquery.validate*"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/modernizr.min.js",
+    "inputFiles": [
+      "wwwroot/js/modernizr-*"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/bootstrap.min.js",
+    "inputFiles": [
+      "wwwroot/js/bootstrap.js",
+      "wwwroot/js/respond.js"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/Common.min.js",
+    "inputFiles": [
+      //"wwwroot/js/jquery.signalR-2.4.2.js",
+      "wwwroot/js/Common.js",
+      "wwwroot/js/common.pagination.js",
+      "wwwroot/js/common.util.js",
+      "wwwroot/js/common.util.message.js",
+      "wwwroot/js/common.util.table.js",
+      "wwwroot/js/Site.js",
+      "wwwroot/js/form/_template.js",
+      "wwwroot/js/tabulator.min.js",
+      "wwwroot/js/jstree.min.js"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/css/bundles/custom.controls.min.css",
+    // An array of relative input file paths. Globbing patterns supported
+    "inputFiles": [
+      "wwwroot/css/custom/custom.common.css"
+      // ↓カスタムコントロール用のcssファイルを追加してください。↓
+      //,"wwwroot/css/xxxxxx.css"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  },
+  {
+    "outputFileName": "wwwroot/js/bundles/custom.controls.min.js",
+    // An array of relative input file paths. Globbing patterns supported
+    "inputFiles": [
+      "wwwroot/js/custom/custom.common.js",
+      // ↓カスタムコントロール用のjsファイルを追加してください。↓
+      //,"wwwroot/js/custom/xxxxxx.js"
+      "wwwroot/js/custom/YmPicker.js"
+    ],
+    // Optionally specify minification options
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    },
+    // Optionally generate .map file
+    "sourceMap": false
+  }
+
+]

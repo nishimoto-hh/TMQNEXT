@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    @*互換表示を解除*@
+    <title>@ViewBag.Title | CIMシステム</title>
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="~/css/themes/base/jquery-ui.css">
+    <link href="~/css/bundles/common.min.css" rel="stylesheet" asp-append-version="true" />
+    <script src="~/js/bundles/bootstrap.min.js" asp-append-version="true"></script>
+    <script src="~/js/bundles/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/js/bundles/jqueryval.min.js" asp-append-version="true"></script>
+    <script src="~/js/bundles/modernizr.min.js" asp-append-version="true"></script>
+    <script src="~/js/bundles/Common.min.js" asp-append-version="true"></script>
+    <script src="~/js/jquery.signalR-2.4.2.js" asp-append-version="true"></script>
+
+    @RenderSection("Scripts", false)
+</head>
+
+<body>
+    <div id="container">
+        @RenderBody()
+
+        @*<footer>
+            <p>@AppGlobalObject.Config.AppSettings.AppCopyRight - @AppGlobalObject.Config.AppSettings.AppVersion</p>
+        </footer>*@
+    </div>
+</body>
+</html>

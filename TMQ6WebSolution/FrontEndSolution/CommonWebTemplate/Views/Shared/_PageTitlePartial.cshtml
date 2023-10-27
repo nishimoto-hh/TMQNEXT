@@ -1,0 +1,33 @@
+﻿@* ページタイトル部分ビュー*@
+@using CommonWebTemplate;
+@using CommonWebTemplate.Models.Common;
+@using CommonSTDUtil;
+@using CommonSTDUtil.CommonSTDUtil;
+@using CommonWebTemplate.CommonUtil;
+
+@* 画面定義(※表示中の機能) *@
+@model CommonConductMst
+@{
+    var appTitle = "";
+    if (Model.TransDictionary == null)
+    {
+        //ブラウザの言語を取得
+        var browserLang = Context.Request.Headers["Accept-Language"].ToString().Split(";").FirstOrDefault()?.Split(",").FirstOrDefault();
+        //サイト名
+        appTitle = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911090006, browserLang);
+
+    }
+    else
+    {
+        BusinessLogicUtil blogic = new BusinessLogicUtil();
+        appTitle = blogic.ConvertResourceName(CommonResources.ID.ID911090006, Model.TransDictionary);
+    }
+}
+@*---[ｼｽﾃﾑ名] > [ｱﾌﾟﾘﾀｲﾄﾙ]【[ﾊﾞｰｼﾞｮﾝ]】---*@
+<span class="app_title">@appTitle</span>
+<span class="proc_title">&gt; @ViewBag.Title</span>
+@if (null != Model.CONDUCTMST && false == String.IsNullOrEmpty(Model.CONDUCTMST.VERSION))
+{
+    <span class="proc_title">【ver.@Model.CONDUCTMST.VERSION】</span>
+}
+<span class="form_title"></span>

@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{59556F75-F117-44DC-9220-5095769E1ED1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CommonAPUtil</RootNamespace>
+    <AssemblyName>CommonAPUtil</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\FrontEndSolution\CommonWebTemplate\bin\Logic\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>commonaputil.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>commonaputil.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.10.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Portable.BouncyCastle.1.8.10\lib\net40\BouncyCastle.Crypto.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MailKit, Version=2.15.0.0, Culture=neutral, PublicKeyToken=4e064fe7c44a8f1b, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MailKit.2.15.0\lib\net47\MailKit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MimeKit, Version=2.15.0.0, Culture=neutral, PublicKeyToken=bede1c8a46c66814, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MimeKit.2.15.0\lib\net47\MimeKit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="APCheckDigitUtil\APCheckDigitDataClass.cs" />
+    <Compile Include="APCheckDigitUtil\APCheckDigitUtil.cs" />
+    <Compile Include="APCommonUtil\APCommonBaseClass.cs" />
+    <Compile Include="APCommonUtil\APCommonDataClass.cs" />
+    <Compile Include="APCommonUtil\APCommonFormClass.cs" />
+    <Compile Include="APCommonUtil\APCommonInputCheckClass.cs" />
+    <Compile Include="APCommonUtil\APCommonUtil.cs" />
+    <Compile Include="APCommonUtil\APCommonUtilDataClass.cs" />
+    <Compile Include="APCommonUtil\APConstants.cs" />
+    <Compile Include="APCommonUtil\APResources.cs" />
+    <Compile Include="APInventoryUtil\AcceptanceCheckInventory.cs" />
+    <Compile Include="APInventoryUtil\InvCommon.cs" />
+    <Compile Include="APInventoryUtil\InventoryAdjustment.cs" />
+    <Compile Include="APInventoryUtil\InventoryConst.cs" />
+    <Compile Include="APInventoryUtil\InventoryDataClass.cs" />
+    <Compile Include="APInventoryUtil\InventoryInput.cs" />
+    <Compile Include="APInventoryUtil\InvTranInOutRecord.cs" />
+    <Compile Include="APInventoryUtil\InvTranInOutSource.cs" />
+    <Compile Include="APInventoryUtil\InvTranLotInventory.cs" />
+    <Compile Include="APInventoryUtil\ManufactureOrderInventory.cs" />
+    <Compile Include="APInventoryUtil\ManufactureResultInventory.cs" />
+    <Compile Include="APInventoryUtil\OrderAnswerInventory.cs" />
+    <Compile Include="APInventoryUtil\OrderCloseInventory.cs" />
+    <Compile Include="APInventoryUtil\AcceptanceInventory.cs" />
+    <Compile Include="APInventoryUtil\OrderInventory.cs" />
+    <Compile Include="APInventoryUtil\PurchaseAnswerInventory.cs" />
+    <Compile Include="APInventoryUtil\PurchaseOrderCloseInventory.cs" />
+    <Compile Include="APInventoryUtil\PurchaseOrderInventory.cs" />
+    <Compile Include="APInventoryUtil\PurchaseRequestInventory.cs" />
+    <Compile Include="APInventoryUtil\SalesReturnInventory.cs" />
+    <Compile Include="APInventoryUtil\ShippingDetailInventory.cs" />
+    <Compile Include="APInventoryUtil\ShippingResultInventory.cs" />
+    <Compile Include="APInventoryUtil\StockingInventory.cs" />
+    <Compile Include="APMasterCheckUtil\APMasterCheckUtil.cs" />
+    <Compile Include="APSendMailUtil\APSendMailUtil.cs" />
+    <Compile Include="APShiwakeSendUtil\APShiwakeSendUtil.cs" />
+    <Compile Include="APShiwakeSendUtil\ShiwakeSendDataClass.cs" />
+    <Compile Include="APStoredFncUtil\APStoredFncUtil.cs" />
+    <Compile Include="APStoredPrcUtil\APStoredPrcUtil.cs" />
+    <Compile Include="APStoredPrcUtil\PakCommon.cs" />
+    <Compile Include="APStoredPrcUtil\PakCommonDataClass.cs" />
+    <Compile Include="APStoredPrcUtil\ProCalcTax.cs" />
+    <Compile Include="APStoredPrcUtil\ProCheckClass.cs" />
+    <Compile Include="APStoredPrcUtil\ProCheckVenderTax.cs" />
+    <Compile Include="APStoredPrcUtil\ProFixed.cs" />
+    <Compile Include="APStoredPrcUtil\ProFixedDataClass.cs" />
+    <Compile Include="APStoredPrcUtil\ProMakeSalesRecord.cs" />
+    <Compile Include="APStoredPrcUtil\ProOrderClose.cs" />
+    <Compile Include="APStoredPrcUtil\ProPartsStructure.cs" />
+    <Compile Include="APStoredPrcUtil\ProPartsStructureDataClass.cs" />
+    <Compile Include="APStoredPrcUtil\ProPlanPackage.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="APAbstractActionUtil\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="CommonAPUtil.ruleset" />
+    <None Include="packages.config" />
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommonExcelUtil\CommonExcelUtil.csproj">
+      <Project>{6788cf2f-eabd-42d6-bc01-34fdc1e25fc1}</Project>
+      <Name>CommonExcelUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CommonSTDUtil\CommonSTDUtil.csproj">
+      <Project>{157bc83c-4728-4f77-aec1-236888a66e03}</Project>
+      <Name>CommonSTDUtil</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

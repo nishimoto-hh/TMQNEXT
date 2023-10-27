@@ -1,0 +1,57 @@
+﻿@* 【共通 - ﾎﾟｯﾌﾟｱｯﾌﾟ表示】ﾓｰﾀﾞﾙﾀﾞｲｱﾛｸﾞﾋﾞｭｰ *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model CommonConductMst
+
+
+@*ﾎﾟｯﾌﾟｱｯﾌﾟ画面ﾀﾞｲｱﾛｸﾞを配置*@
+
+@{ 
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+
+@*-- Modal --*@
+<section class="modal fade" id="popupTreeViewModal" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@@*閉じるﾎﾞﾀﾝ*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911160001", ViewBag.TransDictionary)</span>@*※タイトルを設定してください*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                @*=====メッセージエリア=====*@
+                <section class="message_div">
+                    @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+                    {
+                        foreach (string message in ViewBag.ErrorMessage)
+                        {
+                            <div class="error">@message</div>
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(ViewBag.Message))
+                    {
+                        <div class="success">@ViewBag.Message</div>
+                    }
+                </section>
+                <div class="form_tree_div">
+                    @*ここに表示画面を読み込む*@
+                </div>
+            </div>
+            <div class="modal-footer-my">
+                <input type="button" id="btnTreeViewSelect" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComTreeViewSelect" value="決定" class="btn func_button">
+                <input type="button" id="btnTreeViewHide" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Back" value="閉じる" class="btn func_button">
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@
+

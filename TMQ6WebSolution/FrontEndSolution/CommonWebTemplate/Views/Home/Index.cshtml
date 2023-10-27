@@ -1,0 +1,167 @@
+﻿@* Home/Indexビュー(ﾛｸﾞｲﾝ画面)*@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonSTDUtil
+@using CommonSTDUtil.CommonSTDUtil
+
+@{
+    //ブラウザの言語を取得
+    var browserLang = Context.Request.Headers["Accept-Language"].ToString().Split(";").FirstOrDefault()?.Split(",").FirstOrDefault();
+    //ログイン
+    var login = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911430002, browserLang);
+    //ログインID
+    var loginId = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911430004, browserLang);
+    //パスワード
+    var password = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911260003, browserLang);
+
+    ViewBag.Title = login;
+    Layout = "~/Views/Shared/_LayoutSub.cshtml";
+
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+
+}
+
+@* 共通＿担当者マスタ情報 *@
+@model CommonUserMst
+
+<article name="login_areaAll">
+    @*=====メッセージエリア=====*@
+    <section name="message_divid" class="message_div">
+        @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+        {
+            foreach (string message in ViewBag.ErrorMessage)
+            {
+                <div class="error">@message</div>
+            }
+        }
+        else if (!string.IsNullOrEmpty(ViewBag.Message))
+        {
+            <div class="success">@ViewBag.Message</div>
+        }
+    </section>
+
+    @*=====ログイン情報入力エリア=====*@
+    <section id="login_area">
+        @using (Html.BeginForm(
+               null,      // アクション名
+               null,    // コントローラー名
+               new { id = "" },        // ルートパラメーター
+               FormMethod.Post,                               // HTTP メソッド
+               true,
+               new { id = "formSearch", enctype = "multipart/form-data", autocomplete = "nope" } // その他の属性
+           ))
+        {
+            @*@Html.AntiForgeryToken()*@
+            @*== ※post用ﾃﾞｰﾀ ==*@
+            <input name="LoginUser" type="hidden" value="">
+            <input name="LoginPassword" type="hidden" value="">
+            <input name="AccessKey" type="hidden" value="@ViewBag.AccessKey">
+
+            @*<div class="mark_required">ログインID</div>*@
+            <div class="required">
+                <label for="user login">@loginId</label>
+                <span class="mark"></span>
+            </div>
+            <div>
+                @Html.TextBox(
+                "LoginUser_text",       // 要素名
+                Model.LoginUser,        // 値（value属性）
+                new { id = "LoginUser_text", data_type = "text", data_colname = loginId, data_maxlength = 10, @class = "validate_required" } // そのほかの属性
+            )
+            </div>
+
+            @*<div class="mark_required">パスワード</div>*@
+            <div class="required">
+                <label for="user password">@password</label>
+                <span class="mark"></span>
+            </div>
+            <div>
+                @Html.Password(
+                "LoginPassword_text",   // 要素名
+                Model.LoginPassword,    // 値（value属性）
+                new { id = "LoginPassword_text", data_type = "text", data_colname = password, data_maxlength = 8, @class = "validate_required" } // そのほかの属性
+            )
+                @*フォームのオートコンプリートを無効にする対策*@
+                <input type="password" name="dummy1" value="" style="display:none;" disabled>
+                <input type="password" name="dummy1" value="" style="display:none;" disabled>
+            </div>
+
+            @*=====ログインボタンエリア=====*@
+            @*<div>*@
+            <div class="submit">
+                <input type="submit" id="login" class="btn btn-primary btn-Cover" value="@login" />
+            </div>
+
+        }
+    </section>
+
+</article>
+
+@*=====Script=====*@
+@section Scripts{
+    @{
+        //var actionUrl = ViewBag.AppRoutePath + @"Home/Login";
+        var actionUrl = Url.Action("Login", "Home");
+    }
+
+    <script>
+        $(function () {
+
+            @* 閉じるﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
+            $("#login").on('click', function () {
+                var formSearch = $("#formSearch");
+
+                $(formSearch).attr("action", "@actionUrl");  //~/Home/Login
+
+                //ﾛｸﾞｲﾝﾕｰｻﾞｰをhidden項目に設定
+                var loginUser = $(formSearch).find("input:text[name='LoginUser_text']").val();
+                $(formSearch).find("input:hidden[name='LoginUser']").val(loginUser);
+
+                //ﾛｸﾞｲﾝﾊﾟｽﾜｰﾄﾞをhidden項目に設定
+                var loginPassword = $(formSearch).find("input:password[name='LoginPassword_text']").val();
+                $(formSearch).find("input:hidden[name='LoginPassword']").val(loginPassword);
+
+                $(formSearch).submit();
+            });
+
+            $(document).keydown(function (event) {
+                // クリックされたキーのコード
+                var keyCode = event.keyCode;
+
+                // Ctrlキーがクリックされたか(true or false)
+                var ctrlClick = event.ctrlKey;
+
+                // Altキーがクリックされたか(true or false)
+                var altClick = event.altKey;
+
+                // キーイベントが発生した対象のオブジェクト
+                var obj = event.target;
+
+                // バックスペースキーを制御
+                if (keyCode == 8) {
+                    // テキストボックス／テキストエリアを制御
+                    if ((obj.tagName == "INPUT"
+                        && (obj.type == "text" || obj.type == "password" || obj.type == "num" || obj.type == "date" || obj.type == "time" || obj.type == "search"))
+                        || obj.tagName == "TEXTAREA") {
+                        if (!obj.readOnly && !obj.disable) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                // Alt + ←を制御する
+                if (altClick && (keyCode == 37 || keyCode == 39)) {
+                    return false;
+                }
+
+                return true;
+            })
+
+        });
+
+    </script>
+}

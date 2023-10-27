@@ -1,0 +1,232 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@model CommonFormDefine
+
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+    //　～1項目につきN数分の項目エリアを同じ行に展開
+    //　～(データ1件固定)ROWNO＞１のデータを無視する
+    //　～マスタ機能の場合
+    //　　　－　ヘッダ行を出力
+    //　　　－　並べ替え順位、入力説明列を自動配置
+    //　～バッチ機能の場合
+    //　　　－　入力説明列を自動配置
+
+    //一覧項目定義リスト（※データ行定義を採用～ヘッダ行設定は無効とする）
+    var listItems = Model.LISTITEMDEFINES.Where(define => define.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow).ToList();
+    var listItemsCount = listItems.Count();
+
+    var ctrlClass = "";
+    if (false == string.IsNullOrEmpty(Model.FORMDEFINE.CSSNAME))
+    {
+        //CSS名が指定されている場合、付与
+        ctrlClass = Model.FORMDEFINE.CSSNAME;
+    }
+
+    IList<CommonFormDefine> ctrGrpDefinesUpeer = null;
+    IList<CommonFormDefine> ctrGrpDefinesLower = null;
+    if (Model.CTR_FORMDEFINES != null && Model.CTR_FORMDEFINES.Count() > 0)
+    {
+        IList<CommonFormDefine> ctrGrpDefines = null;
+        if (ViewBag.IsEditForm)
+        {
+            ctrGrpDefines = Model.CTR_FORMDEFINES
+                .Where(z => z.FORMDEFINE.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Input).ToList();
+        }
+        else
+        {
+            ctrGrpDefines = Model.CTR_FORMDEFINES
+                .Where(z => z.FORMDEFINE.AREAKBN != FORM_DEFINE_CONSTANTS.AREAKBN.Input).ToList();
+        }
+        if (ctrGrpDefines != null && ctrGrpDefines.Count() > 0)
+        {
+            ctrGrpDefinesUpeer = ctrGrpDefines
+                .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper)
+                .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+
+            ctrGrpDefinesLower = ctrGrpDefines
+                .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower)
+                .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+        }
+    }
+
+    //// データ列数を決める
+    //// －　N数最大数
+    //var itemCntMax = listItems.Max(z=>z.ITEM_CNT);
+    //if (itemCntMax < 1) {
+    //    itemCntMax = 1;
+    //}
+    //// －　5件を超える場合は折り返して表示
+    //if (itemCntMax > AppConstants.NCntVCnt)
+    //{
+    //    itemCntMax = AppConstants.NCntVCnt;
+    //}
+
+    //// データ列幅を決める
+    //// －　列幅最大数
+    //var cilWidthMax = listItems.Max(z=>z.COLWIDTH);
+
+    //foreach (var listItem in listItems)
+    //{
+    //    // コード＋翻訳、FROMTO項目は1セルの幅が広い
+    //    short colWidth = listItem.COLWIDTH;
+    //    if (listItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans)
+    //    {
+    //        colWidth = (short)(colWidth + 180);
+    //    }
+    //    if (listItem.C_FROMTOFLG)
+    //    {
+    //        colWidth = (short)(colWidth * 2 + 27);
+    //    }
+    //    if (cilWidthMax < colWidth)
+    //    {
+    //        cilWidthMax = colWidth;
+    //    }
+    //}
+    //// テーブル幅を決める
+    //// －　列幅最大数 * N数 + バッチ、マスタ機能の共通自動配置項目列
+    //var tblWidth = cilWidthMax * itemCntMax;
+    ////--※共通自動配置項目--
+    //if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Bat)
+    //{
+    //    //--バッチ機能の場合--
+    //    tblWidth += 400;     //入力説明
+    //}
+    //else if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Master)
+    //{
+    //    //--マスタ機能の場合--
+    //    tblWidth += 90;     //並べ替え順位
+    //    tblWidth += 400;    //入力説明
+    //}
+
+    //表示モード
+    var referenceMode = (Model.FORMDEFINE.REFERENCE_MODE ?? false) ? FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Reference : FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Edit;
+
+    // タイトル表示
+    @:<div class="tbl_title">
+        if (!string.IsNullOrEmpty(Model.FORMDEFINE.DAT_TITLE))
+        {
+            var info = Model.FORMDEFINE.DAT_TITLE;
+            @:<span class="title">@info</span>
+        }
+
+        var idName = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO;
+        if (ViewBag.IsEditForm)
+        {
+            idName += "_edit";
+        }
+
+        // 表示切替ボタン
+        if (Model.FORMDEFINE.DAT_SWITCHKBN == FORM_DEFINE_CONSTANTS.DAT_SWITCHKBN.Disp)
+        {
+            @:<a href="#" data-switchid="@Model.FORMDEFINE.CTRLID" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitchTable" style="margin-left:5px;"><span class="glyphicon glyphicon-chevron-up"></span></a>
+        }
+
+        // 階層選択ボタン
+        if (referenceMode == FORM_DEFINE_CONSTANTS.REFERENCE_MODEKBN.Edit) {
+            // 編集モードの場合のみ表示
+            var treeLabels = Model.LISTITEMDEFINES.Where(x=>x.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TreeLabel).ToList();
+            if (treeLabels.Count() > 0)
+            {
+                //var structureGrpId = treeLabels[0].RELATIONID;
+                var structureGrpId = treeLabels.Max(x=>x.RELATIONID); // 構成グループIDが混在している場合は最大値を取る(例：1000と1040が混在している場合は1040)
+                var multiOptValue = treeLabels.Max(x => x.OPTIONINFO); // 複数選択可否(複数：2、単一：1)が混在している場合は最大値を取る
+                var isMulti = multiOptValue == "2" ? "1" : "0";
+                @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComTreeViewShow" data-structuregrpid="@structureGrpId" class="tree_select" data-multiselect="@isMulti"><span class="mark"></span></a>
+            }
+        }
+            
+    @:</div>
+
+    @*--縦方向一覧　実装部分--*@
+    @:<div id="@idName" class="vertical_tbl ctrlId @ctrlClass" data-ctrlid="@Model.FORMDEFINE.CTRLID" data-ctrltype="@Model.FORMDEFINE.CTRLTYPE" data-editptn="@Model.FORMDEFINE.DAT_EDITPTN" data-transptn="@Model.FORMDEFINE.DAT_TRANSPTN" data-referencemode="@referenceMode">
+        ViewBag.isLockDataSet = false;
+
+        // 一覧上部コントロールグループ
+        if (ctrGrpDefinesUpeer != null)
+        {
+            foreach (var ctrlGrpDefine in ctrGrpDefinesUpeer)
+            {
+                <partial name="_ControlGrpAreaPartial" model="ctrlGrpDefine" />
+            }
+        }
+
+        // 非表示
+        var idStr = "Hide";
+        var listItemsHide = listItems.Where(define => define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide).ToList();
+        if (listItemsHide.Count() > 0)
+        {
+            @:<div class="hide">
+                // table生成
+                var divData = new CommonVerticalTableDivData(){
+                    FORMDEFINE = Model.FORMDEFINE,  ListItems = listItemsHide, ItemCount = listItemsCount, Id = idStr
+                };
+                <partial name="_VerticalTableDivPartial.cshtml" model="divData" />
+            @:</div>
+        }
+
+        // 常に表示
+        idStr = "Disp";
+        var listItemsDisp = new List<COM_LISTITEM_DEFINE>();
+        if (ViewBag.IsEditForm)     //編集画面(Edit)
+        {
+            // デフォルト非表示も常に表示
+            listItemsDisp = listItems.Where(define =>
+                define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Disp ||
+                define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide).ToList();
+        }
+        else
+        {
+            listItemsDisp = listItems.Where(define => define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Disp).ToList();
+        }
+
+        if (listItemsDisp.Count() > 0)
+        {
+            @:<div class="vertical_list">
+                // table生成
+                var divData = new CommonVerticalTableDivData(){
+                    FORMDEFINE = Model.FORMDEFINE,  ListItems = listItemsDisp, ItemCount = listItemsCount, Id = idStr
+                };
+                <partial name="_VerticalTableDivPartial.cshtml" model="divData" />
+            @:</div>
+        }
+
+        // デフォルト非表示
+        idStr = "DefHide";
+        var listItemsDefHide = new List<COM_LISTITEM_DEFINE>();
+        if (ViewBag.IsEditForm)     //編集画面(Edit)
+        {
+            // デフォルト非表示も常に表示
+        }
+        else
+        {
+            listItemsDefHide = listItems.Where(define => define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide).ToList();
+        }
+
+        if (listItemsDefHide.Count() > 0)
+        {
+            var switchid = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO.ToString() + "_switch";
+            // 表示切替ボタン
+            @:<a href="#" data-switchid="@switchid" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch">@blogic.ConvertResourceName("911120010", ViewBag.TransDictionary)</a>@*+ 詳細情報*@
+            @:<div id="@switchid" class="hide" data-tabno="@LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide">
+                @:<div class="vertical_list">
+                    var divData = new CommonVerticalTableDivData(){
+                        FORMDEFINE = Model.FORMDEFINE,  LISTITEMUSERS = Model.LISTITEMUSERS, ListItems = listItemsDefHide, ItemCount = listItemsCount, Id = idStr
+                    };
+                    <partial name="_VerticalTableDivPartial.cshtml" model="divData" />
+                @:</div>
+            @:</div>
+        }
+
+        // 一覧下部コントロールグループ
+        if (ctrGrpDefinesLower != null)
+        {
+            foreach (var ctrlGrpDefine in ctrGrpDefinesLower)
+            {
+                <partial name="_ControlGrpAreaPartial.cshtml" model="ctrlGrpDefine"/>
+            }
+        }
+
+    @:</div>
+}

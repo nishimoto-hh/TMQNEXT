@@ -1,0 +1,128 @@
+﻿@* メニュー 部分ビュー*@
+@using CommonWebTemplate;
+@using CommonWebTemplate.Models.Common;
+@model IList<CommonConductMst>
+
+@{
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+    var baseUrl = Url.Action("Index", "Common");
+    var actionUrl = "";
+
+    //メニュー表示位置
+    var menuPlace = AppCommonObject.Config.AppSettings.AppMenuPlace;
+
+    // 表示対象の機能のインデックスを取得
+    var selectedIdx = -1;
+    for (var i = 1; i < Model.Count; i++)
+    {
+        if (Model[i].CHILDCONDUCTMST != null && Model[i].CHILDCONDUCTMST.Count > 0)
+        {
+            // 第二階層メニュー有りの場合
+            foreach (var child in Model[i].CHILDCONDUCTMST)
+            {
+                if (child.CHILDCONDUCTMST != null && child.CHILDCONDUCTMST.Count > 0)
+                {
+                    // 第三階層メニュー有りの場合、表示対象機能の機能グループと第二階層メニューの機能IDを比較
+                    if (child.CONDUCTMST.CONDUCTID == Model[0].CONDUCTMST.CONDUCTGRP)
+                    {
+                        selectedIdx = i;
+                        break;
+                    }
+                }
+                else
+                {
+                    // 第三階層メニュー無しの場合、表示対象機能の機能IDと第二階層メニューの機能IDを比較
+                    if (child.CONDUCTMST.CONDUCTID == Model[0].CONDUCTMST.CONDUCTID)
+                    {
+                        selectedIdx = i;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // 第二階層メニュー無しの場合、表示対象機能の機能IDと第一階層メニューの機能IDを比較
+            if (Model[i].CONDUCTMST.CONDUCTID == Model[0].CONDUCTMST.CONDUCTID)
+            {
+                selectedIdx = i;
+                break;
+            }
+        }
+        if (selectedIdx >= 0) { break; }
+    }
+}
+
+@*---ﾒﾆｭｰｴﾘｱ---*@
+<nav id="@menuPlace">
+    @{
+        using (Html.BeginForm(
+            "Index",                   // アクション名
+            "Common",                   // コントローラー名
+            new { id = "" },        // ルートパラメーター
+            FormMethod.Post,        // HTTP メソッド
+            true,
+            new { id = "formMenu", enctype = "multipart/form-data" } // その他の属性
+        ))
+        {
+            @:<input name="CONDUCTID" type="hidden" value="">
+            @:<input name="FactoryIdList" type="hidden" value="">
+        }
+    }
+
+    @*ｻﾌﾞﾒﾆｭｰ（1階層）+機能ﾒﾆｭｰの構成*@
+    @for (var i = 1; i < Model.Count; i++)
+    {
+        if (Model[i].CHILDCONDUCTMST != null && Model[i].CHILDCONDUCTMST.Count > 0)
+        {
+            @*<---サブメニュー（1階層）*@
+            @:<ul class="level1 clearfix">
+                @foreach (var child in Model[i].CHILDCONDUCTMST)
+                {
+                    if (child.CONDUCTMST.CONDUCTID == Model[0].CONDUCTMST.CONDUCTGRP)
+                    {
+                        @:<li data-conductid="@child.CONDUCTMST.CONDUCTID" class="selected">
+                    }
+                    else
+                    {
+                        @:<li data-conductid="@child.CONDUCTMST.CONDUCTID">
+                    }
+                    if (child.CHILDCONDUCTMST != null && child.CHILDCONDUCTMST.Count > 0)
+                    {
+                        @*<a href="#"><span>@child.CONDUCTMST.RYAKU</span><span class="glyphicon glyphicon-chevron-down" style="margin:10px 10px 10px 5px; font-size:9px; float:right;"></span></a>*@
+                        <a href="#"><span>@child.CONDUCTMST.RYAKU</span><span class="glyphicon glyphicon-chevron-down"></span></a>
+                        @*<---機能メニュー*@
+                        <ul class="level2">
+                            @foreach (var child2 in child.CHILDCONDUCTMST)
+                            {
+                                actionUrl = baseUrl + "/Index?CONDUCTID=" + child2.CONDUCTMST.CONDUCTID;
+                                if (child2.CONDUCTMST.CONDUCTID == Model[0].CONDUCTMST.CONDUCTID)
+                                {
+                                    @*<li class="selected"><a href="@actionUrl" class="selected">@child2.CONDUCTMST.RYAKU</a></li>*@
+                                    <li class="selected"><a href="#" data-conductid="@child2.CONDUCTMST.CONDUCTID" class="selected" onclick="submitConductMenuLink(this); return false;">@child2.CONDUCTMST.RYAKU</a></li>
+                                }
+                                else
+                                {
+                                    <li>@*<a href="@actionUrl">@child2.CONDUCTMST.RYAKU</a>*@</li>
+                                    <li><a data-conductid="@child2.CONDUCTMST.CONDUCTID" onclick="submitConductMenuLink(this); return false;">@child2.CONDUCTMST.RYAKU</a></li>
+                                }
+                            }
+                        </ul>
+                        @*機能メニュー--->*@
+                    }
+                    else
+                    {
+                        actionUrl = baseUrl + "/Index?CONDUCTID=" + child.CONDUCTMST.CONDUCTID;
+                        @*@:<a href="@actionUrl">@child.CONDUCTMST.RYAKU</a>*@
+                        @:<a href="#" data-conductid="@child.CONDUCTMST.CONDUCTID" onclick="submitConductMenuLink(this); return false;">@child.CONDUCTMST.RYAKU</a>
+                    }
+                    @:</li>
+                }
+            @:</ul>
+            @*サブメニュー（1階層）--->*@
+        }
+    }
+</nav>

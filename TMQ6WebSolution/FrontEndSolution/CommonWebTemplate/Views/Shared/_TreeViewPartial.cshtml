@@ -1,0 +1,63 @@
+﻿@* ツリービュー 部分ビュー*@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@model List<CommonStructure>
+
+@{
+    //階層リスト
+    var list = Model.OrderBy(x => x.DisplayOrder ?? System.Int32.MaxValue).ToList();
+    int structureNo = 0;
+    //var test = ViewBag.TransDictionary;
+
+    //ツリービューのIDを構成グループにより決定
+    var id = "";
+    switch (list[0].StructureGroupId)
+    {
+        case STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location:
+            id = "tree_location";
+            break;
+        case STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job:
+            id = "tree_job";
+            break;
+        default:
+            id = "tree_" + list[0].StructureGroupId;
+            break;
+    }
+}
+
+<div id="@id">
+    <ul>
+        <li data-jstree='{ "opened" : true }' data-structureno="-1" data-structureid="-1">
+            @*@list[0].TitleTranslationStr*@
+            @{
+                treeItem(list, true, structureNo, 0);
+            }
+        </li>
+    </ul>
+</div>
+
+@{
+    //ツリー階層作成
+    void treeItem(List<CommonStructure> treeList, bool isOpen, int structureNo, int? parentId)
+    {
+        //親階層に紐づく子階層を取得
+        var structureList = treeList.Where(x => x.StructureLayerNo == structureNo && x.ParentStructureId == parentId).OrderBy(x => x.DisplayOrder).ToList();
+        @foreach (var structure in structureList)
+        {
+            @:<ul>
+                @:<li data-jstree='{ "opened" : @isOpen }' data-structureno="@structureNo" data-structureid="@structure.StructureId" data-factoryid="@structure.FactoryId">@structure.TranslationText
+
+                int nextNo = structureNo + 1;
+                bool isNextOpen = isOpen;
+                //初期表示でノードを開いておくかどうか
+                if (nextNo > 1)
+                {
+                    isNextOpen = false;
+                }
+                treeItem(treeList, isNextOpen, nextNo, structure.StructureId);
+                @:</li>
+            @:</ul>
+        }
+    }
+}

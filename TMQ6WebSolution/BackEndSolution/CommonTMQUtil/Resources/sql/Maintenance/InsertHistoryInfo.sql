@@ -1,0 +1,88 @@
+INSERT INTO ma_history(
+    [history_id]
+    ,[summary_id]
+    ,[call_count]
+    ,[expenditure]
+    ,[cost_note]
+    ,[loss_absence]
+    ,[loss_absence_type_count]
+    ,[occurrence_time]
+    ,[discovery_personnel]
+    ,[construction_personnel_id]
+    ,[construction_personnel_name]
+    ,[maintenance_season_structure_id]
+    ,[total_working_time]
+    ,[working_time_self]
+    ,[working_time_research]
+    ,[working_time_procure]
+    ,[working_time_repair]
+    ,[working_time_test]
+    ,[construction_company]
+    ,[working_time_company]
+    ,[actual_result_structure_id]
+    ,[maintenance_opinion]
+    ,[manufacturing_personnel_id]
+    ,[manufacturing_personnel_name]
+    ,[work_failure_division_structure_id]
+    ,[stop_count]
+    ,[effect_production_structure_id]
+    ,[effect_quality_structure_id]
+    ,[failure_site]
+    ,[parts_existence_flg]
+    ,[update_serialid]
+    ,[insert_datetime]
+    ,[insert_user_id]
+    ,[update_datetime]
+    ,[update_user_id]
+) OUTPUT inserted.history_id
+VALUES(
+    NEXT VALUE FOR seq_ma_history_history_id
+    ,@SummaryId
+    ,@CallCount
+    ,@Expenditure
+    ,@CostNote
+    ,@LossAbsence
+    ,@LossAbsenceTypeCount
+    ,@OccurrenceTime
+    ,@DiscoveryPersonnel
+    ,@ConstructionPersonnelId
+    , ( 
+        select
+            display_name 
+        from
+            ms_user 
+        where
+            user_id = @ConstructionPersonnelId
+    )
+    ,@MaintenanceSeasonStructureId
+    ,@TotalWorkingTime
+    ,@WorkingTimeSelf
+    ,@WorkingTimeResearch
+    ,@WorkingTimeProcure
+    ,@WorkingTimeRepair
+    ,@WorkingTimeTest
+    ,@ConstructionCompany
+    ,@WorkingTimeCompany
+    ,@ActualResultStructureId
+    ,@MaintenanceOpinion
+    ,@ManufacturingPersonnelId
+    , ( 
+        select
+            display_name 
+        from
+            ms_user 
+        where
+            user_id = @ManufacturingPersonnelId
+    )
+    ,@WorkFailureDivisionStructureId
+    ,@StopCount
+    ,@EffectProductionStructureId
+    ,@EffectQualityStructureId
+    ,@FailureSite
+    ,@PartsExistenceFlg
+    ,@UpdateSerialid
+    ,@InsertDatetime
+    ,@InsertUserId
+    ,@UpdateDatetime
+    ,@UpdateUserId
+)

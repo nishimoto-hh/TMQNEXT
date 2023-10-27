@@ -1,0 +1,56 @@
+INSERT INTO pt_parts(
+    [parts_id],                           --予備品ID
+    [parts_no],                           --予備品No
+    [parts_name],                         --予備品名
+    [manufacturer_structure_id],          --メーカー
+    [materials],                          --材質
+    [model_type],                         --型式
+    [standard_size],                      --規格・寸法
+    [parts_service_space],                --使用場所
+    [factory_id],                         --工場
+    [job_structure_id],                   --職種
+    [use_segment_structure_id],           --使用区分
+    [parts_location_detail_no],           --標準棚枝番
+    [lead_time],                          --発注点
+    [order_quantity],                     --発注量
+    [parts_location_id],                  --標準棚番ID
+    [unit_structure_id],                  --数量管理単位ID
+    [vender_structure_id],                --標準仕入先
+    [currency_structure_id],              --金額管理単位ID
+    [unit_price],                         --標準単価
+    [purchasing_no],                      --購買システムコード
+    [parts_memo],                         --メモ
+    [update_serialid],                    --更新シリアルID
+    [insert_datetime],                    --登録日時
+    [insert_user_id],                     --登録ユーザー
+    [update_datetime],                    --更新日時
+    [update_user_id]                      --更新ユーザー
+)OUTPUT inserted.parts_id
+VALUES(
+    NEXT VALUE FOR seq_pt_parts_parts_id, --予備品ID
+    @PartsNo,                             --予備品No
+    @PartsName,                           --予備品名
+    @ManufacturerStructureId,             --メーカー
+    @Materials,                           --材質
+    @ModelType,                           --型式
+    @StandardSize,                        --規格・寸法
+    @PartsServiceSpace,                   --使用場所
+    @PartsFactoryId,                      --管理工場
+    @JobStructureId,                      --職種
+    @UseSegmentStructureId,             　--使用区分
+    @PartsLocationDetailNo,               --標準棚枝番
+    @LeadTimeExceptUnit,                  --発注点
+    @OrderQuantityExceptUnit,             --発注量
+    @PartsLocationId,                     --標準棚番ID
+    @UnitStructureId,                     --数量管理単位
+    @VenderStructureId,                   --標準仕入先
+    @CurrencyStructureId,                 --金額管理単位
+    @UnitPriceExceptUnit,                 --標準単価
+    @PurchasingNo,                        --購買システムコード
+    @PartsMemo,                           --メモ
+    @UpdateSerialid,                      --更新シリアルID
+    @InsertDatetime,                      --登録日時
+    @InsertUserId,                        --登録ユーザー
+    @UpdateDatetime,                      --更新日時
+    @UpdateUserId                         --更新ユーザー
+)

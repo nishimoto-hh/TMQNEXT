@@ -1,0 +1,138 @@
+﻿@* Articleエリア　部分ビュー *@
+@* 　－　機能毎 *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@using Microsoft.AspNetCore.Http.Extensions;
+@using System.Text.Json;
+
+@model CommonConductMst
+
+@{
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+
+    ViewBag.IsEditForm = false;     //Index画面
+
+    //翻訳辞書
+    ViewBag.TransDictionary = Model.TransDictionary;
+
+    //処理グループ
+    ViewBag.ConductPtn = Model.CONDUCTMST.PTN;
+    //画面番号
+    short formNo = 1;
+    if (Model.FORMDEFINES.Count > 0)
+    {
+        formNo = Model.FORMDEFINES[0].FORMDEFINE.FORMNO;
+    }
+
+    ViewBag.DatePickers = new List<string>();
+    ViewBag.TimePickers = new List<string>();   //課題No.72
+    ViewBag.DateTimePickers = new List<string>();
+    ViewBag.YearMonthPickers = new List<string>();
+    ViewBag.CboDatas = new System.Collections.Hashtable();
+    ViewBag.MltSelDatas = new System.Collections.Hashtable();
+    ViewBag.RadioDatas = new System.Collections.Hashtable();
+    ViewBag.AutoCompDatas = new System.Collections.Hashtable();
+    ViewBag.AutoCompDefDatas = new System.Collections.Hashtable(); //layout定義
+    ViewBag.CodeTransDatas = new System.Collections.Hashtable();
+    ViewBag.BatRefleshBtns = new List<string>();
+    ViewBag.UserAuthConductShoris = new Dictionary<string, object>();   //ﾎﾞﾀﾝ権限情報を機能IDをKeyに保持
+    ViewBag.UserAuthConductShoris[Model.CONDUCTMST.CONDUCTID] = Model.UserAuthConductShoris;
+
+    //生成中の機能ID
+    ViewBag.curConductId = Model.CONDUCTMST.CONDUCTID;
+
+    // 単票入力画面表示ﾊﾟﾀｰﾝの一覧の取得
+    var inputLists = Model.FORMDEFINES.Where(define =>
+        (define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+         define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+         define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3) &&
+        (define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+         define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)).ToList();
+}
+
+@*機能の画面数分、ﾚｲｱｳﾄ出力*@
+@foreach (short curformNo in Model.FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+{
+    //画面NOで絞込
+    var curformDefines = Model.FORMDEFINES.Where(y => y.FORMDEFINE.FORMNO == curformNo).ToList();
+    //単票ﾌﾗｸﾞを初期化
+    ViewBag.IsEditForm = false;
+
+    var articleCss = "base_form";
+
+    // 指定されたformNoを先頭画面とする
+    if (curformNo == formNo)
+    {
+        //先頭画面
+        articleCss = articleCss + " selected";
+    }
+
+    //画面ﾀｲﾄﾙ
+    var formTitle = curformDefines
+        .Where(y => string.IsNullOrEmpty(y.FORMDEFINE.DAT_FORMTITLE) == false)
+        .OrderBy(y => y.FORMDEFINE.DISPORDER)
+        .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
+
+    @:<article name="main_area" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@ViewBag.ParentConductId" class="@articleCss" data-formtitle="@formTitle">
+        @*メインエリア*@
+        CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = Model.CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists };
+        <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />
+    @:</article>
+}
+
+@*共通機能の画面数分、ﾚｲｱｳﾄ出力*@
+@if (Model.CM_CONDUCTMSTS != null)
+{
+    foreach (var conductMst in Model.CM_CONDUCTMSTS)
+    {
+        //生成中の機能ID
+        ViewBag.curConductId = conductMst.CONDUCTMST.CONDUCTID;
+        ViewBag.UserAuthConductShoris[conductMst.CONDUCTMST.CONDUCTID] = conductMst.UserAuthConductShoris;
+        foreach (short curformNo in conductMst.FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+        {
+            //画面NOで絞込
+            var curformDefines = conductMst.FORMDEFINES.Where(y => y.FORMDEFINE.FORMNO == curformNo).ToList();
+            var articleCss = "base_form";
+
+            // 単票入力画面表示ﾊﾟﾀｰﾝの一覧の取得
+            inputLists = curformDefines.Where(define =>
+                (define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+                 define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+                 define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3) &&
+                (define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+                 define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)).ToList();
+
+            //画面ﾀｲﾄﾙ
+            var formTitle = curformDefines
+                .Where(y => string.IsNullOrEmpty(y.FORMDEFINE.DAT_FORMTITLE) == false)
+                .OrderBy(y => y.FORMDEFINE.DISPORDER)
+                .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
+
+            @:<article name="common_area" data-conductid="@conductMst.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="@Model.CONDUCTMST.CONDUCTID" data-fromctrlid="" data-formtitle="@formTitle" data-selflg="" class="@articleCss" hidden>
+                @*共通機能エリア*@
+                CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = conductMst.CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists, IsComForm = true };
+                <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />
+            @:</article>
+        }
+    }
+}
+@*=====詳細検索メニュー=====*@
+<partial name="_DetailSearchMenuPartial.cshtml" model="Model" />
+
+@*=====項目カスタマイズメニュー=====*@
+<partial name="_ItemCustomizeMenuPartial.cshtml" model="Model" />
+
+<input name="UserAuthConductShoris_Temp" type="hidden" value="@ViewBag.UserAuthConductShorisJson">@*post用：ﾎﾞﾀﾝ権限ﾃﾞｰﾀ一時保持用*@
+<input name="ConditionData_Temp" type="hidden" value="@ViewBag.ParamConditionData">@*post用：検索条件ﾃﾞｰﾀ一時保持用*@
+<input name="ListIndividual_Temp" type="hidden" value="@ViewBag.ParamBackConditions">@*post用：個別実装ﾃﾞｰﾀ一時保持用*@
+<input name="CboDatas_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.CboDatas)">@*post用：コンボボックス初期化ﾃﾞｰﾀ一時保持用*@
+<input name="MltSelDatas_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.MltSelDatas)">@*post用：複数選択チェックボックス初期化ﾃﾞｰﾀ一時保持用*@
+<input name="RadioDatas_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.RadioDatas)">@*post用：ラジオボタン初期化ﾃﾞｰﾀ一時保持用*@
+<input name="AutoCompDefDatas_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.AutoCompDefDatas)">@*post用：オートコンプリート定義初期化ﾃﾞｰﾀ一時保持用*@
+<input name="CodeTransDatas_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.CodeTransDatas)">@*post用：コード翻訳初期化ﾃﾞｰﾀ一時保持用*@
+<input name="BatRefleshBtns_Temp" type="hidden" value="@JsonSerializer.Serialize(ViewBag.BatRefleshBtns)">@*post用：バッチ再表示ボタン初期化ﾃﾞｰﾀ一時保持用*@
+<input name="FileUploadSize_Temp" type="hidden" value="@AppCommonObject.Config.AppSettings.UploadFileSize">@*post用：ファイルアップロードサイズ一時保持用*@

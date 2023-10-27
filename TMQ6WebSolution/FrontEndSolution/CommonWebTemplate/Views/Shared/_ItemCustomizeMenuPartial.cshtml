@@ -1,0 +1,89 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model CommonConductMst
+
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+@{
+    using (Html.BeginForm(
+        "ItemCustomize",        // アクション名
+        "Common",               // コントローラー名
+        new { id = "" },        // ルートパラメーター
+        FormMethod.Post,        // HTTP メソッド
+        true,
+        new { id = "formItemCustomize", enctype = "multipart/form-data" } // その他の属性
+    ))
+    {
+        @:<input name="CONDUCTID" type="hidden" value="">
+        @:<input name="PGMID" type="hidden" value="">
+        @:<input name="FORMNO" type="hidden" value="">
+        @:<input name="CTRLID" type="hidden" value="">
+        @:<input name="ConditionData" type="hidden" value="">
+        @:<input name="FactoryIdList" type="hidden" value="">
+        <div class="main_div">
+            <span class="title glyphicon glyphicon-list-alt"></span><span class="title">@blogic.ConvertResourceName("111270015", ViewBag.TransDictionary)</span>@*表示項目カスタマイズ*@
+
+            @*機能の画面数分、ﾚｲｱｳﾄ出力*@
+            @foreach (short curformNo in Model.FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+            {
+                //画面NOと103の一覧で絞込
+                var curformDefines = Model.FORMDEFINES.Where(
+                    y => y.FORMDEFINE.FORMNO == curformNo &&
+                    y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3).ToList();
+
+                foreach (var formDefine in curformDefines)
+                {
+                    //ﾃﾞｰﾀ行定義を取得
+                    var dataItems = formDefine.LISTITEMDEFINES.Where(
+                        z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow &&
+                        z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide).ToList();
+
+                    // 固定列を取得
+                    var colFixItems = dataItems.Where(
+                        z => z.COLFIXKBN == LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol);
+                    if (colFixItems.Count() > 0)
+                    {
+                        @:<ul class="itemcustomize fixed" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-parentid="@formDefine.FORMDEFINE.CTRLID" data-formno="@curformNo">
+                            foreach (var item in colFixItems)
+                            {
+                                var id = string.Format("{0}_{1}_VAL{2}", formDefine.FORMDEFINE.CTRLID, curformNo, item.ITEMNO);
+                                @:<li id="@id" class="fixed"><input type="checkbox" checked disabled>@item.ITEMNAME</li>
+                            }
+                        @:</ul>
+                    }
+
+                    // 通常列を取得
+                    var colItems = dataItems.Where(
+                        z => z.COLFIXKBN != LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol &&
+                        (z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN.Hide && z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN.InputOnly) &&
+                        (z.ITEM_CUSTOMIZE_FLG.HasValue && z.ITEM_CUSTOMIZE_FLG.Value))
+                        .OrderBy(z => z.DISPLAY_ORDER);
+                    if (colItems.Count() > 0)
+                    {
+                        @:<ul class="itemcustomize" data-conductid="@Model.CONDUCTMST.CONDUCTID" data-parentid="@formDefine.FORMDEFINE.CTRLID" data-formno="@curformNo">
+                            foreach (var item in colItems)
+                            {
+                                var id = string.Format("{0}_{1}_VAL{2}", formDefine.FORMDEFINE.CTRLID, curformNo, item.ITEMNO);
+                                var chked = item.DISPLAY_FLG ? "checked" : "";
+                                @:<li id="@id"><input type="checkbox" @chked>@item.ITEMNAME</li>
+                            }
+                        @:</ul>
+                    }
+
+                }
+            }
+        </div>
+        @*<div class="footer_div_option">
+            <input type="checkbox" id="ComItemCustomizeSave" name="ComItemCustomizeSave">
+            <label for="ComItemCustomizeSave">@blogic.ConvertResourceName("111300056", ViewBag.TransDictionary)</label>*@@*保存して次回検索時に使用する*@
+        @*</div>*@
+        <div class="footer_div">
+            <div>
+                <input type="button" name="ComItemCustomizeApply" id="ComItemCustomizeApply" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComItemCustomizeApply" value="@blogic.ConvertResourceName("911190001", ViewBag.TransDictionary)" class="btn func_button">@*適用*@
+                <input type="button" id="ComItemCustomizeHide" value="@blogic.ConvertResourceName("111200005", ViewBag.TransDictionary)" class="btn func_button">@*閉じる*@
+            </div>
+        </div>
+    }
+}

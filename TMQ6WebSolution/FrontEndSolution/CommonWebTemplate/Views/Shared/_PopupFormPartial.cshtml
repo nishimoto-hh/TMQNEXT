@@ -1,0 +1,57 @@
+﻿@* 【共通 - ﾎﾟｯﾌﾟｱｯﾌﾟ表示】ﾓｰﾀﾞﾙﾀﾞｲｱﾛｸﾞﾋﾞｭｰ *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model CommonConductMst
+
+
+@*ﾎﾟｯﾌﾟｱｯﾌﾟ画面ﾀﾞｲｱﾛｸﾞを配置*@
+
+@{ 
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+
+@*-- Modal --*@
+<section class="modal fade modal_form" role="dialog" data-backdrop="static" data-modalno="1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@@*閉じるﾎﾞﾀﾝ*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911160001", ViewBag.TransDictionary)</span>@*※タイトルを設定してください*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                @*=====メッセージエリア=====*@
+                <section class="message_div">
+                    @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+                    {
+                        foreach (string message in ViewBag.ErrorMessage)
+                        {
+                            <div class="error">@message</div>
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(ViewBag.Message))
+                    {
+                        <div class="success">@ViewBag.Message</div>
+                    }
+                </section>
+                <div class="form_detail_div">
+                    @*ここに表示画面を読み込む*@
+                    @*単票ポップアップ表示用のarticleタグを予め生成しておく*@
+                    <partial name="_EditFormPartial.cshtml"/>
+                </div>
+            </div>
+            <div class="modal-footer-my">
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@
+

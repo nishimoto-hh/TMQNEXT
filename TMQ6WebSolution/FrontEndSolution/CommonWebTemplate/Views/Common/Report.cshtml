@@ -1,0 +1,117 @@
+﻿@* Editビュー*@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@* Excel出力処理用データ*@
+@*@model CommonProcData*@
+
+@{
+    Layout = "~/Views/Shared/_LayoutSub.cshtml";
+
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+
+    //ページタイトル - 機能名
+    ViewBag.Title = "Excel出力";
+
+}
+
+@*=====※以下、画面レイアウト生成 メイン実装部分=====*@
+
+    @*=====タイトルエリア=====*@
+    <div id="sub_title_divid"></div>
+    
+    <p></p>
+
+    @*=====検索条件エリア=====*@
+    @using (Html.BeginForm(
+        null,      // アクション名
+        null,    // コントローラー名
+        new { id = "" },        // ルートパラメーター
+        FormMethod.Post,                               // HTTP メソッド
+        true,
+        new { id = "formSearch", enctype = "multipart/form-data" } // その他の属性
+    ))
+    {
+        @*@Html.AntiForgeryToken()*@
+
+        @*== ※post用ﾃﾞｰﾀ ==*@
+        <input name="CONDUCTID" type="hidden" value="">
+        <input name="CONDUCTPTN" type="hidden" value="">
+        <input name="PGMID" type="hidden" value="">
+        <input name="FORMNO" type="hidden" value="">
+        <input name="CTRLID" type="hidden" value="">
+        <input name="FILENAME" type="hidden" value="">
+        <input name="FILEDOWNLOADNAME" type="hidden" value="">
+        <input name="ConditionData" type="hidden" value="">
+
+    }
+
+    @*=====メッセージエリア=====*@
+    <div id="message_divid" class="message_div">
+        @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+        {
+            foreach (string message in ViewBag.ErrorMessage)
+            {
+                <div class="error">@message</div>
+            }
+        }
+        else if (!string.IsNullOrEmpty(ViewBag.Message))
+        {
+            <div class="success">@ViewBag.Message</div>
+        }
+    </div>
+
+    @*=====操作ボタンエリア=====*@
+    <div id="action_edit_divid" class="action_edit_div">
+        <table>
+            <tbody>
+                <tr>
+                    <td><input type="button" id="close" class="btn func_button" value="閉じる" /></td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    @*=====Script=====*@
+    @section Scripts{
+        <script>
+            $(function () {
+                //親ﾀﾌﾞから処理に必要な情報をﾋﾟｯｸｱｯﾌﾟ
+                var conductId = window.opener.$("input:hidden[name='CONDUCTID']").val();
+                $("input:hidden[name='CONDUCTID']").val(conductId);
+                var conductPtn = window.opener.$("input:hidden[name='CONDUCTPTN']").val();
+                $("input:hidden[name='CONDUCTPTN']").val(conductPtn);
+                var pgmId = window.opener.$("input:hidden[name='PGMID']").val();
+                $("input:hidden[name='PGMID']").val(pgmId);
+                var formNo = parseInt(window.opener.$("input:hidden[name='FORMNO']").val(), 10);
+                $("input:hidden[name='FORMNO']").val(formNo);
+                var ctrlId = window.opener.$("input:hidden[name='CTRLID']").val();
+                $("input:hidden[name='CTRLID']").val(ctrlId);
+                var conditionData = window.opener.$("input:hidden[name='ConditionData']").val();
+                $("input:hidden[name='ConditionData']").val(conditionData);
+
+                var conductName = window.opener.$(".proc_title").text();
+                $("#sub_title_divid").text(conductName + " - Excel出力");
+
+                @* Excel作成、およびﾀﾞｳﾝﾛｰﾄﾞ処理 *@
+                reportDownload('@ViewBag.AppRoutePath',
+                    conductId,
+                    pgmId,
+                    formNo,
+                    ctrlId);
+
+                @* 閉じるﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
+                $("#close").on('click', function () {
+                    //画面を閉じる
+                    window.close();
+                });
+
+            });
+
+        </script>
+    }

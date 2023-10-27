@@ -1,0 +1,2037 @@
+﻿/*****************************************************************************
+ *** 概要
+ *** 　ページの枠関連のスタイルを設定する
+ *** 　(ロゴ、ヘッダ、メニュー、など)
+ *** 対応履歴
+ *** 　2021.04.01 ver2.0 アップグレード
+******************************************************************************/
+@charset "utf-8";
+
+/*=== ◆CSS設定のリセット ===*/
+*{
+	margin:0;
+	padding:0;
+	list-style-type:none;
+}
+
+body , html {
+    height: 100%;
+}
+
+body{
+    padding-top:0;
+}
+
+/*=== ◆システム全体 ===*/
+body {
+    /*color: #333333;*/
+    /*background-color:#e2e7e9;*/
+    /*font-family:"Noto Sans Japanese", "メイリオ", Meiryo, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;*/
+
+    /*color:#4d4d4d;*/
+    color:black;
+    /*font-family: "ヒラギノ角ゴ Pro", "Hiragino Kaku Gothic Pro", "メイリオ", "Meiryo", sans-serif;*/
+    font-style: normal;
+    font-weight: 400;
+	font-size:14px;
+	line-height:2em;
+	letter-spacing:0em;
+    background-color: #FFF;
+}
+
+/*=== ◆トップへ戻るボタン ===*/
+.page_top{
+  /*position: fixed;
+  right: 0;
+  bottom: 0;
+  font-size: 10px;
+  color: #ffffff;
+  background-color : #808080;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: .3s;
+  text-align:center;*/
+
+  width: 45px;
+  height: 45px;
+  position: fixed;
+  bottom: 60px;
+  right: 0px;
+  font-size: 5px;
+  color: #ffffff;
+  background-color: #1256a3;
+  text-align: center;
+  padding: 10px 10px;
+  cursor: pointer;
+  border-radius: 3px 3px 3px 3px;
+  -webkit-border-radius: 3px 3px 3px 3px;
+  
+  /* デフォルト非表示 */
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* スクロールで表示 */
+.active{
+  opacity: 1;
+  visibility: visible;
+}
+
+/*=== ◆個別スタイル設定 ===*/
+.actionlist_hide{   /* DISPKBN ｺﾝﾄﾛｰﾙｸﾞﾙｰﾌﾟ非表示td用ｸﾗｽ */
+    display:none!important;
+}
+.init_hide{  /* 要素を初期表示で非表示 */
+    display:none;
+}
+
+.hide{  /* 要素を非表示 */
+    display:none;
+}
+
+.left{     /* 要素内テキストを左揃え */
+    text-align:left;
+}
+
+.center{    /* 要素内テキストを中央揃え */
+    text-align:center;
+}
+
+.right{     /* 要素内テキストを右揃え */
+    text-align:right;
+}
+
+.marginNone{    /* topmarginなし */
+    margin-Top:0px;
+}
+
+.ws_pre_wrap {  /* 連続した空白・改行を表示、自動で折り返し */
+    /*white-space: pre-wrap;*/
+    overflow-wrap: break-word;
+}
+
+.word_break { /* 改行 */
+    white-space: break-spaces;
+    word-break: break-word;
+} 
+
+.over_hidden {  /* テキストのはみ出た部分を隠す */
+    overflow: hidden;
+} 
+
+.marginLeftDel{    /* 削除ﾎﾞﾀﾝなど間違って押下しないための配置 */
+    margin-left:30px !important;
+    margin-right:30px !important;
+}
+
+/* +ﾊﾞｯﾁ処理結果用 */
+.batStatusRun {         /*実行中*/
+  background-color: yellow !important;    /*黄色系統色*/
+}
+.batStatusValid {       /*正常終了*/
+  background-color: yellowgreen !important;    /*緑色系統色*/
+}
+.batStatusInValid {     /*異常終了*/
+  background-color: #ffb6c1 !important;    /*赤色系統色*/
+}
+
+/*=== ◆ボタン ===*/
+/* +通常ボタン */
+.func_button{
+	position: relative;
+
+    /*border-color:darkgray;
+    color: #333333;
+    border-color:#404344;*/
+
+	/*height:30px;*/
+    /*border-radius: 3px;*/     /* 角丸の指定 */
+	/*box-shadow: 0 1px 0 #708090;
+    padding: 0px 10px;*/
+    vertical-align:middle;
+    text-align:center;
+    overflow: visible;
+
+    /*height: 35px;*/
+    color: #FFF;
+    /*background-color: #999999;*/
+    background-color: #008ccf;
+    /*font-size: 15px;*/
+    border: none;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.ctrlId .func_button{
+    height:2em;
+    vertical-align:middle;
+    font-size: 1em;
+    padding: 0px 12px;
+}
+
+.actionlist .func_button{
+    font-size: 15px;
+    height: 35px;
+	min-width:120px;
+
+}
+
+/*★AKAP2.0カスタマイズ★*/
+/* +削除ボタン */
+.delete-button {
+    background-color: #ff9900;
+}
+/*★AKAP2.0カスタマイズ★*/
+
+/*★template2.0標準★*/
+/* +検索ボタン */
+/*.search-button {
+    background-color: #008ccf;
+}*/
+/* +新規ボタン */
+/*.new-button {
+    background-color: #008ccf;
+}*/
+/* +登録ボタン */
+/*.entry-button {
+    background-color: #008ccf;
+}*/
+/* +削除ボタン */
+/*.delete-button {
+    background-color: #ff2121;
+}*/
+/* +確定ボタン */
+/*.fixed-button {
+    background-color: #ff9900;
+}*/
+/* +承認ボタン */
+/*.approve-button {
+    background-color: #008e40;
+}*/
+/*★template2.0標準★*/
+.func_button:hover,
+.btn-Cover:hover {     /* マウスオーバー時 */
+	/*background-color: gray;*/ /* 透きとおった青 lightsteelblue */
+    opacity: 0.6;
+}
+
+/*タブ内ボタン*//*t-kudo ADD start*/
+.action_detail_div_tab{
+   overflow: hidden;
+   padding: 10px 10px 0px 0px;
+}
+
+.action_detail_div_tab tr{
+    border-style:hidden !important;
+}
+
+.action_detail_div_tab td{
+    border-style:hidden !important;
+}
+/*t-kudo ADD end*/
+
+/*=== ◆テーブル ===*/
+table{
+    font-size:10pt;
+    table-layout:fixed;
+}
+/* ++セル項目 */
+table td {
+    min-height: 15px;
+
+    /*テーブルセル折り返し設定
+        ～単語単位で折り返されない英数字文字列は枠をはみ出て表示しない */
+    overflow:hidden;
+    border-width:2px;
+}
+
+/*表示切替ボタン*/
+.noborder {
+    border-style:none !important;
+}
+
+
+.blank {
+    border-style:none !important;
+    background-color:white !important;
+}
+
+/* +画面単位のｴﾘｱ用 */
+article[name="main_area"] {
+    display: none;
+}
+article[name="main_area"].selected {    /*選択画面*/
+    display: block;
+    max-height: calc(100vh - 60px);
+}
+/* +単票入力画面単位のｴﾘｱ用 */
+article[name="edit_area"] {
+    display: none;
+}
+article[name="edit_area"].selected {    /*選択画面*/
+    display: block;
+}
+
+/* +ﾛｸﾞｲﾝ画面のｴﾘｱ用 */
+article[name="login_areaAll"] {
+    /*text-align: center;*/
+}
+
+/* +エラー表示画面のｴﾘｱ用 */
+article[name="error_area"] {
+    text-align: center;
+}
+/* ++ エラー画面のボタンを微調整*/
+.btn-Cover {
+    border-radius: 2px;
+    height: 40px !important;
+    margin: 0px;
+    padding: 10px;
+}
+
+/* +画面一覧表示用 */
+/* +thead */
+.top_div thead,
+.bottom_div thead,
+.search_div thead,
+.detail_div thead,
+.edit_div thead{
+    /*line-height: 22px;*/
+    border-style:solid;
+    border-width:0px 1px 0px 1px;
+
+    line-height: 30px;
+}
+/* +tbody */
+.top_div tbody,
+.bottom_div tbody,
+.search_div tbody,
+.detail_div tbody,
+.edit_div tbody{
+    border-style:solid;
+    border-width:0px 1px 0px 1px;
+}
+
+/* ++ヘッダ項目 */
+.top_div th,
+.bottom_div th,
+.search_div th,
+.detail_div th,
+.edit_div th,
+#file_detail_div th{
+    /*background-color:gray;
+    color:white;
+    border-color:#e0e0e0;*/
+
+    border-width:1px;
+    border-style:solid;
+    font-weight:normal;
+	text-align:center;
+
+    background-color:#f3f3f3;
+    border-color: #e6e6e6;
+}
+/* ++セル項目 */
+.top_div td,
+.bottom_div td,
+.search_div td,
+.detail_div td,
+.edit_div td{
+    /*background-color:white;*/
+    color: black;
+    /*border-color:#e0e0e0;*/
+
+    /*border-width:0.5px 0.5px 0.5px 0.5px;*/
+    border-width:1px;
+    border-style:solid;
+    border-color: #e6e6e6;
+	font-weight:normal;
+    padding-left:2px;
+    padding-right:2px;
+}
+
+/* ++固定列 */
+.detail_div tr td.fixCol{
+    background-color: white;
+}
+
+/*※*/
+/*一覧：画面遷移ありのホバー色設定*/
+.table_hover{
+    background-color:#ddffff !important;
+    /*cursor: pointer;*/    /*★AKAP2.0カスタマイズ★*/
+}
+
+/* コントロールグループ */
+.actionlist td{
+    border-color:transparent;
+}
+
+/* ++セル項目 */
+.detail_div table.transLink td.transLink:hover,
+.detail_div table.transLink td.transLink a:hover
+{
+    background-color:#9fc9ed !important;
+}
+
+/* ++セル項目（コントロール配置セル） */
+.top_div td.control,
+.bottom_div td.control,
+.search_div td.control,
+.detail_div td.control,
+.edit_div td.control{
+    padding-left:1px;
+    padding-right:1px;
+}
+/* ++セル項目内、NOリンク列 */
+.top_div td a,
+.bottom_div td a,
+.search_div td a,
+.detail_div td a,
+.edit_div td a{
+    /*color: #0000ff;*/
+    display: block; /*セル内クリックで選択できるよう対応*/
+}
+/* ++セル項目内、更新列 */
+td.updflg{
+    color:red !important;
+    text-align:center;
+}
+
+/* +レイアウト行（サイズ指定用）[非表示] */
+.base_tr_width th{  /* 行項目 */
+    background-color:#ffffff !important;
+    height:0px !important;
+    min-height: 0px !important;
+    border:none !important;
+}
+.base_tr_width td{  /* セル項目 */
+    background-color:#ffffff !important;
+    height:0px !important;
+    min-height: 0px !important;
+    border:none !important;
+}
+
+/* +レイアウト行（データ行用）[非表示] */
+tr.base_tr {        /* 行項目 */
+    display:none;
+}
+
+/* +縦方向一覧用 */
+/* 横並び */
+.vertical_list {
+    display:flex;
+    flex-direction:row;
+    flex-wrap:nowrap;
+    vertical-align:top;
+    align-items:flex-start;
+}
+/* ++テーブル */
+table.vertical_tbl {
+    /*margin-right: 10px;*/
+    margin-right: -1px;
+}
+/* ++ヘッダ項目 */
+table.vertical_tbl th{
+/*    width:12em;*/
+    text-align:left !important;
+    padding-left:5px;
+}
+table.vertical_tbl th.widthNone {   /* マスタ機能の自動付与列用 */
+    width:auto;
+}
+/* ++セル項目 */
+table.vertical_tbl td{
+    border-top-width: 1px !important;
+    padding: 0 3px !important;
+}
+
+/* グルーピングした一覧 */
+.grouping_ctrl {
+    padding-bottom: 5px;
+    overflow-x: auto;
+}
+.grouping_ctrl .vertical_tbl.ctrlId {
+    margin-top: 0px;
+    margin-bottom: -1px;
+    overflow-x: initial;
+    overflow-y: initial;
+}
+
+/* +横方向一覧用 */
+table.ctrlId{
+    border-collapse: separate;
+}
+
+/******************************
+ *** タブ切替関連           *** 
+*******************************/
+/* タブ切替用ボタン */
+.tab_btn a {
+    /*border: 1px solid lightgray;
+    border-radius: 5px 5px 0 0;
+    background-color: #ffffff;
+    color: #333333;
+    font-size: 1.6rem;
+    line-height: 2.5rem;*/
+    margin-left: 1px;
+    /*padding: 2px 20px;*/
+
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+
+    /*border-color:#404344;*/
+    /*border-color:#ffffff;*/
+
+    font-size: 1.5rem;
+    border-bottom: 1px solid #E6E6E6;
+    color: #f3f3f3;
+    background-color: #b0e0e6;
+    padding: 2px 30px;
+    border-radius: 3px 3px 0 0;
+    box-sizing: border-box;
+}
+
+.tab_btn a:hover {
+    background-color: #4169e1;
+}
+
+.tab_btn a.selected{
+    /*background: #005bac;
+    color: #ffffff;*/
+    /*background-color: #bdf;
+    color: #009;*/
+
+    color: #fff;
+    background-color: #1256a3;
+}
+
+/* タブの内容 */
+.tab_contents {
+  border: 1px solid lightgray;
+  width:98%;
+  /*overflow-x:auto;*/
+  overflow-x:hidden;    /* AP固有 */
+  display: none;
+    padding: 10px;
+
+}
+
+.tab_contents.selected {
+  display: block;
+}
+
+
+/*=== ◆コントロール ===*/
+/* +コンボ、テキスト、テキストエリア */
+select, input[type="text"], textarea, input[type="search"], input[type="date"], input[type="time"], input[type="datetime-local"]  {
+    z-index:0;
+    font-family:inherit !important;
+    font-size:10pt;
+    /*width:100%;*/
+    /*margin-top: 2px;*/
+    /*margin-bottom: 2px;*/
+}
+
+/*Template2.0 ADD start*/
+/*FromToフラグTrueの場合のコントロール幅調整*/
+/*.fromto_design {
+    width:calc((100% - 21px)/2) !important;
+}*/
+/*Template2.0 ADD end*/
+
+select[disabled],
+input[type="text"][disabled],
+textarea[disabled]
+{   /* 非活性の時 */
+    background-color: #f4f4ff; /* 薄い菫色 */
+    border-style:solid;
+    border-width:1px;
+    border-color:#404344;
+    cursor:not-allowed; /* 禁止カーソル */
+}
+/* +テキスト、パスワード */
+input[type="text"],
+input[type="password"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"]
+{
+    position: relative;
+    height:1.6em;
+    border-width:1px;
+    border-style:solid;
+    /*border-color:#404344;*/
+    border-color:darkgrey;
+    box-sizing: border-box;
+    padding: 0px 3px;
+}
+input[id="LoginUser_text"],
+input[id="LoginPassword_text"],
+input[id="NewLoginPassword_text"],
+input[id="NewLoginPasswordConfirm_text"]
+{
+    /*height: 30px;
+    width: 200px;*/
+
+    width: 100%;
+    height: 44px;
+    font-size: 18px;
+    border: 2px solid #E6E6E6;
+    background-color: #FFF;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    padding: 10px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+/* +コンボ */
+select
+{
+    height:1.6em;
+    border-width:1px;
+    /*border-color:#404344;*/
+    border-color:darkgrey;
+}
+/* +チェックﾎﾞｯｸｽ */
+input[type="checkbox"] {
+    margin: 4px;
+}
+input[type="checkbox"]:focus {  /* フォーカスセット時 */
+    outline: 2px ridge #808080;
+    outline-offset: 2px;
+}
+/* +テキストエリア */
+textarea{
+    position: relative;
+    border-width:1px;
+    border-style:solid;
+    /*border-color: #404344;*/
+    border-color: darkgrey;
+    box-sizing: border-box;
+    padding: 0 2px;
+    resize:none;
+}
+
+/* +ボタン */
+input[type="button"][disabled]
+{   /* 非活性の時 */
+    background-color: #999999;
+    color: #FFF;
+}
+
+/* +セルタイプ：テキスト */
+input[data-type="text"]{
+    text-align:left;
+    padding-left:1px;
+    padding-right:1px;
+}
+/* +セルタイプ：日付 */
+input[data-type="date"]{
+    /*text-align:center;*/
+    text-align:left;
+    padding-left:1px;
+    padding-right:1px;
+}
+/* +セルタイプ：時刻 */
+input[data-type="time"]{
+    text-align:left;
+    padding-left:1px;
+    padding-right:1px;
+}
+/* ++セルタイプ：数値 */
+input[data-type="num"]{
+    text-align:right;
+    padding-left:1px;
+    padding-right:1px;
+}
+/* +セルタイプ：ボタン */
+input[data-type="button"] {
+    width:100%;
+    border-width:1px;
+    border-style:solid;
+    border-radius: 2px; /*角の丸み*/
+    text-align:center;
+    font-size:1.2rem;
+
+}
+
+/* +セルタイプ：複数選択チェックボックス */
+ul.multiSelect {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+ul.multiSelect > li {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+ul.multiSelect > li.ctrloption {    /* 全てｵﾌﾟｼｮﾝ */
+    border-bottom: 1px solid #333;
+}
+ul.multiSelect > li > ul > li {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+
+/* +セルタイプ：コード＋翻訳 */
+/*input[data-type="codeTrans"] {
+    width: 50% !important;
+}*/
+
+/*★template2.0標準★*/
+/*(選ボタン)*/
+/*.codeTransBtn {
+    width: 30px !important;
+
+    font-size: 11px;
+    background-color: #f3f3f3;
+    line-height: 15px;
+    padding: 2px;
+    margin: 2px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e6e6e6;
+    vertical-align: middle;
+}*/
+/*★template2.0標準★*/
+
+/*★AKAP2.0カスタマイズ★*/
+
+/*(選ボタン)*/
+.codeTransBtn,
+.codeTransBtnOthers,
+.codeTransBtnClear
+{
+    width: 30px !important;
+
+    top: 0px;
+    left: 0px;
+    font-size: 11px;
+    background-color: #f3f3f3;
+    line-height: 15px;
+    padding: 2px;
+    margin: 2px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e6e6e6;
+    vertical-align: middle;
+}
+/*(虫眼鏡アイコン)*/
+.select-button {
+  position: relative;
+  display: inline-block;
+  }
+.select-button input[type="button"] {
+    position: absolute;
+    opacity: 0;
+}
+.select-button:focus-within {
+    outline: auto;
+}
+.select-button span  {
+    width: 30px !important;
+    color: #428bca;
+    top: -2px;
+    left: 0px;
+    padding: 3px;
+    margin: 2px;
+    line-height: 15px;
+    font-size: 14px;
+    vertical-align: middle;
+    text-align: center;
+    background-color: white;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e6e6e6;
+}
+/*★AKAP2.0カスタマイズ★*/
+/*=== ◆メッセージエリア ===*/
+.message_div {
+    /*height:40px;*/
+    overflow: hidden;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 10px;
+}
+/* +メッセージ */
+.message_div div{
+    border: lightgray solid 1px;
+    margin-right: 10px;
+    padding: 2px;
+}
+.message_div div.success{ /* 正常用 */
+    background-color: lightcyan;
+    color: #009;
+}
+.message_div div.error{   /* エラー用 */
+    background-color: lightyellow;
+    color: red;
+}
+
+/*=== ◆ボタンエリア ===*/
+/*メッセージエリア*/
+#action_message_div{
+   overflow: hidden;
+   padding: 2px 10px 3px 10px;
+}
+
+.action_search_div,
+.action_detail_div,
+.action_edit_div,
+.action_top_div,
+.action_bottom_div{
+   overflow: hidden;
+}
+
+/* ﾎﾞﾀﾝの上下余白 */
+.action_search_div,
+.action_detail_div,
+.action_edit_div{
+   padding: 0px 10px 0px 12px;
+}
+.action_top_div,
+.action_bottom_div,
+.top_div 
+{
+    padding: 0px 10px 0px 12px;
+}
+
+.top_div .actionlist,
+.bottom_div .actionlist
+{
+    margin:0px 10px;
+}
+
+/* ++ セル項目 */
+/*.action_search_div td,*/
+/*.action_detail_div td,*/
+/*.action_edit_div td*/
+.actionlist td
+{
+    padding-top:10px;
+    padding-right:10px;
+    border-color:transparent;
+}
+
+.action_search_div .actionlist td
+{
+    padding-bottom:5px;
+}
+
+/* ++ セル項目内ボタン */
+.action_search_div td .func_button,
+.action_detail_div td .func_button,
+/*.action_detail_div_tab td .func_button,*/
+.action_edit_div td .func_button
+{
+    /*min-width:90px;*/
+    border-width:1px;
+    border-style:solid;
+}
+
+/*=== ◆検索条件エリア（一覧） ===*/
+.search_div{  
+   max-height :600px;
+   /*overflow: auto;*/
+   overflow:hidden;
+   /*overflow-x:hidden;*/
+   /*overflow-y:scroll;*/
+   padding: 0px 10px 0px 10px;
+   margin-right: 10px;
+}
+.search_div_switch{   /* 微調整 */  
+   max-height :calc(100vh - 10px);  /* 検索ボタンが隠れないように調整 */
+}
+
+/*=== ◆明細エリア（一覧） ===*/
+.detail_div{
+    /*max-height: calc(93vh - 100px);*/
+    overflow: hidden;
+    /*overflow-x:hidden;*/
+    /*overflow-y:scroll;*/
+    margin-right:10px;
+    margin-bottom:65px;
+    padding-top:5px;
+    padding-right:10px;
+    padding-bottom:20px;
+    padding-left:10px;
+}
+
+.modal .detail_div {
+    margin-bottom: 0px;
+}
+
+/*=== ◆明細エリア（ボタン） ===*/
+[name="action_detail_divid_bottom"] { /*最下部でピン止め*/
+    position: fixed;
+    z-index: 20;
+    bottom: 10px;
+    width: 100%;
+    /*height: 50px;
+    background-color: #ffffff;
+    padding-top: 7px;*/
+
+    height: 60px;
+    background-color: #f2f2f2;
+    padding: 10px;
+    box-sizing: border-box;
+}
+.modal_form [name="action_detail_divid_bottom"]{    /*最下部でピン止め*/
+    position: relative;
+    bottom: 0px;
+    width: 100%;
+    height: 40px;
+    background-color: #ffffff;
+}
+#action_detail_divid_bottom{
+    padding-bottom:30px;
+}
+
+/*=== ◆単票入力エリア（一覧） ===*/
+.edit_div{
+    overflow: auto;
+    padding-top:5px;
+    padding-right:10px;
+    padding-bottom:10px;
+    padding-left:10px;
+}
+
+/*=== ◆単票入力エリア（ボタン） ===*/
+.action_edit_div
+{
+   margin-bottom:30px;
+}
+
+
+/*=== ◆ボトムエリア===*/
+/*※通常（ﾓｰﾀﾞﾙ以外）*/
+:not(.modal_form) [id*=formBottom] {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    left: 22rem;
+    right: 0.9vw;
+    background-color: #f2f2f2;
+    z-index: 1;
+}
+/*※ﾓｰﾀﾞﾙ*/
+.modal_form [id*=formBottom] {
+    display: block;
+    padding-bottom: 10px;
+    position: sticky;
+    bottom: 0px;
+    left: -20px;
+    right: -20px;
+    background-color: #f2f2f2;
+    z-index: 1;
+}
+
+/*=== ◆ポップアップ画面エリア ===*/
+/* 全般 */
+.modal-content {
+    border-radius: 0px;
+}
+/* +ヘッダーエリア */
+.modal-content .modal-header-my {
+  min-height: 16.428571429px;
+  padding: 5px;
+  background-color: dimgray;
+  position:sticky;
+  top: 0px;
+  z-index: 1;
+
+}
+/* ++画面タイトル */
+.modal-content .title_div{
+    background-color: dimgrey;
+    color: white;
+    border-color:#ffffff;
+
+    border-width:0px;
+    border-style:solid;
+	font-size: 13px;
+	font-weight:500;
+	padding: 3px;
+    overflow: hidden !important;
+}
+/* ++画面右上、閉じるボタン */
+.modal-content button{
+    font-size: 28px;
+    color: white;
+}
+
+/* +コンテンツエリア */
+.modal-content .modal-body-my {
+  position: relative;
+  /*padding: 15px;*/
+}
+.modal-content .modal-body-my form {
+  /*position: relative;*/
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/*ﾀﾞｲｱﾛｸﾞﾎﾞﾀﾝ設定*/
+.modal-content .func_button{
+    /*background-color: white;*/
+
+    min-width:120px;
+    height:30px;
+    /*border-width:0.1px;
+    border-style:solid;*/
+    font-size:13px;
+    font-weight:normal;
+    margin-right:10px;
+
+    border-radius: 3px;     /* 角丸の指定 */
+	/*box-shadow: 0 1px 0 #708090;*/
+    padding: 0px 10px;
+}
+
+/*選択ﾎﾞﾀﾝ設定*/
+.modal-content input[name="Select"] {
+    min-width:100%;
+}
+
+.modal-open {
+  margin-right: 0px !important;
+}
+
+/*=== ◆取込ﾎﾟｯﾌﾟｱｯﾌﾟﾀﾞｲｱﾛｸﾞ ===*/
+#file_detail_div{
+    padding: 15px;
+}
+
+/*=== ◆パスワード変更 ===*/
+#passwordChange_detail_div{
+    margin-left:auto;
+    margin-right:auto;
+    width:200px;
+}
+#passwordChange_detail_div input{
+    background-color:#E8F0FE;
+}
+#passwordChange_detail_div input.errorcom{
+    background-color:#ffb6c1 !important;
+}
+#action_passChange_div{
+    width:300px;
+    margin-left:auto;
+    margin-right:auto;
+}
+#action_passChange_div td{
+    padding-left:10px;
+    padding-right:10px;
+}
+/* +メッセージエリア+ */
+#passwordChange_message_div{
+   overflow: hidden;
+   padding-top:0px;
+   padding-bottom:10px;
+   padding-left:0px;
+}
+/* +メッセージ */
+#passwordChange_message_div div{
+    border: lightgray solid 1px;
+    margin-right: 0px;
+    padding: 0px;
+}
+#passwordChange_message_div div.success{ /* 正常用 */
+    background-color: lightcyan;
+    color: #009;
+}
+#passwordChange_message_div div.error{   /* エラー用 */
+    background-color: lightyellow;
+    color: red;
+}
+
+/*=== ◆一覧表示列設定 ===*/
+#setDispItem_div{
+    max-height: 400px;
+    overflow-y: auto;
+}
+#setDispItem_detail_div{
+    margin-left:auto;
+    margin-right:auto;
+    width:200px;
+}
+#action_setDispItem_div{
+    width:300px;
+    margin-left:auto;
+    margin-right:auto;
+}
+#action_setDispItem_div td{
+    padding-left:10px;
+    padding-right:10px;
+}
+/* +メッセージエリア+ */
+#setDispItem_message_div{
+   overflow: hidden;
+   padding-top:0px;
+   padding-bottom:10px;
+   padding-left:0px;
+}
+/* +メッセージ */
+#setDispItem_message_div div{
+    border: lightgray solid 1px;
+    margin-right: 0px;
+    padding: 0px;
+}
+#setDispItem_message_div div.success{ /* 正常用 */
+    background-color: lightcyan;
+    color: #009;
+}
+#setDispItem_message_div div.error{   /* エラー用 */
+    background-color: lightyellow;
+    color: red;
+}
+
+/* 横方向一覧 */
+.tbl_title {
+    margin-top:5px;
+}
+
+.tbl_title .title {
+    font-weight:bold;
+}
+
+/* リンクアイコン-不活性時 */
+.link-disabled{
+    color: lightgray;
+}
+
+/* 詳細検索アイコン-詳細条件適用時*/
+a.condition_applied {
+    /*color: deeppink;*/
+    color: white;
+    background-color: deeppink;
+}
+
+/* +フッターエリア */
+.modal-content .modal-footer-my {
+  padding: 5px 5px 15px 20px;
+}
+
+
+/*=== ◆ポップアップメッセージ用 ===*/
+/*ﾒｯｾｰｼﾞﾀﾞｲｱﾛｸﾞ用*/
+#messageModal .modal-content {
+  /*background-color: lightyellow;*/
+}
+#action_message_div td{
+  padding-left:15px;
+  padding-right:15px;
+}
+#messageModal span{
+  font-size:13px;
+}
+#message_detail_div{
+    padding:15px;
+}
+
+/*=== ◆ﾎﾟｯﾌﾟｱｯﾌﾟ画面用 ===*/
+.modal_form.modal {
+    overflow-y: hidden;
+}
+
+/*=== ◆サブ画面エリア ===*/
+/* +画面タイトル(Excel出力画面用) */
+#sub_title_divid{
+    background-color: #005bac;
+	color: #FFFFFF;
+
+	font-size: 15px;
+	font-weight:500;
+    border-left:1px solid #e3e5e6;
+	padding: 30px 15px 30px 15px;
+    overflow: hidden !important;
+}
+
+/*=== ◆必須項目設定 ===*/
+/*.mark_required {
+    font-weight: bold;
+}
+.mark_required::after {
+    color:red;
+    content:"*";
+    font-size: 16px;
+    margin:auto 5px auto 5px;
+}
+*/
+div[data-referencemode="0"] .required .mark::before {
+    color: red;
+    content: "*";
+    font-size: 16px;
+    font-weight: bold;
+    margin: auto 5px auto 5px;
+}
+
+/*=== ◆エラー設定 ===*/
+/* +通常エラー */
+select.error,
+input[type="text"].error,
+ul.multiSelect.error,
+textarea.error {
+    background-color: #ffb6c1 !important;
+}
+tr.error,
+td.error,
+td.error select,
+td.error input[type="text"],
+td.error ul.multiSelect,
+td.error textarea{
+    /*background-color: #ffb6c1 !important;*/
+}
+
+/* +Validationエラー */
+select.errorcom,
+input[type="text"].errorcom,
+input[type="date"].errorcom,
+input[type="time"].errorcom,
+input[type="datetime-local"].errorcom,
+input[type="file"].errorcom,
+input[type="checkbox"].errorcom,
+input[type="password"].errorcom,
+ul.multiSelect.errorcom,
+td.multiSelect.errorcom a.multisel-text,
+textarea.errorcom,
+td.errorcom.disp_error {
+    background-color: #ffb6c1 !important;
+}
+/*tr.errorcom,*/
+/*td.errorcom,*/
+td.errorcom select,
+td.errorcom input[type="text"],
+td.errorcom input[type="date"],
+td.errorcom input[type="time"],
+td.errorcom input[type="datetime-local"],
+td.errorcom input[type="file"],
+td.errorcom input[type="checkbox"],
+td.errorcom ul.multiSelect,
+td.errorcom textarea{
+    /*background-color: #ffb6c1 !important;*/ /* fromto項目対応で削除 */
+}
+
+td.errorcom {
+    /*overflow: inherit;*/
+}
+
+input[type="checkbox"]/*.errorcom*/::before{
+}
+
+.search_div td.control.errorcom,
+.detail_div td.control.errorcom,
+.edit_div td.control.errorcom{
+    overflow:visible!important;
+    /*position:relative;*/
+}
+
+.search_div td.control.multiSelect,
+.detail_div td.control.multiSelect,
+.edit_div td.control.multiSelect{
+    overflow:visible!important;
+    /*position:relative;*/
+}
+
+/* 横方向一覧 */
+/*table:not(.vertical_tbl) label.errorcom {*/
+div.errtooltip label.errorcom {
+    /*position: fixed;*/
+    z-index: 2147483647;
+    white-space:pre;
+    background-color: #ffb6c1;
+    color:black;
+    min-width: 120px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    border-radius: 2px;
+    padding: 2px;
+    font-size: 7px;
+    text-align:left;
+	/*margin-top: 24px;*/
+	/*margin-top: 0px;*/
+
+}
+/* 横方向一覧 吹き出し */
+/*table:not(.vertical_tbl) label.errorcom:before {*/
+div.errtooltip label.errorcom:before {
+	position: absolute;    
+	height: 0;
+	width: 0;
+	margin-top: 0px;
+	border: solid transparent;
+	border-width: 5px;
+	border-color: rgba(102, 102, 102, 0);
+	content: " ";
+    color:dimgrey;
+    /* ↓表示位置 下の場合↓ */
+	border-bottom-color: #5e5e5e;
+	left: 0%;
+	bottom: 100%;
+    /* ↓表示位置 右の場合↓ */
+	/*border-right-color: #5e5e5e;*/
+	/*right: 100%;*/
+	/*top: 0%;*/
+}
+
+/* 吹き出し設定 */
+div.errtooltip label{
+    display:none;
+}
+
+/* 縦方向一覧 */
+table.vertical_tbl label.errorcom {
+    /*position: fixed;*/
+    /*display:inline-block;*/
+    white-space:pre;
+    /*float:right;*/
+    /*right: 1px;*/
+    z-index: 2147483647;
+    background-color: #ffb6c1;
+    color:black;
+    min-width: 120px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    border-radius: 2px;
+    padding: 2px;
+    font-size: 7px;
+    text-align:left;
+    /*margin-left:6px;*/
+	/*margin-top: 24px;*/
+}
+/* 縦方向一覧 吹き出し */
+table.vertical_tbl label.errorcom:before {
+	/*right: 100%;
+	top: 10%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	border-color: rgba(102, 102, 102, 0);
+	border-right-color: #5e5e5e;
+	border-width: 8px;
+	margin-top: 0px;
+    color:dimgrey;*/
+	position: absolute;    
+	height: 0;
+	width: 0;
+	margin-top: 0px;
+	border: solid transparent;
+	border-width: 6px;
+	border-color: rgba(102, 102, 102, 0);
+	content: " ";
+    color:dimgrey;
+    /* ↓表示位置 下の場合↓ */
+	border-bottom-color: #5e5e5e;
+	left: 0%;
+	bottom: 100%;
+    /* ↓表示位置 右の場合↓ */
+	/*border-right-color: #5e5e5e;*/
+	/*right: 100%;*/
+	/*top: 0%;*/
+}
+
+/*jQuery-ui datepicker addon timepicker*/
+.ui-timepicker-select {
+    width: 60px;
+    height:30px;
+}
+
+/* ｶﾚﾝﾀﾞｰｱｲｺﾝ(AKAP標準) */
+.date_icon {
+    position:relative;
+    right:25px;
+    margin-right: -22px;
+    top:6px;
+    float:right;
+}
+
+.date_div {
+    display: inline-block !important;
+    _display: inline !important;
+}
+
+/* + 二重ﾎﾟｯﾌﾟｱｯﾌﾟ用ﾊﾞｯｸﾄﾞﾛｯﾌﾟ + */
+.modal-backdrop2 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1050;
+  background-color: #000000;
+}
+
+.modal-backdrop2.fade {
+  opacity: 0;
+  filter: alpha(opacity=0);
+}
+
+.modal-backdrop2.in {
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+}
+
+.modal2 {
+    z-index: 1060!important;
+}
+
+/* 単位付き数量 */
+.unitnum {
+    width: calc(100% - 40px) !important;
+}
+
+.unit {
+    width: 40px;
+    float: right;
+    overflow: hidden;
+    text-align: left;
+    padding-left: 3px;
+}
+
+/* 複数選択ﾘｽﾄ */
+.multisel-parent {
+    position:relative;
+    /*border-color:darkgrey;*/
+}
+.multisel-icon {
+    position:absolute;
+    right:28px;
+    margin-right: -22px;
+    top:2px;
+    float:right;
+}
+.multisel-drop {
+    max-height: 250px;
+    overflow: auto;
+    display: block;
+    /*margin-top: -1px;*/
+    padding: 0 0 0 8px;
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    color: #000;
+    border: 1px solid darkgrey;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    /*width: 100%;*/
+}
+.multisel-drop.disabled {
+    display: none;
+}
+a.multisel-text {
+    text-align: left;
+    padding: 1px 15px 0 2px;
+    border: 1px solid darkgrey;
+    height: 20px;
+    color: #000;
+    font-size: 1.2rem;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* 複数選択チェックボックスの削除アイテムは非表示 */
+td.multiSelect:not(.reference_mode) li.deleteItem {
+    display: none;
+}
+
+.vertical_tbl.ctrlId {
+    position: relative;
+    margin-top: 3px;
+    margin-right: 3px;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.ctrlId_parent {    
+    position:relative;
+    margin-top:3px;
+    margin-bottom:5px;
+    /*padding-right:2px;*/
+    /*white-space:nowrap;*/
+    /*margin-right:3px;*/
+    /*position:relative;*/
+    /*margin:3px;*/
+    
+    /*white-space:nowrap;*/
+    /*width:auto;*/
+    overflow-x:auto;
+    overflow-y:hidden;
+    max-width: 100%;
+}
+/* 横方向一覧 ﾍｯﾀﾞ固定ｽｸﾛｰﾙ */
+.ctrlId_parent.headerFix{
+    overflow-y:scroll;
+    width: min-content;
+}
+
+/*=== ◆オートコンプリート ===*/
+.ui-autocomplete.ui-front
+{
+    z-index: 99999999 !important;   /* 最前面に表示 */
+
+    /* 高さを最大50%に設定し、必要な場合スクロールを表示 */
+    max-height: 50%;
+    overflow-y: auto;
+}
+
+div.substance{
+    /*white-space:nowrap;*/
+}
+
+
+/* 入力コントロールのラベル表示 */
+span.labeling {
+    display:none;
+    text-align:left;
+}
+td[data-num="1"] span.labeling {
+    text-align:right;
+}
+
+td.unchange_exist div.substance,
+.tabulator-cell.unchange_exist div.substance,
+td.readonly div.substance,
+.tabulator-cell.readonly div.substance,
+td.reference_mode div.substance {
+    display: none;
+}
+td.unchange_exist span.labeling,
+.tabulator-cell.unchange_exist span.labeling,
+td.readonly span.labeling,
+.tabulator-cell.readonly span.labeling,
+td.reference_mode span.labeling {
+    display: inline-block;
+}
+/* チェックボックスのラベル表示 */
+td.unchange_exist span.labeling.checkbox.checked,
+.tabulator-cell.unchange_exist span.labeling.checkbox.checked,
+td.readonly span.labeling.checkbox.checked,
+.tabulator-cell.readonly span.labeling.checkbox.checked,
+td.reference_mode span.labeling.checkbox.checked
+{
+   display: inline-block;
+   width:2em;
+   height:2em;
+   vertical-align:middle;
+   /* imgファイルを指定("◆"の.png) */
+   /*background-image: url("../Content/themes/base/images/checkbox_labeling_checked.png");*/
+   /* background-image: url("../Content/themes/base/images/check.png"); */ 
+   -webkit-mask-image: url("../css/themes/base/images/check.png");
+   /* サイズ調整 */
+   /* background-size: 30px; */ 
+   -webkit-mask-size: 12px;
+   /* リピートをオフに */
+   /* background-repeat: no-repeat; */ 
+   -webkit-mask-repeat: no-repeat;
+   /* 真ん中に配置 */
+   /* background-position : center; */ 
+   -webkit-mask-position: center;
+   /* 画像の非透過部分の色 */
+   background-color: black;
+   margin-top: 0px;
+   margin-bottom: 0px;
+}
+
+span.labeling.checkbox
+{
+    min-height: 0px;
+}
+
+.substance label,
+.tabulator-cell label {
+    font-weight: initial;
+    margin-bottom: 0px;
+    padding-right: 5px;
+}
+
+input[type="radio"] {
+    position: relative;
+    top: 2px;
+}
+
+/* Tabulator用設定 */
+.tabulator,
+.tabulator-col,
+.tabulator-cell,
+.tabulator .tabulator-header .tabulator-col.tabulator-col-group .tabulator-col-group-cols
+{
+    border: 1px solid #e6e6e6 !important;
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-col-group .tabulator-col-group-cols
+{
+    margin-right: -2px !important;
+    margin-left: -2px !important
+}
+
+.tabulator-header,
+.tabulator-sortable
+{
+    border-bottom: none !important;
+}
+
+.tabulator-col
+{
+    background-color: #f3f3f3 !important;
+}
+
+.tabulator-row.tabulator-row-even {
+    background-color: #fff !important;
+}
+
+.tabulator-row.tabulator-selectable:hover {
+    background-color: #ddffff !important;
+    cursor: initial !important;
+}
+/* 子テーブルのホバー色設定 */
+.subTable .tabulator-row.tabulator-selectable:hover {
+    background-color: #c2ffff !important;
+}
+
+.tabulator {
+    font-size: 10pt !important;
+    background-color: #fff !important;
+    max-width: fit-content;
+}
+
+.tabulator-cell,
+.tabulator-col-content
+{
+    padding: 0px 2px !important;
+}
+
+.tabulator .tabulator-header
+{
+    font-weight: normal !important;
+}
+/* ソートアイコンの色 */
+.tabulator-col.tabulator-sortable[aria-sort=asc] .tabulator-arrow 
+{
+    border-bottom-color: #ed6a2d !important;
+}
+.tabulator-col.tabulator-sortable[aria-sort=desc] .tabulator-arrow 
+{
+    border-top-color: #0ab5e9 !important;
+}
+
+.tabulator-data-tree-branch
+{
+    border: 0px !important;
+}
+
+.tabulator-edit-list .tabulator-edit-list-item {
+    padding: 0px 4px !important;
+    font-size: 13px !important;
+    height: 25px;
+}
+
+/*datepicker カスタムスタイル*/
+#ui-datepicker-div .ui-datepicker-current {
+    opacity: inherit;
+    font-weight: bold;
+}
+
+/*ブラウザ標準のカレンダーアイコンの余白を削除*/
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    margin-left: 0px;
+}
+
+#tree_view #tree_location {
+    height: 63%;
+    overflow: auto;
+    border-bottom: 1px solid lightgray;
+}
+
+#tree_view #tree_job {
+    height: 30%;
+    overflow: auto;
+    padding-top: 10px;
+    border-bottom: 1px solid lightgray;
+}
+
+/* -- Google Fonts Material Icons */
+@font-face {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Material Icons'),
+        local('MaterialIcons-Regular'),
+        url(../fonts/material-design-icons/MaterialIcons-Regular.woff2) format('woff2'),
+        url(../fonts/material-design-icons/MaterialIcons-Regular.ttf) format('truetype');}
+
+.material-icons {
+    font-weight: normal;
+    font-style: normal;
+    font-size: 14pt;
+    vertical-align: middle;
+}
+
+.tree_select .mark::after {
+    color: #428bca;
+    font-family: 'Material Icons';
+    content: "account_tree";
+    font-size: 14pt;
+    vertical-align: middle;
+}
+
+div[data-referencemode="0"] .tree_select_label .mark::after {
+    color: #428bca;
+    font-family: 'Material Icons';
+    content: "square";
+    font-size: 10pt;
+    vertical-align: middle;
+}
+
+/* -- 階層選択ツリー画面用 */
+#popupTreeViewModal {
+    height: 100vh;
+}
+
+#popupTreeViewModal .modal-dialog {
+    right: 0;
+    left: auto;
+    width: 300px;
+    height: 100%;
+    padding: 0;
+    margin-right: 0;
+    margin-left: auto;
+}
+
+#popupTreeViewModal .modal-content {
+    height: 100vh;
+}
+
+#popupTreeViewModal .modal-content .modal-header-my{
+    display: none;
+}
+
+#popupTreeViewModal .modal-content .modal-body-my {
+    overflow:auto;
+    height:97vh;
+    max-height: calc(100vh - 100px);
+}
+
+#popupTreeViewModal .modal-content .modal-footer-my {
+    padding: 0px 5px 0px 20px;
+    height: 3vh;
+    min-height:30px;
+    position: fixed;
+    bottom: 10px;
+}
+
+
+/*========== TMQ用 ==========*/
+/*行を灰色に設定*/
+.tabulator-row.tabulator-selectable.row_gray {
+    background-color: darkgray !important;
+}
+
+/*灰色に設定した行のホバー*/
+.tabulator-row.tabulator-selectable.row_gray:hover {
+    background-color: gray !important;
+}
+
+/*一覧の行をグループごとに表示を調整するためのクラス*/
+/*グループの先頭でないセルに設定する内容*/
+.group-untop {
+    border-top: none !important;
+    text-indent: 150%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+/*入力項目もあるので非表示にする*/
+.group-untop * {
+    display: none;
+}
+/*グループの末尾でないセルに設定する内容*/
+.group-unbottom {
+    border-bottom: none !important;
+}
+
+
+/* 年プルダウンの変更 */
+select.ui-datepicker-year {
+    height: 2em !important; /* 高さ調整 */
+    margin-right: 5px !important; /* 「年」との余白設定 */
+    width: 70px !important; /* 幅調整 */
+}
+/* 月プルダウンの変更 */
+select.ui-datepicker-month {
+    height: 2em !important; /* 高さ調整 */
+    margin-left: 5px !important; /* 「年」との余白設定 */
+    width: 70px !important; /* 幅調整 */
+}
+
+/*========== TMQ用(スケジュール表示) ==========*/
+/* マーク共通 */
+.sc-mark {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 1px solid black;
+    border-radius: 50%;
+    font-weight: normal !important;
+    margin-top: 5px;
+    margin-left: 8px;
+}
+/* 点検種別共通 */
+.sc-mark-text {
+    top: -8px;
+    left: -16px;
+    position: relative;
+    border: none;
+    background-color: transparent;
+}
+
+/* 保全履歴完了、● */
+.sc-mark.sc-complete {
+    background-color: black;
+}
+
+.sc-mark-text.sc-complete {
+    color: white;
+}
+
+/* スケジュール済み、○ */
+.sc-mark.sc-no-create {
+    background-color: white;
+}
+
+/* 計画作成済み、◎ -外側枠線 */
+.sc-mark.sc-created {
+    position: relative;
+    border: solid black 1px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    background-color: white;
+}
+
+/* 計画作成済み、◎ - 内側枠線 */
+.sc-mark.sc-created::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    border: solid black 1px;
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+/* 上位ランクが履歴完了済み、▲ -マーク */
+.sc-upper-complete {
+    width: 0;
+    height: 0;
+    color: white;
+    border-style: solid;
+    border-right: 13px solid transparent;
+    border-left: 13px solid transparent;
+    border-bottom: 22.5px solid #000000;
+    border-radius: 0;
+    border-top: none;
+}
+
+/* 上位ランクが履歴完了済み、▲ -点検種別 */
+.sc-mark-text.sc-upper-complete {
+    top: -4px;
+    left: -18px;
+    position: relative;
+    border: none;
+    color: white;
+    background-color: transparent;
+}
+
+/* 上位ランクがスケジュール済み、△ -枠線 */
+.sc-mark-border.sc-upper-scheduled {
+    width: 0;
+    height: 0;
+    top: -8px;
+    left: -13px;
+    position: relative;
+    border-top: none;
+    border-right: 13px solid transparent;
+    border-left: 13px solid transparent;
+    border-bottom: 22.5px solid black;
+    border-radius: 0;
+    margin-left: 12px;
+}
+
+/* 上位ランクがスケジュール済み、△ -点検種別 */
+.sc-mark-text.sc-upper-scheduled {
+    top: 6px;
+    left: -13px;
+    color: black;
+    margin-left: -30px;
+/*    position: relative;
+    border: none;
+    background-color: transparent;
+*/}
+
+/* 上位ランクがスケジュール済み、△ -白抜き背景 */
+.sc-mark.sc-upper-scheduled {
+    width: 0px;
+    height: 0px;
+    top: 9px;
+    left: 10px;
+    position: relative;
+    border-top: none;
+    border-right: 11px solid transparent;
+    border-left: 11px solid transparent;
+    border-bottom: 19.05px solid white;
+    border-radius: 0;
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* 画面遷移リンク */
+.sc-link {
+    cursor: pointer;
+    color: #428bca;
+}
+.sc-link.sc-no-create, .sc-link.sc-complete, .sc-link.sc-created, .sc-link.sc-created::before {
+    border-color: #428bca;
+}
+.sc-link.sc-complete {
+    color: white;
+    background-color: #428bca;
+}
+
+.sc-link.sc-upper-complete {
+    color: white;
+    border-bottom-color: #428bca;
+}
+.sc-link.sc-mark-border.sc-upper-scheduled {
+    border-bottom-color: #428bca;
+}
+
+/* スケジュール移動用コンテキストメニュー */
+#sc_contextmenu {
+    display: none;
+    z-index: 1000;
+    position: absolute;
+    overflow: hidden;
+    border: 1px solid #CCC;
+    white-space: nowrap;
+    font-family: sans-serif;
+    background: #FFF;
+    color: #333;
+    border-radius: 2px;
+    padding: 0;
+}
+
+#sc_contextmenu ul {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-block-start: 5px;
+    margin-block-end: 5px;
+    padding-inline-start: 5px;
+}
+
+#sc_contextmenu li {
+    padding: 5px 10px 5px 5px;
+    cursor: pointer;
+    list-style-type: none;
+    transition: all .3s ease;
+    user-select: none;
+}
+
+#sc_contextmenu li:hover {
+    background-color: #DEF;
+}
+
+/* スケジュール移動中 */
+.sc-moving {
+    background-color: yellow;
+}
+
+/* スケジュール移動後 */
+.sc-moved {
+    background-color: pink;
+}
+
+/*========== 処理中メッセージ ==========*/
+#loading {
+    display: table;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    position: fixed;
+    background-color: #fff;
+    opacity: 0.8;
+    z-index: 2000;
+    cursor: wait;
+}
+
+#loading .loadingMsg {
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 150%;
+    font-weight: bold;
+/*===== GIF版の場合 ↓を有効に =====*/
+    /*padding-top: 140px;
+    background: url("./themes/base/images/loading.gif") center center no-repeat;*/
+/*===== GIF版の場合 ↑を有効に =====*/
+}
+
+
+/*===== CSS版設定 ここから↓ =====*/
+/* GIF版では以下は参照されないため無効にしなくても問題ない */
+#loading .loadingMsg .loadingIcon {
+    font-size: 40px;
+    margin-top: 20px;
+    color:dodgerblue;
+}
+
+/* アイコンアニメーション */
+.fa {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    /*-moz-osx-font-smoothing: grayscale;*/
+    transform: translate(0, 0);
+    color:dodgerblue;
+}
+
+.fa-fw {
+    width: 1.28571429em;
+    text-align: center;
+}
+
+.fa-pulse {
+    animation: fa-spin 1s infinite linear;
+}
+/*===== CSS版設定 ここまで↑ =====*/
+
+/***********モーダル表示した出庫入力・棚番移庫入力画面*************/
+/*背景色を水色に変更*/
+.hikiate > div {
+    background-color: lightskyblue !important;
+}
+
+/*背景色をグレーに変更*/
+.hikiateGray > div {
+    background-color: lightgray !important;
+}
+/*********************************************************/

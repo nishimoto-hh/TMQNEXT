@@ -1,0 +1,34 @@
+INSERT INTO ma_plan(
+    [plan_id]
+    ,[summary_id]
+    ,[subject]
+    ,[occurrence_date]
+    ,[expected_construction_date]
+    ,[expected_completion_date]
+    ,[total_budget_cost]
+    ,[plan_man_hour]
+    ,[responsibility_structure_id]
+    ,[failure_effect]
+    ,[update_serialid]
+    ,[insert_datetime]
+    ,[insert_user_id]
+    ,[update_datetime]
+    ,[update_user_id]
+)
+VALUES(
+    NEXT VALUE FOR seq_ma_plan_plan_id
+    ,@SummaryId
+    ,@Subject
+    ,@OccurrenceDate
+    ,@ExpectedConstructionDate
+    ,@ExpectedCompletionDate
+    ,@TotalBudgetCost
+    ,@PlanManHour
+    ,@ResponsibilityStructureId
+    ,@FailureEffect
+    ,@UpdateSerialid
+    ,@InsertDatetime
+    ,@InsertUserId
+    ,@UpdateDatetime
+    ,@UpdateUserId
+)

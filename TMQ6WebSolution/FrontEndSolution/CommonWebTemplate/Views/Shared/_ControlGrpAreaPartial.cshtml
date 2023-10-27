@@ -1,0 +1,40 @@
+﻿@* コントロールグループエリア　部分ビュー *@
+@* 　－　該当エリアに必要なコントロールを横一列に表示 *@
+
+@using CommonWebTemplate.Models.Common;
+@model CommonFormDefine
+
+@{
+    var colCnt = 0;
+    var rowNos = Model.LISTITEMDEFINES.Select(x => x.ROWNO).Distinct();
+    var colNoMax = Model.LISTITEMDEFINES.Max(x => x.COLNO);
+}
+<table class="actionlist" data-relationctrlid="@Model.FORMDEFINE.CTR_RELATIONCTRLID" data-positionkbn="@Model.FORMDEFINE.CTR_POSITIONKBN" data-areakbn="@Model.FORMDEFINE.AREAKBN">
+    <tbody>
+    @foreach (var rowNo in rowNos)
+    {
+        var defines = Model.LISTITEMDEFINES.Where(x => x.ROWNO == rowNo).OrderBy(x => x.COLNO);
+        @:<tr>
+        foreach (var define in defines)
+        {
+            var tdClass = "";
+            if (define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+            {
+                tdClass += "actionlist_hide";
+            }
+            @:<td class="@tdClass">
+                ViewBag.isCtrlGrp = true;
+                <partial name="_CellControlPartial" model="define"/>
+            @:</td>
+            colCnt++;
+        }
+        while (colCnt < colNoMax)
+        {
+            // 列数を合わせる
+            @:<td></td>
+            colCnt++;
+        }
+        @:</tr>
+    }
+    </tbody>
+</table>

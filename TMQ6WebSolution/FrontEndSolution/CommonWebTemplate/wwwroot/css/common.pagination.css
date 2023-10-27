@@ -1,0 +1,105 @@
+﻿/*****************************************************************************
+ *** 概要
+ *** 　一覧用ページャーコントロールのスタイル設定
+ *** 　
+ *** 対応履歴
+ *** 　2021.04.01 ver2.0 アップグレード
+******************************************************************************/
+@charset "utf-8";
+
+/*=== ◆ページャー ===*/
+ul.paginationCommon {
+  display: inherit;
+  font-size:10pt;
+  margin:0px;
+}
+ul.paginationCommon:after {
+	display:block;
+	clear:both;
+	height:0;
+	visibility:hidden;
+	content:".";
+}
+
+/*-- +リスト項目 --*/
+ul.paginationCommon li{
+	float:left;
+    padding: 0rem;
+    margin: 0rem;
+    height: 100%;
+}
+* html ul.paginationCommon li{
+	display:inline;
+	zoom:1;
+}
+*+html ul.paginationCommon li{
+	display:inline;
+	zoom:1;
+}
+
+
+/*-- ++リスト項目内コンボボックス --*/
+ul.paginationCommon > li > span.control {
+  padding-left:3px;
+  padding-right:3px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+ul.paginationCommon li select{
+	min-width:45px;
+	height:1.44em;
+    padding-left: 2px;
+    margin-top:6px;
+    margin-bottom:6px;
+}
+
+/*-- ++リスト項目内リンク --*/
+ul.paginationCommon li a{
+	display:block;
+    color: #333;
+
+	width:100%;
+	height:100%;
+	font-weight:500;
+	text-decoration:none;
+	position:relative;
+}
+ul.paginationCommon li a:hover,
+ul.paginationCommon > li:hover > a,
+ul.paginationCommon > li.selected > a
+{   /* マウスオーバー時 */
+    background-color: #efefef;
+    color: #6975fa;
+}
+
+/*-- ++リスト項目内（span(全ページ数)非活性） --*/
+ul.paginationCommon > li.disabled > span:hover,
+ul.paginationCommon > li.disabled > span:focus
+{   /* マウスオーバー、フォーカス設定時 */
+  cursor: not-allowed;
+  background-color: transparent;
+}
+
+/*-- ++リスト項目内（a(リンク)非活性） --*/
+ul.paginationCommon > li.disabled:hover,
+ul.paginationCommon > li.disabled:focus
+{
+  cursor: not-allowed;
+  background-color: transparent;
+}
+ul.paginationCommon > li.disabled > a{
+  pointer-events: none; /*ｲﾍﾞﾝﾄを発生させないように制御*/
+}
+
+.pagination_div::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+ul.paginationCommon {
+  float: left;
+}
+
+.itemcounts {
+    margin:auto 5px;
+}

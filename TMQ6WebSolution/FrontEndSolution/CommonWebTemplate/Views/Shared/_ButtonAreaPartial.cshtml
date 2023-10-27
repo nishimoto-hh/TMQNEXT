@@ -1,0 +1,146 @@
+﻿@* ボタンエリア　部分ビュー *@
+@* 　－　該当エリアに必要なボタンを横一列に表示 *@
+
+@using CommonWebTemplate.Models.Common;
+@model List<CommonFormDefine>
+
+@using CommonWebTemplate.CommonUtil;
+
+@{ 
+    /* ボタン権限制御 切替 start ==================================================================== */
+    ////KEY：CTRLID、VALUE：0(非表示),1(表示・活性),2(表示・非活性)
+    //IDictionary<string, int> userAuthShori = ViewBag.UserAuthConductShoris;
+    /* ============================================================================================== */
+    IList<Dictionary<string, object>> userAuthShoris = ViewBag.UserAuthConductShoris[ViewBag.curConductId];
+    /* ボタン権限制御 切替 end ==================================================================== */
+}
+
+<table class="actionlist">
+    <tbody>
+        @foreach(var formDefine in Model)
+        { 
+        <tr data-relationctrlid="@formDefine.FORMDEFINE.CTR_RELATIONCTRLID">
+
+            @foreach (var define in formDefine.LISTITEMDEFINES)
+            {
+                var btnText = string.IsNullOrEmpty(define.INITVAL) ? define.ITEMNAME : define.INITVAL;
+
+                var cssClass = "btn func_button";
+                if (false == string.IsNullOrEmpty(define.CSSNAME))
+                {
+                    //CSS名が指定されている場合、付与
+                    cssClass += (" " + define.CSSNAME);
+                }
+
+                //ﾎﾞﾀﾝ権限設定
+                var authKbn = LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free;
+                var isAuth = true;     //権限あり
+                if (define.BTN_AUTHCONTROLKBN == LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Control)
+                {
+                    //※権限付きボタンの場合
+
+                    authKbn = define.BTN_AUTHCONTROLKBN;    //権限区分
+
+                    //権限チェック
+                    isAuth = false;
+                    /* ボタン権限制御 切替 start ==================================================================== */
+                    //if (userAuthShori.Keys.Contains(define.BTN_CTRLID))
+                    //{
+                    //    int status = userAuthShori[define.BTN_CTRLID];
+                    //    if (0 != status)    //※非表示でない場合
+                    //    {
+                    //        //※権限あり
+                    //        isAuth = true;
+                    //    }
+                    //}
+                    /* ============================================================================================ */
+                    foreach (var userAuthShori in userAuthShoris)
+                    {
+                        if ((short)userAuthShori["FORMNO"] == define.FORMNO && userAuthShori["CTRLID"].ToString() == define.BTN_CTRLID)
+                        {
+                            short btnDispKbn = (short)userAuthShori["DISPKBN"];
+                            if (btnDispKbn != USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Hide)
+                            {
+                                //※権限あり
+                                isAuth = true;
+                            }
+                        }
+                    }
+                    /* ボタン権限制御 切替 end ==================================================================== */
+                }
+                //検索後の画面制御
+                //0 - 条件ｴﾘｱをﾛｯｸする
+                //1 - 条件ｴﾘｱをﾛｯｸしない
+                var editPtn = AppCommonObject.Config.AppSettings.OpeSearchAfter;    //ﾃﾞﾌｫﾙﾄ値
+                if (formDefine.FORMDEFINE.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly
+                    || formDefine.FORMDEFINE.DAT_EDITPTN == FORM_DEFINE_CONSTANTS.DAT_EDITPTN.Input)
+                {
+                    editPtn = formDefine.FORMDEFINE.DAT_EDITPTN.ToString();
+                }
+
+                if (ViewBag.IsEditForm &&       //明細入力画面
+                    ViewBag.isNewCreation &&    //新規モード
+                    define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Delete)  //削除ボタン
+                {
+                    // 新規入力画面の場合は削除ボタンを出力しない
+                    break;
+                }
+                else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Back)
+                {
+                    if (ViewBag.IsEditForm)
+                    {
+                        //単票入力ﾎﾟｯﾌﾟｱｯﾌﾟの場合、ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
+                        <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-dismiss="modal" title="@define.TOOLTIP" /></td>
+                    }
+                    else
+                    {
+                        <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" title="@define.TOOLTIP" /></td>
+                    }
+                }
+                else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Upload)
+                {
+                    //CSV取込ボタン - 取込ダイアログ表示情報を追加
+                    int fileCnt = define.MAXLENGTH > 0 ? define.MAXLENGTH : 1;
+                    @*<td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editKbn" data-filecnt="@fileCnt" data-toggle="modal" data-target="#fileUploadModal" title="@define.FORMDEFINE.TOOLTIP" /></td>*@
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editPtn" data-filecnt="@fileCnt" title="@define.TOOLTIP" /></td>
+                }
+                @*else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ChildNew)
+                {
+                    //子画面新規ボタン
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@define.RELATIONID" data-optioninfo="@define.OPTIONINFO" title="@define.TOOLTIP" /></td>
+                }
+                else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.EditNew)
+                {
+                    //単票入力新規ボタン
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationid="@define.RELATIONID" data-optioninfo="@define.OPTIONINFO" title="@define.TOOLTIP" /></td>
+                }*@
+                else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.FormTransition)
+                {
+                    //画面遷移ボタン
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-transptn="@define.DAT_TRANSITION_PATTERN" data-relationid="@define.RELATIONID" data-optioninfo="@define.OPTIONINFO" title="@define.TOOLTIP" /></td>
+                }
+                else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Execute)
+                {
+                    //実行ボタン
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editPtn" data-afterexeckbn="@define.BTN_AFTEREXECKBN" title="@define.TOOLTIP" /></td>
+
+                }
+                @*else if (define.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Select)
+                {
+                    //選択ボタン ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-dismiss="modal" title="@define.TOOLTIP" /></td>
+                }*@
+                else if (isAuth)
+                {   //※権限あり
+                    <td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editPtn" title="@define.TOOLTIP"/></td>
+                }
+                else
+                {   //※権限なし
+                    //非表示
+                    @*<td><input type="button" name="@define.BTN_CTRLID" class="@cssClass" value="btnText" data-actionkbn="@define.BTN_ACTIONKBN" data-authkbn="@authKbn" data-editptn="@editKbn" data-authshori="none" /></td>*@
+                }
+            }
+        </tr>
+        }
+    </tbody>
+</table>

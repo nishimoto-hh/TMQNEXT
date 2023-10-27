@@ -1,0 +1,202 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@model CommonDataCellData
+
+@{
+    //name属性
+    var name = "VAL" + (Model.ListItem.ITEMNO + Model.Index).ToString();
+    //cssClass - ｺﾝﾄﾛｰﾙ配置位置
+    var tdClass = "";
+    var fixCol = "fixCol";  //列固定のｸﾗｽ
+    if (Model.ListItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+    {
+        tdClass = "hide";
+    }
+    else
+    {
+        //一覧項目ユーザの非表示列取得
+        if (Model.IsLayoutRow && Model.LISTITEMUSERS.Where(z => z.ITEMNO == Model.ListItem.ITEMNO).Count() > 0)
+        {
+            tdClass += " hide userhide";  //ユーザ非表示行
+        }
+        else
+        {
+            if (Model.IsLayoutRow && Model.ListItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.DefHide)
+            {
+                tdClass += " hide defhide";  //デフォルト非表示
+            }
+            else
+            {
+                switch (Model.ListItem.CELLTYPE)
+                {
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Label:
+                        //ラベル
+                        tdClass = setPosition();
+                        break;
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CalcLabel:
+                        // 計算ラベル(右寄せ)
+                        tdClass = "calc right";
+                        break;
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBox:       // チェックボックス
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CheckBoxDel:    // 削除チェックボックス
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Button:         // ボタン
+                        if (Model.IsHorizontal)
+                        {
+                            tdClass = "control center";
+                        }
+                        else
+                        {
+                            tdClass = "control";
+                        }
+                        break;
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Date:           // 日付
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Time:           // 時刻
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTime:       // 日時
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DatePicker:     // 日付
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TimePicker:     // 時刻
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.DateTimePicker: // 日時
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.YearMonthPicker: // 年月
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton:    // ラジオボタン
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox:       // コンボボックス
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox:        // リストボックス
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans:      // コード＋翻訳
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number:         // 数値
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Text:           // テキスト
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Textarea:       // テキストエリア
+                        tdClass = "control";
+                        break;
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.MultiCheckBox:  // 複数選択チェックボックス
+                        tdClass = "control multiSelect";
+                        break;
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Download:       // ダウンロードリンク
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FileOpen:       // ファイル参照リンク
+                    case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.FormTransition:     // 画面遷移リンク
+                    //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransChild:     // 子画面遷移リンク
+                    //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransCm:        // 共通機能ポップアップリンク
+                    //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherTab:  // 他機能遷移リンク(別タブ)
+                    //case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TransOtherShift:// 他機能遷移リンク(同タブ遷移)
+                        tdClass = setPosition();
+                        tdClass += " transLink";
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+    //列固定
+    if (Model.ListItem.COLFIXKBN == LISTITEM_DEFINE_CONSTANTS.COLFIXKBN.FixCol)
+    {
+        tdClass += " " + fixCol + " " + fixCol + "_" + Model.ColFixIdx.ToString();
+    }
+
+    //id属性
+    var id = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO + name;    //例）sprCondition_1VAL1
+
+    //tabindex(基準) ※colno(左0埋め)、rowno(左0埋め)
+    string defTabIndex = Model.ListItem.COLNO.ToString().PadLeft(2, '0') + Model.ListItem.ROWNO.ToString().PadLeft(2, '0');
+
+    //セルを配置
+    if (Model.ListItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Label)    // ラベル
+    {
+        //上記の場合、表示のみ
+        var val = "";
+        if (!string.IsNullOrEmpty(Model.ListItem.INITVAL))
+        {
+            //定義：初期値
+            val = Model.ListItem.INITVAL;
+        }
+        @:<td data-name="@name" class="@tdClass" data-deftabindex="@defTabIndex" colspan="@Model.ListItem.COLSPAN" rowspan="@Model.ListItem.ROWSPAN" title="@Model.ListItem.TOOLTIP"
+              if (!Model.IsHorizontal) { @: data-initverticalvalue="@val"
+              } @:>@val</td>
+    }
+    else if (Model.ListItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CalcLabel)
+    {
+        //上記の場合、表示のみ
+        var val = "";
+        if (!string.IsNullOrEmpty(Model.ListItem.INITVAL))
+        {
+            //定義：初期値
+            val = Model.ListItem.INITVAL;
+        }
+        @:<td data-name="@name" class="@tdClass" data-deftabindex="@defTabIndex" colspan="@Model.ListItem.COLSPAN" rowspan="@Model.ListItem.ROWSPAN" data-param="@Model.ListItem.RELATIONPARAM" title="@Model.ListItem.TOOLTIP"
+              if (!Model.IsHorizontal) { @: data-initverticalvalue="@val"
+              } @:>
+            @val
+        @:</td>
+    }
+    else if (Model.ListItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TreeLabel)
+    {
+        // 初期値から表示文字列、構成IDを取得
+        var val = "";           // 表示文字列
+        var structureId = "";   // 構成ID
+        if (!string.IsNullOrEmpty(Model.ListItem.INITVAL))
+        {
+            //定義：初期値
+            var initVals = Model.ListItem.INITVAL.Split('|');
+            val = initVals[0];
+            if (initVals.Length > 1)
+            {
+                structureId = initVals[1];
+            }
+        }
+        var grpId = !string.IsNullOrWhiteSpace(Model.ListItem.RELATIONID) ? Convert.ToInt32(Model.ListItem.RELATIONID) : -1;
+        var layerNo = !string.IsNullOrWhiteSpace(Model.ListItem.RELATIONPARAM) ? Convert.ToInt32(Model.ListItem.RELATIONPARAM) : 0;
+        var isFacroty = (grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location || grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst) && layerNo == STRUCTURE_CONSTANTS.LAYER_NO.Factory;
+        @:<td data-name="@name" data-type="treeLabel" data-colname="@Model.ListItem.ITEMNAME" class="@tdClass" data-deftabindex="@defTabIndex" colspan="@Model.ListItem.COLSPAN" rowspan="@Model.ListItem.ROWSPAN" data-structuregrpid="@Model.ListItem.RELATIONID" data-structureno="@Model.ListItem.RELATIONPARAM" data-structureid="@structureId" title="@Model.ListItem.TOOLTIP"
+              if (!Model.IsHorizontal) { @: data-initverticalvalue="@Model.ListItem.INITVAL"
+              }
+              if (isFacroty) { @: data-factoryctrl="@isFacroty"
+              }@:>
+            @val
+        @:</td>
+    }
+    else
+    {
+        @:<td data-name="@name" class="@tdClass" data-unchangeablekbn="@Model.ListItem.UNCHANGEABLEKBN" data-deftabindex="@defTabIndex" colspan="@Model.ListItem.COLSPAN" rowspan="@Model.ListItem.ROWSPAN"
+            if (Model.ListItem.FROMTOKBN == LISTITEM_DEFINE_CONSTANTS.FROMTOKBN.FromTo) { @: data-fromto="1"
+            } if (Model.ListItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number) { @: data-num="1"
+            } if (!Model.IsHorizontal) { @: data-initverticalvalue="@Model.ListItem.INITVAL"
+            } @:>
+
+
+            //_CellControlPartialで使用する引数受け渡し用
+            ViewBag.isLayoutRow = Model.IsLayoutRow;
+            ViewBag.ctrlId = id;
+            ViewBag.isCtrlGrp = false;
+            //セル内のコントロールを配置
+            <partial name="_CellControlPartial" model="Model.ListItem"/>   
+        @:</td>
+    }
+}
+
+@functions {
+    //表示位置を設定
+    string setPosition()
+    {
+        var tdClass = "";
+        //ヘッダ行が定義されていない場合のみ「ヘッダの表示位置|データの表示位置」、
+        var positions = Model.ListItem.POSITION.Split('|');
+        var position = positions[0];
+        if (positions.Length > 1)
+        {
+            position = positions[1];
+        }
+        switch (position)
+        {
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.left:
+                tdClass = "ws_pre_wrap";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.center:
+                tdClass = "center ws_pre_wrap";
+                break;
+            case LISTITEM_DEFINE_CONSTANTS.HEADER_ALIGN.right:
+                tdClass = "right ws_pre_wrap";
+                break;
+            default:
+                tdClass = "ws_pre_wrap";
+                break;
+        }
+        return tdClass;
+    }
+}

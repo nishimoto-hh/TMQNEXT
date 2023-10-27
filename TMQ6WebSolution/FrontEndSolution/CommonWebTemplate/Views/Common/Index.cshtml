@@ -1,0 +1,650 @@
+﻿@* Common/Indexビュー*@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@using Microsoft.AspNetCore.Http.Extensions;
+@using System.Text.Json;
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model IList<CommonConductMst>
+
+@{
+    //ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+    string rootPath = Url.Action("", "");
+    rootPath += !rootPath.EndsWith("/") ? "/" : "";
+    ViewBag.AppRoutePath = rootPath;
+
+    ViewBag.IsEditForm = false;     //Index画面
+
+    //翻訳辞書
+    var transDictionary = Model[0].TransDictionary;
+    ViewBag.TransDictionary = transDictionary;
+
+    // 1ページ当たりの行数コンボ
+    ViewBag.RowsPerPage = Model[0].PageRowsList;
+
+    // 言語コンボ
+    ViewBag.LanguageComboList = Model[0].LanguageComboList;
+
+    //ページタイトル - 機能名
+    ViewBag.Title = Model[0].CONDUCTMST.NAME;
+
+    //第一階層メニューを取得
+    var groupName = "";
+    if (Model == null || Model.Count > 1)
+    {
+        string conductGroup = Model[0].CONDUCTMST.CONDUCTGRP;
+        foreach (CommonConductMst child in Model[1].CHILDCONDUCTMST)
+        {
+            if (child.CONDUCTMST.CONDUCTID == conductGroup)
+            {
+                groupName = child.CONDUCTMST.NAME;
+                break;
+            }
+        }
+    }
+    // ページタイトルに追加（ 第一階層メニュー > 機能名 ）
+    if (groupName.Length > 0)
+    {
+        ViewBag.Title = groupName + " > " + ViewBag.Title;
+    }
+
+    //処理グループ
+    ViewBag.ConductPtn = Model[0].CONDUCTMST.PTN;
+    //画面番号
+    // パラメータに画面番号が設定されている場合はそちらを使用する
+    short formNo = ViewBag.ParamFormNo;
+    if (formNo <= 0 && Model[0].FORMDEFINES.Count > 0)
+    {
+        formNo = Model[0].FORMDEFINES[0].FORMDEFINE.FORMNO;
+    }
+
+    //他機能遷移の場合、URLに指定した画面番号をセットする
+    string targetURL = string.Empty;
+    string strTarget = "";
+    int pos = 0;
+    int transFlg = 0;
+    // $("#main_contents > div.init_temp_data")のinput:hiddenタグでJSON文字列で受け取るよう修正
+    //List<Dictionary<string, object>> conditionData = ViewBag.ParamConditionData as List<Dictionary<string, object>>;
+    //Dictionary<string, object> backConditions = ViewBag.ParamBackConditions as Dictionary<string, object>;
+
+    //conditionData有無ﾌﾗｸﾞ
+    int selDataFlg = 0;
+    string jsonConditionData = ViewBag.ParamBackConditions;
+    if (false == string.IsNullOrEmpty(jsonConditionData))
+    {
+        selDataFlg = 1; //ﾃﾞｰﾀあり
+    }
+    //ListIndividual(個別変数ﾃﾞｰﾀ)有無ﾌﾗｸﾞ
+    int indivDataFlg = 0;
+    string jsonListIndividual = ViewBag.ParamBackConditions;
+    if (false == string.IsNullOrEmpty(jsonListIndividual))
+    {
+        indivDataFlg = 1; //ﾃﾞｰﾀあり
+    }
+
+    short transPtn = FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.None;
+
+    //=== 遷移先URL取得 ===
+    targetURL = Context.Request.GetEncodedUrl();
+
+    if (targetURL.Length > 0)
+    {
+        strTarget = "TRANSFLG";
+        pos = targetURL.IndexOf(strTarget);
+        if (pos >= 0)
+        {
+            // 遷移ﾌﾗｸﾞ取得
+            transFlg = Convert.ToInt32(targetURL.Substring(pos + strTarget.Length + 1, 1));
+        }
+    }
+    if (transFlg > 0)
+    {
+        transPtn = FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab;     //他機能遷移（同タブも含む）
+    }
+
+    ViewBag.DatePickers = new List<string>();
+    ViewBag.TimePickers = new List<string>();   //課題No.72
+    ViewBag.DateTimePickers = new List<string>();
+    ViewBag.YearMonthPickers = new List<string>();
+    ViewBag.CboDatas = new System.Collections.Hashtable();
+    ViewBag.MltSelDatas = new System.Collections.Hashtable();
+    ViewBag.RadioDatas = new System.Collections.Hashtable();
+    ViewBag.AutoCompDatas = new System.Collections.Hashtable();
+    ViewBag.AutoCompDefDatas = new System.Collections.Hashtable(); //layout定義
+    ViewBag.CodeTransDatas = new System.Collections.Hashtable();
+    ViewBag.BatRefleshBtns = new List<string>();
+    /* ボタン権限制御 切替 start ==================================================================== */
+    ViewBag.UserAuthConductShoris = new Dictionary<string, object>();   //ﾎﾞﾀﾝ権限情報を機能IDをKeyに保持
+    ViewBag.UserAuthConductShoris[Model[0].CONDUCTMST.CONDUCTID] = Model[0].UserAuthConductShoris;
+    /* ボタン権限制御 切替 end ====================================================================== */
+
+    //生成中の機能ID
+    ViewBag.curConductId = Model[0].CONDUCTMST.CONDUCTID;
+
+    // 単票入力画面表示ﾊﾟﾀｰﾝの一覧の取得
+    var inputLists = Model[0].FORMDEFINES.Where(define =>
+        (define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+         define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+         define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3) &&
+        (define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+         define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)).ToList();
+}
+
+@*=====メッセージエリア=====*@
+<div id="message_divid" class="message_div">
+    @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage.Count > 0)
+    {
+        foreach (string message in ViewBag.ErrorMessage)
+        {
+            <div class="error">@message</div>
+        }
+    }
+    else if (!string.IsNullOrEmpty(ViewBag.Message))
+    {
+        <div class="success">@ViewBag.Message</div>
+    }
+</div>
+
+@*機能の画面数分、ﾚｲｱｳﾄ出力*@
+@foreach (short curformNo in Model[0].FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+{
+    //画面NOで絞込
+    var curformDefines = Model[0].FORMDEFINES.Where(y => y.FORMDEFINE.FORMNO == curformNo).ToList();
+    //権限情報
+    /* ボタン権限制御 切替 start ==================================================================== */
+    //ViewBag.UserAuthConductShoris = Model[0].UserAuthConductShoris[curformNo];
+    /* ボタン権限制御 切替 end ==================================================================== */
+    //単票ﾌﾗｸﾞを初期化
+    ViewBag.IsEditForm = false;
+
+    var articleCss = "base_form";
+
+    // 指定されたformNoを先頭画面とする
+    if (curformNo == formNo)
+    {
+        //先頭画面
+        articleCss = articleCss + " selected";
+    }
+
+    //画面ﾀｲﾄﾙ
+    var formTitle = curformDefines
+        .Where(y => string.IsNullOrEmpty(y.FORMDEFINE.DAT_FORMTITLE) == false)
+        .OrderBy(y => y.FORMDEFINE.DISPORDER)
+        .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
+
+    @:<article name="main_area" data-conductid="@ViewBag.curConductId" data-formno="@curformNo.ToString()" class="@articleCss" data-formtitle="@formTitle">
+        @*メインエリア*@
+        CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = Model[0].CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists };
+        <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />
+    @:</article>
+}
+
+@*共通機能の画面数分、ﾚｲｱｳﾄ出力*@
+@if (Model[0].CM_CONDUCTMSTS != null)
+{
+    foreach (var conductMst in Model[0].CM_CONDUCTMSTS)
+    {
+        //生成中の機能ID
+        ViewBag.curConductId = conductMst.CONDUCTMST.CONDUCTID;
+        /* ボタン権限制御 切替 start ==================================================================== */
+        ViewBag.UserAuthConductShoris[conductMst.CONDUCTMST.CONDUCTID] = conductMst.UserAuthConductShoris;
+        /* ボタン権限制御 切替 end ==================================================================== */
+        foreach (short curformNo in conductMst.FORMDEFINES.Select(x => x.FORMDEFINE.FORMNO).Distinct().ToList())
+        {
+            //画面NOで絞込
+            var curformDefines = conductMst.FORMDEFINES.Where(y => y.FORMDEFINE.FORMNO == curformNo).ToList();
+            //権限情報
+            /* ボタン権限制御 切替 start ==================================================================== */
+            //ViewBag.UserAuthConductShoris = conductMst.UserAuthConductShoris[curformNo];
+            /* ボタン権限制御 切替 end ==================================================================== */
+
+            var articleCss = "base_form";
+
+            // 単票入力画面表示ﾊﾟﾀｰﾝの一覧の取得
+            inputLists = curformDefines.Where(define =>
+                (define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+                 define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+                 define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3) &&
+                (define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
+                 define.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)).ToList();
+
+            //画面ﾀｲﾄﾙ
+            var formTitle = curformDefines
+                .Where(y => string.IsNullOrEmpty(y.FORMDEFINE.DAT_FORMTITLE) == false)
+                .OrderBy(y => y.FORMDEFINE.DISPORDER)
+                .Select(y => y.FORMDEFINE.DAT_FORMTITLE).FirstOrDefault();
+
+            @:<article name="common_area" data-conductid="@conductMst.CONDUCTMST.CONDUCTID" data-formno="@curformNo.ToString()" data-parentconductid="" data-fromctrlid="" data-formtitle="@formTitle" data-selflg="" class="@articleCss" hidden>
+                @*共通機能エリア*@
+                CommonFormAreaData data = new CommonFormAreaData() { FormNo = curformNo, ConductMst = conductMst.CONDUCTMST, FormDefines = curformDefines, InputLists = inputLists, IsComForm = true };
+                <partial name="~/Views/Shared/_FormAreaPartial.cshtml" model="data" />
+
+            @:</article>
+        }
+    }
+}
+
+@*-- ModalForm --*@
+@{
+    //ﾎﾟｯﾌﾟｱｯﾌﾟ画面ﾀﾞｲｱﾛｸﾞを配置
+    ViewBag.ConductId = Model[0].CONDUCTMST.CONDUCTID;
+    ViewBag.PgmId = Model[0].CONDUCTMST.PGMID;
+    ViewBag.ConductPtn = Model[0].CONDUCTMST.PTN;
+    <partial name="~/Views/Shared/_PopupFormPartial.cshtml" model="Model[0]" />
+    <partial name="~/Views/Shared/_PopupTreeViewPartial.cshtml" model="Model[0]" />
+}
+@*-- ModalForm --*@
+
+@*-- Modal --*@
+@{
+    // 取込ボタン存在チェック
+    int btnCnt = 0;
+    var ctrlDefines = Model[0].FORMDEFINES.Where(y =>
+        y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)
+        .Select(y => y.LISTITEMDEFINES);
+    foreach (var define in ctrlDefines)
+    {
+        btnCnt += define.Where(y => y.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Button &&
+                                    y.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Upload).Count();
+    }
+
+    if (btnCnt > 0)
+    {
+        //ﾃﾞｰﾀ取込ﾀﾞｲｱﾛｸﾞを配置
+        <partial name="~/Views/Shared/_PopupUploadPartial.cshtml" model="Model[0]" />
+    }
+}
+@*-- Modal --*@
+
+@*=====Script=====*@
+@section ScriptsPath{
+    @*業務ロジック読込*@
+    @{
+        var csshref = Url.Content(@"~/css/form/" + Model[0].CONDUCTMST.PGMID + @".css");
+        var scriptsrc = Url.Content(@"~/js/form/" + Model[0].CONDUCTMST.PGMID + @".js");
+    }
+    <link href="@csshref" rel="stylesheet" />
+    <script src="@scriptsrc"></script>
+}
+
+@section Scripts{
+    <script>
+        $(function () {
+            console.time('javascript');
+
+            @* ブラウザタブ識別番号取得 *@
+            P_BrowserTabNo = getBrowserTabNo();
+
+            @*↓↓.NET5版ではプッシュ通知は未実装↓↓*@
+            @*ﾌﾟｯｼｭ通知件数*@
+            @*initPushCount();*@
+
+            @* 双方向通信接続確立 *@
+            @*initSignalR('@ViewBag.AppRoutePath', '@Model[0].CONDUCTMST.CONDUCTID');*@
+            @*↑↑.NET5版ではプッシュ通知は未実装↑↑*@
+
+            @*翻訳辞書設定*@
+            @* retainCommonMessages内でﾃﾞｰﾀを取得して処理するよう修正 *@
+            @*var transDic = new Array();
+            @foreach(var item in ViewBag.TransDictionary)
+            {
+                @:transDic["@item.Key"] = "@Html.Raw(item.Value)";
+            }
+            retainCommonMessages(transDic);*@
+            retainCommonMessages();
+
+            @* 1ページ当たりの行数コンボ設定 *@
+            var pageRows = new Array();
+             @foreach(var rowsCount in ViewBag.RowsPerPage)
+            {
+                @:pageRows.push(@rowsCount);
+            }
+            retainPageRowsCombo(pageRows);
+
+            @*言語コンボ設定*@
+            var language = new Array();
+            @foreach(var item in ViewBag.LanguageComboList)
+            {
+                @:language["@item.LanguageCode"] = "@Html.Raw(item.LanguageLabel)";
+            }
+            retainLanguageCombo('@ViewBag.AppRoutePath', language);
+
+            /* ボタン権限制御 切替 start ==================================================================== */
+            @*ﾎﾞﾀﾝ権限情報保持*@
+            @* retainButtonDefines内でﾃﾞｰﾀを取得して処理するよう修正 *@
+            @*var dicBtnAuthList = {};
+            @if (ViewBag.UserAuthConductShoris != null)
+            {
+                foreach(var conduct in ViewBag.UserAuthConductShoris)
+                {
+                    List<Dictionary<string, object>> UserAuthConductShori = conduct.Value;
+                    @:var btnAuthList = [];
+                    for (int i = 0; i < UserAuthConductShori.Count; i ++)
+                    {
+                        @:var btnAuth = {};
+                        Dictionary<string, object> btn = UserAuthConductShori[i];
+                        foreach (var item in btn)
+                        {
+                            @:btnAuth["@item.Key"] = "@item.Value";
+                        }
+                        @:btnAuthList[@i] = btnAuth;
+                    }
+                    @:dicBtnAuthList["@conduct.Key"] = btnAuthList;
+                }
+                @:retainButtonDefines(dicBtnAuthList);
+            }*@
+            retainButtonDefines();
+            /* ボタン権限制御 切替 end ==================================================================== */
+
+            @* 場所階層、職種・機種ツリービューの初期化処理 *@
+            var grpIdList = [structureGroupDef.Location, structureGroupDef.Job];
+            initTreeView('@ViewBag.AppRoutePath', '@Model[0].CONDUCTMST.CONDUCTID', grpIdList, null, treeViewDef.TreeMenu);
+
+            @* 詳細検索メニュー初期値設定 *@
+            initDetailSearchCondition();
+
+            @* 日付入力カレンダー初期化 *@
+            @foreach (string dpId in ViewBag.DatePickers) {
+                @:initDatePicker("#@dpId");
+            }
+            @*時刻入力テキスト初期化 *@
+            @foreach (string dpId in ViewBag.TimePickers) {
+                @:initTimePicker("#@dpId");
+            }
+            @*日時入力テキスト初期化 *@
+            @foreach (string dpId in ViewBag.DateTimePickers) {
+	            @:initDateTimePicker("#@dpId");
+	        }
+            @*年月入力テキスト初期化 *@
+            @foreach (string dpId in ViewBag.YearMonthPickers) {
+	            @:initYearMonthPicker("#@dpId");
+	        }
+
+            @*年入力テキスト初期化 *@
+            initYearTexts();
+
+            @* コンボボックス初期化 *@
+            @foreach(string key in ViewBag.CboDatas.Keys) {
+                var cboData = (List<string>)ViewBag.CboDatas[key];
+                @:initComboBox("@ViewBag.AppRoutePath", "#@key", "@cboData[0]", "@Html.Raw(cboData[1])", "@cboData[2]", "@cboData[3]", -1);
+            }
+
+            @* オートコンプリート初期化 *@
+            @* 初期化はinitFormで行う*@
+            @*@foreach(string key in ViewBag.AutoCompDatas.Keys) {
+                var autoCompData = (List<string>)ViewBag.AutoCompDatas[key];
+                @:initAutoComp("@ViewBag.AppRoutePath", "#@key", "@autoCompData[0]", "@Html.Raw(autoCompData[1])");
+            }*@
+
+            @* オートコンプリート定義情報 *@
+            @foreach(string key in ViewBag.AutoCompDefDatas.Keys) {
+                var autoCompDefData = (List<string>)ViewBag.AutoCompDefDatas[key];
+                @:initAutoCompDef("#@key", "@autoCompDefData[0]", "@Html.Raw(autoCompDefData[1])", "@autoCompDefData[2]", "@autoCompDefData[3]");
+            }
+
+            @* 複数選択ﾘｽﾄ初期化 *@
+            @foreach(string key in ViewBag.MltSelDatas.Keys)
+            {
+                var msData = (List<string>)ViewBag.MltSelDatas[key];
+                @:initMultiSelectBox("@ViewBag.AppRoutePath", "#@key", "@msData[0]", "@Html.Raw(msData[1])", "@msData[2]", "@msData[3]");
+            }
+
+            @* ラジオボタン初期化 *@
+            @foreach(string key in ViewBag.RadioDatas.Keys)
+            {
+                var radioData = (List<string>)ViewBag.RadioDatas[key];
+                @:initRadioButton("@ViewBag.AppRoutePath", "[name=\'@key\']", "@radioData[0]", "@Html.Raw(radioData[1])", "@radioData[2]");
+            }
+
+            @* 日付(ブラウザ標準)初期化 *@
+            initDate();
+
+            @* 時刻(ブラウザ標準)初期化 *@
+            initTime();
+
+            @* 日時(ブラウザ標準)初期化 *@
+            initDateTime();
+
+            @* チェックボックス初期化 *@
+            initCheckBox();
+
+            //★AKAP2.0カスタマイズ★
+            @* チェックボックス初期化 *@
+            //initShiftCheckBox();
+            //★AKAP2.0カスタマイズ★
+
+            @* コード＋翻訳 初期化 *@
+            @foreach(string key in ViewBag.CodeTransDatas.Keys) {
+                var codeTransData = (List<string>)ViewBag.CodeTransDatas[key];
+                @:initCodeTrans("@ViewBag.AppRoutePath", "#@key", "@codeTransData[0]", "@Html.Raw(codeTransData[1])");
+            }
+
+            @* 計算ラベル初期化 *@
+            initCalcLabel("@ViewBag.AppRoutePath");
+
+            //★AKAP2.0カスタマイズ★
+            @* 一覧ソート初期化 *@
+            initListSort('@ViewBag.AppRoutePath');
+            //★AKAP2.0カスタマイズ★
+
+            @* Validatorｶｽﾀﾑﾁｪｯｸ設定 *@
+            initValidatorAddMethod();
+
+            @* メニューの初期化処理 *@
+            initMenu();
+
+            @* タブ切替の初期化処理 *@
+            initTab();
+
+            @* 各種ボタンの初期化 *@
+            initButtons('@ViewBag.AppRoutePath',
+                "@AppCommonObject.Config.AppSettings.UploadFileSize");
+
+            @* 各種カスタムコントロールの初期化 *@
+            initCustomControls('@ViewBag.AppRoutePath');
+
+            @*他機能遷移時、戻る時再検索用退避条件(P_SearchCondition)をｾｯﾄ*@
+            @if (transPtn == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.OtherTab)
+            {
+                @* indivDataFlg=1の場合、retainSearchConditionsForOtherTab内でﾃﾞｰﾀを取得して処理するよう修正*@
+                @:var dicBackCons = {};
+                @*if (backConditions != null)
+                {
+                    foreach(var backCondition in backConditions)
+                    {
+                        @:var backConList = [];
+                        List<Dictionary<string, object>> valueList = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(backCondition.Value.ToString());
+                        for (int i = 0; i < valueList.Count; i ++)
+                        {
+                            @:var con = {};
+                            Dictionary<string, object> condition = valueList[i];
+                            foreach (var item in condition)
+                            {
+                                @:con["@item.Key"] = "@item.Value";
+                            }
+                            @:backConList[@i] = con;
+                        }
+                        @:dicBackCons["@backCondition.Key"] = backConList;
+                    }
+                    @:retainSearchConditionsForOtherTab(dicBackCons);
+                }*@
+                if (indivDataFlg == 1)
+                {
+                    @*indivDataFlg = 1の場合、$("#main_contents > div.init_temp_data")のinput:hiddenタグでJSON文字列で受け取るよう修正*@
+                    @:retainSearchConditionsForOtherTab();
+                }
+            }
+
+            @* 画面単位の初期化処理 *@
+            @* selDataFlg=1の場合、initForm内でselectDataを取得するよう修正 *@
+            @*var selectData = new Array();
+            @if (conditionData != null)
+            {
+                for (int i = 0; i < conditionData.Count; i++)
+                {
+                    @:var con = {};
+                    Dictionary<string, object> condition = conditionData[i];
+                    foreach(var item in condition)
+                    {
+                        @:con["@item.Key"] = "@item.Value";
+                    }
+                    @:selectData[@i] = con;
+                }
+            }
+            else {
+                @:selectData = null;
+            }*@
+
+            initForm('@ViewBag.AppRoutePath',
+                '@Model[0].CONDUCTMST.CONDUCTID',
+                '@Model[0].CONDUCTMST.PGMID',
+                @formNo,
+                -1,
+                '@ViewBag.CtrlId',
+                @Model[0].CONDUCTMST.PTN,
+                null,
+                null,
+                null,
+                null,
+                null,
+                @transPtn,
+                null,
+                null,
+                '@selDataFlg');
+
+            //★AKAP2.0カスタマイズ★
+            @*@if (CONDUCT_MST_CONSTANTS.PTN.Bat == Model[0].CONDUCTMST.PTN)
+            {
+                //※ﾊﾞｯﾁ機能の場合
+
+                //一定間隔で再表示
+                @:execBatRefresh();
+            }*@
+            //ﾊﾞｯﾁ再表示ﾎﾞﾀﾝ
+            @foreach (string batRefleshBtn in ViewBag.BatRefleshBtns) {
+                //一定間隔で再表示
+                @:execBatRefresh("@batRefleshBtn");     //10秒間隔
+            }
+            //★AKAP2.0カスタマイズ★
+
+            $(document).on('click', function(e) {
+                //ｻｲﾄﾞﾒﾆｭｰの制御
+                // -ｸﾘｯｸ位置がｻｲﾄﾞﾒﾆｭｰの外の場合、ｻｲﾄﾞﾒﾆｭｰを非表示
+                if(!$(e.target).closest('#app_navi_menu').length && !$(e.target).closest('#app_navi_icon').length){
+                    setHide($('#app_navi_menu'), true);
+                    $("#app_navi_icon").find("span.glyphicon-cog").removeClass("select");
+                }
+                //複数選択ﾘｽﾄの制御
+                // -ｸﾘｯｸ位置が複数選択ﾘｽﾄの外の場合、複数選択ﾘｽﾄを非表示
+                closeMultiSelectList(e.target);
+            });
+
+            // 詳細検索メニュー閉じるボタンイベント処理割り当て
+            $("#ComDetailSearchHide").on('click', function () {
+                var navDetailSearch = $("#detail_search");
+
+                // 詳細検索メニューを非表示
+                setHide(navDetailSearch, true);
+            });
+
+            // 項目カスタマイズメニュー閉じるボタンイベント処理割り当て
+            $("#ComItemCustomizeHide").on('click', function () {
+                var navItemCustomize = $("#item_customize");
+                @*保存処理は行わない*@
+                @*// 項目カスタマイズ情報の保存
+                saveItemCustomizeInfo('@ViewBag.AppRoutePath');*@
+                // 項目カスタマイズメニューを非表示
+                setHide(navItemCustomize, true);
+            });
+
+            // フォーカスインイベント
+            $(document).on('focusin', function (event) {
+                // イベントが発生した対象のオブジェクト
+                var obj = event.target;
+                if (!checkTabFocus(obj)) { return false;};
+
+                //複数選択ﾘｽﾄ制御
+                // -ﾌｫｰｶｽ位置が複数選択ﾘｽﾄの場合、複数選択ﾘｽﾄを非表示
+                closeMultiSelectList(event.target);
+            });
+
+            $(document).keydown(function (event) {
+                // クリックされたキーのコード
+                var keyCode = event.keyCode;
+
+                // Ctrlキーがクリックされたか(true or false)
+                var ctrlClick = event.ctrlKey;
+
+                // Altキーがクリックされたか(true or false)
+                var altClick = event.altKey;
+
+                // キーイベントが発生した対象のオブジェクト
+                var obj = event.target;
+
+                // バックスペースキーを制御
+                if (keyCode == 8) {
+                    // テキストボックス／テキストエリアを制御
+                    if ((obj.tagName == "INPUT"
+                        && (obj.type == "text" || obj.type == "password" || obj.type == "num" || obj.type == "date" || obj.type == "time" || obj.type == "search"))
+                        || obj.tagName == "TEXTAREA") {
+                        if (!obj.readOnly && !obj.disable) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                // Alt + ←を制御する
+                if (altClick && (keyCode == 37 || keyCode == 39)) {
+                    return false;
+                }
+
+                //★AKAP2.0カスタマイズ★
+                // Enterキーがクリックされた時
+                if (keyCode == 13) {
+                    // 横方向一覧
+                    if (!$(obj).parents('table').hasClass('vertical_tbl')) {
+                        // 対象要素：入力欄／テキストエリア／コンボボックス
+                        if ((obj.tagName == "INPUT" && !(obj.type == "button" || obj.type == "file"))
+                            || obj.tagName == "TEXTAREA"
+                            || obj.tagName == "SELECT") {
+                            if (!obj.readOnly && !obj.disable) {
+                                nextForcus(obj);   // フォーカス移動
+                            }
+                        }
+                    }
+                }
+                //★AKAP2.0カスタマイズ★
+
+                return true;
+            })
+
+            // 項目カスタマイズ一覧の初期化
+            var moveItemId;
+            var ulItemCustomize = $(".itemcustomize").not('.fixed');
+            initItemCustomize(ulItemCustomize);
+        });
+
+        @*ページ遷移前*@
+        $(window).on('unload beforeunload', function () {
+            @*ページ遷移フラグをON*@
+            setPageTransitionFlg(true);
+        });
+
+        //スクロール時に複数選択チェックボックスのリストをクローズする
+        $("#detail_search .main_div, #main_contents, .modal-content, .grouping_ctrl, .vertical_tbl").scroll(function () {
+            //複数選択チェックボックスのリストの制御
+            var ele = $("#ui-datepicker-div:visible, .multisel-drop:visible");
+            if (ele && ele.length > 0) {
+                //リストを閉じる
+                var drop = $('.multisel-drop');
+                $(drop).fadeOut('fast');
+                //ｱｲｺﾝもｸﾛｰｽﾞ状態へ
+                var icon = $(drop).closest("td").find('.multisel-icon');
+                icon.removeClass('glyphicon-chevron-up');
+                icon.addClass('glyphicon-chevron-down');
+            }
+        });
+    </script>
+}

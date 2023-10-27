@@ -1,0 +1,264 @@
+﻿@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+@model CommonVerticalTableDivData
+
+@{
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+    // ROWNO毎にtable生成
+    var rownoMax = Model.ListItems.Max(z => z.ROWNO);
+    for (short row = 0; row < rownoMax; row++)
+    {
+        // ROWNO毎の一覧定義
+        var listItemsRow = Model.ListItems
+                                .Where(define => define.ROWNO == row + 1)
+                                .OrderBy(define => define.COLNO).ToList();
+        if (listItemsRow.Count() > 0)
+        {
+            // N数の最大値
+            var itemCntMax = listItemsRow.Max(z => z.ITEM_CNT);
+            if (itemCntMax < 1)
+            {
+                itemCntMax = 1;
+            }
+            // －　5件を超える場合は折り返して表示
+            if (itemCntMax > AppConstants.ItemCntVCnt)
+            {
+                itemCntMax = AppConstants.ItemCntVCnt;
+            }
+
+            //ヘッダ列幅の設定
+            var colHeaderWidthMax = 150;
+            //ヘッダ列幅は「||」区切り
+            var tmpHeaderListItemRow = listItemsRow.Where(z => z.COLWIDTH.Contains("||")).ToList();
+            if (tmpHeaderListItemRow != null && tmpHeaderListItemRow.Count > 0)
+            {
+                //ヘッダ列幅の最大値を取得
+                colHeaderWidthMax = listItemsRow.Where(z => z.COLWIDTH.Contains("||")).Select(z => Convert.ToInt32(z.COLWIDTH.Split("||")[0])).Max();
+            }
+            var headerWidth = "width:" + colHeaderWidthMax + "px;";
+
+            //ヘッダ列幅指定なしのデータ列幅取得
+            var tmpDataWidthList = listItemsRow.Where(z => !z.COLWIDTH.Contains("||")).Select(z => z.COLWIDTH).ToList();
+            //ヘッダ列幅指定ありのデータ列幅取得
+            tmpDataWidthList.AddRange(listItemsRow.Where(z => z.COLWIDTH.Contains("||")).Select(z => z.COLWIDTH.Split("||")[1]).ToList());
+
+            // データ列幅を決める
+            // －　列幅最大値(ひとまず「|」区切りでないものから抽出する)
+            //var colWidthMax = listItemsRow.Where(z => !z.COLWIDTH.Contains("|")).Select(z => z.COLWIDTH.AsInt()).Max();
+            var colWidthMax = 0;
+            var tmpListItemRow = tmpDataWidthList.Where(z => !z.Contains("|")).ToList();
+            if (tmpListItemRow != null && tmpListItemRow.Count != 0)
+            {
+                colWidthMax = tmpDataWidthList.Where(z => !z.Contains("|")).Select(z => Convert.ToInt32(z)).Max();
+            }
+
+            foreach (var listItem in listItemsRow)
+            {
+                // コード＋翻訳、FROMTO項目は1セルの幅が広いので調整を行う
+                int colWidth = 0;
+                if (listItem.CELLTYPE != LISTITEM_DEFINE_CONSTANTS.CELLTYPE.CodeTrans)
+                {
+                    colWidth = CommonDataUtil.GetMaxColWidth(listItem);
+                }
+                else
+                {
+                    // コード＋翻訳の場合
+                    colWidth = CommonDataUtil.GetCodeTransColWidth(listItem);
+                }
+                if (listItem.FROMTOKBN == LISTITEM_DEFINE_CONSTANTS.FROMTOKBN.FromTo)
+                {
+                    colWidth = CommonDataUtil.GetFromToColWidth(colWidth);
+                }
+                if (colWidthMax < colWidth)
+                {
+                    colWidthMax = colWidth;
+                }
+            }
+            // borderとpaddingの分調整
+            colWidthMax += 6;
+
+            // テーブル幅を決める
+            // －　項目名列幅 + 列幅最大数 * N数 + バッチ、マスタ機能の共通自動配置項目列
+            var tblWidth = 120 + colWidthMax * itemCntMax;
+            //--※共通自動配置項目--
+            if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Bat)
+            {
+                //--バッチ機能の場合--
+                //tblWidth += 400;     //入力説明
+            }
+            else if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Master)
+            {
+                //--マスタ機能の場合--
+                tblWidth += 90;     //並べ替え順位
+                                    //tblWidth += 400;    //入力説明
+            }
+
+            var width = "width:" + tblWidth + "px;";
+            var tblId = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO.ToString() + Model.Id + "ROWNO" + (row + 1).ToString();
+            @:<table id="@tblId" data-rowno="1" style="@width" class="vertical_tbl">
+                @:<thead>
+                    @* サイズ指定用の行を出力*@
+                    @:<tr class="base_tr_width">
+                        @* --項目名--*@
+                        @:<th style="@headerWidth"></th>
+                        @* --入力ｴﾘｱ…NCNTの最大値分--*@
+                        for (int i = 0; i < itemCntMax; i++)
+                        {
+                            width = "width:" + colWidthMax + "px;";
+                            @:<td style="@width"></td>
+                        }
+                        @*--※共通自動配置項目--*@
+                        if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Bat)
+                        {
+                            @*--バッチ機能の場合--*@
+
+                            @*@:<td style="width:400px;"></td>     @*入力説明*@
+                        }
+                        else if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Master)
+                        {
+                            @*--マスタ機能の場合--*@
+
+                            @:<td style="width:90px;"></td>      @*並べ替え順位*@
+                            @*@:<td style="width:400px;"></td>     @*入力説明*@
+                        }
+                    @:</tr>
+
+                    if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Master)
+                    {
+                        @*--マスタ機能の場合--*@
+
+                        @* ﾍｯﾀﾞ行を出力*@
+                        @:<tr>
+                            @:<th>@blogic.ConvertResourceName("911090003", ViewBag.TransDictionary)</th>   @*検索条件項目*@
+                            @:<th class="widthNone">@blogic.ConvertResourceName("111090032", ViewBag.TransDictionary)</th>   @*検索条件*@
+                            @:<th class="widthNone">@blogic.ConvertResourceName("911210001", ViewBag.TransDictionary)</th>   @*並べ替え順位*@
+                            @*@:<th class="widthNone">@blogic.ConvertResourceName("911220001", ViewBag.TransDictionary)</th>   @*入力説明*@
+                        @:</tr>
+                    }
+                @:</thead>
+                @:<tbody>
+                    // 一覧項目定義列を出力
+                    foreach (var listItem in listItemsRow)
+                    {
+                        //列名
+                        var colNameStr = listItem.ITEMNAME;
+                        //表示／非表示設定
+                        //var trClass = (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide) ? "class='hide'" : "";
+
+                        //折り返しがある場合の項目名の行結合数
+                        // －　5件を超える場合は折り返して表示
+                        var colNameRowSpan = ((int)(listItem.ITEM_CNT - 1) / itemCntMax) + 1;
+
+                        @:<tr>
+                            string name = "VAL" + listItem.ITEMNO.ToString();
+                            bool showMark = false;
+                            var thClass = "";
+                            if (listItem.NULLCHKKBN == LISTITEM_DEFINE_CONSTANTS.NULLCHKKBN.Required)
+                            {
+                                thClass += "required";  //必須項目設定
+                                showMark = true;
+                            }
+                            if (listItem.CELLTYPE == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.TreeLabel)
+                            {
+                                thClass += " tree_select_label";
+                                showMark = true;
+                            }
+                            @* --項目名--*@
+                            if (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+                            {
+                                thClass += " hide";     //非表示
+                            }
+                            @:<th rowspan="@colNameRowSpan" data-name="@name" class="@thClass" title="@listItem.TOOLTIP">
+                                @colNameStr
+                                if (showMark)
+                                {
+                                    @:<span class="mark"></span>
+                                }
+                            @:</th>
+
+
+                            @* --データ列～N数分出力--*@
+                            for (int i = 0; i < listItem.ITEM_CNT; i++)
+                            {
+                                @*データ列数で折り返す*@
+                                if (i != 0 && i % itemCntMax == 0)
+                                {
+                                @:</tr>
+                                @:<tr>
+                                }
+
+                                @*データ列*@
+                                var data = new CommonDataCellData()
+                                {
+                                    FORMDEFINE = Model.FORMDEFINE,
+                                    LISTITEMUSERS = Model.LISTITEMUSERS,
+                                    ListItem = listItem,
+                                    IsLayoutRow = false,
+                                    Index = i
+                                };
+                                <partial name="_DataCellPartial.cshtml" model="data" />
+
+                                @*--※共通自動配置項目--*@
+                                if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Bat)
+                                {
+                                    @*--バッチ機能の場合--*@
+
+                                    @*入力説明*@
+                                    @*if (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+                                        {
+                                            @:<td class="hide">@listItem.COMMENT</td>
+                                        }
+                                        else
+                                        {
+                                            @:<td>@listItem.COMMENT</td>
+                                        }*@
+                                }
+                                else if (ViewBag.ConductPtn == CONDUCT_MST_CONSTANTS.PTN.Master)
+                                {
+                                    @*--マスタ機能の場合--*@
+
+                                    var cssClass = "";
+                                    var cssClass2 = "control";
+                                    if (listItem.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN_DEF.Hide)
+                                    {
+                                        cssClass = "hide";
+                                        cssClass2 = cssClass2 + " hide";
+                                    }
+
+                                    @*並べ替え順位 - 条件項目値の続きからVAL値に設定*@
+                                    @*　例）条件項目値 VAL1～VAL10、並べ替え順位 VAL11～VAL20*@
+                                    var name2 = "VAL" + (listItem.ITEMNO + Model.ItemCount).ToString();
+                                    @:<td data-name="@name2" class="@cssClass2">
+                                        var id2 = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO.ToString() + name2;
+                                        var ctrlName = id2;    //要素名=id名とする
+
+                                        @Html.TextBox(
+                             ctrlName,          // 要素名
+                             "",    // 値（value属性）初期値は空とする
+                             new { id = id2, data_type = "num", data_colname = listItem.ITEMNAME + "[" + blogic.ConvertResourceName("911210001", ViewBag.TransDictionary) + "]", data_min = 1, data_max = 100 } // そのほかの属性
+                             )
+                                    @:</td>
+
+                                    @*@:<td class = "@cssClass">@listItem.COMMENT</td>     @*入力説明*@
+                                }
+                            }
+                        @:</tr>
+                    }
+                    if (false == ViewBag.isLockDataSet)
+                    {
+                        //排他ﾃﾞｰﾀ保持用列項目を追加
+                        @:<tr class="hide">
+                            var nameLockData = "lockData";
+                            @:<th rowspan="1" data-name="@nameLockData">@nameLockData</th>
+                            @:<td data-name="@nameLockData" class="over_hidden" colspan="1" rowspan="1"></td>
+                        @:</tr>
+
+                        ViewBag.isLockDataSet = true;
+                    }
+
+                @:</tbody>
+            @:</table>
+        }
+    }
+}

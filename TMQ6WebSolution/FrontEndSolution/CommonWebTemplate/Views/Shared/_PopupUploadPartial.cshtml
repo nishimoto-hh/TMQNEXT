@@ -1,0 +1,109 @@
+﻿@* 【共通 - 取込機能】データ取込ダイアログ 部分ビュー *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model CommonConductMst
+
+
+@*ﾃﾞｰﾀ取込ﾀﾞｲｱﾛｸﾞを配置*@
+
+@{ 
+    short formNo = 0;
+    if (Model.FORMDEFINES.Count > 0)
+    {
+        formNo = Model.FORMDEFINES[0].FORMDEFINE.FORMNO;
+    }
+    int fileCnt = 1;
+    //アップロードボタンから対象ファイル数の上限値を取得
+    var maxLengths = Model.FORMDEFINES.Select(y => y.LISTITEMDEFINES
+        .Where(x => x.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Upload)
+        .OrderByDescending(z => z.MAXLENGTH).FirstOrDefault());
+    if (maxLengths != null && maxLengths.Count() > 0)
+    {
+        var maxLength = maxLengths.Where(y => y != null).Select(y => y.MAXLENGTH);
+        if(maxLength != null && maxLength.Count() > 0)
+        {
+            fileCnt = maxLength.Max();
+            if(fileCnt <= 0) { fileCnt = 1; }
+        }
+    }
+
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+}
+
+@*-- Modal --*@
+<section class="modal fade" id="fileUploadModal" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @*-- modal main content --*@
+            <div class="modal-header-my">
+                @*<button type="button" class="close" data-dismiss="modal">&times;</button>*@
+                <div class="title_div">
+                    <span>@blogic.ConvertResourceName("911280002", ViewBag.TransDictionary)</span>@*ファイル取込*@
+                </div>
+            </div>
+            <div class="modal-body-my">
+                <div id="file_detail_div">
+                    @using (Html.BeginForm(
+                            "FileUpload",      // アクション名
+                            null,    // コントローラー名
+                            new { id = "" },        // ルートパラメーター
+                            FormMethod.Post,                               // HTTP メソッド
+                            true,
+                            new { id = "formComUpload", enctype = "multipart/form-data" }
+                        ))
+                    {
+                        @*@Html.AntiForgeryToken()*@
+
+                        @*== ※post用ﾃﾞｰﾀ ==*@
+                        <input name="CONDUCTID" type="hidden" value="@Model.CONDUCTMST.CONDUCTID">
+                        <input name="PGMID" type="hidden" value="@Model.CONDUCTMST.PGMID">
+                        <input name="FORMNO" type="hidden" value="@formNo.ToString()">
+                        <input name="CTRLID" type="hidden" value="">    @*post用：処理対象CtrlId保持用*@
+                        <input name="TRANSACTIONDIV" type="hidden" value="">@*post用：画面遷移アクション区分保持用*@
+                        <input name="ListData" type="hidden" value="">  @*post用：明細ﾃﾞｰﾀﾘｽﾄ保持用*@
+                        <input name="ConditionData" type="hidden" value=""> @*post用：条件ﾃﾞｰﾀ保持用*@
+                        <input name="ListDefines" type="hidden" value="">   @*post用：一覧定義ﾃﾞｰﾀ保持用*@
+                        <input name="ButtonDefines" type="hidden" value="">   @*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+                        <input name="ListIndividual" type="hidden" value="">   @*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+                        <table class="vertical_tbl">
+                            <tbody>
+                                @*サイズ指定用の行を出力*@
+                                <tr class="base_tr_width">
+                                    <th width="100px"></th>   @*項目名*@
+                                    <td ></td>   @*ファイル名*@
+                                </tr>
+                                @for (int cnt = 1; cnt <= fileCnt; cnt++)
+                                {
+                                    <tr data-rowno="@cnt" class="filecontrol">
+                                        <th>@blogic.ConvertResourceName("111280020", ViewBag.TransDictionary)</th>@*ファイル名*@
+                                        <td data-name="uploadFileName" class="control">
+                                            <input type="file" name="@COM_CTRL_CONSTANTS.CTRLID.ComUploadFile" accept=".csv,.xlsx,.pdf,.jpg,.gif" />
+                                        </td>
+                                    </tr>
+                                    <tr height="5px"></tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer-my">
+                <div id="action_file_detail_div">
+                    @*取り込み*@
+                    <input type="button" name="ComUpload" class="btn func_button" value="@blogic.ConvertResourceName("911200002", ViewBag.TransDictionary)" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComUpload" data-dismiss="modal" />
+                    @*キャンセル*@
+                    <input type="button" id="ComUploadCancel" class="btn func_button" value="@blogic.ConvertResourceName("911070001", ViewBag.TransDictionary)" data-dismiss="modal" />
+                </div>
+            </div>
+            @*-- modal main content --*@
+
+        </div>
+    </div>
+</section>
+@*-- Modal --*@
+

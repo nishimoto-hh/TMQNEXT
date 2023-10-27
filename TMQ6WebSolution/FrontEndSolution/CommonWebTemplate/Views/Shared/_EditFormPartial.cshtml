@@ -1,0 +1,88 @@
+﻿@* 【画面】単票入力画面ビュー *@
+
+@*@using CommonWebTemplate.Models.Common;*@
+
+@* 該当一覧と単票ｴﾘｱﾎﾞﾀﾝの定義データ*@
+@*@model IList<CommonFormDefine>*@
+
+@*単票入力画面ｴﾘｱを配置*@
+@{ 
+    ViewBag.IsEditForm = true;     //Edit画面
+
+    ViewBag.isNewCreation = false;
+
+    //機能ID
+    string conductId = ViewBag.ConductId;
+    string pgmId = ViewBag.PgmId;
+    short ptn = ViewBag.ConductPtn;
+
+    /*//画面番号
+    short formNo = Model[0].FORMDEFINE.FORMNO;
+    // 「一覧」の定義を取得
+    var formDefines = Model.Where(define =>
+                define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn1 ||
+                define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn2 ||
+                define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3).ToList();
+
+    //ﾎﾟｯﾌﾟｱｯﾌﾟ画面ﾀｲﾄﾙ
+    var ctrlName = formDefines[0].FORMDEFINE.DAT_TITLE;
+    if (string.IsNullOrEmpty(ctrlName))
+    {
+        ctrlName = formDefines[0].FORMDEFINE.CTRLNAME;
+    }*/
+}
+
+@*-- 単票入力画面ｴﾘｱ --*@
+@*<article name="edit_area" data-formno="@formNo" data-ctrlId="@formDefines[0].FORMDEFINE.CTRLID" data-ctrlname="@ctrlName" class="base_form">*@
+<article name="edit_area" data-formno="" data-ctrlId="" data-ctrlname="" class="base_form">
+    @*=====詳細エリア=====*@
+    <div class="edit_div">
+        @using (Html.BeginForm(
+            null,      // アクション名
+            null,    // コントローラー名
+            new { id = "" },        // ルートパラメーター
+            FormMethod.Post,                               // HTTP メソッド
+            true,
+            new { id = "formEdit1", enctype = "multipart/form-data", autocomplete = "off" } // その他の属性
+        ))
+        {
+            @*@Html.AntiForgeryToken()*@
+
+            @*== ※post用ﾃﾞｰﾀ ==*@
+            @:<input name="CONDUCTID" type="hidden" value="@conductId">
+            @:<input name="PGMID" type="hidden" value="@pgmId">
+            @:<input name="CONDUCTPTN" type="hidden" value="@ptn">
+            @:<input name="FORMNO" type="hidden" value="">
+            @:<input name="CTRLID" type="hidden" value="">
+            @:<input name="TRANSACTIONDIV" type="hidden" value="">
+            @:<input name="ListData" type="hidden" value="">
+            @:<input name="ConditionData" type="hidden" value="">
+            @:<input name="ListDefines" type="hidden" value="">   @*post用：一覧定義ﾃﾞｰﾀ保持用*@
+            @:<input name="ButtonDefines" type="hidden" value="">   @*post用：ﾎﾞﾀﾝ定義ﾃﾞｰﾀ保持用*@
+            @:<input name="ListIndividual" type="hidden" value="">   @*post用：個別実装ﾃﾞｰﾀ保持用*@
+
+            // 「一覧」の定義を取得
+            /*foreach (var define in formDefines)
+            {
+                //一覧を出力
+                @Html.Partial("_TableControlPartial", define)
+            }*/
+
+        }
+    </div>
+
+    @*=====操作ボタンエリア=====*@
+    @*<div id="action_edit_divid" class="action_edit_div">
+        @*操作ボタンエリアの出力*@
+        @*@{
+            // 定義区分：「明細入力」の定義を取得
+            // 「ボタン」の定義を取得
+            var buttonDefines = Model.Where(define =>
+                                        (define.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup)).ToList();
+        }
+        @Html.Partial("_ButtonAreaPartial", buttonDefines)
+    </div>*@
+
+</article>
+@*-- 単票入力画面ｴﾘｱ --*@
+

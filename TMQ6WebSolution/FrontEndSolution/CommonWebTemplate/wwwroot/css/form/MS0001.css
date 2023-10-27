@@ -1,0 +1,220 @@
+﻿@charset "utf-8";
+
+/*********************************************
+ *** MS0001：機能個別設定用テンプレート *** 
+ *********************************************/
+
+/*アイテム検索画面*/
+.SI0001_SelectItem {
+    /*検索結果一覧の「選択」列のボタン幅を変更*/
+    min-width: 50px !important;
+}
+
+/*********** MS2020:工場毎年度期首月 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS2020"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+
+/*********** MS2040:予備品発注基準判定条件 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS2040"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 225px !important;
+}
+
+/*****************************************************/
+
+/*********** MS2070:工場毎会計提出表出力条件 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS2070"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+
+/*********** MS2080:長期計画メール送信情報 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 200px !important;
+}
+
+/*アイテム情報のテーブルデータの幅を変更*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead td {
+    width: 462px !important;
+}
+
+/*VAL11:アイテム情報の送信元メールアドレスデータの幅を変更
+  VAL15:アイテム情報の送信元メールサーバURLデータの幅を変更
+  VAL17:アイテム情報の送信元メールユーザ名データの幅を変更
+  VAL18:アイテム情報の送信元メールユーザパスワードデータの幅を変更
+*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody input#BODY_020_00_LST_1_2VAL11,
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody input#BODY_020_00_LST_1_2VAL15,
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody input#BODY_020_00_LST_1_2VAL17,
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody input#BODY_020_00_LST_1_2VAL18 {
+    width: 450px !important;
+}
+
+/*VAL12:アイテム情報のメール件名データの幅を変更
+*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody textarea#BODY_020_00_LST_1_2VAL12 {
+    width: 150px !important;
+}
+
+/*VAL13:アイテム情報のメール本文データの幅を変更
+*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody textarea#BODY_020_00_LST_1_2VAL13 {
+    width: 450px !important;
+}
+
+/*VAL16:アイテム情報の送信元メールサーバポートデータの幅を変更
+*/
+article[name="main_area"][data-conductid="MS2080"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl tbody input#BODY_020_00_LST_1_2VAL16 {
+    width: 150px !important;
+}
+
+/*****************************************************/
+
+/*********** MS1540:依頼番号採番パターン **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1540"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 160px !important;
+}
+
+/*****************************************************/
+/*********** MS1850:MQ分類 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1850"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 160px !important;
+}
+
+/*****************************************************/
+/*********** MS1000:地区/工場 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1000"][data-formno="2"] div#BODY_030_00_LST_1_2 table.vertical_tbl thead th {
+    width: 170px !important;
+}
+
+/*****************************************************/
+/*********** MS1600:文書種類_機器台帳_機番添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1600"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1610:文書種類_機器台帳_機器添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1610"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1620:文書種類_機器台帳_保全項目一覧 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1620"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1630:文書種類_機器台帳_MP情報タブ **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1630"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1640:文書種類_件名別長期計画_件名添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1640"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1650:文書種類_保全活動_件名添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1650"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1660:文書種類_保全活動_故障分析_略図添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1660"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1670:文書種類_保全活動_故障分析_故障原因分析書添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1670"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1680:文書種類_保全活動_故障分析(個別工場)_略図添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1680"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1690:文書種類_保全活動_故障分析(個別工場)_故障原因分析書添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1690"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1700:文書種類_予備品一覧_画像添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1700"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1750:文書種類_予備品一覧_画像添付 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1750"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+/*********** MS1780:文書種類_予備品一覧_予備品地図 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1780"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 215px !important;
+}
+
+/*****************************************************/
+
+/*********** MS1010:職種・機種 **********/
+
+/*アイテム情報のテーブルヘッダの幅を変更*/
+article[name="main_area"][data-conductid="MS1010"][data-formno="2"] div#BODY_020_00_LST_1_2 table.vertical_tbl thead th {
+    width: 160px !important;
+}
+
+/*****************************************************/

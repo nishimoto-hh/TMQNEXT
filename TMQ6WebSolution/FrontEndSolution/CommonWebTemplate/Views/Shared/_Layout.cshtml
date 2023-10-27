@@ -1,0 +1,237 @@
+﻿@using CommonWebTemplate
+@using CommonWebTemplate.Models.Common;
+@using CommonSTDUtil
+
+@* 先頭に画面定義、以降のデータはメニュー用データ*@
+@model IList<CommonConductMst>
+
+@using CommonWebTemplate.CommonUtil;
+
+@{
+    //メニュー表示位置
+    var menuPlace = AppCommonObject.Config.AppSettings.AppMenuPlace;
+
+    //翻訳辞書
+    var transDictionary = Model[0].TransDictionary;
+    ViewBag.TransDictionary = transDictionary;
+
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+    //機能名
+    var title = Model[0].CONDUCTMST.RYAKU + " | " + blogic.ConvertResourceName(CommonResources.ID.ID911090006, ViewBag.TransDictionary);
+
+    ////ツリービュー　場所階層
+    //var locationList = Model[0].StructureList.Where(x => x.StructureGroupId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location).ToList();
+    ////ツリービュー　職種機種
+    //var jobList = Model[0].StructureList.Where(x => x.StructureGroupId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job).ToList();
+
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    @*互換表示を解除*@
+    @*(start)ｷｬｯｼｭさせない設定----*@
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    @*----(end)*@
+    <title>@title</title>
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="~/css/themes/base/jquery-ui.css">
+    <environment include="Development">
+        @*開発環境では実ファイルを参照します*@
+        <link href="~/css/Site.css" rel="stylesheet" />
+        <link href="~/css/common.pagination.css" rel="stylesheet" />
+        <link href="~/css/common.css" rel="stylesheet" />
+        <link href="~/css/Menu.css" rel="stylesheet" />
+        <link href="~/css/common.responsive.css" rel="stylesheet" />
+        <link href="~/css/form/_template.css" rel="stylesheet" />
+        <link href="~/css/jquery-ui-timepicker-addon.css" rel="stylesheet" />
+        <link href="~/css/tabulator.min.css" rel="stylesheet" />
+        <link href="~/css/style.min.css" rel="stylesheet" />
+        <link href="~/css/custom/custom.common.css" rel="stylesheet" />
+        <link href="~/css/fontawesome/css/fontawesome.css" rel="stylesheet">
+        <link href="~/css/fontawesome/css/brands.css" rel="stylesheet">
+        <link href="~/css/fontawesome/css/solid.css" rel="stylesheet">
+        @*↓カスタムコントロール用cssファイルパスを追加してください↓*@
+        @*<link href="~/css/custom/xxxxxx.css" rel="stylesheet" />*@
+    </environment>
+    <environment exclude="Development">
+        @*本番環境ではバンドルしたファイルを参照します*@
+        <link href="~/css/bundles/common.min.css" rel="stylesheet" />
+        <link href="~/css/bundles/custom.controls.min.css" rel="stylesheet" />
+        <link href="~/css/bundles/fontawesome.min.css" rel="stylesheet">
+    </environment>
+</head>
+<body>
+    @*------◆ｴﾘｱ：ｺﾝﾃﾅ―(※ﾒｲﾝｺﾝﾃﾝﾂ用)------*@
+    <section id="container" class="main">
+        @*=====ﾍｯﾀﾞｰ=====*@
+        @{
+            var titleClass = "";
+            var switchId = "";
+            if (menuPlace == "top_menu")
+            {
+                titleClass = "title_top_menu";
+                switchId = "tree_view";
+            }
+            else if (menuPlace == "side_menu")
+            {
+                titleClass = "title_side_menu";
+                switchId = menuPlace;
+            }
+        }
+        <header id="title" class="@titleClass">
+            @*------◆ｴﾘｱ：ｱﾌﾟﾘﾛｺﾞ------*@
+            <section id="app_logo">
+                @*topﾍﾟｰｼﾞURLﾘﾝｸ*@
+                <a href="#" data-switchid="@switchId" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComSwitch" id="navbar-switch">
+                    <div class="ham select">
+                        <span class="ham_line ham_line1"></span>
+                        <span class="ham_line ham_line2"></span>
+                        <span class="ham_line ham_line3"></span>
+                    </div>
+                </a>
+                <a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComRedirectTop">
+                    <img id="app_logo_img" src="~/css/app_logo_top.png" />
+                </a>
+            </section>
+
+            @*------◆ｴﾘｱ：ｱﾌﾟﾘﾀｲﾄﾙ------*@
+            <div id="top_title_area">
+                @*=====ｱﾌﾟﾘﾀｲﾄﾙ=====*@
+                <partial name="_PageTitlePartial.cshtml" model="Model[0]" />
+
+                @*=====ﾒﾆｭｰ(※縦表示用)=====*@
+                @if (menuPlace == "top_menu")
+                {
+                    <partial name="_MenuPartial.cshtml" model="Model" />
+                }
+            </div>
+
+            @*=====ｱﾌﾟﾘﾒﾆｭｰ(top右上)====*@
+            <div id="top_navi_area">
+                <partial name="_PageMenuPartial.cshtml" model="Model[0]" />
+            </div>
+        </header>
+
+        <article id="main_frame" class="@menuPlace">
+            @*=====ﾒﾆｭｰ(※横表示用)=====*@
+            @if (menuPlace == "side_menu")  //ﾒﾆｭｰ表示位置：横の場合
+            {
+                <partial name="_MenuPartial.cshtml" model="Model" />
+            }
+            @*=====機能場所分類ツリービュー=====*@
+            <nav id="tree_view" style="width:260px;border-right:1px solid lightgray;">
+                <form>
+                    @*場所階層ツリー*@
+                    <div id="tree_location"></div>
+
+                    @*職種・機種ツリー*@
+                    <div id="tree_job"></div>
+
+                    @* ツリービュー検索ボタン *@
+                    <div style="height:7%;text-align:right;padding-right:10px;padding-top:3%;">
+                        <input type="button" name="ComTreeViewSearch" id="ComTreeViewSearch" class="btn func_button" value="@blogic.ConvertResourceName("111090030", ViewBag.TransDictionary)" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComTreeViewSearch" data-authkbn="@LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free" data-relationparam="" data-message="" title="" style="" />@*検索*@
+                    </div>
+                </form>
+            </nav>
+
+            @*=====詳細検索メニュー=====*@
+            <nav id="detail_search" class="hide">
+                <partial name="_DetailSearchMenuPartial.cshtml" model="Model[0]" />
+            </nav>
+
+            @*------◆ｴﾘｱ：ｺﾝﾃﾝﾂﾒｲﾝ------*@
+            <section id="main_contents" class="@menuPlace">
+
+                @*=====ﾒｲﾝｺﾝﾃﾝﾂ=====*@
+                @RenderBody()
+                <div class="hide init_temp_data">
+                    //== ※post用ﾃﾞｰﾀ ==
+                    <input name="TransDictionary_Temp" type="hidden" value="@ViewBag.TransDictionaryJson">    @*post用：翻訳ﾃﾞｰﾀ一時保持用*@
+                    <input name="UserAuthConductShoris_Temp" type="hidden" value="@ViewBag.UserAuthConductShorisJson">  @*post用：ﾎﾞﾀﾝ権限ﾃﾞｰﾀ一時保持用*@
+                    <input name="ConditionData_Temp" type="hidden" value="@ViewBag.ParamConditionData">       @*post用：検索条件ﾃﾞｰﾀ一時保持用*@
+                    <input name="ListIndividual_Temp" type="hidden" value="@ViewBag.ParamBackConditions">     @*post用：個別実装ﾃﾞｰﾀ一時保持用*@
+                </div>
+                <div class="errtooltip"></div>
+            </section>
+
+            @*=====項目カスタマイズメニュー=====*@
+            <nav id="item_customize" class="hide">
+                <partial name="_ItemCustomizeMenuPartial.cshtml" model="Model[0]" />
+            </nav>
+
+            @*-- Modal --*@
+            @{
+                var defaultMsg = "メッセージが設定されていません。";
+            }
+            @*ﾊﾟｽﾜｰﾄﾞ変更ﾀﾞｲｱﾛｸﾞを配置*@
+            <partial name="_PopupPassChangePartial.cshtml" model="defaultMsg" />
+            @*ﾒｯｾｰｼﾞﾀﾞｲｱﾛｸﾞを配置*@
+            <partial name="_PopupMessagePartial.cshtml" model="defaultMsg" />
+            @*一覧表示列設定ﾀﾞｲｱﾛｸﾞを配置*@
+            <partial name="_PopupSetDispItemPartial.cshtml" model="defaultMsg" />
+
+            @*-- Modal --*@
+
+        </article>
+
+        <footer>
+            <p>@AppCommonObject.Config.AppSettings.AppCopyRight</p>
+        </footer>
+        @*<p class="page_top"><span class="glyphicon glyphicon-chevron-up"></span><br>TOP</p>*@
+        <p class="page_top"><span class="glyphicon glyphicon-chevron-up"></span></p>
+
+    </section>
+
+    @*<script src="~/lib/jquery/dist/jquery.min.js"></script>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>*@
+    @*<script src="~/js/jquery-1.10.2.js"></script>
+        <script src="~/js/jquery-ui-1.10.2.js"></script>
+        <script src="~/js/jquery-ex-resize/jquery.exresize.js"></script>
+        <script src="~/js/jquery-ui-timepicker-addon.js"></script>
+        <script src="~/js/i18n/jquery-ui-timepicker-ja.js"></script>
+        <script src="~/js/jquery.validate.js"></script>
+        <script src="~/js/bootstrap.js"></script>
+        <script src="~/js/respond.js"></script>
+        <script src="~/js/modernizr-2.6.2.js"></script>*@
+
+    <script src="~/js/bundles/jquery.min.js"></script>
+    <script src="~/js/bundles/bootstrap.min.js"></script>
+    @*↓↓.NET5版ではプッシュ通知は未実装↓↓*@
+    @*<script src="~/js/signalr/dist/browser/signalr.js"></script>*@
+    @*<script src="~/js/jquery.signalR-2.4.2.js"></script>*@
+
+    <environment include="Development">
+        @*開発環境では実ファイルを参照します*@
+        <script src="~/js/Common.js"></script>
+        <script src="~/js/common.pagination.js"></script>
+        <script src="~/js/common.util.js"></script>
+        <script src="~/js/common.util.message.js"></script>
+        <script src="~/js/common.util.table.js"></script>
+        <script src="~/js/Site.js"></script>
+        <script src="~/js/form/_template.js"></script>
+        <script src="~/js/tabulator.min.js"></script>
+        <script src="~/js/jstree.min.js"></script>
+        <script src="~/js/custom/custom.common.js"></script>
+        @*↓カスタムコントロール用jsファイルパスを追加してください↓*@
+        @*<script src="~/js/custom/custom.schedulelist.js"></script>*@
+        @*<script src="~/js/custom/xxxxxx.js"></script>*@
+        <script src="~/js/custom/YmPicker.js"></script>
+    </environment>
+    <environment exclude="Development">
+        @*本番環境ではバンドルしたファイルを参照します*@
+        <script src="~/js/bundles/Common.min.js"></script>
+        <script src="~/js/bundles/custom.controls.min.js"></script>
+    </environment>
+    @RenderSection("ScriptsPath", false)
+
+    @RenderSection("Scripts", false)
+</body>
+</html>

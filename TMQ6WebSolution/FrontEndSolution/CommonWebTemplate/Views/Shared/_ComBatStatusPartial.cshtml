@@ -1,0 +1,259 @@
+﻿@* 【共通 - バッチ機能】処理結果テーブル 部分ビュー *@
+
+@using CommonWebTemplate.Models.Common;
+@using CommonWebTemplate.CommonUtil;
+
+@model CommonFormDefine
+
+@{
+    //処理結果ﾃﾞｰﾀ
+    //VAL1 - 開始日時
+    //VAL2 - 終了日時
+    //VAL3 - ユーザー
+    //VAL4 - 処理結果
+    //VAL5 - 処理メッセージ
+    //VAL6 - 関連ファイル
+    //VAL7 - 表示設定スタイル(※スタイル設定用)
+    //VAL8 - 実行中フラグ(0:未実行、1:実行中)
+    //VAL9 - 実行条件
+
+    //処理結果ﾃﾞｰﾀを取得
+    //var define = Model.Where(y =>
+    //                y.FORMDEFINE.CTRLID == COM_CTRL_CONSTANTS.CTRLID.ComBatStatus).FirstOrDefault();
+    var define = Model;
+
+    var data = new COM_TMPTBL_DATA();
+    ////ﾃﾞｰﾀなしの場合は空で作成
+    //data.CTRLID = COM_CTRL_CONSTANTS.CTRLID.ComBatStatus;
+    //if (Model.Count > 0)
+    //{
+    //    data.FORMNO = Model[0].FORMDEFINE.FORMNO;
+    //}
+    //data.VAL5 = "実行履歴がありません。"; //処理メッセージ
+    data.CTRLID = define.FORMDEFINE.CTRLID;
+
+    //バッチステータス一覧に紐付けたコントロールグループ
+    IList<CommonFormDefine> ctrGrpDefinesUpeer = null;
+    IList<CommonFormDefine> ctrGrpDefinesLower = null;
+    if (define.CTR_FORMDEFINES != null && define.CTR_FORMDEFINES.Count() > 0)
+    {
+        ctrGrpDefinesUpeer = define.CTR_FORMDEFINES
+            .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Upper)
+            .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+
+        ctrGrpDefinesLower = define.CTR_FORMDEFINES
+            .Where(z => z.FORMDEFINE.CTR_POSITIONKBN == FORM_DEFINE_CONSTANTS.CTR_POSITIONKBN.Lower)
+            .OrderBy(z => z.FORMDEFINE.DISPORDER).ToList();
+    }
+
+    @*--debug：値編集--
+    data.VAL1 = "2017/10/29 15:03:00";    //VAL1 - 開始日時
+    data.VAL2 = "2017/10/29 15:10:00";    //VAL2 - 終了日時
+    data.VAL3 = "二階堂　ふみ";           //VAL3 - ユーザー"
+    data.VAL4 = "異常";                   //VAL4 - 処理結果
+    data.VAL5 = "バッチ処理に失敗しました。【お問合せ番号】180301-001";   //VAL5 - 処理メッセージ
+    data.VAL6 = @"\\keikaku_np\keikaku180301.csv";  //VAL6 - 関連ファイル
+    data.VAL7 = "error";                  //VAL7 - 表示設定スタイル(※スタイル設定用)
+    data.VAL8 = "0";                      //VAL8 - 実行中フラグ
+    data.VAL9 = "年月:2018/02";           //VAL9 - 実行条件
+    --debug：値編集--*@
+
+@*処理結果を出力*@
+    var widthSum = "width:700px;";     @*開始日時～処理結果の幅合計*@
+    var colNameStr = "";
+    var ctrlId = "";
+    var name = "";
+    object val = null;
+    BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+@*=== 一覧上部コントロールグループ ===*@
+    if (ctrGrpDefinesUpeer != null)
+    {
+        foreach (var ctrlGrpDefine in ctrGrpDefinesUpeer)
+        {
+            <partial name="_ControlGrpAreaPartial" model="ctrlGrpDefine"/>
+        }
+    }
+
+    @*=== 実行条件 ===*@
+    ctrlId = data.CTRLID + "_J";
+
+    <table id="@ctrlId" data-editptn="@FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly" data-transptn="@FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.None" style="@widthSum">
+        <thead>
+            @*--ﾍｯﾀﾞﾀｲﾄﾙ--*@
+            <tr><th>@blogic.ConvertResourceName("911120011", ViewBag.TransDictionary)</th></tr>@*■ 処理結果 ■*@
+
+            @*--ﾍｯﾀﾞ項目--*@
+            <tr>
+                @{
+                    colNameStr
+                        = COM_CTRL_CONSTANTS.getColNameStr(COM_CTRL_CONSTANTS.COLNO.Joken);
+                    <th>@colNameStr</th>    @*--ﾍｯﾀﾞ列*@
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @*--ｻｲｽﾞ指定用の行--*@
+            <tr class="base_tr_width">
+                <td style="@widthSum"></td>    @*--ｻｲｽﾞ指定列:データ*@
+            </tr>
+
+            @*--ﾃﾞｰﾀ項目--*@
+            <tr>
+                @{
+                    name = "VAL" + COM_CTRL_CONSTANTS.COLNO.Joken;
+                    val = data.GetType().GetProperty(name).GetValue(data);
+
+                    <td data-name="@name">@val</td>     @*--値列*@
+                }
+            </tr>
+
+        </tbody>
+    </table>
+
+@*=== 処理ステータス ===*@
+    ctrlId = data.CTRLID + "_S";
+
+    <table id="@ctrlId" data-editptn="@FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly" data-transptn="@FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.None" class="marginNone" style="@widthSum">
+        <thead>
+            @{ 
+                var headColCnt = 4;
+            }
+
+            @*--ﾍｯﾀﾞ項目--*@
+            <tr>
+                @for (var colNo = 1; colNo <= headColCnt; colNo++)
+                {
+                    colNameStr
+                        = blogic.ConvertResourceName(COM_CTRL_CONSTANTS.getColNameId(colNo), ViewBag.TransDictionary);
+
+                    <th>@colNameStr</th>    @*--ﾍｯﾀﾞ列*@
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @*--ｻｲｽﾞ指定用の行--*@
+            <tr class="base_tr_width">
+                @for (var colNo = 1; colNo <= headColCnt; colNo++)
+                {
+                    var widthVal = 100;
+                    switch (colNo)
+                    {
+                        case COM_CTRL_CONSTANTS.COLNO.StDate:    //VAL1 - 開始日時
+                            widthVal = 160;
+                            break;
+                        case COM_CTRL_CONSTANTS.COLNO.EdDate:    //VAL2 - 終了日時
+                            widthVal = 160;
+                            break;
+                        case COM_CTRL_CONSTANTS.COLNO.User:      //VAL3 - ユーザー"
+                            widthVal = 130;
+                            break;
+                        case COM_CTRL_CONSTANTS.COLNO.Status:    //VAL4 - 処理結果
+                            widthVal = 250;
+                            break;
+                    }
+                    var width = "width:" + widthVal + " px;";
+                    @:<td style="@width"></td>    @*--ｻｲｽﾞ指定列*@
+                }
+            </tr>
+
+            @*値：VAL1～を出力*@
+            <tr>
+                @for (var colNo = 1; colNo <= headColCnt; colNo++)
+                {
+
+                    name = "VAL" + colNo;
+                    val = data.GetType().GetProperty(name).GetValue(data);
+                    var alignCss = "";
+                    switch (colNo)
+                    {
+                        case COM_CTRL_CONSTANTS.COLNO.StDate:    //VAL1 - 開始日時
+                        case COM_CTRL_CONSTANTS.COLNO.EdDate:    //VAL2 - 終了日時
+                            alignCss = "center";
+                            break;
+                    }
+
+                    <td data-name="@name" class="@alignCss">@val</td>     @*--値列*@
+                }
+            </tr>
+
+        </tbody>
+    </table>
+
+@*=== 処理ﾒｯｾｰｼﾞ ===*@
+    ctrlId = data.CTRLID + "_R";
+
+    <table id="@ctrlId" data-editptn="@FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly" data-transptn="@FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.None" class="marginNone" style="@widthSum">
+        <thead>
+            @*--処理ﾒｯｾｰｼﾞ：ﾍｯﾀﾞ項目--*@
+            <tr>
+                @{
+                    colNameStr
+                        = blogic.ConvertResourceName(COM_CTRL_CONSTANTS.getColNameId(COM_CTRL_CONSTANTS.COLNO.Message), ViewBag.TransDictionary);
+                    <th>@colNameStr</th>    @*--ﾍｯﾀﾞ列*@
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @*--ｻｲｽﾞ指定用の行--*@
+            <tr class="base_tr_width">
+                <td style="@widthSum"></td>    @*--ｻｲｽﾞ指定列:データ*@
+            </tr>
+
+            @*--処理ﾒｯｾｰｼﾞ：ﾃﾞｰﾀ項目--*@
+            <tr>
+                @{
+                    name = "VAL" + COM_CTRL_CONSTANTS.COLNO.Message;
+                    val = data.GetType().GetProperty(name).GetValue(data);
+                    var classM = data.GetType().GetProperty("VAL" + COM_CTRL_CONSTANTS.COLNO.CssClass).GetValue(data);
+
+                    <td data-name="@name" class="@classM">@val</td>     @*--値列*@
+                }
+            </tr>
+
+        </tbody>
+    </table>
+
+@*=== 関連ﾌｧｲﾙ ===*@
+    ctrlId = data.CTRLID + "_F";
+
+    <table id="@ctrlId" data-editptn="@FORM_DEFINE_CONSTANTS.DAT_EDITPTN.ReadOnly" data-transptn="@FORM_DEFINE_CONSTANTS.DAT_TRANSDISPPTN.None" class="marginNone" style="@widthSum">
+        <thead>
+            @*--関連ﾌｧｲﾙ：ﾍｯﾀﾞ項目--*@
+            <tr>
+                @{
+                    colNameStr
+                        = blogic.ConvertResourceName(COM_CTRL_CONSTANTS.getColNameId(COM_CTRL_CONSTANTS.COLNO.File), ViewBag.TransDictionary);
+                    <th>@colNameStr</th>    @*--ﾍｯﾀﾞ列*@
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @*--ｻｲｽﾞ指定用の行--*@
+            <tr class="base_tr_width">
+                <td style="@widthSum"></td>    @*--ｻｲｽﾞ指定列:データ*@
+            </tr>
+
+            @*--関連ﾌｧｲﾙ：ﾃﾞｰﾀ項目--*@
+            <tr>
+                @{
+                    name = "VAL" + COM_CTRL_CONSTANTS.COLNO.File;
+                    val = data.GetType().GetProperty(name).GetValue(data);
+
+                    <td data-name="@name"><a href="@val" target="_blank" rel="noopener noreferrer">@val</a></td>     @*--値列*@
+                }
+            </tr>
+
+        </tbody>
+    </table>
+
+@*=== 一覧下部コントロールグループ ===*@
+    if (ctrGrpDefinesLower != null)
+    {
+        foreach (var ctrlGrpDefine in ctrGrpDefinesLower)
+        {
+            <partial name="_ControlGrpAreaPartial" model="ctrlGrpDefine"/>
+        }
+    }
+
+}

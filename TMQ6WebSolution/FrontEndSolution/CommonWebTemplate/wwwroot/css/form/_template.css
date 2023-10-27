@@ -1,0 +1,24 @@
+﻿@charset "utf-8";
+
+/*********************************************
+ *** _template：機能個別設定用テンプレート *** 
+ *********************************************/
+
+/*明細一覧の背景色をボーダー表示（交互色替え表示）
+#detail_divid tbody tr:nth-child(even) {  
+  background-color:#c5f3f5;
+}
+*/
+
+/*例)class="t1"を持つ行の背景色を変更
+tr.t1{
+    background-color: lightblue;
+}
+*/
+
+/*例)class="t1"を持つセルの背景色を変更
+td.t1{
+    background-color: lightblue;
+}
+*/
+

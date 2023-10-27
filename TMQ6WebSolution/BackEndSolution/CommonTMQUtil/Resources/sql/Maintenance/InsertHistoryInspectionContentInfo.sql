@@ -1,0 +1,28 @@
+INSERT INTO ma_history_inspection_content(
+    [history_inspection_content_id]
+    ,[history_inspection_site_id]
+    ,[inspection_content_structure_id]
+    ,[follow_flg]
+    ,[follow_plan_date]
+    ,[follow_content]
+    ,[follow_completion_date]
+    ,[update_serialid]
+    ,[insert_datetime]
+    ,[insert_user_id]
+    ,[update_datetime]
+    ,[update_user_id]
+)
+VALUES(
+    NEXT VALUE FOR seq_ma_history_inspection_content_history_inspection_content_id
+    ,@HistoryInspectionSiteId
+    ,@InspectionContentStructureId
+    ,@FollowFlg
+    ,@FollowPlanDate
+    ,@FollowContent
+    ,@FollowCompletionDate
+    ,@UpdateSerialid
+    ,@InsertDatetime
+    ,@InsertUserId
+    ,@UpdateDatetime
+    ,@UpdateUserId
+)

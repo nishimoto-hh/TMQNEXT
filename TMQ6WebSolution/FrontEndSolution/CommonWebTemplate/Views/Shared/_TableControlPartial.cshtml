@@ -1,0 +1,119 @@
+﻿@* 一覧コントロール　部分ビュー *@
+@* 　－　条件表示切替ボタン *@
+@* 　－　ページャー *@
+@* 　－　テーブル（一覧 縦方向／横方向） *@
+
+@using CommonWebTemplate.Models.Common;
+@model CommonFormDefine
+
+@using CommonWebTemplate.CommonUtil;
+@using System.Text.Json
+@using Microsoft.AspNetCore.Http.Extensions;
+@using System.Text.Encodings.Web;
+@using System.Text.Unicode;
+
+@*--一覧コントロールメイン　実装部分--*@
+@{
+    //※一覧項目定義が存在しない場合、出力しない
+    if (Model.LISTITEMDEFINES == null || Model.LISTITEMDEFINES.Count <= 0)
+    {
+        return;
+    }
+
+    string divName = Model.FORMDEFINE.CTRLID + "_" + Model.FORMDEFINE.FORMNO.ToString();    //一覧div名
+    var dispClass = "";
+    if (!ViewBag.IsEditForm)
+    {
+        divName += "_div";
+    }
+    else
+    {
+        divName += "_edit_div";
+        dispClass = "hide";
+    }
+
+    //縦方向一覧？
+    bool isVList = false;
+    if (ViewBag.IsEditForm)     //編集画面(Edit)
+    {
+        isVList = true;
+    }
+    else if (Model.FORMDEFINE.DAT_DIRECTION == FORM_DEFINE_CONSTANTS.DAT_DIRECTION.Vertical)    //縦方向一覧指定
+    {
+        if (Model.FORMDEFINE.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.None)
+        {
+            //画面遷移なしの場合
+            isVList = true;
+        }
+    }
+
+    // コントロールグループ一覧？
+    bool isCtrlGrp = Model.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup;
+
+    // 一覧編集パターン
+    ViewBag.DatEditPtn = Model.FORMDEFINE.DAT_EDITPTN;
+}
+
+<div id="@divName" class="@dispClass">
+    @if (isVList)
+    {
+        // 　－　テーブル（縦方向一覧）
+        <partial name="_VerticalTablePartial.cshtml" model="Model"/>
+    }
+    else
+    {
+        bool pagerDisp = false;     //ﾍﾟｰｼﾞｬｰ表示ﾌﾗｸﾞ
+        int pageCount = (Model.FORMDEFINE.DAT_PAGEROWS == null) ? 0 : (int)Model.FORMDEFINE.DAT_PAGEROWS;
+        if (pageCount > 0)     //ページ行数指定ありの場合
+        {
+            //ﾍﾟｰｼﾞｬｰ表示
+            pagerDisp = true;
+        }
+
+        // 　－　ページャー(上部)
+        if (pagerDisp)
+        {
+            paginationCommon(pageCount, "def");
+        }
+
+        //　－　テーブル（横方向一覧）
+        <partial name="_HorizontalTablePartial.cshtml" model="Model"/>
+
+        // 　－　ページャー(下部)～１ページ件数が一定数を超える場合のみ表示される
+        if (pagerDisp)
+        {
+            paginationCommon(pageCount, "add");
+        }
+    }
+</div>
+
+@*ﾍﾟｰｼﾞｬｰ配置*@
+@{ 
+    void paginationCommon(int pageCount, string optionStr)
+    {
+        <div class="pagination_div">
+            <ul class="pagination paginationCommon" data-pagerows="@pageCount" data-ctrlid="@Model.FORMDEFINE.CTRLID" data-option="@optionStr" data-pageno="1" data-totalcnt="0" data-ctrltype="@Model.FORMDEFINE.CTRLTYPE">
+                <li><a name="selectFirst">&lt;&lt;</a></li>
+                <li><a name="selectPrv">&lt;</a></li>
+                <li>
+                    <span name="selectPageNo_span" class="control">
+                        @*ﾃﾞｰﾀ取得時にcommon.pagination.jsにてﾍﾟｰｼﾞNO選択用のｺﾝﾎﾞを動的生成*@
+                        @*@if (pageCountAll >= 1)
+                        {
+                            <select name="selectPageNo">
+                                @for (int pageNo = 1; pageNo <= pageCountAll; pageNo++)
+                                {
+                                    <option value="@pageNo">@pageNo</option>
+                                }
+                            </select>
+                        }*@
+                    </span>
+                </li>
+                <li class="disabled"><span name="pageCount_span" data-pageno="0"> / 0</span></li>
+                <li><a name="selectNext">&gt;</a></li>
+                <li><a name="selectLast">&gt;&gt;</a></li>
+            </ul>
+            <span class="itemcounts" data-option="@optionStr"></span>
+        </div>
+    }
+}

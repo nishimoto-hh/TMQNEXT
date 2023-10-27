@@ -1,0 +1,85 @@
+﻿@using CommonWebTemplate;
+@using CommonWebTemplate.Models.Common;
+@using CommonSTDUtil
+@using CommonSTDUtil.CommonSTDUtil
+
+@model CommonUserMst
+
+@{
+    //ブラウザの言語を取得
+    var browserLang = Context.Request.Headers["Accept-Language"].ToString().Split(";").FirstOrDefault()?.Split(",").FirstOrDefault();
+    //サイト名略称
+    var appTitleHeader = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911090006, browserLang);
+    //サイト名
+    var appTitle = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911090006, browserLang);
+
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    @*互換表示を解除*@
+    @*(start)ｷｬｯｼｭさせない設定----*@
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    @*----(end)*@
+    <title>@appTitleHeader</title>
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="~/css/themes/base/jquery-ui.css">
+    <link href="~/css/bundles/common.min.css" rel="stylesheet" asp-append-version="true" />
+    @*<script src="~/js/bundles/jquery.min.js" asp-append-version="true"></script>
+        <script src="~/js/bundles/jqueryval.min.js" asp-append-version="true"></script>
+        <script src="~/js/bundles/bootstrap.min.js" asp-append-version="true"></script>
+        <script src="~/js/bundles/modernizr.min.js" asp-append-version="true"></script>
+        <script src="~/js/bundles/Common.min.js" asp-append-version="true"></script>
+        <script src="~/js/jquery.signalR-2.4.2.js" asp-append-version="true"></script>*@
+    <script src="~/js/jquery-1.10.2.js"></script>
+
+    @RenderSection("Scripts", false)
+</head>
+
+@*<body>*@
+<body class="login">
+    @*------◆ｴﾘｱ：ｺﾝﾃﾅ―(※ﾛｸﾞｲﾝ用)------*@
+    <section id="container" class="login">
+        @*=====ﾍｯﾀﾞｰ=====*@
+        @*------◆ｴﾘｱ：ｱﾌﾟﾘﾀｲﾄﾙ------*@
+        <header id="title">
+            @{ var conductMst = new CommonConductMst();}
+            <partial name="_PageTitlePartial.cshtml" model="conductMst" />
+        </header>
+        @*------◆ｴﾘｱ：ﾛｸﾞｲﾝｱﾌﾟﾘﾛｺﾞ------*@
+        <section id="login_app_logo">
+            <img id="app_logo_img" src="~/css/app_logo.png" />
+        </section>
+        @*------◆ｴﾘｱ：ﾛｸﾞｲﾝｱﾌﾟﾘﾀｲﾄﾙ------*@
+        <section id="login_app_title">
+            @*---[ｼｽﾃﾑ名]---*@
+            <span class="app_title">@appTitle</span>
+        </section>
+
+        @*------◆ｴﾘｱ：ｺﾝﾃﾝﾂﾒｲﾝ------*@
+        <section id="main_contents">
+            @*=====ﾒｲﾝｺﾝﾃﾝﾂ=====*@
+            @RenderBody()
+
+            @*-- Modal --*@
+            @*ﾒｯｾｰｼﾞﾀﾞｲｱﾛｸﾞを配置*@
+            @*@{var msg = "メッセージが設定されていません。"; }
+                <partial name="_PopupMessagePartial.cshtml" model="msg" />*@
+            @*-- Modal --*@
+        </section>
+
+    </section>
+    @*=====ﾌｯﾀｰ=====*@
+    <footer>
+        <p>@AppCommonObject.Config.AppSettings.AppCopyRight</p>
+    </footer>
+
+</body>
+</html>

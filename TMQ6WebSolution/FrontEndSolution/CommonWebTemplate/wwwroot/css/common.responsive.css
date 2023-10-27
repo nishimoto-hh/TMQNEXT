@@ -1,0 +1,67 @@
+﻿/*****************************************************************************
+ *** 概要
+ *** 　レスポンシブ・デザイン用のスタイルを設定する
+ *** 　(メニュー、ポップアップダイアログなど)
+ *** 対応履歴
+ *** 　2021.04.01 ver2.0 アップグレード
+******************************************************************************/
+@charset "utf-8";
+
+/* ++モバイル用設定 */
+@media screen and (max-width: 768px) {
+
+  nav {
+      display:none;
+  }
+
+}
+
+@media screen and (min-width: 768px) {
+    
+  .modal_form.modal{
+    overflow-y: hidden;
+  }
+  .modal-dialog {
+    padding-top: 180px;
+  }
+
+  #messageModal .modal-dialog {
+    padding-top: 250px;
+    padding-left: 100px;
+  }
+  #messageModal .modal-content {
+    width: 360px;
+  }
+
+  /*ﾎﾟｯﾌﾟｱｯﾌﾟ画面用*/
+  /*#popupFormModal .modal-dialog {*/
+    /*padding-top: 30px;*/
+    /*margin-left:auto;*/
+    /*margin-right:auto;*/
+  /*}*/
+
+  /* -- ﾎﾟｯﾌﾟｱｯﾌﾟ画面用 (単票・子画面共通) */
+  .modal_form .modal-dialog {
+    width:90vw!important;
+    height:90vh;
+    margin-left:auto;
+    margin-right:auto;
+    display: flex;
+	justify-content: center;
+	align-items: center;
+    padding-top: 110px;
+    padding-bottom: 70px;
+  }
+  .modal_form .modal-content {
+    overflow:auto;
+    max-width: 100vw !important;
+    max-height: 98vh;
+    top: 30px;
+    bottom: 40px;
+  }
+  /* +フッターエリア */
+  .modal_form .modal-content .modal-footer-my {
+    padding: 0px 5px 0px 20px;
+  }
+
+}
