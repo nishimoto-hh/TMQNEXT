@@ -1140,6 +1140,14 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
         setGrayButton(DatailManagementStandard.ButtonId.Format1List, false);
         setGrayButton(DatailManagementStandard.ButtonId.ScheduleList, true);
 
+        // 2023.09 様式１一覧の件数が０件なら並び順設定ボタン非活性
+        var pageRowCount = P_listData["#" + DatailManagementStandard.Format1List.Id + getAddFormNo()].getDataCount("display");
+        if (pageRowCount == 0) {
+            // 並び順設定ボタン非活性
+            setDispMode(getButtonCtrl(DatailManagementStandard.ButtonId.RegistOrder), true);
+        }
+
+
     } else if (btnCtrlId == DatailManagementStandard.ButtonId.ScheduleList) { // スケジューリング
 
         // 描画に間に合っていないため間隔をあけて実行
