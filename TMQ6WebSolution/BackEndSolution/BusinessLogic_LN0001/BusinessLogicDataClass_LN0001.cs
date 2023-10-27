@@ -148,6 +148,17 @@ namespace BusinessLogic_LN0001
         }
 
         /// <summary>
+        /// 非表示項目設定用のデータクラス
+        /// </summary>
+        public class HiddenInfo
+        {
+            /// <summary>Gets or sets 変更管理の制御用フラグ</summary>
+            /// <value>変更管理の制御用フラグ</value>
+            /// <remarks>変更管理を行う工場の場合1</remarks>
+            public int IsHistoryManagementFlg { get; set; }
+        }
+
+        /// <summary>
         /// 参照画面
         /// </summary>
         public class Detail

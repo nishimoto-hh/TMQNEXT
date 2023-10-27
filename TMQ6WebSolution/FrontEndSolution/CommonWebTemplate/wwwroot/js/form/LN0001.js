@@ -1,6 +1,8 @@
 ﻿/* ========================================================================
  *  機能名　    ：   【LN0001】件名別長期計画
  * ======================================================================== */
+// 納品用 - 変更管理処理実施フラグ
+const isExecuteHistory = false;
 
 /**
  * 自身の相対パスを取得
@@ -73,9 +75,10 @@ const ScheduleUnit = { Year: 2, Month: 1 };
 const FormList = {
     No: 0
     , List: { Id: "BODY_040_00_LST_0" } // 一覧
-    , Button: { MakePlan: "btnMakePlan", Insert: "btnInsert", Output: "btnOutPut" }
+    , Button: { MakePlan: "btnMakePlan", Insert: "btnInsert", Output: "btnOutPut", HistoryManagement: "btnHistoryManagement" }
     , Filter: { Id: "BODY_010_00_LST_0", Input: 1 } // 一覧上部のフィルタ
     , Condition: { Id: "BODY_020_00_LST_0", Schedule: { Unit: 1, Year: 2, Month: 3, Ext: 4 } } // スケジュール表示条件※共通
+    , Hidden: { Id: "BODY_050_00_LST_0", IsHistoryManagementFlg: 1 }
 }
 // 参照画面の定義
 const FormDetail = {
@@ -85,6 +88,7 @@ const FormDetail = {
         Id: "BODY_100_00_LST_1"
         , LongPlanId: 1
         , IsDisplayMaintainanceKind: 3 // 保全情報一覧(点検種別毎)の表示是非
+        , IsHistoryManagementFlg: 7
     }
     // 保全情報一覧
     , List: { Id: "BODY_070_00_LST_1", ColInfo: MaintList }
@@ -102,7 +106,7 @@ const FormDetail = {
         // スケジュール表示条件関連
         , Schedule: { Unit: 1, Year: 2, Month: 5, Ext: 6 }
     }
-    , Button: { MakeMaintainance: "btnMakeMaintainance", AddSubject: "btnAddSubject", Schedule: "btnUpdateSchedule" }
+    , Button: { MakeMaintainance: "btnMakeMaintainance", AddSubject: "btnAddSubject", Schedule: "btnUpdateSchedule", HistoryManagement: "btnHistoryManagement", Copy: "btnCopy", Update: "btnUpdate", Delete: "btnDelete" }
     , Person: { Id: "BODY_040_00_LST_1", Code: 1, Name: 2 }
 };
 
@@ -209,15 +213,30 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
 
     if (formNo == FormList.No) {
-        // 両方表示されている場合は制御
+        // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormList);
+
+        // 変更管理ボタンの表示制御
+        var hideBtns = [FormList.Button.Insert];
+        if (isExecuteHistory) {
+            setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), FormList.Button.HistoryManagement, hideBtns);
+        }
 
         // 一覧画面の場合、新規ボタンにフォーカスをセット
         // 押下不能なら出力ボタン
         setFocusButtonAvailable(FormList.Button.Insert, FormList.Button.Output);
+
+
     } else if (formNo == FormDetail.No) {
-        // 両方表示されている場合は制御
+        // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormDetail);
+
+        // 変更管理ボタンの表示制御
+        var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
+        var hideLists = [];
+        if (isExecuteHistory) {
+            setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), FormDetail.Button.HistoryManagement, hideBtns, hideLists);
+        }
 
         // 参照画面　件名添付
         setFocusButton(FormDetail.Button.AddSubject);
@@ -227,6 +246,21 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 保全活動一覧を表示する画面の場合、表示制御
         setVisibleMaintList(getFormInfoByFormNo(formNo));
     }
+}
+
+/**
+ * 変更管理の要素を表示するか判定
+ * @param {any} isList 一覧画面ならTrue、参照画面ならFalse
+ * @returns  {bool} 変更管理を表示するならTrue
+ */
+function getIsHisotyManagement(isList) {
+    var flgValue;
+    if (isList) {
+        flagValue = getValue(FormList.Hidden.Id, FormList.Hidden.IsHistoryManagementFlg, 0, CtrlFlag.Label);
+    } else {
+        flagValue = getValue(FormDetail.Info.Id, FormDetail.Info.IsHistoryManagementFlg, 0, CtrlFlag.Label);
+    }
+    return flagValue == '1';
 }
 
 /**
@@ -545,6 +579,10 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             // 共通処理
             conditionDataList.push(getParamToDM0002(AttachmentStructureGroupID.LongPlan, getValue(FormDetail.Info.Id, FormDetail.Info.LongPlanId, 0, CtrlFlag.Label)));
         }
+        else if (btn_ctrlId == FormDetail.Button.HistoryManagement) {
+            // 変更管理ボタン押下時、長期計画IDをパラメータに設定
+            conditionDataList.push(getParamToHM0002FormDetail(getValue(FormDetail.Info.Id, FormDetail.Info.LongPlanId, 0, CtrlFlag.Label)));
+        }
         else {
             // 検索条件に追加する一覧のID
             var ctrlIdList = [FormDetail.Info.Id]; // 非表示項目退避
@@ -862,13 +900,21 @@ function setMaintListColumn(formNo) {
         // 行追加などを表示に戻す
         changeRowControl(listInfo.Id, true);
 
+        // 変更管理フラグ(詳細画面の場合のみ)
+        var isHistory = isExecuteHistory && isDetail && getIsHisotyManagement(false);
+        if (isHistory) {
+            // 選択列と関連コントロールを非表示にする
+            changeRowControl(listInfo.Id, false);
+        }
+
         if (valuePlanContent == FormDetail.Condition.PlanComboOptValue.Maintainance) {
             // 計画内容コンボの値が保全項目の場合は全ての列を表示するので終了
             return;
         }
 
+        // 保全項目以外の場合、不要な列を非表示に変更
         if (isDetail) {
-            // 参照画面の場合は選択列と関連コントロールをを非表示にする
+            // 参照画面の場合は選択列と関連コントロールを非表示にする
             changeRowControl(listInfo.Id, false);
         }
 

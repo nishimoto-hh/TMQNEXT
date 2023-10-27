@@ -4462,6 +4462,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 申請機能ID</summary>
             /// <value>申請機能ID</value>
             public int? ApplicationConductId { get; set; }
+            /// <summary>Gets or sets 申請データキーID</summary>
+            /// <value>申請データキーID</value>
+            public long KeyId { get; set; }
+            /// <summary>Gets or sets 申請データキーID</summary>
+            /// <value>申請データキーID</value>
+            public int FactoryId { get; set; }
             /// <summary>Gets or sets 申請者ID</summary>
             /// <value>申請者ID</value>
             public int? ApplicationUserId { get; set; }
@@ -4968,5 +4974,398 @@ namespace CommonTMQUtil
             }
         }
 
+        /// <summary>
+        /// 適用法規情報変更管理
+        /// </summary>
+        public class HmMcApplicableLawsEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcApplicableLawsEntity()
+            {
+                TableName = "hm_mc_applicable_laws";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 適用法規変更管理ID</summary>
+            /// <value>適用法規変更管理ID</value>
+            public long HmApplicableLawsId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 適用法規ID</summary>
+            /// <value>適用法規ID</value>
+            public long ApplicableLawsId { get; set; }
+            /// <summary>Gets or sets 適用法規アイテムID</summary>
+            /// <value>適用法規アイテムID</value>
+            public int? ApplicableLawsStructureId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
+
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 適用法規変更管理ID</summary>
+                /// <value>適用法規変更管理ID</value>
+                public long HmApplicableLawsId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmApplicableLawsId)
+                {
+                    HmApplicableLawsId = pHmApplicableLawsId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmApplicableLawsId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcApplicableLawsEntity GetEntity(long pHmApplicableLawsId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmApplicableLawsId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcApplicableLawsEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmApplicableLawsId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmApplicableLawsId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
+        /// 機器別管理基準部位変更管理
+        /// </summary>
+        public class HmMcManagementStandardsComponentEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcManagementStandardsComponentEntity()
+            {
+                TableName = "hm_mc_management_standards_component";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機器別管理基準部位変更管理ID</summary>
+            /// <value>機器別管理基準部位変更管理ID</value>
+            public long HmManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            // <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
+            /// <summary>Gets or sets 部位ID</summary>
+            /// <value>部位ID</value>
+            public int? InspectionSiteStructureId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準フラグ</summary>
+            /// <value>機器別管理基準フラグ</value>
+            public bool? IsManagementStandardConponent { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機器別管理基準部位変更管理ID</summary>
+                /// <value>機器別管理基準部位変更管理ID</value>
+                public long HmManagementStandardsComponentId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmManagementStandardsComponentId)
+                {
+                    HmManagementStandardsComponentId = pHmManagementStandardsComponentId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmManagementStandardsComponentId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcManagementStandardsComponentEntity GetEntity(long pHmManagementStandardsComponentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmManagementStandardsComponentId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcManagementStandardsComponentEntity>(getEntitySql);
+            }
+        }
+
+        /// <summary>
+        /// 機器別管理基準内容変更管理
+        /// </summary>
+        public class HmMcManagementStandardsContentEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcManagementStandardsContentEntity()
+            {
+                TableName = "hm_mc_management_standards_content";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機器別管理基準内容変更管理ID</summary>
+            /// <value>機器別管理基準内容変更管理ID</value>
+            public long HmManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 点検内容ID</summary>
+            /// <value>点検内容ID</value>
+            public int? InspectionContentStructureId { get; set; }
+            /// <summary>Gets or sets 部位重要度</summary>
+            /// <value>部位重要度</value>
+            public int? InspectionSiteImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 部位保全方式</summary>
+            /// <value>部位保全方式</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 保全区分</summary>
+            /// <value>保全区分</value>
+            public int? MaintainanceDivision { get; set; }
+            /// <summary>Gets or sets 点検種別</summary>
+            /// <value>点検種別</value>
+            public int? MaintainanceKindStructureId { get; set; }
+            /// <summary>Gets or sets 予算金額</summary>
+            /// <value>予算金額</value>
+            public decimal? BudgetAmount { get; set; }
+            /// <summary>Gets or sets 準備期間(日)</summary>
+            /// <value>準備期間(日)</value>
+            public int? PreparationPeriod { get; set; }
+            /// <summary>Gets or sets 長計件名ID</summary>
+            /// <value>長計件名ID</value>
+            public long? LongPlanId { get; set; }
+            /// <summary>Gets or sets 並び順</summary>
+            /// <value>並び順</value>
+            public int? OrderNo { get; set; }
+            /// <summary>Gets or sets スケジュール管理基準ID</summary>
+            /// <value>スケジュール管理基準ID</value>
+            public int? ScheduleTypeStructureId { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機器別管理基準内容変更管理ID</summary>
+                /// <value>機器別管理基準内容変更管理ID</value>
+                public long HmManagementStandardsContentId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmManagementStandardsContentId)
+                {
+                    HmManagementStandardsContentId = pHmManagementStandardsContentId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmManagementStandardsContentId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcManagementStandardsContentEntity GetEntity(long pHmManagementStandardsContentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmManagementStandardsContentId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcManagementStandardsContentEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmManagementStandardsContentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmManagementStandardsContentId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
+        /// 保全スケジュール変更管理
+        /// </summary>
+        public class HmMcMaintainanceScheduleEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcMaintainanceScheduleEntity()
+            {
+                TableName = "hm_mc_maintainance_schedule";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
+            /// <value>保全スケジュール変更管理ID</value>
+            public long HmMaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 保全スケジュールID</summary>
+            /// <value>保全スケジュールID</value>
+            public long MaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long? ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 周期ありフラグ</summary>
+            /// <value>周期ありフラグ</value>
+            public bool? IsCyclic { get; set; }
+            /// <summary>Gets or sets 周期(年)</summary>
+            /// <value>周期(年)</value>
+            public int? CycleYear { get; set; }
+            /// <summary>Gets or sets 周期(月)</summary>
+            /// <value>周期(月)</value>
+            public int? CycleMonth { get; set; }
+            /// <summary>Gets or sets 周期(日)</summary>
+            /// <value>周期(日)</value>
+            public int? CycleDay { get; set; }
+            /// <summary>Gets or sets 表示周期</summary>
+            /// <value>表示周期</value>
+            public string DispCycle { get; set; }
+            /// <summary>Gets or sets 開始日</summary>
+            /// <value>開始日</value>
+            public DateTime? StartDate { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
+                /// <value>保全スケジュール変更管理ID</value>
+                public long HmMaintainanceScheduleId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmMaintainanceScheduleId)
+                {
+                    HmMaintainanceScheduleId = pHmMaintainanceScheduleId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmMaintainanceScheduleId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcMaintainanceScheduleEntity GetEntity(long pHmMaintainanceScheduleId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmMaintainanceScheduleId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcMaintainanceScheduleEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmMaintainanceScheduleId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmMaintainanceScheduleId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
     }
 }

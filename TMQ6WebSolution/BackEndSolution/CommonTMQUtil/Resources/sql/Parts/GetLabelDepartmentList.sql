@@ -173,5 +173,6 @@ FROM
 WHERE
     structure_group_id = 1760
 AND language_id = @LanguageId
+AND item.delete_flg = 0
 ORDER BY
     item_extension_data_1

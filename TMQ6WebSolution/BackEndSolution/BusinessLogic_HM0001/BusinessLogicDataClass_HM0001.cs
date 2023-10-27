@@ -146,10 +146,16 @@ namespace BusinessLogic_HM0001
             public bool IsCertifiedFactory { get; set; }
             /// <summary>Gets or sets 実行処理区分</summary>
             /// <value>実行処理区分</value>
-            public string ExecutionDivision { get; set; }
+            public int ExecutionDivision { get; set; }
             /// <summary>Gets or sets 機器ID</summary>
             /// <value>機器ID</value>
             public long EquipmentId { get; set; }
+            /// <summary>Gets or sets 更新シリアルID(機番情報)</summary>
+            /// <value>更新シリアルID(機番情報)</value>
+            public int McUpdateSerialId { get; set; }
+            /// <summary>Gets or sets 更新シリアルID(機器情報)</summary>
+            /// <value>更新シリアルID(機器情報)</value>
+            public int EqUpdateSerialId { get; set; }
 
             #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
@@ -412,26 +418,6 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 変更のあった項目</summary>
             /// <value>変更のあった項目</value>
             public string ValueChanged { get; set; }
-        }
-
-        /// <summary>
-        /// 詳細編集画面の登録情報データクラス(機番情報)
-        /// </summary>
-        public class registMachineInfo : TmqDao.HmMcMachineEntity
-        {
-            /// <summary>Gets or sets 実行処理区分</summary>
-            /// <value>実行処理区分</value>
-            public int ExecutionDivision { get; set; }
-        }
-
-        /// <summary>
-        /// 詳細編集画面の登録情報データクラス(機器情報)
-        /// </summary>
-        public class registEquipmentInfo : TmqDao.HmMcEquipmentEntity
-        {
-            /// <summary>Gets or sets 実行処理区分</summary>
-            /// <value>実行処理区分</value>
-            public int ExecutionDivision { get; set; }
         }
     }
 }

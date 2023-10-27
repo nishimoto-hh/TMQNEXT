@@ -111,6 +111,10 @@ namespace BusinessLogic_LN0001
             // 保全活動の場合移動可能
             setSchedule(listCtrlId, true, param.LongPlanId, factoryId, contentType);
 
+            // 非表示項目
+            // 変更管理ボタンの表示制御用フラグ
+            setHistoryManagementFlg(ConductInfo.FormDetail.ControlId.Hide, factoryId);
+
             return true;
         }
 

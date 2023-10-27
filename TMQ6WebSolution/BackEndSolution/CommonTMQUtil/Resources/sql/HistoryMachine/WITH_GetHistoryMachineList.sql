@@ -69,6 +69,7 @@ hm_law AS -- 変更管理IDに紐付く適用法規(変更管理テーブル)
 target AS(
     SELECT
         COALESCE(hmachine.machine_id, cmachine.machine_id) AS machine_id,
+        COALESCE(hequipment.equipment_id, cequipment.equipment_id) AS equipment_id,
         COALESCE(hmachine.machine_no, cmachine.machine_no) AS machine_no,
         COALESCE(hmachine.machine_name, cmachine.machine_name) AS machine_name,
         COALESCE(hmachine.equipment_level_structure_id, cmachine.equipment_level_structure_id) AS equipment_level_structure_id,
@@ -96,8 +97,10 @@ target AS(
         COALESCE(hequipment.maintainance_kind_manage, cequipment.maintainance_kind_manage) AS maintainance_kind_manage,
         COALESCE(machine.location_structure_id, cmachine.location_structure_id) AS old_location_structure_id,
         COALESCE(machine.job_structure_id, cmachine.job_structure_id) AS old_job_structure_id,
+        COALESCE(hmachine.update_serialid, cmachine.update_serialid) AS mc_update_serial_id,
+        COALESCE(hequipment.update_serialid, cequipment.update_serialid) AS eq_update_serial_id,
         CASE
-            WHEN hcomponent.hm_management_standards_component_id IS NOT NULL THEN 1
+            WHEN hcomponent.history_management_detail_id IS NOT NULL THEN 1
             ELSE 0
         END AS is_changed_component,
         CASE
@@ -170,7 +173,13 @@ target AS(
             hm_law -- 適用法規変更管理
         ON  detail.history_management_detail_id = hm_law.history_management_detail_id
         LEFT JOIN
-            hm_mc_management_standards_component hcomponent -- 機器別管理基準部位変更管理
+            (
+             SELECT DISTINCT
+                 history_management_detail_id,
+                 machine_id
+             FROM
+                 hm_mc_management_standards_component
+            ) AS hcomponent -- 機器別管理基準部位変更管理(複数紐付くので重複を無くして結合)
         ON  detail.history_management_detail_id = hcomponent.history_management_detail_id
         LEFT JOIN
             mc_machine machine -- 機番情報(トランザクション)
@@ -216,7 +225,7 @@ target AS(
         @DispOnlyMySubject*/
 
         /*@IsDetail
-        -- 詳細画面の場合、変更管理IDを指定
+        -- 詳細画面 または 申請内容修正の場合、変更管理IDを指定
         AND history.history_management_id = @HistoryManagementId
         @IsDetail*/
 )

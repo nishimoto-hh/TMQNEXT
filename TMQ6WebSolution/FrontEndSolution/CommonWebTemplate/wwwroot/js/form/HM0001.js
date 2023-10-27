@@ -161,9 +161,9 @@ const FormDetail = {
         ChangeRequest: "ChangeRequest",                         // 変更申請
         DeleteRequest: "DeleteRequest",                         // 削除申請
         ChangeApplicationRequest: "ChangeApplicationRequest",   // 承認依頼
-        EditRequest: "EditRequest",                             // 修正
-        CancelRequest: "CancelRequest",                         // 取消
-        PullBackRequest: "PullBackRequest",                     // 引戻
+        EditRequest: "EditRequest",                             // 申請内容修正
+        CancelRequest: "CancelRequest",                         // 申請内容取消
+        PullBackRequest: "PullBackRequest",                     // 承認依頼引戻
         ChangeApplicationApproval: "ChangeApplicationApproval", // 承認
         ChangeApplicationDenial: "ChangeApplicationDenial",     // 否認
         BeforeChange: "BeforeChange"                            // 変更前
@@ -184,25 +184,12 @@ const FormEdit = {
                 MachineNo: 1,                          // 機器番号
 
             }
-        },
+        }
     },
-
-
-
-
     Button: { // ボタンコントロールID
         Regist: "Regist", // 登録
     }
 }
-
-
-
-
-
-
-
-
-
 
 // フラグ判定用定数
 const JudgeFlg = {
@@ -240,7 +227,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         //commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
 
         // 背景色変更処理
-        changeBackGroundColorDetail();
+        //changeBackGroundColorDetail();
     }
 }
 
@@ -322,6 +309,11 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             //return [false, conditionDataList];
 
         }
+        else if (btn_ctrlId == FormDetail.Button.EditRequest) { // 申請内容修正
+
+            // 詳細編集画面の検索のための情報を設定
+            conditionDataList = getListDataByCtrlIdList([FormDetail.MachineInfo.Machine.Id], FormDetail.No, 0);
+        }
 
     }
     else if (formNo == FormEdit.No) { // 詳細編集画面
@@ -352,68 +344,31 @@ function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
     return true;
 }
 
+/**
+ * 【オーバーライド用関数】実行正常終了後処理
+ *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId   ：機能ID
+ *  @param pgmId       ：プログラムID
+ *  @param formNo      ：画面NO
+ *  @param btn         ：ボタン要素
+ *  @param conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param isEdit      ：単票表示フラグ
+ *  @param data        ：結果ﾃﾞｰﾀ
+ */
+function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
 
-function isInProgress(btn_ctrlId, appPath, formNo, conductId) {
+    if (formNo == FormDetail.No) {
 
-    var eventFunc = function (status, data) {
+        // ボタン非表示
+        var condition = getConditionToHideButton();
+        //commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
 
-        // 申請状況の拡張項目
-        var applicationStatusCode = data.filter(x => x.ROWNO === 1)[0]["VAL" + FormDetail.MachineInfo.Machine.ColumnNo.ApplicationStatusCode];
-
-        applicationStatusCode = "20";
-        // 申請状況を判定
-        if (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Request) {
-
-            // 仕掛中(20：承認依頼中、30：差戻中)の場合はエラーメッセ―ジを表示して画面遷移しない
-
-            //メッセージ「保全履歴情報、故障分析情報の入力内容が変更になります。」
-            var strMessage = P_ComMsgTranslated[141300006];
-            setMessage(strMessage, 9);
-            //popupMessage([strMessage], messageType.Error, null);
-
-            return false;
-        }
-        else {
-
-            return true;
-        }
+        // 背景色変更処理
+        //changeBackGroundColorDetail();
     }
 
-    var getValHM0001 = function () {
-        //return getValue(btn_ctrlId);
-    }
-
-    var formData = getListDataByCtrlIdList([], formNo, 0);
-    ajaxCommon("checkIsInProgress", appPath, formNo, conductId, false, null, eventFunc);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**
  * 【オーバーライド用関数】Tabulatorの描画が完了時の処理
@@ -430,6 +385,39 @@ function postBuiltTabulator(tbl, id) {
     }
 }
 
+/**
+ * 【オーバーライド用関数】Tabulatorのページ変更後の処理
+ * @param {any} tbl 処理対象の一覧
+ * @param {any} id 処理対象の一覧のID(#,_FormNo付き)
+ * @param {any} pageNo 表示するページNo
+ * @param {any} pagesize 表示中のページの件数
+ */
+function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
+
+    // 描画された一覧を判定
+    if (id == "#" + FormList.List.Id + getAddFormNo()) { // 一覧画面 機器台帳一覧
+
+        // 背景色変更処理
+        commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
+    }
+}
+
+/**
+ * 【オーバーライド用関数】Tabulatorの列フィルター後の処理
+ * @param {any} tbl 処理対象の一覧
+ * @param {any} id 処理対象の一覧のID(#,_FormNo付き)
+ * @param {any} filters フィルターの条件
+ * @param {any} rows フィルター後の行rows
+ */
+function postTabulatorDataFiltered(tbl, id, filters, rows) {
+
+    // 描画された一覧を判定
+    if (id == "#" + FormList.List.Id + getAddFormNo()) { // 一覧画面 機器台帳一覧
+
+        // 背景色変更処理
+        commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo, rows);
+    }
+}
 
 /**
  * 詳細画面 ボタン非表示処理の条件作成
@@ -561,4 +549,41 @@ function getValueChangedAllItem(applicationDivisionCode) {
     });
 
     return valueChanged;
+}
+
+
+
+
+function isInProgress(btn_ctrlId, appPath, formNo, conductId) {
+
+    var eventFunc = function (status, data) {
+
+        // 申請状況の拡張項目
+        var applicationStatusCode = data.filter(x => x.ROWNO === 1)[0]["VAL" + FormDetail.MachineInfo.Machine.ColumnNo.ApplicationStatusCode];
+
+        applicationStatusCode = "20";
+        // 申請状況を判定
+        if (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Request) {
+
+            // 仕掛中(20：承認依頼中、30：差戻中)の場合はエラーメッセ―ジを表示して画面遷移しない
+
+            //メッセージ「保全履歴情報、故障分析情報の入力内容が変更になります。」
+            var strMessage = P_ComMsgTranslated[141300006];
+            setMessage(strMessage, 9);
+            //popupMessage([strMessage], messageType.Error, null);
+
+            return false;
+        }
+        else {
+
+            return true;
+        }
+    }
+
+    var getValHM0001 = function () {
+        //return getValue(btn_ctrlId);
+    }
+
+    var formData = getListDataByCtrlIdList([], formNo, 0);
+    ajaxCommon("checkIsInProgress", appPath, formNo, conductId, false, null, eventFunc);
 }

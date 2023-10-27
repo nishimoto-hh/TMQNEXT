@@ -1030,11 +1030,16 @@ namespace CommonTMQUtil
                 public const string GetApprovalUserId = "GetApprovalUserId";
                 /// <summary>変更管理IDより、申請状況の拡張区分取得するSQL</summary>
                 public const string GetApplicationStatus = "GetApplicationStatus";
-
                 /// <summary>変更管理テーブルにデータを新規登録するSQL</summary>
                 public const string InsertHistoryManagement = "InsertHistoryManagement";
                 /// <summary>変更管理詳細テーブルにデータを新規登録するSQL</summary>
                 public const string InsertHistoryManagementDetail = "InsertHistoryManagementDetail";
+                /// <summary>変更管理IDより、変更管理詳細IDを取得するSQL</summary>
+                public const string GetHistoryManagementDetailIdByHistoryManagementId = "GetHistoryManagementDetailIdByHistoryManagementId";
+                /// <summary>キーID(機番ID または 長計件名ID)より、指定された申請状況データの件数を取得するSQL</summary>
+                public const string GetApplicationStatusCntByKeyId = "GetApplicationStatusCntByKeyId";
+                /// <summary>場所階層IDより、工場IDを取得するSQL</summary>
+                public const string GetFactoryIdByLocationStructureId = "GetFactoryIdByLocationStructureId";
             }
 
             /// <summary>
@@ -1168,11 +1173,13 @@ namespace CommonTMQUtil
             /// </summary>
             /// <param name="applicationDivision">申請区分</param>
             /// <param name="executionDivision">実行処理区分</param>
+            /// <param name="keyId">申請データキーID</param>
+            /// <param name="factoryId">申請データ工場ID</param>
             /// <returns>エラーの場合は(False, -1)</returns>
-            public (bool returnFlag, long historyManagementDetailId, long historyManagementId) InsertHistoryManagementBaseTable(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision, int executionDivision)
+            public (bool returnFlag, long historyManagementDetailId, long historyManagementId) InsertHistoryManagementBaseTable(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision, int executionDivision, long keyId, int factoryId)
             {
                 // 変更管理テーブル 新規登録処理
-                (bool returnFlag, long historyManagementId) historyManagementResult = InsertHistoryManagement(applicationDivision);
+                (bool returnFlag, long historyManagementId) historyManagementResult = InsertHistoryManagement(applicationDivision, keyId, factoryId);
                 if (!historyManagementResult.returnFlag)
                 {
                     return (false, -1, -1);
@@ -1185,7 +1192,7 @@ namespace CommonTMQUtil
                     return (false, -1, -1);
                 }
 
-                // 登録処理で採番した 変更管理詳細ID を返す
+                // 登録処理で採番した変更管理ID、変更管理詳細ID を返す
                 return (true, historyManagementResult.historyManagementId, historyManagementDetailResult.historyManagementDetailId);
 
             }
@@ -1194,20 +1201,24 @@ namespace CommonTMQUtil
             /// 変更管理テーブル新規登録処理
             /// </summary>
             /// <param name="applicationDivision">申請区分</param>
+            /// <param name="keyId">申請データキーID</param>
+            /// <param name="factoryId">申請データ工場ID</param>
             /// <param name="isNewData">新規・複写の場合はTrue、変更の場合はFalse</param>
             /// <returns>エラーの場合は(False, -1)</returns>
 
-            public (bool returnFlag, long historyManagementId) InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision)
+            public (bool returnFlag, long historyManagementId) InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision applicationDivision, long keyId, int factoryId)
             {
                 // 登録情報を作成
                 ComDao.HmHistoryManagementEntity registInfo = new();
 
-                // 申請状況IDを取得
+                // 申請状況IDを取得(申請データ作成中)
                 registInfo.ApplicationStatusId = getApplicationStatus(TMQConst.MsStructure.StructureId.ApplicationStatus.Making);
 
                 // 申請区分IDを取得
                 registInfo.ApplicationDivisionId = getApplicationDivision(applicationDivision);
 
+                registInfo.KeyId = keyId;                                    // 申請データキーID
+                registInfo.FactoryId = factoryId;                            // 申請データ工場ID
                 registInfo.ApplicationConductId = this.ApplicationConductId; // 申請機能ID
                 registInfo.ApplicationUserId = this.UserId;                  // 申請者ID
                 registInfo.InsertDatetime = this.Now;                        // 登録日時
@@ -1297,20 +1308,6 @@ namespace CommonTMQUtil
                 return applicationDivisionList[0].StructureId;
             }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             /// <summary>
             /// 変更管理テーブルの申請状況更新処理前の入力チェック
             /// </summary>
@@ -1318,7 +1315,7 @@ namespace CommonTMQUtil
             /// <param name="isApproval">承認の場合はTrue、否認の場合はFalse</param>
             /// <param name="errMsg">エラーの場合のエラーメッセージ</param>
             /// <returns>エラーの場合はTrue</returns>
-            public bool isErrorBeforeUpdateApplicationStatus(ComDao.HmHistoryManagementEntity condition, bool isApproval, out string[] errMsg)
+            public bool isErrorBeforeUpdateApplicationStatus(List<ComDao.HmHistoryManagementEntity> condition, bool isApproval, out string[] errMsg)
             {
                 errMsg = null;
 
@@ -1333,7 +1330,7 @@ namespace CommonTMQUtil
                 // 以下①、②を判定
                 // ①ログインユーザーがシステム管理者かどうか
                 // ②変更管理データに紐付く場所階層IDの拡張項目4(承認ユーザーID)がログインユーザかどうか
-                if (!isSystemAdministrator(condition) || !isCertifiedFactory(condition))
+                if (!isSystemAdministrator() || !isCertifiedFactory(condition))
                 {
                     // 選択された変更管理を(承認・否認)する権限がありません。
                     errMsg = new string[] { ComRes.ID.ID141140003, ComRes.ID.ID111290002, isApproval ? ComRes.ID.ID111120228 : ComRes.ID.ID111270036 };
@@ -1349,12 +1346,12 @@ namespace CommonTMQUtil
             /// <param name="condition">検索条件</param>
             /// <param name="targetApplicationStatus">比較対象の申請状況</param>
             /// <returns>指定された申請状況と一致しない場合はFalse</returns>
-            public bool isRequestDataByHistoryManagementId(ComDao.HmHistoryManagementEntity condition, TMQConst.MsStructure.StructureId.ApplicationStatus targetApplicationStatus)
+            public bool isRequestDataByHistoryManagementId(List<ComDao.HmHistoryManagementEntity> condition, TMQConst.MsStructure.StructureId.ApplicationStatus targetApplicationStatus)
             {
-                string applicationStatus = getApplicationStatusByHistoryManagementId(condition);
+                List<string> applicationStatus = getApplicationStatusByHistoryManagementIdList(condition);
 
                 // 引数で指定された申請状況でない場合はエラー
-                if (string.IsNullOrEmpty(applicationStatus) || applicationStatus != ((int)targetApplicationStatus).ToString())
+                if (applicationStatus == null || applicationStatus.Exists(x => x != ((int)targetApplicationStatus).ToString()))
                 {
                     return false;
                 }
@@ -1373,7 +1370,7 @@ namespace CommonTMQUtil
                 TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApplicationStatus, out string sql);
 
                 // SQL実行
-                TMQUtil.StructureItemEx.StructureItemExInfo statusInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, condition);
+                TMQUtil.StructureItemEx.StructureItemExInfo statusInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, new { HistoryManagementIdList = condition.HistoryManagementId.ToString() });
 
                 if (statusInfo == null || statusInfo.ExData == null)
                 {
@@ -1385,20 +1382,43 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
+            /// 変更管理IDより、申請状況の拡張項目を取得する(複数)
+            /// </summary>
+            /// <param name="condition">検索条件リスト</param>
+            /// <returns>申請状況の拡張項目</returns>
+            public List<string> getApplicationStatusByHistoryManagementIdList(List<ComDao.HmHistoryManagementEntity> condition)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApplicationStatus, out string sql);
+
+                //変更管理IDをカンマ区切り文字列で取得
+                List<long> historyManagementIdList = condition.Select(x => x.HistoryManagementId).ToList();
+                string ids = string.Join(',', historyManagementIdList);
+
+                // SQL実行
+                IList<TMQUtil.StructureItemEx.StructureItemExInfo> statusInfo = this.Db.GetList<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, new { HistoryManagementIdList = ids });
+
+                if (statusInfo == null || statusInfo.Count == 0)
+                {
+                    // 取得できない場合はnullを返す
+                    return null;
+                }
+
+                return statusInfo.Select(x => x.ExData).ToList();
+            }
+
+            /// <summary>
             /// ログインユーザーがシステム管理者かどうか
             /// </summary>
             /// <param name="condition">検索条件</param>
             /// <returns>システム管理者でない場合はFalse</returns>
-            public bool isSystemAdministrator(ComDao.HmHistoryManagementEntity condition)
+            public bool isSystemAdministrator()
             {
                 // SQLを取得
                 TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetAuthLevel, out string sql);
 
-                // 検索条件
-                condition.ApprovalUserId = this.UserId; // 承認者ID
-
                 // SQL実行
-                TMQUtil.StructureItemEx.StructureItemExInfo authInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, condition);
+                TMQUtil.StructureItemEx.StructureItemExInfo authInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, new { ApprovalUserId = this.UserId });
 
                 if (authInfo == null || authInfo.ExData == null || authInfo.ExData != ((int)TMQConst.MsStructure.StructureId.AuthLevel.SystemAdministrator).ToString())
                 {
@@ -1414,17 +1434,18 @@ namespace CommonTMQUtil
             /// </summary>
             /// <param name="condition">検索条件</param>
             /// <returns>拡張項目がログインユーザーでない場合はFalse</returns>
-            public bool isCertifiedFactory(ComDao.HmHistoryManagementEntity condition)
+            public bool isCertifiedFactory(List<ComDao.HmHistoryManagementEntity> condition)
             {
                 // SQLを取得
                 TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApprovalUserId, out string sql);
 
-                // 検索条件に申請機能IDを設定
-                condition.ApplicationConductId = this.ApplicationConductId;
+                //変更管理IDをカンマ区切り文字列で取得
+                List<long> historyManagementIdList = condition.Select(x => x.HistoryManagementId).ToList();
+                string ids = string.Join(',', historyManagementIdList);
                 // SQL実行
-                TMQUtil.StructureItemEx.StructureItemExInfo certifiedInfo = this.Db.GetEntityByDataClass<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, condition);
+                IList<TMQUtil.StructureItemEx.StructureItemExInfo> certifiedInfo = this.Db.GetList<TMQUtil.StructureItemEx.StructureItemExInfo>(sql, new { ApplicationConductId = this.ApplicationConductId, HistoryManagementIdList = ids });
 
-                if (certifiedInfo == null || certifiedInfo.ExData == null || certifiedInfo.ExData != this.UserId.ToString())
+                if (certifiedInfo == null || certifiedInfo.Count == 0 || certifiedInfo.ToList().Exists(x => x.ExData != this.UserId.ToString()))
                 {
                     // 取得できないまたは工場の承認ユーザーでない場合はエラー
                     return false;
@@ -1456,7 +1477,7 @@ namespace CommonTMQUtil
 
                 bool isCertified()
                 {
-                    bool isSystemAdministrator = this.isSystemAdministrator(new ComDao.HmHistoryManagementEntity());
+                    bool isSystemAdministrator = this.isSystemAdministrator();
 
                     // トランザクションモードの場合はシステム管理者かどうかを返す
                     if (processMode == TMQConst.MsStructure.StructureId.ProcessMode.transaction)
@@ -1484,8 +1505,234 @@ namespace CommonTMQUtil
                     }
 
                     // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDかどうか
-                    return this.isCertifiedFactory(historyCondition);
+                    return this.isCertifiedFactory(new List<ComDao.HmHistoryManagementEntity>() { historyCondition });
                 }
+            }
+
+            /// <summary>
+            /// 変更管理IDより、変更管理テーブル・変更管理詳細テーブルのレコードを削除
+            /// </summary>
+            /// <param name="historyManagementId"></param>
+            /// <returns></returns>
+            public bool DeleteHistoryManagement(long historyManagementId)
+            {
+                // 変更管理テーブル 削除処理
+                ComDao.HmHistoryManagementEntity historyManagement = new();
+                if (!historyManagement.DeleteByPrimaryKey(historyManagementId, this.Db))
+                {
+                    return false;
+                }
+
+                // 変更管理IDより、変更管理詳細IDを取得する
+                // 検索条件を作成
+                ComDao.HmHistoryManagementEntity condition = new() { HistoryManagementId = historyManagementId };
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetHistoryManagementDetailIdByHistoryManagementId, out string sql);
+
+                // SQL実行
+                IList<ComDao.HmHistoryManagementDetailEntity> results = this.Db.GetListByDataClass<ComDao.HmHistoryManagementDetailEntity>(sql, condition);
+                if (results == null || results.Count == 0)
+                {
+                    // 取得できない場合はエラー
+                    return false;
+                }
+
+                // 取得した変更管理詳細IDで、変更管理詳細テーブルのレコードを削除
+                ComDao.HmHistoryManagementDetailEntity deleteCondition = new();
+                foreach (ComDao.HmHistoryManagementDetailEntity result in results)
+                {
+                    if (!deleteCondition.DeleteByPrimaryKey(result.HistoryManagementDetailId, this.Db))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// 変更管理対象の工場を取得
+            /// </summary>
+            /// <returns>変更管理対象の工場のリスト</returns>
+            public List<StructureItemEx.StructureItemExInfo> GetApprovalUserList()
+            {
+                // 拡張項目4の値がセットされた工場のリストを取得
+                // 検索条件
+                StructureItemEx.StructureItemExInfo param = new();
+                param.StructureGroupId = (int)Const.MsStructure.GroupId.Location; // 場所階層
+                param.Seq = 4; // 拡張4
+                param.LanguageId = this.LanguageId;
+                List<StructureItemEx.StructureItemExInfo> locationList = StructureItemEx.GetStructureItemExData(param, this.Db);
+                if (locationList == null || locationList.Count == 0)
+                {
+                    // 無い場合終了
+                    return locationList;
+                }
+                // 有る場合は階層番号が工場であり、拡張項目がNullでないものを絞り込み
+                var factoryList = locationList.Where(x => x.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.Location.Factory && !string.IsNullOrEmpty(x.ExData)).ToList();
+
+                return factoryList;
+            }
+
+            /// <summary>
+            /// ユーザが承認権限を持っている工場IDを取得
+            /// </summary>
+            /// <returns>ログインユーザが承認権限を持っている工場IDのリスト</returns>
+            public List<int> GetUserApprovalFactoryList()
+            {
+                // 拡張項目4(承認者)が設定された工場の構成マスタのリストを取得
+                List<StructureItemEx.StructureItemExInfo> factoryList = GetApprovalUserList();
+                if (factoryList == null || factoryList.Count == 0)
+                {
+                    // 存在しない場合、0件のリストを返す
+                    return new List<int>();
+                }
+
+                // システム管理者権限かどうか判定
+                bool isSystemAdministrator = this.isSystemAdministrator();
+                if (isSystemAdministrator)
+                {
+                    // システム管理者権限なら全ての承認者が設定された工場の構成ID
+                    return factoryList.Select(x => x.StructureId).ToList();
+                }
+
+                // ログインユーザが承認者に設定されている工場を絞り込み
+                var factoryIdList = factoryList.Where(x => x.ExData == this.UserId.ToString()).Select(x => x.StructureId).ToList();
+                return factoryIdList;
+            }
+            /// <summary>
+            /// ユーザが承認権限を持っているか判定
+            /// </summary>
+            /// <param name="factoryId">省略可能 工場IDを指定する場合は設定、無ければいずれかの工場</param>
+            /// <returns>持っている場合はTrue</returns>
+            public bool IsApprovalUser(int factoryId = -1)
+            {
+                // ユーザが承認権限を持っている工場のリストを取得
+                var factoryIdList = GetUserApprovalFactoryList();
+                if (factoryIdList == null | factoryIdList.Count == 0)
+                {
+                    // 無ければ権限なし
+                    return false;
+                }
+
+                if (factoryId != -1)
+                {
+                    // 工場IDが指定されている場合、工場で絞り込み
+                    return factoryIdList.Any(x => x == factoryId);
+                }
+                else
+                {
+                    // 指定されていない場合はリストの有無で判定
+                    return factoryIdList.Count > 0;
+                }
+            }
+
+            /// <summary>
+            /// ユーザの所属工場に変更管理対象の工場が含まれているか判定
+            /// </summary>
+            /// <returns>含まれている場合はTrue</returns>
+            public bool IsHistoryManagementFactoryUserBelong()
+            {
+                // 変更管理対象の工場リスト
+                var historyManagementFactoryList = GetApprovalUserList();
+                if (historyManagementFactoryList == null || historyManagementFactoryList.Count == 0)
+                {
+                    // 変更管理対象の工場リストがない場合、ユーザの変更管理対象の工場はなし
+                    return false;
+                }
+
+                // ユーザの権限がシステム管理者かどうか判定
+                bool isSystemAdministrator = this.isSystemAdministrator();
+                if (isSystemAdministrator)
+                {
+                    // 変更管理対象の工場があり、ユーザがシステム管理者なら、ユーザの所属工場に変更管理対象の工場があるとする
+                    return true;
+                }
+
+                // ユーザの所属権限リスト
+                var userFactoryIdList = TMQUtil.GetUserBelongFactoryIdList(this.UserId, this.Db);
+                if (userFactoryIdList == null || userFactoryIdList.Count == 0)
+                {
+                    // ユーザの所属権限がない場合、終了(発生しないはず)
+                    return false;
+                }
+                // 重複を排除
+                userFactoryIdList = userFactoryIdList.Distinct().ToList();
+                // 変更管理対象の工場リストから工場IDのみを抽出
+                var historyFactoryIdList = historyManagementFactoryList.Select(x => x.StructureId).Distinct().ToList();
+                // 両者のリストで一致する工場があればユーザの所属工場に変更管理対象の工場があるとする
+                foreach (var userFactoryId in userFactoryIdList)
+                {
+                    if (historyFactoryIdList.Contains(userFactoryId))
+                    {
+                        // 変更管理対象の工場あり
+                        return true;
+                    }
+                }
+                // 最後まで処理した場合はなし
+                return false;
+            }
+
+            /// <summary>
+            /// 指定された工場IDが変更管理対象の工場かどうか判定
+            /// </summary>
+            /// <param name="factoryId">判定する工場ID</param>
+            /// <returns>変更管理対象の工場の場合TRUE</returns>
+            public bool IsHistoryManagementFactory(int factoryId)
+            {
+                // 変更管理対象の工場リスト
+                var historyManagementFactoryList = GetApprovalUserList();
+                if (historyManagementFactoryList == null || historyManagementFactoryList.Count == 0)
+                {
+                    // 変更管理対象の工場リストがない場合、ユーザの変更管理対象の工場はなし
+                    return false;
+                }
+                var factoryIdList = historyManagementFactoryList.Select(x => x.StructureId).Distinct().ToList();
+                return factoryIdList.Contains(factoryId);
+            }
+
+            /// <summary>
+            /// キーIDより、指定された申請区分のデータ件数を取得
+            /// </summary>
+            /// <param name="keyId">キーID(機番ID または 長計件名ID)</param>
+            /// <param name="applicationStatus">申請状況</param>
+            /// <param name="includeStatus">指定された申請状況の件数を取得する場合はTrue、指定された申請状況以外の件数を取得する場合はTrue</param>
+            /// <returns></returns>
+            public int getApplicationStatusCntByKeyId(long keyId, TMQConst.MsStructure.StructureId.ApplicationStatus applicationStatus, bool includeStatus)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApplicationStatusCntByKeyId, out string sql, new List<string>() { includeStatus ? "Include" : "Except" });
+
+                // 件数を取得 検索条件に以下を指定
+                // ①キーID
+                // ②申請状況
+                // ③「指定された申請状況の件数を取得する」か「指定された申請状況以外の件数を取得するかどうか
+                return this.Db.GetCount(sql, new { KeyId = keyId, ApplicationConductId = this.ApplicationConductId, AppliCationStatus = ((int)applicationStatus).ToString() });
+
+            }
+
+            /// <summary>
+            /// 場所階層IDより、工場IDを取得する
+            /// </summary>
+            /// <param name="locationStructureId">場所階層ID</param>
+            /// <returns></returns>
+            public int getFactoryId(int locationStructureId)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetApplicationStatusCntByKeyId, out string sql);
+
+                // SQL実行
+                IList<ComDao.HmHistoryManagementEntity> results = this.Db.GetListByDataClass<ComDao.HmHistoryManagementEntity>(sql, new { LocationStructureId = locationStructureId });
+                if (results == null || results.Count == 0)
+                {
+                    // 取得できない場合は引数の場所階層IDを返す
+                    return locationStructureId;
+                }
+
+                // 取得した工場IDを返す
+                return results[0].FactoryId;
+
             }
         }
     }

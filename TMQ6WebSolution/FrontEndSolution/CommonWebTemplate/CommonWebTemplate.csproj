@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <CopyRefAssembliesToPublishDirectory>false</CopyRefAssembliesToPublishDirectory>
+    
   </PropertyGroup>
 
   <ItemGroup>
@@ -135,13 +136,13 @@
 
   <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.5" />
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="6.21.61" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.1" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="6.21.5" />
     <PackageReference Include="Sustainsys.Saml2" Version="2.9.0" />
     <PackageReference Include="Sustainsys.Saml2.AspNetCore2" Version="2.9.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
@@ -169,6 +170,8 @@
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_Common\BusinessLogic_Common.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_DM0001\BusinessLogic_DM0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_DM0002\BusinessLogic_DM0002.csproj" />
+    <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_EP0001\BusinessLogic_EP0001.csproj" />
+    <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_EP0002\BusinessLogic_EP0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0001\BusinessLogic_HM0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0002\BusinessLogic_HM0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0003\BusinessLogic_HM0003.csproj" />

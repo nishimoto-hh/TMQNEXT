@@ -17,6 +17,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_LN0001
 {
@@ -104,6 +105,10 @@ namespace BusinessLogic_LN0001
 
             // 画面に設定
             SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List);
+
+            // 非表示項目
+            // 変更管理ボタンの表示制御用フラグ
+            setHistoryManagementFlg(ConductInfo.FormList.ControlId.HiddenInfo);
 
             return true;
         }

@@ -205,22 +205,26 @@ namespace BusinessLogic_HM0001
                     return false;
             }
 
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            List<ComDao.HmHistoryManagementEntity> conditionList = new();
             foreach (var selectedRow in selectedList)
             {
                 // 登録情報を作成
                 ComDao.HmHistoryManagementEntity condition = new();
                 SetExecuteConditionByDataClass(selectedRow, ConductInfo.FormList.ControlId.List, condition, DateTime.Now, this.UserId, this.UserId, new List<string> { "HistoryManagementId" });
+                conditionList.Add(condition);
+            }
 
-                // 入力チェック
-                if (historyManagement.isErrorBeforeUpdateApplicationStatus(condition, this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll, out string[] errMsg))
-                {
-                    // エラーメッセージを設定
-                    this.MsgId = GetResMessage(errMsg);
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return false;
-                }
-
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            // 入力チェック
+            if (historyManagement.isErrorBeforeUpdateApplicationStatus(conditionList, this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll, out string[] errMsg))
+            {
+                // エラーメッセージを設定
+                this.MsgId = GetResMessage(errMsg);
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return false;
+            }
+            foreach (var condition in conditionList)
+            {
                 // 登録処理
                 if (!historyManagement.UpdateApplicationStatus(condition, applicationStatus))
                 {

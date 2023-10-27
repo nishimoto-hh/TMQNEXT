@@ -29,11 +29,11 @@ VALUES (
 
       /*@NewMachineId
       -- 機器の新規登録・複写の場合
- 　 , NEXT VALUE FOR seq_mc_machine_machine_id     -- 機番ID
-　　　@NewMachineId*/
+    , NEXT VALUE FOR seq_mc_machine_machine_id     -- 機番ID
+      @NewMachineId*/
 
       /*@DefaultMachineId
-      -- 機器の修正の場合は既存の機番ID
+      -- 機器の修正・削除の場合は既存の機番ID
     , @MachineId                                   -- 機番ID
       @DefaultMachineId*/
 

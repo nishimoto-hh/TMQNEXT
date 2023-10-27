@@ -18,6 +18,7 @@ SELECT
                     AND ex2.sequence_no = 1
                 WHERE
                     item2.structure_group_id = 1770
+                AND item2.delete_flg = 0
                 AND item2.language_id = @LanguageId
                 AND EXISTS(
                  SELECT * 
@@ -36,6 +37,7 @@ FROM
 WHERE
     item.language_id = @LanguageId
 AND item.structure_group_id = 1770
+AND item.delete_flg = 0
 GROUP BY
     ex.extension_data
 

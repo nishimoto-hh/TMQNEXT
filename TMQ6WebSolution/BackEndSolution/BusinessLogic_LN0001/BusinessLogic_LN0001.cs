@@ -241,6 +241,10 @@ namespace BusinessLogic_LN0001
                     /// スケジュール表示条件
                     /// </summary>
                     public const string ScheduleCondition = "BODY_020_00_LST_0";
+                    /// <summary>
+                    /// 非表示項目
+                    /// </summary>
+                    public const string HiddenInfo = "BODY_050_00_LST_0";
                 }
                 /// <summary>
                 /// ボタンコントロールID
@@ -1237,6 +1241,25 @@ namespace BusinessLogic_LN0001
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, isTree);
 
             return results[0];
+        }
+
+        /// <summary>
+        /// 変更管理ボタンの表示制御用のフラグを設定
+        /// </summary>
+        /// <param name="listCtrlId">設定する非表示項目のID</param>
+        /// <param name="factoryId">省略可能　変更管理を行うか判定する工場ID</param>
+        private void setHistoryManagementFlg(string listCtrlId, int factoryId=-1)
+        {
+            // 変更管理フラグを取得
+            TMQUtil.HistoryManagement history = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0002);
+            // 工場ID省略時は引数に含めずに、変更管理フラグを取得
+            bool isHitoryManagementFlg = factoryId == -1 ? history.IsHistoryManagementFactoryUserBelong() : history.IsHistoryManagementFactory(factoryId);
+            // 画面に設定する内容
+            Dao.HiddenInfo hideInfo = new();
+            hideInfo.IsHistoryManagementFlg = isHitoryManagementFlg ? 1 : 0; // 1or0で設定
+            // 画面に設定
+            var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
+            SetSearchResultsByDataClass<Dao.HiddenInfo>(pageInfo, new List<Dao.HiddenInfo> { hideInfo }, 1);
         }
         #endregion
 

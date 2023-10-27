@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using ComDao = CommonSTDUtil.CommonDataBaseClass;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
+using HistoryManagementDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_HM0002
 {
@@ -14,15 +16,323 @@ namespace BusinessLogic_HM0002
     public class BusinessLogicDataClass_HM0002
     {
         /// <summary>
-        /// 検索条件のデータクラス
+        /// 検索条件(自分の件名のみ表示)のデータクラス
         /// </summary>
-        public class searchCondition : ComDao.SearchCommonClass
+        public class searchCondition
         {
-            // 検索条件に使用する場合は、検索条件格納共通クラスを継承してください。
+            /// <summary>Gets or sets 自分の件名のみ表示</summary>
+            /// <value>自分の件名のみ表示</value>
+            public int DispOnlyMySubject { get; set; }
+        }
+        /// <summary>
+        /// 検索結果のデータクラス
+        /// </summary>
+        public class ListSearchResult : ComDao.HmLnLongPlanEntity, HistoryManagementDao.IHistoryManagementCommon
+        {
+            /// <summary>Gets or sets 機器添付</summary>
+            /// <value>機器添付</value>
+            public string FileLinkEquip { get; set; }
+            /// <summary>Gets or sets 件名添付</summary>
+            /// <value>件名添付</value>
+            public string FileLinkSubject { get; set; }
+            /// <summary>Gets or sets 担当(名前)</summary>
+            /// <value>担当(名前)</value>
+            public string PersonName { get; set; }
+            /// <summary>Gets or sets スケジュール紐付け用キーID</summary>
+            /// <value>スケジュール紐付け用キーID</value>
+            public string KeyId { get; set; }
+            /// <summary>Gets or sets 準備対象</summary>
+            /// <value>準備対象</value>
+            public bool PreparationFlg { get; set; }
+            /// <summary>Gets or sets 保全情報変更有無</summary>
+            /// <value>保全情報変更有無</value>
+            public bool ContentChangeFlg { get; set; }
+            /// <summary>Gets or sets 申請者</summary>
+            /// <value>申請者</value>
+            public string ApplicationUserName { get; set; }
+            /// <summary>Gets or sets 申請日</summary>
+            /// <value>申請日</value>
+            public DateTime? ApplicationDate { get; set; }
+            /// <summary>Gets or sets 申請区分(拡張項目)</summary>
+            /// <value>申請区分(拡張項目)</value>
+            public string ApplicationDivisionCode { get; set; }
+            /// <summary>Gets or sets 申請状況(拡張項目)</summary>
+            /// <value>申請状況(拡張項目)</value>
+            public string ApplicationStatusCode { get; set; }
+            /// <summary>Gets or sets 変更のあった項目(District_10|Series_30...)</summary>
+            /// <value>変更のあった項目(District_10|Series_30...)</value>
+            public string ValueChanged { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</summary>
+            /// <value>ボタン非表示制御フラグ(申請の申請者かシステム管理者の場合はTrue)</value>
+            public bool IsCertified { get; set; }
+            /// <summary>Gets or sets ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</summary>
+            /// <value>ボタン表示制御フラグ(変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue)</value>
+            public bool IsCertifiedFactory { get; set; }
 
-            /// <summary>Gets or sets 品目コード</summary>
-            /// <value>品目コード</value>
-            public string ItemCd { get; set; }
+            #region 地区・職種機種(変更管理テーブル)
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? LargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string LargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? MiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string MiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? SmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string SmallClassficationName { get; set; }
+            #endregion
+
+            #region 地区・職種機種(トランザクションテーブル)
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? OldLocationStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? OldJobStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? OldDistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string OldDistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? OldFactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string OldFactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? OldPlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string OldPlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? OldSeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string OldSeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? OldStrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string OldStrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? OldFacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string OldFacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int OldJobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string OldJobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? OldLargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string OldLargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? OldMiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string OldMiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? OldSmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string OldSmallClassficationName { get; set; }
+            #endregion
+
+            #region 翻訳
+            /// <summary>Gets or sets 保全時期(翻訳)</summary>
+            /// <value>保全時期(翻訳)</value>
+            public string MaintenanceSeasonName { get; set; }
+            /// <summary>Gets or sets 作業項目(翻訳)</summary>
+            /// <value>作業項目(翻訳)</value>
+            public string WorkItemName { get; set; }
+            /// <summary>Gets or sets 予算管理区分(翻訳)</summary>
+            /// <value>予算管理区分(翻訳)</value>
+            public string BudgetManagementName { get; set; }
+            /// <summary>Gets or sets 予算性格区分(翻訳)</summary>
+            /// <value>予算性格区分(翻訳)</value>
+            public string BudgetPersonalityName { get; set; }
+            /// <summary>Gets or sets 目的区分(翻訳)</summary>
+            /// <value>目的区分(翻訳)</value>
+            public string PurposeName { get; set; }
+            /// <summary>Gets or sets 作業区分(翻訳)</summary>
+            /// <value>作業区分(翻訳)</value>
+            public string WorkClassName { get; set; }
+            /// <summary>Gets or sets 処置区分(翻訳)</summary>
+            /// <value>処置区分(翻訳)</value>
+            public string TreatmentName { get; set; }
+            /// <summary>Gets or sets 設備区分(翻訳)</summary>
+            /// <value>設備区分(翻訳)</value>
+            public string FacilityStructureName { get; set; }
+            /// <summary>Gets or sets 申請状況</summary>
+            /// <value>申請状況</value>
+            public string ApplicationStatusName { get; set; }
+            /// <summary>Gets or sets 申請区分</summary>
+            /// <value>申請区分</value>
+            public string ApplicationDivisionName { get; set; }
+            #endregion
+
+            #region 参照画面
+            /// <summary>Gets or sets 参照画面　保全情報一覧(点検種別)の表示フラグ</summary>
+            /// <value>参照画面　保全情報一覧(点検種別)の表示フラグ</value>
+            public bool IsDisplayMaintainanceKind { get; set; }
+
+            #region 排他チェック
+            // 機器別管理基準内容(排他チェック)
+            /// <summary>Gets or sets 機器別管理基準内容の最大の更新日時</summary>
+            /// <value>機器別管理基準内容の最大の更新日時</value>
+            public DateTime? McManStConUpdateDatetime { get; set; }
+            // スケジュール詳細(排他チェック)
+            /// <summary>Gets or sets スケジュール詳細の最大の更新日時</summary>
+            /// <value>スケジュール詳細の最大の更新日時</value>
+            public DateTime? ScheDetailUpdateDatetime { get; set; }
+            // 添付情報(排他チェック)
+            /// <summary>Gets or sets 添付情報の最大の更新日時</summary>
+            /// <value>添付情報の最大の更新日時</value>
+            public DateTime? AttachmentUpdateDatetime { get; set; }
+            #endregion
+            #endregion
+        }
+
+        /// <summary>
+        /// スケジュール関連
+        /// </summary>
+        public class Schedule
+        {
+            /// <summary>
+            /// 更新SQLの条件
+            /// </summary>
+            public class UpdateCondition : ComDao.CommonTableItem
+            {
+                /// <summary>Gets or sets 加算月数</summary>
+                /// <value>加算月数</value>
+                public int AddMonth { get; set; }
+
+                /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+                /// <value>機器別管理基準内容ID</value>
+                public long ManagementStandardsContentId { get; set; }
+
+                /// <summary>Gets or sets 更新対象月開始日</summary>
+                /// <value>更新対象月開始日</value>
+                public DateTime MonthStartDate { get; set; }
+
+                /// <summary>Gets or sets 更新対象月終了日</summary>
+                /// <value>更新対象月終了日</value>
+                public DateTime MonthEndDate { get; set; }
+
+                /// <summary>Gets or sets 構成マスタ検索対象の工場ID</summary>
+                /// <value>構成マスタ検索対象の工場ID</value>
+                public List<int> FactoryIdList { get; set; }
+            }
+
+            /// <summary>
+            /// スケジュールの検索条件(工場IDのみ)
+            /// </summary>
+            public class SearchCondition : TMQDao.ScheduleList.GetCondition
+            {
+                /// <summary>Gets or sets 構成マスタ検索対象の工場ID</summary>
+                /// <value>構成マスタ検索対象の工場ID</value>
+                public List<int> FactoryIdList { get; set; }
+                /// <summary>Gets or sets 言語ID</summary>
+                /// <value>言語ID</value>
+                public string LanguageId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                /// <param name="condition">画面の検索条件</param>
+                /// <param name="monthStartNendo">年度開始月</param>
+                /// <param name="languageId">言語ID</param>
+                public SearchCondition(TMQDao.ScheduleList.Condition condition, int monthStartNendo, string languageId) : base(condition, monthStartNendo)
+                {
+                    this.LanguageId = languageId;
+                }
+            }
+            /// <summary>
+            /// スケジュールの検索条件(工場ID+長期計画件名ID)
+            /// </summary>
+            public class SearchConditionLongPlanId : SearchCondition
+            {
+                /// <summary>Gets or sets 長期計画件名ID</summary>
+                /// <value>長期計画件名ID</value>
+                public long LongPlanId { get; set; }
+
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                /// <param name="condition">画面の検索条件</param>
+                /// <param name="longPlanId">長期計画件名ID</param>
+                /// <param name="monthStartNendo">年度開始月</param>
+                /// <param name="languageId">言語ID</param>
+                public SearchConditionLongPlanId(TMQDao.ScheduleList.Condition condition, long longPlanId, int monthStartNendo, string languageId) : base(condition, monthStartNendo, languageId)
+                {
+                    this.LongPlanId = longPlanId;
+                }
+            }
         }
 
         /// <summary>

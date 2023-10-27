@@ -33,6 +33,23 @@ WHERE
     WHERE
         structure_group_id IN (1000, 1040, 1150, 1720, 1730,1740, 1760, 1770) 
         AND language_id = @LanguageId
+),
+unuse AS(
+    -- 未使用の勘定科目・部門
+    SELECT
+        ex.extension_data,
+        unuse.factory_id
+    FROM
+        ms_structure_unused unuse
+        LEFT JOIN
+            ms_structure ms
+        ON  unuse.structure_id = ms.structure_id
+        LEFT JOIN
+            ms_item_extension ex
+        ON  ms.structure_item_id = ex.item_id
+        AND ex.sequence_no = 1
+    WHERE
+        unuse.structure_group_id IN(1760, 1770)
 )
 
 SELECT
@@ -103,6 +120,17 @@ FROM
     LEFT JOIN
         location
     ON  parts.parts_location_id = location.structure_id
+WHERE
+    -- 未使用の勘定科目・部門は出力対象外
+    NOT EXISTS(
+        SELECT
+            *
+        FROM
+            unuse
+        WHERE
+            unuse.extension_data IN(label.department_code, label.subject_code)
+        AND unuse.factory_id = parts.factory_id
+    )
 ORDER BY
     parts.parts_no,
     label.department_code,

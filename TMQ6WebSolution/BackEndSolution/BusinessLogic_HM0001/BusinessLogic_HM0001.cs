@@ -40,6 +40,29 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
+        /// SQLの実行時にアンコメントする項目
+        /// </summary>
+        private class UnCommentItem
+        {
+            /// <summary>
+            /// 機器の新規登録・複写登録(機番情報)
+            /// </summary>
+            public const string NewMachineId = "NewMachineId";
+            /// <summary>
+            /// 機器の修正(機番情報)
+            /// </summary>
+            public const string DefaultMachineId = "DefaultMachineId";
+            /// <summary>
+            /// 機器の新規登録・複写登録(機器情報)
+            /// </summary>
+            public const string NewEquipmentId = "NewEquipmentId";
+            /// <summary>
+            /// 機器の修正(機器情報)
+            /// </summary>
+            public const string DefaultEquipmentId = "DefaultEquipmentId";
+        }
+
+        /// <summary>
         /// SQLファイル名称
         /// </summary>
         private static class SqlName
@@ -66,12 +89,38 @@ namespace BusinessLogic_HM0001
                 public const string GetHistoryManagementStandardsList = "GetHistoryManagementStandardsList";
                 /// <summary>機番IDから見た申請状況の拡張項目を取得する</summary>
                 public const string GetApplicationStatusFromMachineId = "GetApplicationStatusFromMachineId";
+                /// <summary>機番IDより適用法規情報を取得するSQL</summary>
+                public const string GetApplicableLaws = "GetApplicableLaws";
+                /// <summary>機番IDより機器別管理基準部位を取得するSQL</summary>
+                public const string GetManagementStandardsComponent = "GetManagementStandardsComponent";
+                /// <summary>機器別管理基準部位IDより機器別管理基準部位を取得するSQL</summary>
+                public const string GetManagementStandardsContent = "GetManagementStandardsContent";
+                /// <summary>機器別管理基準内容IDより保全スケジュールを取得するSQL</summary>
+                public const string GetMaintainanceSchedule = "GetMaintainanceSchedule";
+                /// <summary>適用法規情報変更管理テーブル登録SQL</summary>
+                public const string InsertApplicableLawsInfo = "InsertApplicableLawsInfo";
+                /// <summary>機器別管理基準部位変更内容テーブル登録SQL</summary>
+                public const string InsertManagementStandardsComponentInfo = "InsertManagementStandardsComponentInfo";
+                /// <summary>機器別管理基準内容変更内容テーブル登録SQL</summary>
+                public const string InsertManagementStandardsContentInfo = "InsertManagementStandardsContentInfo";
+                /// <summary>保全スケジュール変更内容テーブル登録SQL</summary>
+                public const string InsertMaintainanceScheduleInfo = "InsertMaintainanceScheduleInfo";
 
                 #region 機器台帳(MC0001)のSQLを使用
                 /// <summary>保全項目一覧取得(機器台帳：MC0001のSQLを使用)</summary>
                 public const string GetManagementStandard = "GetManagementStandard";
                 /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
                 public const string GetMachineDetail = "MachineDetail";
+                /// <summary>SQL名：機器別管理基準_長期計画存在取得</summary>
+                public const string GetChkLongPlan = "GetLongPlan";
+                /// <summary>SQL名：機器別管理基準_保全活動存在取得</summary>
+                public const string GetChkMsSummary = "GetMsSummary";
+                /// <summary>SQL名：親子構成存在取得</summary>
+                public const string GetChkParentInfo = "GetParentInfo";
+                /// <summary>SQL名：ループ構成存在取得</summary>
+                public const string GetChkLoopInfo = "GetLoopInfo";
+                /// <summary>SQL名：付属品構成存在取得</summary>
+                public const string GetChkAccessoryInfo = "GetAccessoryInfo";
                 #endregion
             }
             /// <summary>
@@ -79,10 +128,16 @@ namespace BusinessLogic_HM0001
             /// </summary>
             public static class Edit
             {
-                /// <summary>機番情報登録SQL</summary>
+                /// <summary>機番情報変更管理テーブル登録SQL</summary>
                 public const string InsertMachineInfo = "InsertMachineInfo";
-                /// <summary>機器情報登録SQL</summary>
+                /// <summary>機器情報変更管理テーブル登録SQL</summary>
                 public const string InsertEquipmentInfo = "InsertEquipmentInfo";
+
+                /// <summary>機器情報変更管理テーブル更新SQL</summary>
+                public const string UpdateHmMcMachine = "UpdateHmMcMachine";
+                /// <summary>機器情報変更管理テーブル更新SQL</summary>
+                public const string UpdateHmMcEquipment = "UpdateHmMcEquipment";
+
             }
         }
 
@@ -188,9 +243,29 @@ namespace BusinessLogic_HM0001
                     /// </summary>
                     public const string DeleteRequest = "DeleteRequest";
                     /// <summary>
+                    /// 承認依頼
+                    /// </summary>
+                    public const string ChangeApplicationRequest = "ChangeApplicationRequest";
+                    /// <summary>
                     /// 申請内容修正
                     /// </summary>
                     public const string EditRequest = "EditRequest";
+                    /// <summary>
+                    /// 申請内容取消
+                    /// </summary>
+                    public const string CancelRequest = "CancelRequest";
+                    /// <summary>
+                    /// 承認依頼引戻
+                    /// </summary>
+                    public const string PullBackRequest = "PullBackRequest";
+                    /// <summary>
+                    /// 承認
+                    /// </summary>
+                    public const string ChangeApplicationApproval = "ChangeApplicationApproval";
+                    /// <summary>
+                    /// 否認
+                    /// </summary>
+                    public const string ChangeApplicationDenial = "ChangeApplicationDenial";
                 }
             }
 
@@ -326,12 +401,12 @@ namespace BusinessLogic_HM0001
                 // 登録処理実行
                 return Regist();
             }
-            else if (compareId.IsDelete())
-            {
-                // 削除の場合
-                // 削除処理実行
-                return Delete();
-            }
+            //else if (compareId.IsDelete())
+            //{
+            //    // 削除の場合
+            //    // 削除処理実行
+            //    return Delete();
+            //}
             else if (compareId.IsStartId("checkIsInProgress"))
             {
                 // 変更申請・承認依頼・申請内容修正ボタンクリック時の排他チェック(Ajax通信)
@@ -343,29 +418,61 @@ namespace BusinessLogic_HM0001
             string metodName = string.Empty;
             string processName = string.Empty;
 
-            if(this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.DeleteRequest))
+            if (this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.DeleteRequest))
             {
                 // 詳細画面 削除申請ボタン
-                metodName = "updateSchedule";
-                processName = ComRes.ID.ID111130006;
+                metodName = "deleteRequest";
+                processName = ComRes.ID.ID111110068; // 削除申請
+            }
+            else if (this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.CancelRequest))
+            {
+                // 詳細画面 申請内容取消ボタン
+                metodName = "cancelRequest";
+                processName = ComRes.ID.ID111120232; // 申請内容取消
+            }
+            else if (this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.PullBackRequest))
+            {
+                // 詳細画面 承認依頼引戻ボタン
+                metodName = "pullBackRequest";
+                processName = ComRes.ID.ID111120233; // 承認依頼引戻
+            }
+            else if (this.FormNo == ConductInfo.FormDetail.FormNo && compareId.IsStartId(ConductInfo.FormDetail.ButtonId.ChangeApplicationApproval))
+            {
+                // 詳細画面 承認ボタン
+                metodName = "changeApplicationApproval";
+                processName = ComRes.ID.ID111120228; // 承認
+            }
+            else
+            {
+                // この部分は到達不能なので、エラーを返す
+                return ComConsts.RETURN_RESULT.NG;
             }
 
+            if (!string.IsNullOrEmpty(metodName) && ComExecImpl(metodName, processName) < 0)
+            {
+                // エラー発生時
+                if (string.IsNullOrEmpty(this.MsgId))
+                {
+                    // ○○に失敗しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, processName });
+                }
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
 
+            // 完了メッセージ表示
+            setCompleteExecute(processName);
+            return ComConsts.RETURN_RESULT.OK;
 
-
-
-
-
-
-
-
-
-
-
-
-
-            // この部分は到達不能なので、エラーを返す
-            return ComConsts.RETURN_RESULT.NG;
+            void setCompleteExecute(string paramMsgId)
+            {
+                if (string.IsNullOrEmpty(this.MsgId))
+                {
+                    // 〇〇が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, paramMsgId });
+                }
+                this.Status = CommonProcReturn.ProcStatus.Valid;
+            }
         }
 
         /// <summary>
@@ -382,10 +489,6 @@ namespace BusinessLogic_HM0001
             {
                 case ConductInfo.FormList.FormNo: // 一覧画面
                     resultRegist = registFormList();
-                    break;
-
-                case ConductInfo.FormDetail.FormNo: // 詳細画面
-                    resultRegist = registFormDetail();
                     break;
 
                 case ConductInfo.FormEdit.FormNo: // 詳細編集画面
@@ -554,8 +657,71 @@ namespace BusinessLogic_HM0001
             return true;
         }
 
+        /// <summary>
+        /// 排他チェック
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteRequestCheckExclusiveSingle(string ctrlId, List<string> tblName)
+        {
+            // 排他ロック用マッピング情報取得
+            var lockValMaps = GetLockValMaps(ctrlId);
+            var lockKeyMaps = GetLockKeyMaps(ctrlId);
+
+            // チェック対象のテーブル名で絞り込む
+            if (tblName.Count > 0)
+            {
+                // 変更管理テーブルの排他チェックは除く(ロック値)
+                List<ComUtil.DBMappingInfo> lockValMapsExceptHistoryManagement = new();
+                foreach (ComUtil.DBMappingInfo mapInfo in lockValMaps)
+                {
+                    if (tblName.Contains(mapInfo.TblName))
+                    {
+                        lockValMapsExceptHistoryManagement.Add(mapInfo);
+                    }
+                }
+                lockValMaps = lockValMapsExceptHistoryManagement;
+
+                // 変更管理テーブルの排他チェックは除く
+                List<ComUtil.DBMappingInfo> lockKeyMapsExceptHistoryManagement = new();
+                foreach (ComUtil.DBMappingInfo mapInfo in lockKeyMaps)
+                {
+                    if (tblName.Contains(mapInfo.TblName))
+                    {
+                        lockKeyMapsExceptHistoryManagement.Add(mapInfo);
+                    }
+                }
+                lockKeyMaps = lockKeyMapsExceptHistoryManagement;
+            }
+
+            // チェック処理
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ctrlId);
+            if (!CheckExclusiveStatus(targetDic, lockValMaps, lockKeyMaps))
+            {
+                // 排他エラー
+                return false;
+            }
+
+            return true;
+        }
 
 
+
+
+        /// <summary>
+        /// 機番IDより、該当データの場所階層IDを取得する
+        /// </summary>
+        /// <param name="historyManagement">変更管理クラス</param>
+        /// <param name="machineId">機番ID</param>
+        /// <returns>工場ID</returns>
+        private int getFactoryId(TMQUtil.HistoryManagement historyManagement, long machineId)
+        {
+            // 機番IDより機番情報を取得
+            ComDao.McMachineEntity machineEntity = new();
+            machineEntity = machineEntity.GetEntity(machineId, this.db);
+
+            // 場所階層IDより工場IDを取得する
+            return historyManagement.getFactoryId((int)machineEntity.LocationStructureId);
+        }
 
 
 

@@ -14,31 +14,20 @@ using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0002.BusinessLogicDataClass_HM0002;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using ScheduleStatus = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.ScheduleStatus;
+using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 
 namespace BusinessLogic_HM0002
 {
     /// <summary>
     /// 変更管理 長期計画
     /// </summary>
-    public class BusinessLogic_HM0002 : CommonBusinessLogicBase
+    public partial class BusinessLogic_HM0002 : CommonBusinessLogicBase
     {
         #region private変数
         #endregion
 
         #region 定数
-        /// <summary>
-        /// フォーム種類
-        /// </summary>
-        private static class FormType
-        {
-            /// <summary>一覧画面</summary>
-            public const byte List = 0;
-            /// <summary>詳細子画面</summary>
-            public const byte Detail = 1;
-            /// <summary>編集モーダル画面</summary>
-            public const byte Edit = 2;
-        }
-
         /// <summary>
         /// 処理対象グループ番号
         /// </summary>
@@ -91,7 +80,21 @@ namespace BusinessLogic_HM0002
         /// </summary>
         private static class SqlName
         {
-            // 機能内で不要なSQLは定義は不要です
+            /// <summary>SQL格納先サブディレクトリ名</summary>
+            public const string SubDir = @"HistoryLongPlan";
+
+            /// <summary>
+            /// 一覧画面で使用するSQL
+            /// </summary>
+            public static class List
+            {
+                /// <summary>SQL格納先サブディレクトリ名</summary>
+                public const string SubDir = SqlName.SubDir + @"\List";
+                /// <summary>一覧情報取得SQL</summary>
+                public const string GetHistoryList = "GetHistoryLongPlanList";
+                /// <summary>一覧スケジュール情報取得SQL</summary>
+                public const string GetHistoryListSchedule = "GetHistoryLongPlanSchedule";
+            }
 
             /// <summary>SQL名：一覧取得(FROMもSELECTも無し)</summary>
             public const string GetList = "[対象データ名]List";
@@ -104,8 +107,6 @@ namespace BusinessLogic_HM0002
             /// <summary>SQL名：削除/summary>
             public const string Delete = "Delete_[対象データ名]";
 
-            /// <summary>SQL格納先サブディレクトリ名</summary>
-            public const string SubDir = @"Machine";
         }
 
         /// <summary>
@@ -119,59 +120,264 @@ namespace BusinessLogic_HM0002
         }
 
         /// <summary>
-        /// フォーム、グループ、コントロールの親子関係を表現した場合の定数クラス(サンプル)
+        /// 機能のコントロール情報
         /// </summary>
-        /// <remarks>画面の規模が大きくなるとどのコントロールがどのフォームか分からない、特に改修時。どのように定義するのが分かりやすいか、良いアイデア募集中です。</remarks>
         private static class ConductInfo
         {
+            /// <summary>
+            /// 一覧画面
+            /// </summary>
             public static class FormList
             {
-                public const short Id = 1;
-                public static class GrpHoge
+                /// <summary>
+                /// フォーム番号
+                /// </summary>
+                public const short FormNo = 0;
+                /// <summary>
+                /// コントロールID
+                /// </summary>
+                public static class ControlId
                 {
-                    public const short Id = 1;
-                    public static class ControlId
-                    {
-                        public const string SearchCondition = "SearchConditionA";
-                        public const string SearchResult1 = "SearchResultA";
-                    }
+                    /// <summary>
+                    /// 一覧
+                    /// </summary>
+                    public const string List = "BODY_040_00_LST_0";
+                    /// <summary>
+                    /// スケジュール表示条件
+                    /// </summary>
+                    public const string ScheduleCondition = "BODY_020_00_LST_0";
+                    /// <summary>
+                    /// 検索条件(自分の件名のみ表示)
+                    /// </summary>
+                    public const string MySubjectCondition = "BODY_050_00_LST_0";
                 }
-
-                public static class GrpFoo
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class ButtonId
                 {
-                    public const short Id = 2;
-                    public static class ControlId
-                    {
-                        public const string SearchCondition = "SearchConditionB";
-                        public const string SearchResult1 = "SearchResultB";
-                    }
+                    /// <summary>
+                    /// 新規申請
+                    /// </summary>
+                    public const string New = "New";
+                    /// <summary>
+                    /// 一括承認
+                    /// </summary>
+                    public const string ApprovalAll = "ApprovalAll";
+                    /// <summary>
+                    /// 一括否認
+                    /// </summary>
+                    public const string DenialAll = "DenialAll";
+                }
+            }
+            /// <summary>
+            /// 参照画面
+            /// </summary>
+            public class FormDetail
+            {
+                /// <summary>フォーム番号</summary>
+                public const short FormNo = 1;
+                /// <summary>ヘッダのグループ番号</summary>
+                public const short HeaderGroupNo = 201;
+                /// <summary>コントロールID</summary>
+                public static class ControlId
+                {
+                    /// <summary>非表示</summary>
+                    public const string Hide = "BODY_100_00_LST_1";
+
+                    /// <summary>保全情報一覧</summary>
+                    public const string List = "BODY_070_00_LST_1";
+                    /// <summary>点検種別毎保全情報一覧</summary>
+                    public const string ListCheck = "BODY_080_00_LST_1";
+
+                    /// <summary>保全情報一覧</summary>
+                    public const string Condition = "BODY_050_00_LST_1";
+
+                    /// <summary>
+                    /// スケジュール表示条件
+                    /// </summary>
+                    public const string ScheduleCondition = "BODY_050_00_LST_1";
+                }
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class ButtonId
+                {
+                    /// <summary>編集ボタン</summary>
+                    public const string Edit = "btnUpdate";
+                    /// <summary>削除ボタン</summary>
+                    public const string Delete = "btnDelete";
+                    /// <summary>再表示ボタン</summary>
+                    public const string Redisplay = "btnRedisplay";
+                    /// <summary>複写ボタン</summary>
+                    public const string Copy = "btnCopy";
+                    /// <summary>スケジュール確定</summary>
+                    public const string Schedule = "btnUpdateSchedule";
+                    /// <summary>指示検収票</summary>
+                    public const string OutputFiles = "btnOutputFiles";
+                }
+            }
+            /// <summary>
+            /// 詳細編集画面
+            /// </summary>
+            public class FormEdit
+            {
+                /// <summary>フォーム番号</summary>
+                public const short FormNo = 2;
+                /// <summary>ヘッダのグループ番号</summary>
+                public const short HeaderGroupNo = 301;
+                /// <summary>コントロールID</summary>
+                public static class ControlId
+                {
+                    /// <summary>非表示</summary>
+                    public const string Hide = "BODY_050_00_LST_2";
                 }
             }
 
-            public static class FormDetail
+            /// <summary>
+            /// 計画一括作成
+            /// </summary>
+            public class FormMakePlan
             {
-                public const short Id = 2;
-                public static class GrpHuga
+                public const short FormNo = 3;
+                public static class ControlId
                 {
-                    public const short Id = 1;
-                    public static class ControlId
-                    {
-                        public const string SearchCondition = "SearchConditionC";
-                        public const string SearchResult1 = "SearchResultC";
-                    }
+                    /// <summary>作成条件</summary>
+                    public const string Condition = "BODY_010_00_LST_3";
+                    /// <summary>処理対象長計件名ID</summary>
+                    public const string LongPlanId = "BODY_030_00_LST_3";
                 }
-                public static class GrpBar
+                public static class ButtonId
                 {
-                    public const short Id = 2;
-                    public static class ControlId
-                    {
-                        public const string SearchCondition = "SearchConditionD";
-                        public const string SearchResult1 = "SearchResultD";
-                    }
+                    /// <summary>作成ボタン</summary>
+                    public const string MakePlan = "btnMakePlan";
+                }
+            }
+            /// <summary>
+            /// 保全活動作成
+            /// </summary>
+            public class FormMakeMaintainance
+            {
+                /// <summary>フォーム番号</summary>
+                public const short FormNo = 4;
+                /// <summary>コントロールID</summary>
+                public static class ControlId
+                {
+                    /// <summary>作成条件</summary>
+                    public const string Condition = "BODY_000_00_LST_4";
+                    /// <summary>保全情報一覧</summary>
+                    public const string List = "BODY_010_00_LST_4";
+                    /// <summary>点検種別毎保全情報一覧</summary>
+                    public const string ListCheck = "BODY_020_00_LST_4";
+                }
+                /// <summary>ボタンID</summary>
+                public static class ButtonId
+                {
+                    /// <summary>保全活動作成</summary>
+                    public const string Make = "MakeMaintainance";
+                }
+            }
+            /// <summary>
+            /// 機器別管理基準選択
+            /// </summary>
+            public class FormSelectStandards
+            {
+                /// <summary>フォーム番号</summary>
+                public const short FormNo = 5;
+
+                /// <summary>検索条件のグループ番号</summary>
+                public const short SearchConditionGroupNo = 501;
+
+                /// <summary>コントロールID</summary>
+                public static class ControlId
+                {
+                    /// <summary>機器選択一覧</summary>
+                    public const string List = "BODY_040_00_LST_5";
+                    /// <summary>非表示項目</summary>
+                    public const string Hide = "BODY_060_00_LST_5";
+                    /// <summary>検索条件：場所</summary>
+                    public const string Location = "COND_000_00_LST_5";
+                    /// <summary>検索条件：職種機種</summary>
+                    public const string Job = "COND_010_00_LST_5";
+
+                }
+            }
+            /// <summary>
+            /// 予算出力
+            /// </summary>
+            public class FormBudgetOutput
+            {
+                public const short FormNo = 6;
+                public static class ControlId
+                {
+                    /// <summary>出力条件</summary>
+                    public const string OutputCondition = "BODY_000_00_LST_6";
+                    /// <summary>処理対象長計件名ID</summary>
+                    public const string LongPlanId = "BODY_020_00_LST_6";
+                    /// <summary>スケジュール表示条件</summary>
+                    public const string ScheduleCondition = "BODY_030_00_LST_6";
+                }
+                public static class ButtonId
+                {
+                    /// <summary>出力ボタン</summary>
+                    public const string BudgetOutput = "btnOutput";
+                }
+            }
+            /// <summary>
+            /// 予定作業一括延期
+            /// </summary>
+            public class FormPostpone
+            {
+                /// <summary>フォーム番号</summary>
+                public const short FormNo = 7;
+                /// <summary>コントロールID</summary>
+                public static class ControlId
+                {
+                    /// <summary>作成条件</summary>
+                    public const string Condition = "BODY_000_00_LST_7";
+                    /// <summary>保全情報一覧</summary>
+                    public const string List = "BODY_010_00_LST_7";
+                    /// <summary>点検種別毎保全情報一覧</summary>
+                    public const string ListCheck = "BODY_020_00_LST_7";
+                }
+                /// <summary>ボタンID</summary>
+                public static class ButtonId
+                {
+                    /// <summary>一括延期</summary>
+                    public const string Postpone = "Postpone";
                 }
             }
         }
 
+        /// <summary>
+        /// スケジュールより遷移する保全活動画面の情報
+        /// </summary>
+        private static class MA0001
+        {
+            /// <summary>機能ID</summary>
+            public const string ConductId = "MA0001";
+            /// <summary>フォームNo</summary>
+            public static class FormNo
+            {
+                /// <summary>参照画面</summary>
+                public const int Detail = 1;
+                /// <summary>新規登録</summary>
+                public const int New = 0;
+            }
+            /// <summary>タブなしの場合のタブNo</summary>
+            public const int TabNoNone = 0;
+
+            /// <summary>タブNo(参照画面)</summary>
+            public static class TabNoDetail
+            {
+                /// <summary>履歴タブ</summary>
+                public const int History = 3;
+                /// <summary>依頼タブ</summary>
+                public const int Request = 1;
+                /// <summary>参照画面でなく、新規登録</summary>
+                public const int New = -1;
+            }
+        }
         #endregion
 
         #region コンストラクタ
@@ -192,17 +398,81 @@ namespace BusinessLogic_HM0002
         {
             this.ResultList = new();
             CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
-            if (compareId.IsBack())
+            switch (this.FormNo)
             {
-                // 戻る場合、検索結果のコントロールタイプに応じて検索処理を切り替える
-                return InitSearch();
+                case ConductInfo.FormList.FormNo:
+                    // 一覧画面
+                    return InitSearch();
+                //case ConductInfo.FormDetail.FormNo:
+                //    // 参照画面
+                //    // 詳細編集画面の新規登録後と初期表示
+                //    DetailDispType detailType = compareId.IsRegist() ? DetailDispType.AfterRegist : DetailDispType.Init;
+                //    if (compareId.IsBack())
+                //    {
+                //        // 戻るの場合
+                //        detailType = DetailDispType.Search;
+                //    }
+                //    if (compareId.IsStartId(ConductInfo.FormMakeMaintainance.ButtonId.Make))
+                //    {
+                //        // 保全活動画面の保全活動作成ボタンの場合
+                //        detailType = DetailDispType.Search;
+                //    }
+                //    if (compareId.IsStartId(ConductInfo.FormPostpone.ButtonId.Postpone))
+                //    {
+                //        // 予定作業一括延期画面の予定作業一括延期画面ボタンの場合
+                //        detailType = DetailDispType.Search;
+                //    }
+                //    if (!initDetail(detailType))
+                //    {
+                //        return ComConsts.RETURN_RESULT.NG;
+                //    }
+                //    break;
+                //case ConductInfo.FormEdit.FormNo:
+                //    // 詳細編集画面
+                //    // どのボタンで起動したかを判定
+                //    // 新規(一覧画面より起動)
+                //    EditDispType editType = EditDispType.New;
+                //    if (compareId.IsStartId(ConductInfo.FormDetail.ButtonId.Edit))
+                //    {
+                //        // 修正(参照画面より起動)
+                //        editType = EditDispType.Update;
+                //    }
+                //    if (compareId.IsStartId(ConductInfo.FormDetail.ButtonId.Copy))
+                //    {
+                //        // 複写(参照画面より起動)
+                //        editType = EditDispType.Copy;
+                //    }
+                //    // 初期化処理
+                //    if (!initEdit(editType))
+                //    {
+                //        return ComConsts.RETURN_RESULT.NG;
+                //    }
+                //    break;
+                //case ConductInfo.FormMakePlan.FormNo:
+                //    // 計画一括作成画面
+                //    initMakePlan();
+                //    return ComConsts.RETURN_RESULT.OK;
+                //case ConductInfo.FormMakeMaintainance.FormNo:
+                //    // 保全活動作成画面
+                //    initMakeMaintainance();
+                //    return ComConsts.RETURN_RESULT.OK;
+                //case ConductInfo.FormSelectStandards.FormNo:
+                //    // 機器別管理基準選択画面
+                //    initSelectStandards();
+                //    return ComConsts.RETURN_RESULT.OK;
+                //case ConductInfo.FormBudgetOutput.FormNo:
+                //    // 予算出力画面
+                //    initBudgetOutput();
+                //    return ComConsts.RETURN_RESULT.OK;
+                //case ConductInfo.FormPostpone.FormNo:
+                //    // 予定作業一括延期画面
+                //    initPostpone();
+                //    return ComConsts.RETURN_RESULT.OK;
+                default:
+                    return ComConsts.RETURN_RESULT.NG;
             }
 
-            // 初期検索実行
-            return InitSearch();
-
-            // 初期化処理で処理を行わない場合は以下のように定数を返す
-            //return ComConsts.RETURN_RESULT.OK;
+            return ComConsts.RETURN_RESULT.OK;
         }
 
         /// <summary>
@@ -212,17 +482,31 @@ namespace BusinessLogic_HM0002
         protected override int SearchImpl()
         {
             this.ResultList = new();
+            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
 
             switch (this.FormNo)
             {
-                case FormType.List:     // 一覧検索
-                    if (!searchList())
+                case ConductInfo.FormList.FormNo:
+                    // 一覧画面
+                    if (!searchList(compareId.IsInit()))
                     {
                         return ComConsts.RETURN_RESULT.NG;
                     }
                     break;
+                //case ConductInfo.FormDetail.FormNo:
+                //    // 参照画面
+                //    if (!initDetail(DetailDispType.Search))
+                //    {
+                //        return ComConsts.RETURN_RESULT.NG;
+                //    }
+                //    break;
+                //case ConductInfo.FormSelectStandards.FormNo:
+                //    if (!searchSelectStandards())
+                //    {
+                //        return ComConsts.RETURN_RESULT.NG;
+                //    }
+                //    break;
                 default:
-                    // 処理が想定される場合は、分岐に条件を追加して処理を記載すること
                     // この部分は到達不能なので、エラーを返す
                     return ComConsts.RETURN_RESULT.NG;
             }
@@ -236,22 +520,30 @@ namespace BusinessLogic_HM0002
         protected override int ExecuteImpl()
         {
             CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
-            if (compareId.IsRegist())
+
+            switch (this.CtrlId)
             {
-                // 登録の場合
-                // 登録処理実行
-                return Regist();
+                case ConductInfo.FormList.ButtonId.ApprovalAll: //一括承認
+                case ConductInfo.FormList.ButtonId.DenialAll: //一括否認
+                    return Regist();
+                    break;
             }
-            else if (compareId.IsDelete())
-            {
-                // 削除の場合
-                // 削除処理実行
-                return Delete();
-            }
-            else if (compareId.IsStartId("Test"))
-            {
-                // Testボタンの場合(画面で独自の処理)
-            }
+            //if (compareId.IsRegist())
+            //{
+            //    // 登録の場合
+            //    // 登録処理実行
+            //    return Regist();
+            //}
+            //else if (compareId.IsDelete())
+            //{
+            //    // 削除の場合
+            //    // 削除処理実行
+            //    return Delete();
+            //}
+            //else if (compareId.IsStartId("Test"))
+            //{
+            //    // Testボタンの場合(画面で独自の処理)
+            //}
             // 他の処理がある場合、else if 節に条件を追加する
             // この部分は到達不能なので、エラーを返す
             return ComConsts.RETURN_RESULT.NG;
@@ -270,9 +562,9 @@ namespace BusinessLogic_HM0002
             // 処理を実行する画面Noの値により処理を分岐する
             switch (this.FormNo)
             {
-                case FormType.Edit:
-                    // 編集画面の場合の登録処理
-                    resultRegist = executeRegistEdit();
+                case ConductInfo.FormList.FormNo: // 一覧画面
+                    //一括承認、一括否認
+                    resultRegist = registFormList();
                     break;
                 default:
                     // 処理が想定される場合は、分岐に条件を追加して処理を記載すること
@@ -337,7 +629,7 @@ namespace BusinessLogic_HM0002
             }
 
             // 再検索処理
-            if (!searchList())
+            if (!searchList(false))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
@@ -348,69 +640,52 @@ namespace BusinessLogic_HM0002
 
         #region privateメソッド
         /// <summary>
-        /// 一覧検索処理
+        /// 年度開始月を取得する処理
         /// </summary>
-        /// <returns>エラーの場合False</returns>
-        private bool searchList()
+        /// <param name="factoryId">工場ID 省略時はユーザの本務工場</param>
+        /// <returns>年度開始月</returns>
+        private int getYearStartMonth(int? factoryId = null)
         {
-            // ページ情報取得
-            var pageInfo = GetPageInfo("BODY_040_00_LST_0", this.pageInfoList);
-
-            //// 検索SQLの取得
-            //if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql))
-            //{
-            //    return false;
-            //}
-            //// WITH句の取得(SQLで未使用なら不要)
-            //if (!TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetList, out string withSql))
-            //{
-            //    return false;
-            //}
-
-            //// 場所分類＆職種機種＆詳細検索条件取得
-            //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereClause, out dynamic whereParam, out bool isDetailConditionApplied))
-            //{
-            //    return false;
-            //}
-
-            string baseSql = "select * from mc_machine";
-            string whereClause = string.Empty;
-            string withSql = string.Empty;
-            object whereParam = new();
-
-            // 総件数取得SQL文の取得
-            string execSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereClause, withSql);
-
-            // 総件数を取得
-            int cnt = db.GetCount(execSql, whereParam);
-            // 総件数のチェック
-            if (!CheckSearchTotalCount(cnt, pageInfo))
+            int startMonth;
+            if (factoryId == null)
             {
-                return false;
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                startMonth = TMQUtil.GetYearStartMonth(this.db, userFactoryId);
             }
-
-            // 一覧検索SQL文の取得
-            execSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereClause, withSql);
-            // 検索SQLにORDER BYを追加
-            var selectSql = new StringBuilder(execSql);
-
-            // 一覧検索実行
-            var results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
-            if (results == null || results.Count == 0)
+            else
             {
-                return false;
+                startMonth = TMQUtil.GetYearStartMonth(this.db, factoryId ?? -1);
             }
+            return startMonth;
+        }
 
-            // 固有の処理があれば実行
+        /// <summary>
+        /// スケジュールのマークからのリンク先を設定する処理
+        /// </summary>
+        /// <returns>マークごとのリンク先の情報</returns>
+        private Dictionary<ScheduleStatus, TMQDao.ScheduleList.Display.LinkTargetInfo> getScheduleLinkInfo()
+        {
+            Dictionary<ScheduleStatus, TMQDao.ScheduleList.Display.LinkTargetInfo> result = new();
+            // ●：保全活動参照画面(履歴タブ)
+            result.Add(ScheduleStatus.Complete, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.History));
+            // ◎：保全活動参照画面(依頼タブ)
+            result.Add(ScheduleStatus.Created, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.Request));
+            // リンクなし
+            // ○：保全活動新規登録画面
+            //result.Add(ScheduleStatus.NoCreate, new(MA0001.ConductId, MA0001.FormNo.New, MA0001.TabNoDetail.New));
+            // ▲：保全活動参照画面(履歴タブ)
+            result.Add(ScheduleStatus.UpperComplete, new(MA0001.ConductId, MA0001.FormNo.Detail, MA0001.TabNoDetail.History));
+            return result;
+        }
 
-            // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, cnt, false))
-            {
-                // 正常終了
-                this.Status = CommonProcReturn.ProcStatus.Valid;
-            }
-
-            return true;
+        /// <summary>
+        /// スケジュールレイアウト作成に必要な「年度」の文言を取得する処理
+        /// </summary>
+        /// <returns>"年度"に相当する文言</returns>
+        private string getNendoText()
+        {
+            // 「{0}年度」
+            return GetResMessage(ComRes.ID.ID150000013);
         }
 
         /// <summary>
@@ -443,7 +718,7 @@ namespace BusinessLogic_HM0002
             }
 
             // 再検索
-            if (!searchList())
+            if (!searchList(false))
             {
                 return false;
             }

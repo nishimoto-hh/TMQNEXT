@@ -1507,6 +1507,37 @@
             /// 一括否認
             /// </summary>
             public const string ID111020052 = "111020052";
+            /// <summary>
+            /// 削除申請
+            /// </summary>
+            public const string ID111110068 = "111110068";
+            /// <summary>
+            /// 申請内容取消
+            /// </summary>
+            public const string ID111120232 = "111120232";
+            /// <summary>
+            /// 承認依頼引戻
+            /// </summary>
+            public const string ID111120233 = "111120233";
+            /// <summary>
+            /// 長期計画で使用される機器の為、削除できません。
+            /// </summary>
+            public const string ID141170001 = "141170001";
+            /// <summary>
+            /// 保全活動で使用される機器の為、削除できません。
+            /// </summary>
+            public const string ID141300003 = "141300003";
+            /// <summary>
+            /// 保全活動で使用される機器の為、削除できません。
+            /// </summary>
+            public const string ID141070001 = "141070001";
+            /// <summary>
+            /// 対象データに申請が存在するため処理を行えません。
+            /// </summary>
+            public const string ID141160016 = "141160016";
+
+
+            
         }
     }
 }

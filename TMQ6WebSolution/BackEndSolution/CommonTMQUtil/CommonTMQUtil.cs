@@ -55,6 +55,16 @@ namespace CommonTMQUtil
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
         }
+        /// <summary>
+        /// SQLファイル名称(マスタ機能で使用)
+        /// </summary>
+        private static class SqlNameMaster
+        {
+            /// <summary>ユーザIDよりユーザ所属マスタの全ての工場を取得</summary>
+            public const string GetUserFactory = "GetUserFactory";
+            /// <summary>SQL格納先サブディレクトリ名</summary>
+            public const string SubDir = "Master";
+        }
         #endregion
 
         /// <summary>
@@ -1928,6 +1938,21 @@ namespace CommonTMQUtil
             // ユーザの本務工場IDを追加
             result.Add(GetUserFactoryId(pUserId, db));
             return result;
+        }
+
+        /// <summary>
+        /// ユーザのユーザ権限マスタの全ての工場を取得
+        /// </summary>
+        /// <param name="pUserId">ユーザID</param>
+        /// <param name="db">DB接続</param>
+        /// <returns>工場のIDリスト</returns>
+        public static List<int> GetUserBelongFactoryIdList(int pUserId, ComDB db)
+        {
+            var user = new TMQDataClass.MsUserBelongEntity
+            {
+                UserId = pUserId
+            };
+            return TMQUtil.SqlExecuteClass.SelectList<int>(SqlNameMaster.GetUserFactory, SqlNameMaster.SubDir, user, db);
         }
 
         /// <summary>

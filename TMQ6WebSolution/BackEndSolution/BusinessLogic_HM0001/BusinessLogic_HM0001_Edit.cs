@@ -41,29 +41,6 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// SQLの実行時にアンコメントする項目
-        /// </summary>
-        private class UnCommentItem
-        {
-            /// <summary>
-            /// 機器の新規登録・複写登録(機番情報)
-            /// </summary>
-            public const string NewMachineId = "NewMachineId";
-            /// <summary>
-            /// 機器の修正(機番情報)
-            /// </summary>
-            public const string DefaultMachineId = "DefaultMachineId";
-            /// <summary>
-            /// 機器の新規登録・複写登録(機器情報)
-            /// </summary>
-            public const string NewEquipmentId = "NewEquipmentId";
-            /// <summary>
-            /// 機器の修正(機器情報)
-            /// </summary>
-            public const string DefaultEquipmentId = "DefaultEquipmentId";
-        }
-
-        /// <summary>
         /// 画面の呼び出し元のコントロールIDを取得
         /// </summary>
         /// <returns>詳細編集画面の表示種類</returns>
@@ -105,7 +82,7 @@ namespace BusinessLogic_HM0001
         /// <returns>エラーの場合はFalse</returns>
         private bool searchEditList()
         {
-            // 詳細編集画面の表示種類を判定
+            // 遷移元コントロールIDより詳細編集画面の表示種類を判定
             EditDispType dispType = getEditDispType();
             switch (dispType)
             {
@@ -121,6 +98,9 @@ namespace BusinessLogic_HM0001
                     return searchResultTransaction(executionDiv.machineEdit);
                     break;
 
+                case EditDispType.Edit: // 申請内容修正
+                    return searchResultEditHistoryManagement();
+                    break;
                 default:
                     return false;
             }
@@ -154,9 +134,10 @@ namespace BusinessLogic_HM0001
             }
 
             // その他の設定値
-            result.DateOfInstallation = DateTime.Now;                             // 設置日
-            result.DateOfManufacture = DateTime.Now;                              // 製造日
-            result.ExecutionDivision = ((int)executionDiv.machineNew).ToString(); // 実行処理区分(機器の新規・複写登録)
+            result.DateOfInstallation = DateTime.Now;                // 設置日
+            result.DateOfManufacture = DateTime.Now;                 // 製造日
+            result.ExecutionDivision = (int)executionDiv.machineNew; // 実行処理区分(機器の新規・複写登録)
+            result.HistoryManagementId = -1;                         // 変更管理ID
 
             IList<Dao.searchResult> resultList = new List<Dao.searchResult> { result };
 
@@ -209,13 +190,17 @@ namespace BusinessLogic_HM0001
             }
 
             // 実行処理区分(機器の新規・複写登録 または 機器の修正)
-            results[0].ExecutionDivision = ((int)executionDivision).ToString();
+            results[0].ExecutionDivision = (int)executionDivision;
 
             // 複写申請の場合は検索結果を別に設定
             if (executionDivision == executionDiv.machineNew)
             {
                 results[0].DateOfInstallation = DateTime.Now; // 設置日
                 results[0].DateOfManufacture = DateTime.Now;  // 製造日
+            }
+            else
+            {
+                results[0].HistoryManagementId = -1; // 変更管理ID(登録時の入力チェックを行わないため)
             }
 
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定
@@ -235,6 +220,54 @@ namespace BusinessLogic_HM0001
 
             return true;
         }
+
+        /// <summary>
+        /// 検索処理(申請内容修正)
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool searchResultEditHistoryManagement()
+        {
+
+            // 検索条件を取得
+            Dao.detailSearchCondition condition = getDetailSearchCondition();
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string baseSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string withSql, new List<string>() { "IsDetail" });
+
+            // SQL実行
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(withSql + baseSql, condition);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            // 実行処理区分(機器の新規・複写登録 または 機器の修正)
+            results[0].ExecutionDivision = (int)executionDiv.machineEdit;
+
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+
+            // 検索結果の設定(機番情報)
+            if (!setSearchResult(ConductInfo.FormEdit.GroupNoMachine, results))
+            {
+                return false;
+            }
+
+            // 検索結果の設定(機器情報)
+            if (!setSearchResult(ConductInfo.FormEdit.GroupNoEquipment, results))
+            {
+                return false;
+            }
+
+
+            return true;
+        }
+
+
+
+
+
 
         /// <summary>
         /// 指定された一覧に値を設定する
@@ -289,32 +322,64 @@ namespace BusinessLogic_HM0001
         {
             DateTime now = DateTime.Now;
 
-            // 機番情報取得
-            Dao.registMachineInfo machineInfo = getRegistMachineInfo(now);
-
+            // 機番情報・機器情報取得
+            Dao.searchResult registInfo = getRegistMachineInfo(now);
 
             // 入力チェック
-
-
-            // 排他チェック
-
-
-            // 変更管理テーブル・変更管理詳細テーブル 登録処理
-            if (!registHistoryManagementInfo(machineInfo.ExecutionDivision, out long historyManagementId, out long historyManagementDetailId))
+            if (isErrorRegistForSingleFormEdit(registInfo))
             {
                 return false;
             }
 
-            // 機番情報変更管理テーブル 登録処理
-            if (!registMachineInfo(machineInfo, now, historyManagementDetailId, out long machineId))
+            // 画面に設定されている変更管理IDを判定
+            if (registInfo.HistoryManagementId != -1)
             {
-                return false;
-            }
+                // 排他チェック(変更管理)
+                if (!deleteRequestCheckExclusiveSingle(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "hm_history_management" }))
+                {
+                    return false;
+                }
 
-            // 機器情報変更管理テーブル 登録処理
-            if (!registEquipmentInfo(now, historyManagementDetailId, machineId, machineInfo.ExecutionDivision, out long equipmentId))
+                // 申請内容修正
+                if (!updateHistoryMachineInfo(registInfo))
+                {
+                    return false;
+                }
+            }
+            else
             {
-                return false;
+                // 変更申請の場合は排他チェックを行う
+                if (registInfo.ExecutionDivision == (int)executionDiv.componentEdit)
+                {
+                    // 排他チェック(機番情報・機器情報)
+                    if (!deleteRequestCheckExclusiveSingle(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "mc_machine", "mc_equipment" }))
+                    {
+                        return false;
+                    }
+                }
+
+                // 新規登録申請・複写申請・変更申請
+                // 変更管理テーブル・変更管理詳細テーブル 登録処理
+                if (!registHistoryManagementInfo(registInfo.MachineId, registInfo.ExecutionDivision, out long historyManagementId, out long historyManagementDetailId))
+                {
+                    return false;
+                }
+
+                // 機番情報変更管理テーブル 登録処理
+                if (!registMachineInfo(registInfo, now, historyManagementDetailId, out long machineId))
+                {
+                    return false;
+                }
+
+                // 機器情報変更管理テーブル 登録処理
+                if (!registEquipmentInfo(now, historyManagementDetailId, machineId, registInfo.ExecutionDivision, out long equipmentId))
+                {
+                    return false;
+                }
+
+                // 採番した変更管理IDを設定
+                registInfo.HistoryManagementId = historyManagementId;
+
             }
 
             // 再検索処理を実行(詳細画面に戻った際に検索するための情報を設定)
@@ -326,12 +391,56 @@ namespace BusinessLogic_HM0001
             {
                 var pageInfo = GetPageInfo(ConductInfo.FormEdit.ControlId.Machine, this.pageInfoList);
                 Dao.searchResult result = new();
-                result.HistoryManagementId = historyManagementId; // 変更管理ID
-                result.MachineId = machineId;                     // 機番ID
-                result.EquipmentId = equipmentId;                 // 機器ID
+                result.HistoryManagementId = registInfo.HistoryManagementId; // 変更管理ID
+                result.MachineId = registInfo.MachineId;                     // 機番ID
+                result.EquipmentId = registInfo.EquipmentId;                 // 機器ID
                 // 項目に設定
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, new List<Dao.searchResult> { result }, 1);
             }
+        }
+
+        /// <summary>
+        /// 入力チェック
+        /// </summary>
+        /// <param name="registInfo">画面に入力された値</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isErrorRegistForSingleFormEdit(Dao.searchResult registInfo)
+        {
+            // 変更管理IDが -1 の場合は入力チェックを行わない(新規登録申請・複写申請が該当)
+            if (registInfo.HistoryManagementId == -1)
+            {
+                return false;
+            }
+
+            bool isError = false;   // 処理全体でエラーの有無を保持
+
+            // エラー情報セット用Dictionary
+            var errorInfoDictionary = new List<Dictionary<string, object>>();
+
+            // エラー情報を画面に設定するためのマッピング情報リスト
+            var info = getResultMappingInfo(ConductInfo.FormEdit.ControlId.Machine);
+
+            // 機番IDより機番情報を取得
+            ComDao.McMachineEntity oldMachineInfo = new();
+            oldMachineInfo = oldMachineInfo.GetEntity(registInfo.MachineId, this.db);
+
+            // 画面に入力された機器レベルとDBの機器レベルを比較
+            if (registInfo.EquipmentLevelStructureId != oldMachineInfo.EquipmentLevelStructureId)
+            {
+                // 構成存在チェック
+                if (!checkComposition(oldMachineInfo.MachineId, false))
+                {
+                    // エラー情報格納クラス
+                    ErrorInfo errorInfo = new ErrorInfo(ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormEdit.ControlId.Machine));
+                    isError = true;
+                    string errMsg = GetResMessage(new string[] { ComRes.ID.ID141070001 }); // 「 構成機器が登録されている機器の為、削除できません。」
+                    string val = info.getValName("equipment_level_structure_id"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    errorInfo.setError(errMsg, val);
+                    errorInfoDictionary.Add(errorInfo.Result);
+                }
+            }
+
+            return isError;
         }
 
         /// <summary>
@@ -340,10 +449,10 @@ namespace BusinessLogic_HM0001
         /// <param name="now">現在日時</param>
         /// <param name="execDiv">実行処理区分</param>
         /// <returns>機番情報の登録データ</returns>
-        private Dao.registMachineInfo getRegistMachineInfo(DateTime now)
+        private Dao.searchResult getRegistMachineInfo(DateTime now)
         {
-            // 機番情報取得
-            Dao.registMachineInfo registMachineInfo = getRegistInfo<Dao.registMachineInfo>(ConductInfo.FormEdit.GroupNoMachine, now);
+            // 機番情報・機器情報取得
+            Dao.searchResult registMachineInfo = getRegistInfo<Dao.searchResult>(new List<short>() { ConductInfo.FormEdit.GroupNoMachine, ConductInfo.FormEdit.GroupNoEquipment }, now);
 
             //最下層の構成IDを取得して機能場所階層ID、職種機種階層IDにセットする
             IList<Dao.searchResult> results = new List<Dao.searchResult>();
@@ -365,7 +474,7 @@ namespace BusinessLogic_HM0001
         /// <param name="historyManagementId">変更管理ID</param>
         /// <param name="historyManagementDetailId">変更管理詳細ID</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool registHistoryManagementInfo(int executionDivision, out long historyManagementId, out long historyManagementDetailId)
+        private bool registHistoryManagementInfo(long machineId, int executionDivision, out long historyManagementId, out long historyManagementDetailId)
         {
             historyManagementId = -1;
             historyManagementDetailId = -1;
@@ -379,7 +488,11 @@ namespace BusinessLogic_HM0001
             // 機器の新規・複写登録の場合は申請区分は「新規登録申請」
             // 機器の修正の場合は申請区分は「変更申請」
             (bool returnFlag, long historyManagementId, long historyManagementDetailId) historyManagementResult =
-                historyManagement.InsertHistoryManagementBaseTable(executionDivision == (int)executionDiv.machineNew ? TMQConst.MsStructure.StructureId.ApplicationDivision.New : TMQConst.MsStructure.StructureId.ApplicationDivision.Update, executionDivision);
+                historyManagement.InsertHistoryManagementBaseTable(executionDivision == (int)executionDiv.machineNew ? TMQConst.MsStructure.StructureId.ApplicationDivision.New : TMQConst.MsStructure.StructureId.ApplicationDivision.Update,
+                                                                   executionDivision,
+                                                                   machineId,
+                                                                   getFactoryId(historyManagement, machineId));
+            // 登録に失敗した場合は終了
             if (!historyManagementResult.returnFlag)
             {
                 return false;
@@ -400,7 +513,7 @@ namespace BusinessLogic_HM0001
         /// <param name="outMachineId">機番ID</param>
         /// <param name="executionDivision">実行処理区分</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool registMachineInfo(Dao.registMachineInfo registMachineInfo, DateTime now, long historyManagementDetailId, out long outMachineId)
+        private bool registMachineInfo(Dao.searchResult registMachineInfo, DateTime now, long historyManagementDetailId, out long outMachineId)
         {
             outMachineId = -1;
 
@@ -425,7 +538,7 @@ namespace BusinessLogic_HM0001
             }
 
             // SQL実行
-            (bool returnFlag, long machineId) machineResult = registInsertDb<Dao.registMachineInfo>(registMachineInfo, SqlName.Edit.InsertMachineInfo, listUnComment);
+            (bool returnFlag, long machineId) machineResult = registInsertDb<Dao.searchResult>(registMachineInfo, SqlName.Edit.InsertMachineInfo, listUnComment);
             if (!machineResult.returnFlag)
             {
                 return false;
@@ -453,7 +566,7 @@ namespace BusinessLogic_HM0001
             outEquipmentId = -1;
 
             // 機器情報取得
-            Dao.registEquipmentInfo registEquipmentInfo = getRegistInfo<Dao.registEquipmentInfo>(ConductInfo.FormEdit.GroupNoEquipment, now);
+            Dao.searchResult registEquipmentInfo = getRegistInfo<Dao.searchResult>(ConductInfo.FormEdit.GroupNoEquipment, now);
 
             // 機器情報登録処理
             // 採番した値を設定
@@ -477,7 +590,7 @@ namespace BusinessLogic_HM0001
             }
 
             // SQL実行
-            (bool returnFlag, long equipmentId) equipmentResult = registInsertDb<Dao.registEquipmentInfo>(registEquipmentInfo, SqlName.Edit.InsertEquipmentInfo, listUnComment);
+            (bool returnFlag, long equipmentId) equipmentResult = registInsertDb<Dao.searchResult>(registEquipmentInfo, SqlName.Edit.InsertEquipmentInfo, listUnComment);
             if (!equipmentResult.returnFlag)
             {
                 return false;
@@ -521,6 +634,27 @@ namespace BusinessLogic_HM0001
                 long returnId = db.RegistAndGetKeyValue<long>(sql, out bool isError, registInfo);
                 return (!isError, returnId);
             }
+        }
+
+        /// <summary>
+        /// 機番情報変更管理テーブル・機器情報変更管理テーブル 更新処理
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool updateHistoryMachineInfo(Dao.searchResult registInfo)
+        {
+            // SQL取得(機番情報変更管理)
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.UpdateHmMcMachine, out string machineSql);
+            // SQL取得(機器情報変更管理)
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.UpdateHmMcEquipment, out string equipmentSql);
+
+            // 機番情報変更管理テーブル・機器情報変更管理テーブルを更新
+            if (db.Regist(machineSql, registInfo) <= 0 || db.Regist(equipmentSql, registInfo) <= 0)
+            {
+                return false;
+            }
+
+            return true;
         }
         #endregion
     }

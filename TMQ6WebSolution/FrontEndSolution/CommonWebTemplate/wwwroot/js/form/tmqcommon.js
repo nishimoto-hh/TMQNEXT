@@ -82,7 +82,8 @@ const PT0007_DepartmentList_CtrlId = "BODY_090_00_LST_0";
 
 // 機器台帳変更管理一覧
 const HM0001_List_CtrlId = "BODY_040_00_LST_0";
-
+// 長期計画変更管理一覧
+const HM0002_List_CtrlId = "BODY_040_00_LST_0";
 /**
  * スケジュール表示の表示単位
  */
@@ -1462,6 +1463,19 @@ function getParamToHM0001FormDetail(MachineId) {
 }
 
 /**
+ * 件名別長期計画(LN0001)の詳細画面から、長期計画変更管理 詳細画面への遷移パラメータを作成する
+ * @param {any} LongPlanId           長期計画ID
+ */
+function getParamToHM0002FormDetail(LongPlanId) {
+    var conditionData = {};
+    conditionData['CTRLID'] = HM0002_List_CtrlId;
+    conditionData['FORMNO'] = 0;
+    conditionData['VAL53'] = 0;         // 変更管理ID
+    conditionData['VAL51'] = LongPlanId; // 機番ID
+    return conditionData;
+}
+
+/**
  * URL直接起動のパラメータを設定する
  * @param {any} conductId 機能ID
  * @param {any} conditionDataList 遷移情報リスト
@@ -2408,16 +2422,31 @@ function setValueToConditionDataList(conditionDataList, formNo, listCtrlId, valN
     return conditionDataList;
 }
 
+///**
+// * コンボ変更時、拡張項目の値(EXPARAM1)を隠し項目にセットする処理
+// * @param {any} listCtrlId コンボと隠し項目の一覧のコントロールID
+// * @param {any} ExtVal 隠し項目のVAL値
+// * @param {any} ExtCtrlFlag 隠し項目のコントロールフラグ(SetValueの引数)
+// * @param {any} selected コンボの選択行の取得値、setComboOtherValuesの引数
+// * @param {any} isModal モーダル画面の場合true
+// */
+//function setComboExValue(listCtrlId, ExtVal, ExtCtrlFlag, selected, isModal) {
+//    var extValue = selected == null ? '' : selected.EXPARAM1;
+//    setValue(listCtrlId, ExtVal, 0, ExtCtrlFlag, extValue, isModal);
+//}
+
 /**
- * コンボ変更時、拡張項目の値(EXPARAM1)を隠し項目にセットする処理
+ * コンボ変更時、拡張項目の値を隠し項目にセットする処理
  * @param {any} listCtrlId コンボと隠し項目の一覧のコントロールID
  * @param {any} ExtVal 隠し項目のVAL値
  * @param {any} ExtCtrlFlag 隠し項目のコントロールフラグ(SetValueの引数)
  * @param {any} selected コンボの選択行の取得値、setComboOtherValuesの引数
  * @param {any} isModal モーダル画面の場合true
+ * @param {any} exparamNo 拡張項目番号
  */
-function setComboExValue(listCtrlId, ExtVal, ExtCtrlFlag, selected, isModal) {
-    var extValue = selected == null ? '' : selected.EXPARAM1;
+function setComboExValue(listCtrlId, ExtVal, ExtCtrlFlag, selected, isModal, exparamNo) {
+    var paramName = "EXPARAM" + (exparamNo ?  exparamNo : "1");
+    var extValue = selected == null ? '' : selected[paramName];
     setValue(listCtrlId, ExtVal, 0, ExtCtrlFlag, extValue, isModal);
 }
 
@@ -3565,55 +3594,61 @@ const ProcessMode =
  * @param {any} applicationDivisionCodeVal :申請区分の拡張項目を表示している列の項目番号
  * @param {any} valueChangedVal            :変更のあった項目を表示している列の項目番号
  * @param {any} columnNoList               :項目名と項目番号(検索結果の項目名をキーに、項目番号を値に定義した連想配列)
+ * @param {any} rows                       :フィルター適応後の行情報
  */
-function commonChangeBackGroundColorHistory(tbl, applicationDivisionCodeVal, valueChangedVal, columnNoList) {
+function commonChangeBackGroundColorHistory(tbl, applicationDivisionCodeVal, valueChangedVal, columnNoList, rows) {
 
     // 検索結果のレコードを取得
-    var table = $(tbl.element).find(".tabulator-table").children();
+    var table = tbl.getRows("active");
+    if (rows) {
+        table = rows;
+    }
 
     // 取得できなければ何もしない
     if (!$(table).length) {
         return;
     }
 
-    var applicationDivisionCode; // 申請区分(拡張項目)
-    var valueChanged;            // 変更のあった項目名
-    var colName;                 // 背景色を変更する項目名(列名と申請区分に分割) ※JavaScriptで定義している項目名とSQLで取得する項目名は統一させる
-
     $.each($(table), function (idx, row) {
 
         // 申請区分(拡張項目)の値を取得
-        applicationDivisionCode = $(row).find("div[tabulator-field='VAL" + applicationDivisionCodeVal + "']")[0].innerText;
+        var data = row.getData();
+        var applicationDivisionCode = data["VAL" + applicationDivisionCodeVal];
 
         // 背景色を変更
         if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) {
 
-            // 申請区分が「10：新規登録申請」、「30：削除申請」
-            changeBackGroundColorTabulatorHistory(row, applicationDivisionCode);
+            setTimeout(function () {
+                // 申請区分が「10：新規登録申請」、「30：削除申請」
+                changeBackGroundColorTabulatorHistory(row, applicationDivisionCode);
+            }, 0);
 
         }
         else if (applicationDivisionCode == ApplicationDivision.Update) {
 
             // 申請区分が「20：変更申請」
             // 変更のあった項目名を取得(「MachineNo_10|MachineName_30」 のようにパイプ「|」区切りになっているので分割)
-            valueChanged = ($(row).find("div[tabulator-field='VAL" + valueChangedVal + "']")[0].innerText).split("|");
+            var valueChanged = data["VAL" + valueChangedVal].split("|");
 
             valueChanged.forEach(function (columnDetail, colIdx) {
 
                 // 変更のあった項目の列名が存在する場合
                 if ((columnDetail.trim()).length) {
 
-                    // 列名と申請区分に分割
-                    colName = columnDetail.split("_");
+                    // 背景色を変更する項目名(列名と申請区分に分割) ※JavaScriptで定義している項目名とSQLで取得する項目名は統一させる
+                    var colName = columnDetail.split("_");
 
                     if (columnNoList[colName[0]]) {
-                        // 背景色変更処理
-                        changeBackGroundColorTabulatorHistory(row, colName[1], columnNoList[colName[0]]);
+                        setTimeout(function () {
+                            // 背景色変更処理
+                            changeBackGroundColorTabulatorHistory(row, colName[1], columnNoList[colName[0]]);
+                        }, 0);
                     }
                 }
             }, row);
         }
     });
+    table = null;
 }
 
 /**
@@ -3630,13 +3665,14 @@ function changeBackGroundColorTabulatorHistory(row, applicationDivisionCode, val
     // 項目番号があれば指定のセル、無ければ行全体
     if (val) {
         // セルを取得
-        var cell = $(row).find("div[tabulator-field='VAL" + val + "']")[0];
+        var cell = row.getCell("VAL" + val).getElement();
         // セルの背景色を変更
         $(cell).addClass(backGroundStyle);
     }
     else {
         // 行全体の背景色を変更
-        $(row).addClass(backGroundStyle);
+        var ele = row.getElement();
+        $(ele).addClass(backGroundStyle);
     }
 }
 
@@ -3790,13 +3826,18 @@ function dispNoneElementHistory(button, isHide) {
  * @param {any} isHistoryManagement 変更管理の場合はTrue
  * @param {any} historyManagementBtnName 変更管理ボタンの名前
  * @param {any} hideBtns 変更管理の時に非表示にするボタンの名前のリスト
+ * @param {any} hideBtns 変更管理の時に入力コントロールを非表示にする一覧のIDのリスト
  */
-function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns) {
+function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns,hideLists) {
     var historyManagementBtn = getButtonCtrl(historyManagementBtnName);
     dispNoneElementHistory(historyManagementBtn, !isHistoryManagement);
 
     $.each(hideBtns, function (i, name) {
         var btn = getButtonCtrl(name);
         dispNoneElementHistory(btn, isHistoryManagement);
+    });
+
+    $.each(hideLists, function (i, listId) {
+        changeRowControl(listId, !isHistoryManagement)
     });
 }

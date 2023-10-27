@@ -4,6 +4,8 @@ INTO hm_history_management(
     , [application_status_id]   -- 申請状況ID
     , [application_division_id] -- 申請区分ID
     , [application_conduct_id]  -- 申請機能ID
+    , [key_id]                  -- 申請データキーID
+    , [factory_id]              -- 申請データ工場ID
     , [application_user_id]     -- 申請者ID
     , [application_user_name]   -- 申請者名称
     , [update_serialid]         -- 更新シリアルID
@@ -18,6 +20,8 @@ VALUES (
     , @ApplicationStatusId                                                           -- 申請状況ID
     , @ApplicationDivisionId                                                         -- 申請区分ID
     , @ApplicationConductId                                                          -- 申請機能ID
+    , @KeyId                                                                         -- 申請データキーID
+    , @FactoryId                                                                     -- 申請データ工場ID
     , @ApplicationUserId                                                             -- 申請者ID
     , (SELECT mu.display_name FROM ms_user mu WHERE mu.user_id = @ApplicationUserId) -- 申請者名称(ログインユーザIDより名称を取得)
     , 0                                                                              -- 更新シリアルID

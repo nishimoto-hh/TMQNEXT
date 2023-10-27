@@ -1,6 +1,7 @@
 
 SELECT
     target.machine_id,                   -- 機番ID
+    target.equipment_id,                 -- 機器ID
     target.machine_no,                   -- 機器番号
     target.machine_name,                 -- 機器名称
     target.location_structure_id,        -- 場所階層(変更管理テーブル)
@@ -43,6 +44,8 @@ SELECT
     target.maintainance_kind_manage,     -- 点検種別毎管理
     target.application_reason,           -- 申請理由
     target.rejection_reason,             -- 否認理由
+    target.mc_update_serial_id,          -- 更新シリアルID(機番情報)
+    target.eq_update_serial_id,          -- 更新シリアルID(機器情報)
 
     ---------- 以下は翻訳を取得 ----------
     (

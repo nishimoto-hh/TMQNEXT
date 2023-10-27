@@ -39,7 +39,7 @@ namespace BusinessLogic_MS2020
         /// <summary>
         /// アイテム一覧タイプ
         /// </summary>
-        private static int itemListType = (int)TMQUtil.ComMaster.ItemListType.Standard;
+        private static int itemListType = (int)TMQUtil.ComMaster.ItemListType.StandardFactory;
         #endregion
 
         #region コンストラクタ
