@@ -1,0 +1,1 @@
+INSERT INTO #temp_job VALUES(0)

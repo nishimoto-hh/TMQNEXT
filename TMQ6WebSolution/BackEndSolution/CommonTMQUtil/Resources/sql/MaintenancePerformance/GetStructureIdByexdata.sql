@@ -1,6 +1,18 @@
 /*
  選択された構成IDより上位の工場を取得する(保全実績一覧)
 */
+
+DROP TABLE IF EXISTS #temp_structure; 
+-- 一時テーブルを作成
+CREATE TABLE #temp_structure(structure_id int); 
+-- 構成IDを一時テーブルへ保存
+INSERT 
+INTO #temp_structure 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StructureIdList, ','); 
+
 WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT
         st.structure_layer_no,      --構成階層番号
@@ -10,7 +22,14 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
     FROM
         ms_structure AS st
     WHERE
-        st.structure_id IN @StructureIdList
+        EXISTS ( 
+            SELECT
+                * 
+            FROM
+                #temp_structure temp 
+            WHERE
+                st.structure_id = temp.structure_id
+        ) 
 ),
 rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT
@@ -65,7 +84,5 @@ WHERE
     vs.language_id = @LanguageId
 AND
     up.structure_layer_no = 1--工場
-AND 
-    ex.extension_data <> ''
 ORDER BY
     vs.structure_id

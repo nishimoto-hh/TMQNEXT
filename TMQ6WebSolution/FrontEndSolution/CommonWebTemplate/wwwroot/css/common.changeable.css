@@ -1,0 +1,27 @@
+﻿/*****************************************************************************
+ *** 概要
+ *** 　開発者でないユーザでも変更可能なスタイルの定義を記載する。
+ *** 対応履歴
+ *** 　2022.11.09 新規作成
+******************************************************************************/
+@charset "utf-8";
+
+/*変更管理機能共通設定*/
+/*変更管理 申請区分が新規登録申請の場合*/
+.tabulator-row.tabulator-row-even.hmApplicationDivisionNew, .tabulator-row.tabulator-row-odd.hmApplicationDivisionNew, .hmApplicationDivisionNew {
+    /*背景色：黄色*/
+    background-color: yellow !important;
+}
+
+/*変更管理 申請区分削除申請の場合*/
+.tabulator-row.tabulator-row-even.hmApplicationDivisionDelete, .tabulator-row.tabulator-row-odd.hmApplicationDivisionDelete, .hmApplicationDivisionDelete {
+    /*背景色：赤*/
+    background-color: red !important;
+}
+
+/*変更管理 申請区分が変更申請かつ値が変更されている場合*/
+.hmApplicationDivisionUpdate {
+    /*背景色：緑*/
+    background-color: lightgreen !important;
+}
+

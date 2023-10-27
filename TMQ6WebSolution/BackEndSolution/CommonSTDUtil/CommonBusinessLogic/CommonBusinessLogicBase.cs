@@ -53,6 +53,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
             public const string GetStructureLowerList = "Structure_GetLowerList";
             /// <summary>予備品の棚の取得用SQL</summary>
             public const string GetPartsLocationList = "Structure_GetPartsLocationList";
+            /// <summary>場所階層IDを保存する一時テーブル作成用SQL</summary>
+            public const string CreateTableTempLocation = "CreateTableTempLocation";
+            /// <summary>場所階層IDを保存する一時テーブルへの登録用SQL</summary>
+            public const string InsertTempLocation = "InsertTempLocation";
+            /// <summary>職種機種IDを保存する一時テーブル作成用SQL</summary>
+            public const string CreateTableTempJob = "CreateTableTempJob";
+            /// <summary>職種機種IDを保存する一時テーブルへの登録用SQL</summary>
+            public const string InsertTempJob = "InsertTempJob";
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
         }
@@ -91,6 +99,18 @@ namespace CommonSTDUtil.CommonBusinessLogic
             public const string JobId = "job_structure_id";
             /// <summary>予備品管理工場ID</summary>
             public const string PartsLocationId = "parts_factory_id";
+        }
+
+        /// <summary>
+        /// 場所階層ID、職種機種IDを保存する一時テーブル名
+        /// </summary>
+        protected static class TempTableName
+        {
+            /// <summary>場所階層IDを保存する一時テーブル</summary>
+            public const string Location = "#temp_location";
+            /// <summary>職種機種IDを保存する一時テーブル</summary>
+            public const string Job = "#temp_job";
+
         }
         #endregion
 
@@ -5781,11 +5801,19 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     // WHERE句を生成
                     existsWhere = true;
                     sbSql.Append("WHERE ");
-                    //sbSql.Append(CommonColumnName.LocationId).AppendLine(" IN @LocationIdList");
-                    //dicResult.Add("LocationIdList", locationIdList);
-                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
-                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.LocationId, locationIdList);
-                    sbSql.Append(orParam);
+
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.CreateTableTempLocation, out string createSql);
+                    // 場所階層用の一時テーブル作成
+                    this.db.Regist(createSql);
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.InsertTempLocation, out string insertSql);
+                    //カンマ区切りの文字列にする
+                    string locationIds = string.Join(',', locationIdList);
+                    // 場所階層用の一時テーブルへ構成IDを登録
+                    this.db.Regist(insertSql, new { LocationIds = locationIds });
+                    // EXISTS句追加
+                    sbSql.Append(getExistsText(TempTableName.Location, CommonColumnName.LocationId));
                 }
             }
 
@@ -5807,11 +5835,19 @@ namespace CommonSTDUtil.CommonBusinessLogic
                     // WHERE句を生成
                     existsWhere = true;
                     sbSql.Append("WHERE ");
-                    //sbSql.Append(CommonColumnName.PartsLocationId).AppendLine(" IN @LocationIdList");
-                    //dicResult.Add("LocationIdList", locationIdList);
-                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
-                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.PartsLocationId, locationIdList);
-                    sbSql.Append(orParam);
+
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.CreateTableTempLocation, out string createSql);
+                    // 予備品場所階層用の一時テーブル作成
+                    this.db.Regist(createSql);
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.InsertTempLocation, out string insertSql);
+                    //カンマ区切りの文字列にする
+                    string locationIds = string.Join(',', locationIdList);
+                    // 予備品場所階層用の一時テーブルへ構成IDを登録
+                    this.db.Regist(insertSql, new { LocationIds = locationIds });
+                    // EXISTS句追加
+                    sbSql.Append(getExistsText(TempTableName.Location, CommonColumnName.PartsLocationId));
                 }
             }
 
@@ -5855,11 +5891,19 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         existsWhere = true;
                         sbSql.Append("WHERE ");
                     }
-                    //sbSql.Append(CommonColumnName.JobId).AppendLine(" IN @JobIdList");
-                    //dicResult.Add("JobIdList", jobIdList);
-                    //IN句にはパラメータの個数制限があるので、すべてORで繋げる
-                    string orParam = ComUtil.GetWhereSqlString(CommonColumnName.JobId, jobIdList);
-                    sbSql.Append(orParam);
+
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.CreateTableTempJob, out string createSql);
+                    // 職種機種用の一時テーブル作成
+                    this.db.Regist(createSql);
+                    // SQL取得
+                    GetFixedSqlStatement(SqlName.SubDir, SqlName.InsertTempJob, out string insertSql);
+                    //カンマ区切りの文字列にする
+                    string locationIds = string.Join(',', jobIdList);
+                    // 職種機種用の一時テーブルへ構成IDを登録
+                    this.db.Regist(insertSql, new { LocationIds = locationIds });
+                    // EXISTS句追加
+                    sbSql.Append(getExistsText(TempTableName.Job, CommonColumnName.JobId));
                 }
             }
 
@@ -5933,6 +5977,18 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 }
                 return results;
             }
+
+            // 一時テーブルに保存した構成IDと一致するデータを絞り込むEXISTS句を生成
+            string getExistsText(string tempTableName, string columnName)
+            {
+                string sqlText = "";
+                if(!string.IsNullOrEmpty(tempTableName) && !string.IsNullOrEmpty(columnName))
+                {
+                    sqlText = "EXISTS(SELECT * FROM " + tempTableName + " temp WHERE " + columnName + " = temp.structure_id)";
+                }
+
+                return sqlText;
+            }
         }
 
         /// <summary>
@@ -5966,17 +6022,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>配下の構成IDリスト</returns>
         public List<int> GetLowerStructureIdList(List<int> baseIdList)
         {
-            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-            string orParam = ComUtil.GetWhereSqlString("structure_id", baseIdList);
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', baseIdList);
 
             // SQL取得
             GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureLowerList, out string sql);
 
-            // 生成した条件文字列をSQLに設定する
-            Regex paramReplace = new Regex("@StructureIdList");
-            sql = paramReplace.Replace(sql, orParam);
             // 選択された構成IDリストから配下の構成IDをすべて取得
-            IList<int> list = this.db.GetList<int>(sql);
+            IList<int> list = this.db.GetList<int>(sql, new { StructureIdList = ids });
             return list.ToList();
         }
 
@@ -5987,17 +6040,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>棚の構成IDリスト</returns>
         public List<int> GetPartsStructureIdList(List<int> baseIdList)
         {
-            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-            string orParam = ComUtil.GetWhereSqlString("st.structure_id", baseIdList);
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', baseIdList);
 
             // SQL取得
             GetFixedSqlStatement(SqlName.SubDir, SqlName.GetPartsLocationList, out string sql);
 
-            // 生成した条件文字列をSQLに設定する
-            Regex paramReplace = new Regex("@StructureIdList");
-            sql = paramReplace.Replace(sql, orParam);
             // 選択された構成IDリストから予備品棚の構成IDをすべて取得
-            IList<int> list = this.db.GetList<int>(sql, new { UserId = this.UserId });
+            IList<int> list = this.db.GetList<int>(sql, new { UserId = this.UserId, StructureIdList = ids });
             return list.ToList();
         }
 

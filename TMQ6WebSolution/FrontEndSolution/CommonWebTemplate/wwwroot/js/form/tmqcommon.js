@@ -160,6 +160,14 @@ const RoundDivision =
     Floor: 3    // 切り捨て
 }
 
+// 変更管理 申請区分(拡張項目)
+const ApplicationDivision =
+{
+    New: "10",    // 新規登録申請
+    Update: "20", // 変更申請
+    Delete: "30"  // 削除申請
+}
+
 /**
  * 対象コントロールを取得し、返す。
  * @param ctrlId コントロールID
@@ -3494,4 +3502,72 @@ function isChangeList(ctrlId) {
         table = null;
     }
     return flg;
+}
+
+/**
+ * 変更管理 申請区分に応じて背景色の色を変更(Tabulator)
+ * @param {any} row                     :対象行
+ * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
+ * @param {any} val                     :項目番号
+ */
+function changeBackGroundColorTabulator(row, applicationDivisionCode, val) {
+
+    // 背景色スタイル
+    var backGroundStyle;
+
+    // 申請区分に応じて背景色スタイルを設定
+    switch (applicationDivisionCode) {
+        case ApplicationDivision.New: // 新規登録申請
+            backGroundStyle = "hmApplicationDivisionNew";
+            break;
+        case ApplicationDivision.Update: // 変更申請
+            backGroundStyle = "hmApplicationDivisionUpdate";
+            break;
+        case ApplicationDivision.Delete: // 削除申請
+            backGroundStyle = "hmApplicationDivisionDelete";
+            break;
+    }
+
+    // 項目番号があれば指定のセル、無ければ行全体
+    if (val) {
+        // セルを取得
+        var cell = $(row).find("div[tabulator-field='VAL" + val + "']")[0];
+        // セルの背景色を変更
+        $(cell).addClass(backGroundStyle);
+    }
+    else {
+        // 行全体の背景色を変更
+        $(row).addClass(backGroundStyle);
+    }
+}
+
+/**
+ * 変更管理 申請区分に応じて背景色の色を変更(縦一覧)
+ * @param {any} ctrlId                  :一覧のコントロールグループID
+ * @param {any} val                     :項目番号
+ * @param {any} applicationDivisionCode :申請区分(10：新規登録申請、20：変更申請、30：削除申請)
+ */
+function changeBackGroundColor(ctrlId, val, applicationDivisionCode) {
+
+    // 背景色スタイル
+    var backGroundStyle;
+
+    // 申請区分に応じて背景色スタイルを設定
+    switch (applicationDivisionCode) {
+        case ApplicationDivision.New: // 新規登録申請
+            backGroundStyle = "hmApplicationDivisionNew";
+            break;
+        case ApplicationDivision.Update: // 変更申請
+            backGroundStyle = "hmApplicationDivisionUpdate";
+            break;
+        case ApplicationDivision.Delete: // 削除申請
+            backGroundStyle = "hmApplicationDivisionDelete";
+            break;
+    }
+
+    // 背景色変更対象のセルを取得
+    var cell = getCtrl(ctrlId, val, 1, CtrlFlag.Label, false, false);
+
+    // セルの背景色を変更
+    $(cell).addClass(backGroundStyle);
 }

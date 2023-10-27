@@ -42,7 +42,7 @@ namespace BusinessLogic_PT0001
         private bool searchLabelList()
         {
             // 勘定科目選択一覧検索
-            if (!selectLabelList<Dao.labelSubjectList>(ConductInfo.FormLabel.ControlId.SubjectList, SqlName.Label.GetLabelSubjectList, out int subjectCnt))
+            if (!selectLabelList<Dao.labelSubjectList>(ConductInfo.FormLabel.ControlId.SubjectList, SqlName.Label.GetLabelSubjectList, out int subjectCnt, true))
             {
                 return false;
             }
@@ -74,8 +74,9 @@ namespace BusinessLogic_PT0001
         /// <param name="ctrlId">一覧のコントロールID</param>
         /// <param name="sqlName">SQL名</param>
         /// <param name="resultCnt">out データ件数</param>
+        /// <param name="isFirstTime">初回に呼び出された場合のみTrue(勘定科目検索の場合)</param>
         /// <returns>エラーの場合False</returns>
-        private bool selectLabelList<T>(string ctrlId, string sqlName, out int resultCnt)
+        private bool selectLabelList<T>(string ctrlId, string sqlName, out int resultCnt, bool isFirstTime = false)
         {
             resultCnt = 0;
 
@@ -91,24 +92,18 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
+            if(isFirstTime)
+            {
+                // 一時テーブルに共通工場IDを追加
+                addCommonFactoryIdTemp();
+            }
+
             // 検索条件追加
             whereParam.LanguageId = this.LanguageId; // 言語ID
             whereParam.userId = this.UserId;         // ユーザーID
 
-            // 検索条件を再生成(勘定科目一覧検索の場合)
-            if(sqlName == SqlName.Label.GetLabelSubjectList)
-            {
-                // 「AND」でSQLを分割
-                whereSql = whereSql.Replace("WHERE", "AND").Replace("location_structure_id", "item2.location_structure_id");
-                string[] condList = whereSql.Split(")");
-                condList[0] = condList[0] + "OR item2.location_structure_id = " + TMQConst.CommonFactoryId.ToString();
-                whereSql = condList[0] + "\r\n" + ")";
-                // SQLを再生成した条件で置換
-                baseSql = baseSql.Replace("ReplaceLocationIdList", whereSql);
-            }
-
             // 一覧検索実行
-            IList<T> results = db.GetListByDataClass<T>(baseSql.ToString(), whereParam);
+            IList<T> results = db.GetListByDataClass<T>(baseSql, whereParam);
             if (results == null || results.Count == 0)
             {
                 return true;
@@ -122,6 +117,14 @@ namespace BusinessLogic_PT0001
             }
 
             return true;
+
+            void addCommonFactoryIdTemp()
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Label.InsertCommonFactoryIdToTemp, out string insertLocarionSql); // 場所階層
+
+                this.db.Regist(insertLocarionSql);
+            }
         }
 
         /// <summary>

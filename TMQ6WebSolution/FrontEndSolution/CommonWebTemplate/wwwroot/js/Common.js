@@ -8389,6 +8389,10 @@ function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, bt
         }
     }
 
+    // 場所階層/職種機種データ取得
+    var locationIdList = getSelectedStructureIdList(structureGroupDef.Location, treeViewDef.TreeMenu, false);
+    var jobIdList = getSelectedStructureIdList(structureGroupDef.Job, treeViewDef.TreeMenu, true);
+
     //一覧ﾍﾟｰｼﾞ情報
     var W_listDefines = [];
     var isSet = true;
@@ -8426,6 +8430,8 @@ function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, bt
         conditionData: conditionDataList,   //検索条件
         listDefines: W_listDefines,     //一覧ﾍﾟｰｼﾞ情報(CtrlId, 1ﾍﾟｰｼﾞあたりのﾍﾟｰｼﾞ数)
         conductPtn: conductPtn,         //処理ﾊﾟﾀｰﾝ
+        locationIdList: locationIdList, // 場所階層構成IDリスト
+        jobIdList: jobIdList,           // 職種機種構成IDリスト
     };
 
     // 登録処理実行

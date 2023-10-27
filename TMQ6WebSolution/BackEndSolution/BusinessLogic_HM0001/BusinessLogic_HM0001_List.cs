@@ -15,6 +15,8 @@ using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_HM0001
 {
@@ -30,10 +32,11 @@ namespace BusinessLogic_HM0001
         private const int IsDispOnlyMySubject = 1;
         #endregion
 
-        #region privateメソッド
+        #region 検索
         /// <summary>
         /// 一覧検索処理
         /// </summary>
+        /// <param name="isInit">初期表示の場合はTrue</param>
         /// <returns>エラーの場合False</returns>
         private bool searchList(bool isInit)
         {
@@ -43,15 +46,15 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
-            // 一覧のページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
-
             // 「自分の件名のみ表示」がチェックされていたらSQLの該当箇所をアンコメント
             List<string> listUnComment = new();
-            if(dispOnlyMySubject == IsDispOnlyMySubject)
+            if (dispOnlyMySubject == IsDispOnlyMySubject)
             {
                 listUnComment.Add("DispOnlyMySubject");
             }
+
+            // 一覧のページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
 
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string baseSql);
@@ -79,6 +82,12 @@ namespace BusinessLogic_HM0001
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
+
+                // 警告メッセージで終了
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
+
                 return false;
             }
 
@@ -87,7 +96,7 @@ namespace BusinessLogic_HM0001
             var selectSql = new StringBuilder(executeSql);
 
             // 機器番号の昇順
-            // selectSql.AppendLine("ORDER BY machine_no");
+            selectSql.AppendLine("ORDER BY machine_no");
 
             // 一覧検索実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
@@ -97,7 +106,11 @@ namespace BusinessLogic_HM0001
             }
 
             // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId);       // 変更管理データ
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId); // トランザクションデータ
+
+            // 変更があった項目を取得
+            getValueChangedItem(results);
 
             // 検索結果の設定
             if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, cnt, isDetailConditionApplied))
@@ -114,6 +127,8 @@ namespace BusinessLogic_HM0001
         /// <summary>
         /// 検索条件を取得(初期検索時は「自分の件名のみ表示」をチェック状態にする)
         /// </summary>
+        /// <param name="isInit">初期表示の場合はTrue</param>
+        /// <param name="outDispOnlyMySubject">チェック状態</param>
         /// <returns>エラーの場合False</returns>
         private bool getSearchCondition(bool isInit, out int outDispOnlyMySubject)
         {
@@ -163,6 +178,67 @@ namespace BusinessLogic_HM0001
                 // 項目キー名と一致する項目番号を返す
                 return info.Value.First(x => x.ParamName.Equals(keyName)).ValName;
             }
+        }
+        #endregion
+
+        #region 登録
+
+        /// <summary>
+        /// 一括承認・一括否認
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private bool registFormList()
+        {
+            // 選択行取得
+            var selectedList = getSelectedRowsByList(this.resultInfoDictionary, ConductInfo.FormList.ControlId.List);
+
+            // 排他チェック
+            if (!checkExclusiveList(ConductInfo.FormList.ControlId.List, selectedList))
+            {
+                return false;
+            }
+
+            // ボタンコントロールに応じて登録する申請状況(拡張項目)を設定
+            int applicationStatus;
+            switch (this.CtrlId)
+            {
+                case ConductInfo.FormList.ButtonId.ApprovalAll: // 一括承認
+                    applicationStatus = (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Approved; // 承認済
+                    break;
+                case ConductInfo.FormList.ButtonId.DenialAll: // 一括否認
+                    applicationStatus = (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Return; // 差戻中
+                    break;
+                default:
+                    return false;
+            }
+
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now);
+            foreach (var selectedRow in selectedList)
+            {
+                // 登録情報を作成
+                ComDao.HmHistoryManagementEntity condition = new();
+                SetDeleteConditionByDataClass(selectedRow, ConductInfo.FormList.ControlId.List, condition, new List<string> { "HistoryManagementId" });
+
+                // 入力チェック
+                if(historyManagement.IsErrorBeforeUpdateApplicationStatus(condition.HistoryManagementId))
+                {
+                    return false;
+                }
+
+                // 登録処理
+                if (!historyManagement.UpdateApplicationStatus(condition, applicationStatus))
+                {
+                    return false;
+                }
+            }
+
+            // 一覧の再検索
+            if(!searchList(false))
+            {
+                return false;
+            }
+
+            return true;
         }
         #endregion
     }

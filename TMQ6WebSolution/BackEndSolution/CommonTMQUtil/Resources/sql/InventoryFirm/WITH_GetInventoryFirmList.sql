@@ -15,8 +15,12 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1000
-                ReplaceLocationIdList
                 AND ms.structure_layer_no = 1
+                AND EXISTS(
+                 SELECT * 
+                 FROM #temp_location temp
+                 WHERE ms.structure_id = temp.structure_id
+                )
             ) factory
             INNER JOIN
                 (
@@ -27,8 +31,12 @@ FROM
                         ms_structure ms
                     WHERE
                         ms.structure_group_id = 1010
-                    ReplaceJobIdList
                     AND ms.structure_layer_no = 0
+                    AND EXISTS(
+                     SELECT * 
+                     FROM #temp_job temp
+                     WHERE ms.structure_id = temp.structure_id
+                    )
                 ) job
             ON  factory.factory_id = job.factory_id
         UNION
@@ -43,8 +51,12 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1000
-                ReplaceLocationIdList
                 AND ms.structure_layer_no = 1
+                AND EXISTS(
+                 SELECT * 
+                 FROM #temp_location temp
+                 WHERE ms.structure_id = temp.structure_id
+                )
             ) factory,
             (
                 SELECT
@@ -53,9 +65,13 @@ FROM
                     ms_structure ms
                 WHERE
                     ms.structure_group_id = 1010
-                ReplaceJobIdList
                 AND ms.structure_layer_no = 0
                 AND ms.factory_id = 0
+                AND EXISTS(
+                     SELECT * 
+                     FROM #temp_job temp
+                     WHERE ms.structure_id = temp.structure_id
+                    )
             ) job
     ) factory
 ),

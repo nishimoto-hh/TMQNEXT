@@ -52,6 +52,8 @@
     <None Remove="Resources\sql\Attachment\GetUploadFolder.sql" />
     <None Remove="Resources\sql\Attachment\GetUserName.sql" />
     <None Remove="Resources\sql\Attachment\InsertAttachmentInfo.sql" />
+    <None Remove="Resources\sql\Attachment\InsertJobStructureIdToTemp.sql" />
+    <None Remove="Resources\sql\Attachment\InsertLocationStructureIdToTemp.sql" />
     <None Remove="Resources\sql\Attachment\INSERT_AttachmentInfo.sql" />
     <None Remove="Resources\sql\Attachment\SELECT_AttachmentInfoList.sql" />
     <None Remove="Resources\sql\Attachment\SELECT_AttachmentList.sql" />
@@ -78,7 +80,14 @@
     <None Remove="Resources\sql\Attachment\UpdateAttachmentInfoExceptFile.sql" />
     <None Remove="Resources\sql\Attachment\UPDATE_AttachmentInfo.sql" />
     <None Remove="Resources\sql\Attachment\WITH_AttachmentList.sql" />
+    <None Remove="Resources\sql\Common\CreateTableTempJob.sql" />
+    <None Remove="Resources\sql\Common\CreateTableTempLocation.sql" />
     <None Remove="Resources\sql\Common\GetNextSequence.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetCntBeforeUpdateApplicationStatus.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatusApproval.sql" />
+    <None Remove="Resources\sql\Common\InsertTempJob.sql" />
+    <None Remove="Resources\sql\Common\InsertTempLocation.sql" />
     <None Remove="Resources\sql\Common\PartsInventory\GetInventoryCtrlIdByLotCtrld.sql" />
     <None Remove="Resources\sql\Common\PartsInventory\GetLocationStock.sql" />
     <None Remove="Resources\sql\Common\PartsInventory\GetLocationStockByLocation.sql" />
@@ -164,7 +173,11 @@
     <None Remove="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <None Remove="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0360_Sheet1.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <None Remove="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetCategoryList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetEnterInfoList.sql" />
@@ -207,6 +220,8 @@
     <None Remove="Resources\sql\InventoryControl\WITH_GetShedList.sql" />
     <None Remove="Resources\sql\InventoryControl\WITH_GetSpareInfoList.sql" />
     <None Remove="Resources\sql\InventoryFirm\DeleteFixedStock.sql" />
+    <None Remove="Resources\sql\InventoryFirm\DeleteTempJobList.sql" />
+    <None Remove="Resources\sql\InventoryFirm\DeleteTempLocationList.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetCommonFactoryId.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetFactoryIdList.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetInsertDataToFixedStock.sql" />
@@ -215,6 +230,8 @@
     <None Remove="Resources\sql\InventoryFirm\GetMaxUpdateDateConfirm.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetMaxUpdateDateFixed.sql" />
     <None Remove="Resources\sql\InventoryFirm\GetStockIdList.sql" />
+    <None Remove="Resources\sql\InventoryFirm\GetTempJobList.sql" />
+    <None Remove="Resources\sql\InventoryFirm\GetTempLocationList.sql" />
     <None Remove="Resources\sql\InventoryFirm\InsertFixedStock.sql" />
     <None Remove="Resources\sql\InventoryFirm\InsertStockConfirm.sql" />
     <None Remove="Resources\sql\InventoryFirm\UpdateStockConfirm.sql" />
@@ -676,6 +693,7 @@
     <None Remove="Resources\sql\Parts\GetStartMonthByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetUnitDigit.sql" />
     <None Remove="Resources\sql\Parts\GetUnitRoundDivision.sql" />
+    <None Remove="Resources\sql\Parts\InsertCommonFactoryIdToTemp.sql" />
     <None Remove="Resources\sql\Parts\InsertPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\UpdatePartsInfo.sql" />
     <None Remove="Resources\sql\Parts\WITH_Common.sql" />
@@ -740,7 +758,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\sql\Attachment\GetDistrictIdList.sql" />
+    <EmbeddedResource Include="Resources\sql\Attachment\InsertJobStructureIdToTemp.sql" />
+    <EmbeddedResource Include="Resources\sql\Attachment\InsertLocationStructureIdToTemp.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\CreateTableTempJob.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\CreateTableTempLocation.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetCntBeforeUpdateApplicationStatus.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\InsertTempJob.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\InsertTempLocation.sql" />
     <EmbeddedResource Include="Resources\sql\Common\PartsInventory\TakeInventory\UpdateHistoryForConfirm.sql" />
   </ItemGroup>
 
@@ -787,7 +812,11 @@
     <EmbeddedResource Include="Resources\sql\Excel\RP0310GetTransLationText.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0310_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0360_Sheet1.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryMachineInfo.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryMachineList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetHistoryManagementStandardsList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitAccountStructureId.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetInitOldNewStructureId.sql" />
@@ -799,12 +828,16 @@
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetWarehouse.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryControl\WITH_GetIssueList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\DeleteFixedStock.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryFirm\DeleteTempJobList.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryFirm\DeleteTempLocationList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetCommonFactoryId.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetInsertDataToFixedStock.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetInventoryFirmList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetMaxUpdateDateConfirm.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetMaxUpdateDateFixed.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\GetStockIdList.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryFirm\GetTempJobList.sql" />
+    <EmbeddedResource Include="Resources\sql\InventoryFirm\GetTempLocationList.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\InsertFixedStock.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\InsertStockConfirm.sql" />
     <EmbeddedResource Include="Resources\sql\InventoryFirm\UpdateStockConfirm.sql" />
@@ -1039,6 +1072,9 @@
 
 
     <EmbeddedResource Include="Resources\sql\Parts\GetUnitRoundDivision.sql" />
+
+
+    <EmbeddedResource Include="Resources\sql\Parts\InsertCommonFactoryIdToTemp.sql" />
 
 
     <EmbeddedResource Include="Resources\sql\Parts\WITH_Common.sql" />

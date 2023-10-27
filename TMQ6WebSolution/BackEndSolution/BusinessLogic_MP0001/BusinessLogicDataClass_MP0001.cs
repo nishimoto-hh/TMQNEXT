@@ -95,7 +95,7 @@ namespace BusinessLogic_MP0001
             public int ParentStructureId { get; set; }
             /// <summary>Gets or sets 拡張データ</summary>
             /// <value>拡張データ</value>
-            public int extensionData { get; set; }
+            public int? extensionData { get; set; }
             /// <summary>Gets or sets 表示順</summary>
             /// <value>表示順</value>
             public int DisplayOrder { get; set; }

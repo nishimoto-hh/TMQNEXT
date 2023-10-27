@@ -19,7 +19,11 @@ SELECT
                 WHERE
                     item2.structure_group_id = 1770
                 AND item2.language_id = @LanguageId
-                ReplaceLocationIdList
+                AND EXISTS(
+                 SELECT * 
+                 FROM #temp_location temp
+                 WHERE item2.factory_id = temp.structure_id
+                )
                 AND ex.extension_data = ex2.extension_data FOR XML PATH('')
             )
     ) AS subject_nm -- 勘定科目コード + 勘定科目名

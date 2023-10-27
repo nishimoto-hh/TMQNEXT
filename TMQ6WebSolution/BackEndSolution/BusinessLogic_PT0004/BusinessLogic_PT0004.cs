@@ -32,6 +32,8 @@ namespace BusinessLogic_PT0004
         {
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"InventoryFirm";
+            /// <summary>共通SQL格納先サブディレクトリ名</summary>
+            public const string CommonSubDir = @"Common";
             /// <summary>共通工場ID取得</summary>
             public const string GetCommonFactoryId = "GetCommonFactoryId";
             /// <summary>在庫確定一覧取得</summary>
@@ -52,6 +54,18 @@ namespace BusinessLogic_PT0004
             public const string GetMaxUpdateDateFixed = "GetMaxUpdateDateFixed";
             /// <summary>確定在庫データ削除</summary>
             public const string DeleteFixedStock = "DeleteFixedStock";
+            /// <summary>場所階層IDを保存する一時テーブルへの登録用SQL</summary>
+            public const string InsertTempLocation = "InsertTempLocation";
+            /// <summary>職種機種IDを保存する一時テーブルへの登録用SQL</summary>
+            public const string InsertTempJob = "InsertTempJob";
+            /// <summary>場所階層IDを保存する一時テーブルのデータ取得SQL</summary>
+            public const string GetTempLocationList = "GetTempLocationList";
+            /// <summary>職種IDを保存する一時テーブルのデータ取得登録用SQL</summary>
+            public const string GetTempJobList = "GetTempJobList";
+            /// <summary>場所階層IDを保存する一時テーブルのデータ削除SQL</summary>
+            public const string DeleteTempLocationList = "DeleteTempLocationList";
+            /// <summary>職種IDを保存する一時テーブルのデータ削除用SQL</summary>
+            public const string DeleteTempJobList = "DeleteTempJobList";
         }
 
         /// <summary>
@@ -296,39 +310,24 @@ namespace BusinessLogic_PT0004
                 return false;
             }
 
-            // 「AND」でSQLを分割
-            string[] condList = whereClause.Split("AND");
-
-            // 共通通工場を取得
-            getCommonFactoryId(ref condList[0]);
+            // 共通通工場を一時テーブルに登録
+            getCommonFactoryIdToTemp();
 
             // 再検索かどうか判定
-            if (!isResearch)
-            {
-                // 場所階層条件を再生成
-                condList[0] = condList[0].Replace("WHERE", "AND").Replace("location_structure_id", "ms.structure_id");
-                // 職種条件を再生成
-                condList[1] = "AND " + condList[1].Replace("job_structure_id", "ms.structure_id");
-            }
-            else
+            if(isResearch)
             {
                 // 非表示の一覧に退避している工場IDを取得
-                if (!getHideFactoryIdList(out string whereSqlFactory))
+                if (!getHideFactoryIdList())
                 {
                     return false;
                 }
-                condList[0] = whereSqlFactory;
 
                 // 非表示の一覧に退避している職種IDを取得
-                if (!getHideJobIdList(out string whereSqlJob))
+                if (!getHideJobIdList())
                 {
                     return false;
                 }
-                condList[1] = whereSqlJob;
             }
-
-            // SQLの場所階層条件を生成した場所階層条件に置換
-            withSql = withSql.Replace("ReplaceLocationIdList", condList[0]).Replace("ReplaceJobIdList", condList[1]);
 
             // 検索条件で入力された対象年月を取得
             whereParam.TargetMonth = getSearchCondition();
@@ -349,17 +348,11 @@ namespace BusinessLogic_PT0004
                 return true;
             }
 
-            // 非表示の工場IDリスト
-            if (!setFactoryIdList(condList[0]))
-            {
-                return false;
-            }
+            // 非表示の工場IDリストに一時テーブルの値を設定する
+            setFactoryIdList();
 
-            // 非表示の職種IDリスト
-            if (!setJobIdList(condList[1]))
-            {
-                return false;
-            }
+            // 非表示の職種IDリストに一時テーブルの値を設定する
+            setJobIdList();
 
             // 検索結果の設定
             if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, results, results.Count, isDetailConditionApplied))
@@ -374,154 +367,6 @@ namespace BusinessLogic_PT0004
             }
 
             return true;
-
-            /// <summary>
-            /// 非表示の工場IDリストに工場IDを設定する
-            /// </summary>
-            /// <param name="withSql">検索SQLのWITH句</param>
-            /// <returns>エラーの場合False</returns>
-            bool setFactoryIdList(string withSql)
-            {
-                // 不要な文字列を無くす
-                withSql = withSql.Replace("AND (", string.Empty).Replace(")", string.Empty).Replace("OR", string.Empty).Replace("\r\n", string.Empty);
-                // 分割
-                string[] condList = withSql.Split("ms.structure_id = ");
-
-                // 工場IDをリストに格納
-                List<Dao.searchResult> factoryIdList = new();
-                foreach (string id in condList)
-                {
-                    // 数値に変換できない場合は無いもしない
-                    if (!int.TryParse(id, out int outId))
-                    {
-                        continue;
-                    }
-                    Dao.searchResult factoryId = new();
-                    factoryId.FactoryId = outId;
-                    factoryIdList.Add(factoryId);
-                }
-
-                // ページ情報取得
-                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.FactoryIdList, this.pageInfoList);
-                // 検索結果の設定
-                if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, factoryIdList, factoryIdList.Count))
-                {
-                    return false;
-                }
-
-                return true;
-            }
-
-            /// <summary>
-            /// 非表示の職種IDリストに職種IDを設定する
-            /// </summary>
-            /// <param name="withSql">検索SQLのWITH句</param>
-            /// <returns>エラーの場合False</returns>
-            bool setJobIdList(string withSql)
-            {
-                // 不要な文字列を無くす
-                withSql = withSql.Replace("AND (", string.Empty).Replace(")", string.Empty).Replace("OR", string.Empty).Replace("\r\n", string.Empty);
-                // 分割
-                string[] condList = withSql.Split("ms.structure_id = ");
-
-                List<Dao.searchResult> jobIdList = new();
-                foreach (string id in condList)
-                {
-                    // 数値に変換できない場合は無いもしない
-                    if (!int.TryParse(id, out int outId))
-                    {
-                        continue;
-                    }
-
-                    Dao.searchResult jobId = new();
-                    jobId.PartsJobId = outId;
-                    jobIdList.Add(jobId);
-                }
-
-                // ページ情報取得
-                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.JobIdList, this.pageInfoList);
-                // 検索結果の設定
-                if (!SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, jobIdList, jobIdList.Count))
-                {
-                    return false;
-                }
-
-                return true;
-            }
-
-            /// <summary>
-            /// 非表示の工場IDリストの値を取得する
-            /// </summary>
-            /// <param name="whereSql">検索SQLのWITH句</param>
-            /// <returns>エラーの場合False</returns>
-            bool getHideFactoryIdList(out string whereSql)
-            {
-                // 工場ID一覧の情報を取得
-                List<Dictionary<string, object>> list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormList.ControlId.FactoryIdList);
-                bool isFirstData = true;
-                whereSql = "AND (";
-                foreach (var val in list)
-                {
-                    Dao.searchResult factoryId = new();
-                    if (!SetExecuteConditionByDataClass<Dao.searchResult>(val, ConductInfo.FormList.ControlId.FactoryIdList, factoryId, DateTime.Now, this.UserId))
-                    {
-                        return false;
-                    }
-
-                    // 工場IDをWHERE句に作成する
-                    whereSql = whereSql + "\r\n";
-                    if (isFirstData)
-                    {
-                        isFirstData = false;
-                        whereSql = whereSql + "ms.structure_id = " + factoryId.FactoryId.ToString();
-                    }
-                    else
-                    {
-                        whereSql = whereSql + " OR ms.structure_id = " + factoryId.FactoryId.ToString();
-                    }
-
-                }
-
-                whereSql = whereSql + "\r\n" + ")";
-
-                return true;
-            }
-
-            /// <summary>
-            /// 非表示の職種IDリストの値を取得する
-            /// </summary>
-            /// <param name="whereSql">検索SQLのWITH句</param>
-            /// <returns>エラーの場合False</returns>
-            bool getHideJobIdList(out string whereSql)
-            {
-                // 職種ID一覧の情報を取得
-                List<Dictionary<string, object>> list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormList.ControlId.JobIdList);
-                bool isFirstData = true;
-                whereSql = "AND (";
-                foreach (var val in list)
-                {
-                    Dao.searchResult jobId = new();
-                    if (!SetExecuteConditionByDataClass<Dao.searchResult>(val, ConductInfo.FormList.ControlId.JobIdList, jobId, DateTime.Now, this.UserId))
-                    {
-                        return false;
-                    }
-
-                    // 職種IDをWHERE句に作成する
-                    if (isFirstData)
-                    {
-                        isFirstData = false;
-                        whereSql = whereSql + "\r\n" + "ms.structure_id = " + jobId.PartsJobId.ToString();
-                    }
-                    else
-                    {
-                        whereSql = whereSql + "\r\n" + "OR ms.structure_id = " + jobId.PartsJobId.ToString();
-                    }
-
-                }
-
-                whereSql = whereSql + "\r\n" + ")";
-                return true;
-            }
 
             /// <summary>
             /// ボタンの非表示、対象年月を一覧に設定
@@ -560,35 +405,162 @@ namespace BusinessLogic_PT0004
 
                 return true;
             }
+        }
 
-            /// <summary>
-            /// 非表示の職種IDリストの値を取得する
-            /// </summary>
-            /// <param name="whereSql">検索SQLのWITH句</param>
-            void getCommonFactoryId(ref string whereSql)
+        /// <summary>
+        /// 共通工場IDを一時テーブルに登録する
+        /// </summary>
+        private void getCommonFactoryIdToTemp()
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCommonFactoryId, out string baseSql);
+            Dao.searchCondition condition = new();
+            condition.UserId = this.UserId;
+            // 検索実行
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(baseSql, condition);
+            if (results == null || results.Count == 0)
             {
-                string[] condList = whereSql.Split(")");
-
-                // SQLを取得
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetCommonFactoryId, out string baseSql);
-                Dao.searchCondition condition = new();
-                condition.UserId = this.UserId;
-                // 検索実行
-                IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(baseSql, condition);
-                if (results == null || results.Count == 0)
-                {
-                    return;
-                }
-
-                foreach (Dao.searchResult result in results)
-                {
-                    condList[0] = condList[0] + "OR location_structure_id = " + result.FactoryId.ToString();
-                }
-
-                whereSql = condList[0] + "\r\n" + ")";
-
                 return;
             }
+
+            //一時テーブルに値を登録するSQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.CommonSubDir, SqlName.InsertTempLocation, out string insertSql);
+
+            // 取得した値を一時テーブルに登録
+            foreach (Dao.searchResult result in results)
+            {
+                // 場所階層用の一時テーブルへ構成IDを登録
+                this.db.Regist(insertSql, new { LocationIds = result.FactoryId.ToString() });
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// 非表示の工場IDリストに工場IDを設定する
+        /// </summary>
+        private void setFactoryIdList()
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetTempLocationList, out string locationSql);
+
+            // 一時テーブルのデータ取得
+            IList<int> results = db.GetListByDataClass<int>(locationSql);
+            if (results == null || results.Count == 0)
+            {
+                return;
+            }
+
+            List<Dao.searchResult> factoryIdList = new();
+            foreach (int result in results)
+            {
+                Dao.searchResult condition = new();
+                condition.FactoryId = result;
+                factoryIdList.Add(condition);
+            }
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.FactoryIdList, this.pageInfoList);
+            // 検索結果の設定
+            SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, factoryIdList, factoryIdList.Count);
+        }
+
+        /// <summary>
+        /// 非表示の職種IDリストに職種IDを設定する
+        /// </summary>
+        private void setJobIdList()
+        {
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetTempJobList, out string jobSql);
+
+            // 一時テーブルのデータ取得
+            IList<int> results = db.GetListByDataClass<int>(jobSql);
+            if (results == null || results.Count == 0)
+            {
+                return;
+            }
+
+            List<Dao.searchResult> jobIdList = new();
+            foreach (int result in results)
+            {
+                Dao.searchResult condition = new();
+                condition.PartsJobId = result;
+                jobIdList.Add(condition);
+            }
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.JobIdList, this.pageInfoList);
+            // 検索結果の設定
+            SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, jobIdList, jobIdList.Count);
+        }
+
+        /// <summary>
+        /// 非表示の工場IDリストの値を取得する
+        /// </summary>
+        /// <param name="whereSql">検索SQLのWITH句</param>
+        /// <returns>エラーの場合False</returns>
+        private bool getHideFactoryIdList()
+        {
+            // 一時テーブルの値を削除
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.DeleteTempLocationList, out string delLocationSql);
+            this.db.Regist(delLocationSql);
+
+            // 工場ID一覧の情報を取得
+            List<long> factoryIdList = new();
+            List<Dictionary<string, object>> list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormList.ControlId.FactoryIdList);
+            foreach (var val in list)
+            {
+                Dao.searchResult factoryId = new();
+                if (!SetExecuteConditionByDataClass<Dao.searchResult>(val, ConductInfo.FormList.ControlId.FactoryIdList, factoryId, DateTime.Now, this.UserId))
+                {
+                    return false;
+                }
+
+                factoryIdList.Add(factoryId.FactoryId);
+            }
+
+            //一時テーブルに値を登録するSQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.CommonSubDir, SqlName.InsertTempLocation, out string insertSql);
+
+            // 場所階層用の一時テーブルへ構成IDを登録
+            this.db.Regist(insertSql, new { LocationIds = string.Join(',', factoryIdList) });
+
+            return true;
+        }
+
+        /// <summary>
+        /// 非表示の職種IDリストの値を取得する
+        /// </summary>
+        /// <returns>エラーの場合False</returns>
+        private bool getHideJobIdList()
+        {
+            // 一時テーブルの値を削除
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.DeleteTempJobList, out string delJobSql);
+            this.db.Regist(delJobSql);
+
+            // 職種ID一覧の情報を取得
+            List<long> jobIdList = new();
+            List<Dictionary<string, object>> list = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormList.ControlId.JobIdList);
+            foreach (var val in list)
+            {
+                Dao.searchResult jobId = new();
+                if (!SetExecuteConditionByDataClass<Dao.searchResult>(val, ConductInfo.FormList.ControlId.JobIdList, jobId, DateTime.Now, this.UserId))
+                {
+                    return false;
+                }
+
+                jobIdList.Add(jobId.PartsJobId);
+            }
+
+            //一時テーブルに値を登録するSQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.CommonSubDir, SqlName.InsertTempJob, out string insertSql);
+
+            // 場所階層用の一時テーブルへ構成IDを登録
+            this.db.Regist(insertSql, new { LocationIds = string.Join(',', jobIdList) });
+
+            return true;
         }
         #endregion
 

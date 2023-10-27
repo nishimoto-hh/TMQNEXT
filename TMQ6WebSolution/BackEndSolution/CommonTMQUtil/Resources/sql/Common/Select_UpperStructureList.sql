@@ -1,3 +1,14 @@
+DROP TABLE IF EXISTS #temp_upper; 
+-- 一時テーブルを作成
+CREATE TABLE #temp_upper(structure_id int); 
+-- 構成IDを一時テーブルへ保存
+INSERT 
+INTO #temp_upper 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StructureIdList, ','); 
+
 WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT
         st.structure_layer_no,
@@ -7,7 +18,14 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
     FROM
         ms_structure AS st
     WHERE
-        @StructureIdList
+        EXISTS ( 
+            SELECT
+                * 
+            FROM
+                #temp_upper temp 
+            WHERE
+                st.structure_id = temp.structure_id
+        ) 
 ),
 rec_up(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
     SELECT

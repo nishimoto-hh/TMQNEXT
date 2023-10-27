@@ -872,9 +872,9 @@
         // tabulator表示の場合、一覧のヘッダー情報を取得する
         var multHeaderFlag = true;
         //ヘッダー行定義を取得
-        IList<COM_LISTITEM_DEFINE> headerItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.HeadRow && z.DISPLAY_FLG).OrderBy(z => z.ITEMNO).ToList();
+        IList<COM_LISTITEM_DEFINE> headerItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.HeadRow && z.DISPLAY_FLG).OrderBy(z => z.DISPLAY_ORDER).ThenBy(z => z.ITEMNO).ToList();
         //データ行定義を取得
-        IList<COM_LISTITEM_DEFINE> dataItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow && z.DISPLAY_FLG).OrderBy(z => z.ITEMNO).ToList();
+        IList<COM_LISTITEM_DEFINE> dataItems = listItemDefine.Where(z => z.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow && z.DISPLAY_FLG).OrderBy(z => z.DISPLAY_ORDER).ThenBy(z => z.ITEMNO).ToList();
         if (headerItems == null || headerItems.Count == 0)
         {
             //データ行定義を取得
@@ -993,42 +993,46 @@
             //ヘッダー複数行の場合
             //TODO:ヘッダー3行以上には未対応
             // ヘッダ上段
-            IList<COM_LISTITEM_DEFINE> headerLine1 = headerItems.Where(z => z.ROWNO == 1).OrderBy(z => z.ITEMNO).ToList();
+            IList<COM_LISTITEM_DEFINE> headerLine1 = headerItems.Where(z => z.ROWNO == 1).ToList();
             // ヘッダ下段
-            IList<COM_LISTITEM_DEFINE> headerLine2 = headerItems.Where(z => z.ROWNO != 1).OrderBy(z => z.ITEMNO).ToList();
+            IList<COM_LISTITEM_DEFINE> headerLine2 = headerItems.Where(z => z.ROWNO != 1).ToList();
 
             var dataSize = dataItems.Count;
-            int startIdx = 0;
-            for (var j = 0; j < dataSize; j++)
+            foreach (COM_LISTITEM_DEFINE dataItem in dataItems)
             {
-                var define = headerItems[j];
+                //列番号が同じヘッダー定義を取得
+                List<COM_LISTITEM_DEFINE> defineList = headerItems.Where(z => z.COLNO == dataItem.COLNO).ToList();
+                //ヘッダーの上段の定義を取得
+                COM_LISTITEM_DEFINE define = defineList.Where(z => z.ROWNO == 1).FirstOrDefault();
+                if(define == null)
+                {
+                    //上段が列結合されているパターンの下段の２列目以降の定義は、既に処理済みのため次の列の処理へ
+                    continue;
+                }
                 if (define.HEADER_ROWSPAN != 1 && headerLine1.Where(z => z.DISPKBN != LISTITEM_DEFINE_CONSTANTS.DISPKBN.Hide).ToList().Count != headerLine2.Count
                     || define.DISPKBN == LISTITEM_DEFINE_CONSTANTS.DISPKBN.Hide)
                 {
-                    //headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone));
                     headerDatas.Add(createColmunHeader(formDefine, define, isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
                 }
                 else if (define.HEADER_ROWSPAN == 1)
                 {
-                    // 対応する上段の定義を取得
-                    var headerDefine = headerItems[dataSize + startIdx];
                     //列固定
                     bool isFrozen = false;
                     // 下段の定義を作成
                     List<Dictionary<string, object>> line2Colums = new List<Dictionary<string, object>>();
-                    for (var i = j; i < j + headerDefine.HEADER_COLSPAN; i++)
+                    // ヘッダ列結合数
+                    int headerColspan = define.HEADER_COLSPAN ?? 1;
+                    for (var i = 0; i < headerColspan; i++)
                     {
-                        //line2Colums.Add(createColmunHeader(formDefine, headerItems[i], isEditIconDisp, isDispNoEdit, isDispNoIndex, isDispNoCom, isDispNoLinkNone));
-                        line2Colums.Add(createColmunHeader(formDefine, headerItems[i], isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
-                        if (Convert.ToBoolean(headerItems[i].COLFIXKBN))
+                        // 対応する下段の定義を取得
+                        COM_LISTITEM_DEFINE underDefine = headerLine2.Where(z => z.COLNO == define.COLNO + i).FirstOrDefault();
+                        line2Colums.Add(createColmunHeader(formDefine, underDefine, isEditIconDisp, isDispNoLink, isDispNoLinkNone, dataItems));
+                        if (Convert.ToBoolean(underDefine.COLFIXKBN))
                         {
                             //下段の列固定フラグがtrueの場合、上段の列固定を設定する
                             isFrozen = true;
                         }
                     }
-                    startIdx++;
-                    int headerColspan = headerDefine.HEADER_COLSPAN ?? 0;
-                    j = j + (headerColspan == 0 ? 0 : headerColspan - 1);
 
                     var headerAlign = "";
                     //ヘッダ行定義の場合はパイプ以降が設定されていても使用しない
@@ -1051,7 +1055,7 @@
                     Dictionary<string, object> colHeader = new Dictionary<string, object>
                     {
                         // ヘッダー表示名
-                        { "title", headerDefine.ITEMNAME },
+                        { "title", define.ITEMNAME },
                         // ヘッダーの左右中央寄せ
                         { "headerHozAlign", headerAlign },
                         // 列固定
@@ -1121,7 +1125,7 @@
             //ヘッダ行定義の場合はパイプ以降が設定されていても使用しない
             headerPosition = define.POSITION.Split('|')[0];
             //データの表示位置はデータ行定義より取得する
-            var dataPositionStr = dataItems.Where(x => x.ITEMNO == define.ITEMNO).Select(x => x.POSITION).First();
+            var dataPositionStr = dataItems.Where(x => x.ITEMNO == define.ITEMNO).Select(x => x.POSITION).FirstOrDefault();
             if(dataPositionStr != null && dataPositionStr.Length > 0)
             {
                 //パイプ以降が設定されていても使用しない

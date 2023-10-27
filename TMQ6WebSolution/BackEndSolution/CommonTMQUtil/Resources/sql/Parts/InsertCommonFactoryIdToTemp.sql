@@ -1,0 +1,1 @@
+INSERT INTO #temp_location VALUES(0)

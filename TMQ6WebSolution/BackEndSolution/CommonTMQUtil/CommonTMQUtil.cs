@@ -417,7 +417,9 @@ namespace CommonTMQUtil
         /// <returns>紐づく階層の値</returns>
         public static List<T> GetStructureItemList<T>(List<int> structureIdList, ComDB db, string languageId, int orderFactoryId = TMQConsts.CommonFactoryId)
         {
-            var param = new { StructureIdList = structureIdList, LanguageId = languageId, FactoryId = orderFactoryId };
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', structureIdList);
+            var param = new { StructureIdList = ids, LanguageId = languageId, FactoryId = orderFactoryId };
             return SqlExecuteClass.SelectList<T>(SqlName.GetStructureList, SqlName.SubDir, param, db);
         }
 
@@ -445,7 +447,11 @@ namespace CommonTMQUtil
                 // 原因性格
                 FailureCause,
                 // 予備品階層
-                SpareLocation
+                SpareLocation,
+                // 地区(変更管理用)
+                OldLocation,
+                // 職種(変更管理用)
+                OldJob,
             }
 
             /// <summary>
@@ -469,6 +475,14 @@ namespace CommonTMQUtil
                 /// 予備品機能場所階層ID
                 /// </summary>
                 public const string SpareLocationStructureId = "PartsLocationId";
+                /// <summary>
+                /// 機能場所階層ID(変更管理用)
+                /// </summary>
+                public const string OldLocationStructureId = "OldLocationStructureId";
+                /// <summary>
+                /// 職種機種階層ID(変更管理用)
+                /// </summary>
+                public const string OldJobStructureId = "OldJobStructureId";
             }
 
             /// <summary>
@@ -618,7 +632,80 @@ namespace CommonTMQUtil
                 /// <value>棚名称</value>
                 public string RackName { get; set; }
             }
-
+            /// <summary>
+            /// 場所階層(変更管理用)の情報を保持するデータクラス
+            /// </summary>
+            /// <remarks>このクラスを継承するか、同名のメンバを持つクラスが利用可能</remarks>
+            public class StructureOldLocationInfo
+            {
+                /// <summary>Gets or sets 地区ID</summary>
+                /// <value>地区ID</value>
+                public int? OldDistrictId { get; set; }
+                /// <summary>Gets or sets 地区名称</summary>
+                /// <value>地区名称</value>
+                public string OldDistrictName { get; set; }
+                /// <summary>Gets or sets 工場ID</summary>
+                /// <value>工場ID</value>
+                public int? OldFactoryId { get; set; }
+                /// <summary>Gets or sets 工場名称</summary>
+                /// <value>工場名称</value>
+                public string OldFactoryName { get; set; }
+                /// <summary>Gets or sets プラントID</summary>
+                /// <value>プラントID</value>
+                public int? OldPlantId { get; set; }
+                /// <summary>Gets or sets プラント名称</summary>
+                /// <value>プラント名称</value>
+                public string OldPlantName { get; set; }
+                /// <summary>Gets or sets 系列ID</summary>
+                /// <value>系列ID</value>
+                public int? OldSeriesId { get; set; }
+                /// <summary>Gets or sets 系列名称</summary>
+                /// <value>系列名称</value>
+                public string OldSeriesName { get; set; }
+                /// <summary>Gets or sets 工程ID</summary>
+                /// <value>工程ID</value>
+                public int? OldStrokeId { get; set; }
+                /// <summary>Gets or sets 工程名称</summary>
+                /// <value>工程名称</value>
+                public string OldStrokeName { get; set; }
+                /// <summary>Gets or sets 設備ID</summary>
+                /// <value>設備ID</value>
+                public int? OldFacilityId { get; set; }
+                /// <summary>Gets or sets 設備名称</summary>
+                /// <value>設備名称</value>
+                public string OldFacilityName { get; set; }
+            }
+            /// <summary>
+            /// 職種階層(変更管理用)の情報を保持するデータクラス
+            /// </summary>
+            /// <remarks>このクラスを継承するか、同名のメンバを持つクラスが利用可能</remarks>
+            public class StructureOldJobInfo
+            {
+                /// <summary>Gets or sets 職種ID</summary>
+                /// <value>職種ID</value>
+                public int OldJobId { get; set; }
+                /// <summary>Gets or sets 職種名称</summary>
+                /// <value>職種名称</value>
+                public string OldJobName { get; set; }
+                /// <summary>Gets or sets 機種大分類ID</summary>
+                /// <value>機種大分類ID</value>
+                public int? OldLargeClassficationId { get; set; }
+                /// <summary>Gets or sets 機種大分類名称</summary>
+                /// <value>機種大分類名称</value>
+                public string OldLargeClassficationName { get; set; }
+                /// <summary>Gets or sets 機種中分類ID</summary>
+                /// <value>機種中分類ID</value>
+                public int? OldMiddleClassficationId { get; set; }
+                /// <summary>Gets or sets 機種中分類名称</summary>
+                /// <value>機種中分類名称</value>
+                public string OldMiddleClassficationName { get; set; }
+                /// <summary>Gets or sets 機種小分類ID</summary>
+                /// <value>機種小分類ID</value>
+                public int? OldSmallClassficationId { get; set; }
+                /// <summary>Gets or sets 機種小分類名称</summary>
+                /// <value>機種小分類名称</value>
+                public string OldSmallClassficationName { get; set; }
+            }
 
             /// <summary>
             /// 階層情報の種類と定数の紐づけを行うディクショナリ
@@ -629,21 +716,31 @@ namespace CommonTMQUtil
                         ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.Location)
                         ,new List<StructureGroupId>{StructureGroupId.Location }
                         ,getClassPropertyNames<StructureLocationInfo>()) },
-                 { StructureType.Job
+                { StructureType.Job
                     ,new StructureValues( FromPropertyName.JobStructureId
                         ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.Job)
                         ,new List<StructureGroupId>{StructureGroupId.Job }
                         ,getClassPropertyNames<StructureJobInfo>()) },
-                  { StructureType.FailureCause
+                { StructureType.FailureCause
                     ,new StructureValues( FromPropertyName.FailureCausePersonalityStructureId
                         ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.FailureCause)
                         ,new List<StructureGroupId>{StructureGroupId.FailureCausePersonality }
                         ,getClassPropertyNames<StructureFailureCauseInfo>()) },
-                  { StructureType.SpareLocation
+                { StructureType.SpareLocation
                     ,new StructureValues( FromPropertyName.SpareLocationStructureId
                         ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.SpareLocation)
                         ,new List<StructureGroupId>{StructureGroupId.SpareLocation , StructureGroupId.Location }
-                        ,getClassPropertyNames<SpareStructureLocationInfo>()) }
+                        ,getClassPropertyNames<SpareStructureLocationInfo>()) },
+                { StructureType.OldLocation
+                    ,new StructureValues( FromPropertyName.OldLocationStructureId
+                        ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.OldLocation)
+                        ,new List<StructureGroupId>{StructureGroupId.Location }
+                        ,getClassPropertyNames<StructureOldLocationInfo>()) },
+                { StructureType.OldJob
+                    ,new StructureValues( FromPropertyName.OldJobStructureId
+                        ,typeof(CommonTMQConstants.MsStructure.StructureLayerNo.OldJob)
+                        ,new List<StructureGroupId>{StructureGroupId.Job }
+                        ,getClassPropertyNames<StructureOldJobInfo>()) }
 
             };
             /// <summary>
@@ -765,27 +862,17 @@ namespace CommonTMQUtil
                     return;
                 }
 
+
+                //カンマ区切りの文字列にする
+                string ids = string.Join(',', searchTargetStructureIdList.Distinct().ToList());
+
                 // IDのリストより上位の階層を検索し、階層情報のリストを取得
-                //var param = new { StructureIdList = searchTargetStructureIdList.Distinct().ToList(), LanguageId = languageId };
-                //var structureInfoList = SqlExecuteClass.SelectList<StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param, db);
-
-                //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-                string orParam = ComUtil.GetWhereSqlString("st.structure_id", searchTargetStructureIdList);
-
-                // SQL取得
-                GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText);
-
-                // 生成した条件文字列をSQLに設定する
-                Regex paramReplace = new Regex("@StructureIdList");
-                sqlText = paramReplace.Replace(sqlText, orParam);
-                // IDのリストより上位の階層を検索し、階層情報のリストを取得
-                var param = new { LanguageId = languageId };
-                IList<StructureGetInfo> results = db.GetListByDataClass<StructureGetInfo>(sqlText, param);
-                if (results == null)
+                var param = new { StructureIdList = ids, LanguageId = languageId };
+                var structureInfoList = SqlExecuteClass.SelectList<StructureGetInfo>(SqlName.GetUpperStructureList, SqlName.SubDir, param, db);
+                if (structureInfoList == null)
                 {
                     return;
                 }
-                var structureInfoList = results.ToList();
 
                 // 処理対象の階層で繰り返し、階層の値を設定する
                 foreach (StructureType type in typeList)

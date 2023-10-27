@@ -4447,9 +4447,6 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 申請機能ID</summary>
             /// <value>申請機能ID</value>
             public int? ApplicationConductId { get; set; }
-            /// <summary>Gets or sets 承認時処理区分</summary>
-            /// <value>承認時処理区分</value>
-            public string ApprovalExecutionDivision { get; set; }
             /// <summary>Gets or sets 申請者ID</summary>
             /// <value>申請者ID</value>
             public int? ApplicationUserId { get; set; }
@@ -4458,7 +4455,7 @@ namespace CommonTMQUtil
             public string ApplicationUserName { get; set; }
             /// <summary>Gets or sets 承認者ID</summary>
             /// <value>承認者ID</value>
-            public int? approval_user_id { get; set; }
+            public int? ApprovalUserId { get; set; }
             /// <summary>Gets or sets 承認者名称</summary>
             /// <value>承認者名称</value>
             public string ApprovalUserName { get; set; }
@@ -4471,9 +4468,6 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 申請理由</summary>
             /// <value>申請理由</value>
             public string ApplicationReason { get; set; }
-            /// <summary>Gets or sets 承認理由</summary>
-            /// <value>承認理由</value>
-            public string ApprovalReason { get; set; }
             /// <summary>Gets or sets 否認理由</summary>
             /// <value>否認理由</value>
             public string RejectionReason { get; set; }
@@ -4556,9 +4550,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機番情報変更管理ID</summary>
             /// <value>機番情報変更管理ID</value>
             public long HmMachineId { get; set; }
-            /// <summary>Gets or sets 変更管理ID</summary>
-            /// <value>変更管理ID</value>
-            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID</summary>
+            /// <value>変更管理詳細ID</value>
+            public long HistoryManagementDetailId { get; set; }
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long MachineId { get; set; }

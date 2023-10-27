@@ -8,6 +8,7 @@
       "wwwroot/css/common.css",
       "wwwroot/css/Menu.css",
       "wwwroot/css/common.responsive.css",
+      "wwwroot/css/common.changeable.css",
       "wwwroot/css/form/_template.css",
       "wwwroot/css/jquery-ui-timepicker-addon.css",
       "wwwroot/css/tabulator.min.css",

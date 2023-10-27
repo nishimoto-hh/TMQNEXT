@@ -2253,8 +2253,8 @@ function postBuiltTabulator(tbl, id) {
             }
         }
 
-        if (actionCtrlId == FormDetail.ButtonId.Copy) {
-            //複写の場合
+        if (actionCtrlId == FormDetail.ButtonId.Copy || actionCtrlId == FormList.ButtonId.NewInspection || actionCtrlId == FormList.ButtonId.New) {
+            //複写の場合、新規（長期計画の白丸「○」リンクから遷移）の場合
             //対象機器の各行のROWSTATUSを新規に設定
             $.each(rows, function (idx, row) {
                 row.update({ ROWSTATUS: rowStatusDef.New });

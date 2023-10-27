@@ -12,6 +12,7 @@ using ComDataBaseClass = CommonSTDUtil.CommonDataBaseClass;
 using ExData = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId;
 using System.Collections.Generic;
 using System;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace CommonTMQUtil
 {
@@ -21,8 +22,6 @@ namespace CommonTMQUtil
     /// </summary>
     public static partial class CommonTMQUtil
     {
-
-
         public class PartsInventory
         {
             /// <summary>
@@ -814,7 +813,7 @@ namespace CommonTMQUtil
                     }
                     // 棚卸データを更新
                     TMQUtil.SqlExecuteClass.Regist(Sql.TakeInventory.UpdateInventoryForConfirmDatetime, Sql.TakeInventory.SubDir, cond, this.Db);
-                    
+
                     return true;
 
                     // 登録用データクラス取得
@@ -981,5 +980,150 @@ namespace CommonTMQUtil
             }
         }
 
+        /// <summary>
+        /// 変更管理 共通メソッド
+        /// </summary>
+        public class HistoryManagement
+        {
+            /// <summary>DB接続</summary>
+            protected ComDB Db { get; set; }
+            /// <summary>ユーザID</summary>
+            protected int UserId { get; set; }
+            /// <summary>言語ID</summary>
+            protected string LanguageId { get; set; }
+            /// <summary>現在日時</summary>
+            protected DateTime Now { get; set; }
+
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            /// <param name="db">DB接続</param>
+            /// <param name="userId">ログインユーザID</param>
+            /// <param name="languageId">言語ID</param>
+            public HistoryManagement(ComDB db, string userId, string languageId, DateTime now)
+            {
+                this.Db = db;
+                this.UserId = int.Parse(userId);
+                this.LanguageId = languageId;
+                this.Now = now;
+            }
+
+            /// <summary>
+            /// SQLファイル
+            /// </summary>
+            protected class Sql
+            {
+                /// <summary>SQLファイル格納フォルダ</summary>
+                public const string SubDir = @"Common\HistoryManagement";
+                /// <summary>申請状況を更新する前の入力チェック用SQL</summary>
+                public const string GetCntBeforeUpdateApplicationStatus = "GetCntBeforeUpdateApplicationStatus";
+                /// <summary>申請状況更新SQL</summary>
+                public const string UpdateApplicationStatus = "UpdateApplicationStatus";
+            }
+
+
+
+
+
+
+
+
+            /// <summary>
+            /// 変更管理テーブルの申請状況更新処理前の入力チェック
+            /// </summary>
+            /// <param name="historyManagementId">変更管理ID</param>
+            /// <returns>エラーの場合はTrue</returns>
+            public bool IsErrorBeforeUpdateApplicationStatus(long historyManagementId)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(Sql.SubDir, Sql.GetCntBeforeUpdateApplicationStatus, out string chechSql);
+
+                // 検索条件を設定
+                ComDao.HmHistoryManagementEntity condition = new();
+                condition.HistoryManagementId = historyManagementId; // 変更管理
+                condition.ApprovalUserId = this.UserId;              // 承認者ID(ログインユーザーID)
+
+                // ①変更管理データが承認依頼中か判定
+                // ②ログインユーザがシステム管理者か判定
+                // ③変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDか判定
+                // ①・②・③のエラー件数を取得する
+                int? errCnt = this.Db.GetEntity<int?>(chechSql, condition);
+
+                // エラー件数がNULLか1以上の場合はエラー
+                if (errCnt == null || errCnt > 0)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// 変更管理テーブルの申請状況更新処理
+            /// </summary>
+            /// <param name="condition">登録条件</param>
+            /// <param name="registStatusCode">登録する申請状況の拡張アイテム(10：申請データ作成中、20：承認依頼中、30：差戻中、40：承認済)</param>
+            /// <returns>エラーの場合はFalse</returns>
+            public bool UpdateApplicationStatus(ComDao.HmHistoryManagementEntity condition, int registStatusCode)
+            {
+                // 申請状況IDを取得
+                condition.ApplicationStatusId = getApplicationStatus();
+
+                // 登録情報を設定
+                SetHistoryManagementInfo();
+
+                // データクラスの中で値がNullでないものをSQLの条件に含めるので、メンバ名を取得
+                List<string> listUnComment = ComUtil.GetNotNullNameByClass<ComDao.HmHistoryManagementEntity>(condition);
+
+                // 申請状況を更新
+                if (!TMQUtil.SqlExecuteClass.Regist(Sql.UpdateApplicationStatus, Sql.SubDir, condition, this.Db, string.Empty, listUnComment))
+                {
+                    return false;
+                }
+
+                return true;
+
+                // 拡張アイテムより申請状況の構成IDを取得
+                int getApplicationStatus()
+                {
+                    //構成アイテムを取得するパラメータ設定
+                    TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+                    //構成グループID
+                    param.StructureGroupId = (int)TMQConst.MsStructure.GroupId.ApplicationStatus;
+                    //連番
+                    param.Seq = 1;
+                    // 拡張データ
+                    param.ExData = registStatusCode.ToString();
+
+                    // 申請状況(構成ID)取得
+                    List<TMQUtil.StructureItemEx.StructureItemExInfo> applicationStatusList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.Db);
+
+                    return applicationStatusList[0].StructureId;
+                }
+
+                // 登録情報を設定
+                void SetHistoryManagementInfo()
+                {
+                    // 変更する申請状況に応じて値を設定
+                    switch (registStatusCode)
+                    {
+                        case (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Request: // 承認依頼中
+                            condition.ApplicationDate = this.Now; // 申請日
+                            break;
+
+                        case (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Approved: // 承認済み
+                            condition.ApprovalUserId = this.UserId; // 承認者ID
+                            condition.ApprovalDate = this.Now;      // 承認日
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    condition.UpdateDatetime = this.Now;  // 更新日
+                    condition.UpdateUserId = this.UserId; // 更新者ID
+                }
+            }
+        }
     }
 }

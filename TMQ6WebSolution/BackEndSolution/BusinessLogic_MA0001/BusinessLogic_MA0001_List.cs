@@ -37,7 +37,7 @@ namespace BusinessLogic_MA0001
         private bool searchList()
         {
             // 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた場合は値をグローバル変数に格納する
-            setValFromScheduleLink();
+            setValFromScheduleLink(out bool isFromScheduleLink);
 
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.HiddenItemId, this.pageInfoList);
@@ -46,6 +46,11 @@ namespace BusinessLogic_MA0001
             setUserRole<Dao.userRole>(role);
             // ユーザ役割の設定
             SetSearchResultsByDataClass<Dao.userRole>(pageInfo, new List<Dao.userRole>() { role }, 1);
+            if (isFromScheduleLink)
+            {
+                // 「○」リンクで遷移した場合は新規登録画面を表示するので、一覧の検索は不要。処理終了する
+                return true;
+            }
 
             // ページ情報取得
             pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
@@ -67,18 +72,18 @@ namespace BusinessLogic_MA0001
             whereParam.LanguageId = this.LanguageId;
             // SQL、WHERE句、WITH句より件数取得SQLを作成
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
-            // 総件数を取得
-            int cnt = db.GetCount(executeSql, whereParam);
-            // 総件数のチェック
-            if (!CheckSearchTotalCount(cnt, pageInfo))
-            {
-                //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
-                this.Status = CommonProcReturn.ProcStatus.Warning;
-                // 「該当データがありません。」
-                this.MsgId = GetResMessage("941060001");
-                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
-                return false;
-            }
+            //// 総件数を取得
+            //int cnt = db.GetCount(executeSql, whereParam);
+            //// 総件数のチェック
+            //if (!CheckSearchTotalCount(cnt, pageInfo))
+            //{
+            //    //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
+            //    this.Status = CommonProcReturn.ProcStatus.Warning;
+            //    // 「該当データがありません。」
+            //    this.MsgId = GetResMessage("941060001");
+            //    SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
+            //    return false;
+            //}
 
             // 一覧検索SQL文の取得
             executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
@@ -90,6 +95,11 @@ namespace BusinessLogic_MA0001
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
             {
+                //ユーザ役割の設定を行うので、検索結果0件の扱いにならないためメッセージはここで設定しておく
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                this.MsgId = GetResMessage("941060001");
+                SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, 0, isDetailConditionApplied);
                 return false;
             }
 
@@ -100,7 +110,7 @@ namespace BusinessLogic_MA0001
             IList<Dao.searchResult> displayList = createDisplayList(results);
 
             // 検索結果の設定
-            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, displayList, cnt, isDetailConditionApplied))
+            if (SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, displayList, results.Count, isDetailConditionApplied))
             {
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -135,8 +145,10 @@ namespace BusinessLogic_MA0001
             }
 
             // 保全スケジュール詳細IDをグローバル変数に格納
-            void setValFromScheduleLink()
+            void setValFromScheduleLink(out bool isFromScheduleLink)
             {
+                // ○でリンクした場合はTrueを設定する
+                isFromScheduleLink = false;
                 // パラメータに遷移元の情報が存在しない場合は何もしない
                 var dic = this.searchConditionDictionary.Where(x => x.ContainsKey("CTRLID")).FirstOrDefault();
                 if (dic == null)
@@ -162,6 +174,7 @@ namespace BusinessLogic_MA0001
                     return;
                 }
 
+                isFromScheduleLink = true;
                 // グルーバル変数に値を格納(遷移時は「SummaryId」に保全スケジュール詳細IDが入っている)
                 SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey, conditionObj.SummaryId);
             }

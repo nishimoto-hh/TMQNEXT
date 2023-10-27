@@ -91,6 +91,39 @@
                     // 棚
                     Rack = 3
                 }
+                /// <summary>
+                /// 場所階層(変更管理用)の階層番号
+                /// </summary>
+                /// <remarks>intの値が欲しい場合はキャストしてください</remarks>
+                public enum OldLocation
+                {
+                    // 地区
+                    OldDistrict = 0,
+                    // 工場
+                    OldFactory = 1,
+                    // プラント
+                    OldPlant = 2,
+                    // 系列
+                    OldSeries = 3,
+                    // 工程
+                    OldStroke = 4,
+                    // 設備
+                    OldFacility = 5
+                }
+                /// <summary>
+                /// 職種階層(変更管理用)の階層番号
+                /// </summary>
+                public enum OldJob
+                {
+                    // 職種
+                    OldJob = 0,
+                    // 機種大分類
+                    OldLargeClassfication = 1,
+                    // 機種中分類
+                    OldMiddleClassfication = 2,
+                    // 機種小分類
+                    OldSmallClassfication = 3
+                }
 
             }
 
@@ -147,6 +180,8 @@
                 BeginningMonth = 2020,
                 // 丸め処理区分
                 RoundDivision = 2050,
+                // 変更管理 申請状況
+                ApplicationStatus = 2090,
                 // 権限
                 Authority = 9040,
                 // テンポラリフォルダパス
@@ -337,6 +372,48 @@
                     Privilege = 30,
                     // システム管理者
                     SystemAdministrator = 99
+                }
+
+                /// <summary>
+                /// 変更管理 申請状況(2090)
+                /// </summary>
+                public enum ApplicationStatus
+                {
+                    /// <summary>
+                    /// 申請データ作成中
+                    /// </summary>
+                    Making = 10,
+                    /// <summary>
+                    /// 承認依頼中
+                    /// </summary>
+                    Request = 20,
+                    /// <summary>
+                    /// 差戻中
+                    /// </summary>
+                    Return = 30,
+                    /// <summary>
+                    /// 承認済
+                    /// </summary>
+                    Approved = 40
+                }
+
+                /// <summary>
+                /// 変更管理 申請区分(2100)
+                /// </summary>
+                public enum ApplicationDivision
+                {
+                    /// <summary>
+                    /// 新規登録申請
+                    /// </summary>
+                    New = 10,
+                    /// <summary>
+                    /// 変更申請
+                    /// </summary>
+                    Update = 20,
+                    /// <summary>
+                    /// 削除申請
+                    /// </summary>
+                    Delete = 30
                 }
             }
         }

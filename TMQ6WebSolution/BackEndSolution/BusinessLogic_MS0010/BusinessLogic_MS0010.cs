@@ -40,6 +40,10 @@ namespace BusinessLogic_MS0010
         /// </summary>
         private static string masterConductGrpId = "MS0001";
         /// <summary>
+        /// ユーザマスタの機能ID
+        /// </summary>
+        private static string userConductGrpId = "MS0010";
+        /// <summary>
         /// 地区/工場の機能ID
         /// </summary>
         private static string districtFactoryConductGrpId = "MS1000";
@@ -1432,11 +1436,18 @@ namespace BusinessLogic_MS0010
                             continue;
                         }
 
-                        // 機能IDがマスタの場合は権限レベルが特権ユーザー・システム管理者の場合のみ追加
-                        if (conductId.Contains("MS") && authLebel == (int)ExData.AuthLevel.Privilege)
+                        // 機能IDがマスタの場合は
+                        if (conductId.Contains("MS"))
                         {
-                            // 地区/工場マスタは登録出来ないようにする(システム管理者のみ閲覧可)
-                            if (conductId == districtFactoryConductGrpId)
+                            if (authLebel != (int)ExData.AuthLevel.Privilege)
+                            {
+                                // 特権ユーザでない場合(ゲスト、一般)
+                                continue;
+                            }
+                            // 権限レベルが特権ユーザーの場合
+
+                            // 地区/工場マスタとユーザマスタは登録出来ないようにする(システム管理者のみ閲覧可)
+                            if (conductId == districtFactoryConductGrpId || conductId == userConductGrpId)
                             {
                                 continue;
                             }
@@ -1451,8 +1462,9 @@ namespace BusinessLogic_MS0010
                                 addMaster = true;                      // 何度も追加しないように制御
                             }
                         }
-                        else if (!conductId.Contains("MS"))
+                        else
                         {
+                            // マスタ以外の場合
                             // 権限リストに追加
                             conductIdList.Add(conductId);
                             conductIdList.Add(conductGrpId);

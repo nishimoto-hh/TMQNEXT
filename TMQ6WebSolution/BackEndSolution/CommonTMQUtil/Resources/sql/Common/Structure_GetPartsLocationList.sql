@@ -5,6 +5,17 @@
 * 共通工場についても、権限があれば結果に含む
 */
 -- ↓ここからはSelect_StructureList.sqlと同じ
+DROP TABLE IF EXISTS #temp_structure; 
+-- 一時テーブルを作成
+CREATE TABLE #temp_structure(structure_id int); 
+-- 構成IDを一時テーブルへ保存
+INSERT 
+INTO #temp_structure 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StructureIdList, ','); 
+
 WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
      SELECT
          st.structure_layer_no
@@ -14,7 +25,14 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
     FROM
         ms_structure AS st
     WHERE
-        @StructureIdList
+        EXISTS ( 
+            SELECT
+                * 
+            FROM
+                #temp_structure temp 
+            WHERE
+                st.structure_id = temp.structure_id
+        ) 
     AND st.delete_flg = 0
 )
 ,rec_down(structure_layer_no, structure_id, parent_structure_id, org_structure_id) AS(
@@ -97,11 +115,31 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
         st.structure_layer_no IN(0, 1)
     AND st.delete_flg = 0
 )
+-- ユーザの権限を取得 システム管理者の場合、ユーザ権限テーブルに使用可能な場所階層の権限がないため
+, user_role as(
+    select
+        ex.extension_data as role_code
+    from
+        ms_user as us
+        inner join
+            v_structure as st
+        on  (
+                us.authority_level_id = st.structure_id
+            )
+        inner join
+            ms_item_extension as ex
+        on  (
+                st.structure_item_id = ex.item_id
+            and ex.sequence_no = 1
+            )
+    where
+        us.user_id = @UserId
+)
 -- 共通工場 場所階層の連番3の値が1
 ,com_factory AS(
     SELECT
-         vs.structure_id
-        ,vs.parent_structure_id
+        vs.structure_id,
+        vs.parent_structure_id
     FROM
         v_structure AS vs
         INNER JOIN
@@ -109,17 +147,30 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
         ON  (
                 vs.structure_item_id = ex.item_id
             )
-        INNER JOIN
-            ms_user_belong AS ub
-        ON  (
-                dbo.get_target_layer_id(ub.location_structure_id, 1) = vs.structure_id
-            )
     WHERE
         vs.structure_group_id = 1000
     AND ex.sequence_no = 3
     AND ex.extension_data = '1'
-    AND ub.user_id = @UserId
-    AND ub.delete_flg = 0
+    -- ユーザの権限に共通工場が設定されている場合のみ
+    AND EXISTS(
+            SELECT
+                *
+            FROM
+                ms_user_belong AS ub
+            WHERE
+                ub.user_id = @UserId
+            AND ub.delete_flg = 0
+            AND dbo.get_target_layer_id(ub.location_structure_id, 1) = vs.structure_id
+            -- システム管理者権限の場合はすべて利用可能なので除く
+            OR  EXISTS(
+                    SELECT
+                        *
+                    FROM
+                        user_role
+                    WHERE
+                        role_code = '99'
+            )
+    )
 )
 -- 予備品場所階層の工場と共通工場をマージ
 ,st_id AS(

@@ -14,6 +14,7 @@ using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_HM0001.BusinessLogicDataClass_HM0001;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_HM0001
 {
@@ -23,6 +24,34 @@ namespace BusinessLogic_HM0001
     public partial class BusinessLogic_HM0001 : CommonBusinessLogicBase
     {
         #region 定数
+        /// <summary>
+        /// 実行処理区分
+        /// </summary>
+        private enum executionDiv
+        {
+            machineNew,     // 機器の新規・複写登録
+            machineEdit,    // 機器の修正
+            machineDelete,  // 機器の削除
+            componentNew,   // 保全項目一覧の追加
+            componentEdit,  // 保全項目一覧の項目編集
+            componentDelete // 保全項目一覧の削除
+        }
+
+        /// <summary>
+        /// 表示しているデータの種類
+        /// </summary>
+        private enum dataType
+        {
+            /// <summary>
+            /// トランザクションデータの表示
+            /// </summary>
+            transaction,
+            /// <summary>
+            /// 変更管理データの表示
+            /// </summary>
+            history
+        }
+
         /// <summary>
         /// SQLファイル名称
         /// </summary>
@@ -44,7 +73,14 @@ namespace BusinessLogic_HM0001
             /// </summary>
             public static class Detail
             {
-
+                /// <summary>機番・機器情報(トランザクション)取得SQL</summary>
+                public const string GetTransactionMachineInfo = "GetTransactionMachineInfo";
+                /// <summary>機番・機器情報(変更管理)取得SQL</summary>
+                public const string GetHistoryMachineInfo = "GetHistoryMachineInfo";
+                /// <summary>保全項目一覧(トランザクション)取得SQL</summary>
+                public const string GetTransactionManagementStandardsList = "GetTransactionManagementStandardsList";
+                /// <summary>保全項目一覧(変更管理)取得SQL</summary>
+                public const string GetHistoryManagementStandardsList = "GetHistoryManagementStandardsList";
             }
             /// <summary>
             /// 編集画面SQL
@@ -83,6 +119,53 @@ namespace BusinessLogic_HM0001
                     /// </summary>
                     public const string List = "BODY_040_00_LST_0";
                 }
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class ButtonId
+                {
+                    /// <summary>
+                    /// 一括承認
+                    /// </summary>
+                    public const string ApprovalAll = "ApprovalAll";
+                    /// <summary>
+                    /// 一括否認
+                    /// </summary>
+                    public const string DenialAll = "DenialAll";
+                }
+            }
+
+            /// <summary>
+            /// 詳細画面
+            /// </summary>
+            public static class FormDetail
+            {
+                /// <summary>
+                /// フォーム番号
+                /// </summary>
+                public const short FormNo = 1;
+
+                /// <summary>
+                /// グループ番号(機番情報)
+                /// </summary>
+                public const short GroupNoMachine = 201;
+                /// <summary>
+                /// グループ番号(機器情報)
+                /// </summary>
+                public const short GroupNoEquipment = 202;
+                /// <summary>
+                /// コントロールID
+                /// </summary>
+                public static class ControlId
+                {
+
+                }
+                /// <summary>
+                /// ボタンコントロールID
+                /// </summary>
+                public static class ButtonId
+                {
+                }
             }
         }
 
@@ -105,18 +188,9 @@ namespace BusinessLogic_HM0001
         protected override int InitImpl()
         {
             this.ResultList = new();
-            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
-            if (compareId.IsBack())
-            {
-                // 戻る場合、検索結果のコントロールタイプに応じて検索処理を切り替える
-                return InitSearch();
-            }
 
             // 初期検索実行
             return InitSearch();
-
-            // 初期化処理で処理を行わない場合は以下のように定数を返す
-            //return ComConsts.RETURN_RESULT.OK;
         }
 
         /// <summary>
@@ -130,8 +204,15 @@ namespace BusinessLogic_HM0001
 
             switch (this.FormNo)
             {
-                case ConductInfo.FormList.FormNo:     // 一覧検索
+                case ConductInfo.FormList.FormNo: // 一覧検索
+                    // 初期表示の場合は引数にTrueを設定
                     if (!searchList(compareId.IsInit()))
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+                case ConductInfo.FormDetail.FormNo: // 詳細画面
+                    if (!searchDetailList())
                     {
                         return ComConsts.RETURN_RESULT.NG;
                     }
@@ -150,6 +231,15 @@ namespace BusinessLogic_HM0001
         protected override int ExecuteImpl()
         {
             CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
+
+            switch (this.CtrlId)
+            {
+                case ConductInfo.FormList.ButtonId.ApprovalAll:
+                case ConductInfo.FormList.ButtonId.DenialAll:
+                    return Regist();
+                    break;
+            }
+
             if (compareId.IsRegist())
             {
                 // 登録の場合
@@ -180,32 +270,31 @@ namespace BusinessLogic_HM0001
         {
             bool resultRegist = false;  // 登録処理戻り値、エラーならFalse
 
-            //// 登録ボタンが複数の画面に無い場合、分岐は不要
-            //// 処理を実行する画面Noの値により処理を分岐する
-            //switch (this.FormNo)
-            //{
-            //    case FormType.Edit:
-            //        // 編集画面の場合の登録処理
-            //        resultRegist = executeRegistEdit();
-            //        break;
-            //    default:
-            //        // 処理が想定される場合は、分岐に条件を追加して処理を記載すること
-            //        // この部分は到達不能なので、エラーを返す
-            //        return ComConsts.RETURN_RESULT.NG;
-            //}
-            //// 登録処理結果によりエラー処理を行う
-            //if (!resultRegist)
-            //{
-            //    // エラー終了
-            //    this.Status = CommonProcReturn.ProcStatus.Error;
-            //    // 未設定時にエラーメッセージを設定
-            //    if (string.IsNullOrEmpty(this.MsgId))
-            //    {
-            //        // 「登録処理に失敗しました。」
-            //        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
-            //    }
-            //    return ComConsts.RETURN_RESULT.NG;
-            //}
+            //画面番号で分岐
+            switch (this.FormNo)
+            {
+                case ConductInfo.FormList.FormNo:
+                    resultRegist = registFormList();
+                    break;
+                default:
+                    // この部分は到達不能なので、エラーを返す
+                    return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 登録処理結果によりエラー処理を行う
+            if (!resultRegist)
+            {
+                // エラー終了
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                // 未設定時にエラーメッセージを設定
+                if (string.IsNullOrEmpty(this.MsgId))
+                {
+                    // 「登録処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
+                }
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「登録処理に成功しました。」
@@ -261,6 +350,102 @@ namespace BusinessLogic_HM0001
         #endregion
 
         #region privateメソッド
+
+
+        /// <summary>
+        /// 変更があった項目を取得
+        /// </summary>
+        private void getValueChangedItem(IList<Dao.searchResult> results)
+        {
+            // 変更のあった項目を取得して非表示列に追加(変更が無ければ空)
+            foreach (Dao.searchResult result in results)
+            {
+                // 変更管理詳細ID(機番情報変更管理テーブル)が0の場合は何もしない
+                if (result.MachineHistoryManagementDetailId == 0)
+                {
+                    continue;
+                }
+
+                // 末尾の文字が「|」でなければ追加
+                if (!string.IsNullOrEmpty(result.ValueChanged) && result.ValueChanged[result.ValueChanged.Length - 1].ToString() != "|")
+                {
+                    result.ValueChanged += "|";
+                }
+
+                result.ValueChanged += getColumnName(result.DistrictId, result.OldDistrictId, "District");                     // 地区
+                result.ValueChanged += getColumnName(result.FactoryId, result.OldFactoryId, "Factory");                        // 工場
+                result.ValueChanged += getColumnName(result.PlantId, result.OldPlantId, "Plant");                              // プラント
+                result.ValueChanged += getColumnName(result.SeriesId, result.OldSeriesId, "Series");                           // 系列
+                result.ValueChanged += getColumnName(result.StrokeId, result.OldStrokeId, "Stroke");                           // 工程
+                result.ValueChanged += getColumnName(result.FacilityId, result.OldFacilityId, "Facility");                     // 設備
+                result.ValueChanged += getColumnName(result.JobStructureId, result.OldJobStructureId, "Job");                  // 職種
+                result.ValueChanged += getColumnName(result.LargeClassficationId, result.OldLargeClassficationId, "Large");    // 機種大分類
+                result.ValueChanged += getColumnName(result.MiddleClassficationId, result.OldMiddleClassficationId, "Middle"); // 機種中分類
+                result.ValueChanged += getColumnName(result.SmallClassficationId, result.OldSmallClassficationId, "Small");    // 機種小分類
+
+                // 末尾の文字が「|」ならば削除
+                if (!string.IsNullOrEmpty(result.ValueChanged) && result.ValueChanged[result.ValueChanged.Length - 1].ToString() == "|")
+                {
+                    result.ValueChanged = result.ValueChanged.Remove(result.ValueChanged.Length - 1);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// トランザクションデータと変更管理データの差異に応じて背景色を設定
+        /// </summary>
+        /// <param name="newId">変更後の値</param>
+        /// <param name="oldId">変更前の値</param>
+        /// <param name="itemName">項目名</param>
+        /// <returns>項目名+_+背景色設定値</returns>
+        private string getColumnName(int? newId, int? oldId, string itemName)
+        {
+            // 申請区分
+            int applicationDivision = 0;
+
+            // 値の変更パターンに応じて申請区分を設定
+            if (newId != null && oldId == null)
+            {
+                // 値が追加された場合
+                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.New;
+            }
+            else if (newId == null && oldId != null)
+            {
+                // 値が削除された場合
+                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.Delete;
+            }
+            else if (newId != oldId)
+            {
+                // 値が変更された場合
+                applicationDivision = (int)TMQConst.MsStructure.StructureId.ApplicationDivision.Update;
+            }
+            else
+            {
+                // 変更が無い場合
+                return string.Empty;
+            }
+
+            return itemName + "_" + applicationDivision.ToString() + "|";
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         /// <summary>

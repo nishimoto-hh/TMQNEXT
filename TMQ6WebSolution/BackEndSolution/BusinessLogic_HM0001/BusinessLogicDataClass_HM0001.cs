@@ -14,7 +14,7 @@ namespace BusinessLogic_HM0001
     public class BusinessLogicDataClass_HM0001
     {
         /// <summary>
-        /// 一覧画面の検索条件のデータクラス
+        /// 一覧画面の検索条件
         /// </summary>
         public class searchCondition
         {
@@ -24,7 +24,7 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// 一覧画面の検索結果のデータクラス
+        /// 一覧画面・詳細画面の検索結果
         /// </summary>
         public class searchResult : TmqDao.HmMcMachineEntity
         {
@@ -49,12 +49,24 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 機器メモ</summary>
             /// <value>機器メモ</value>
             public string EquipmentNote { get; set; }
+            /// <summary>Gets or sets 適用法規</summary>
+            /// <value>適用法規</value>
+            public string ApplicableLawsStructureId { get; set; }
             /// <summary>Gets or sets 使用区分</summary>
             /// <value>使用区分</value>
             public int? UseSegmentStructureId { get; set; }
             /// <summary>Gets or sets 固定資産番号</summary>
             /// <value>固定資産番号</value>
             public string FixedAssetNo { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 循環対象</summary>
+            /// <value>循環対象</value>
+            public bool CirculationTargetFlg { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public bool MaintainanceKindManage { get; set; }
             /// <summary>Gets or sets 機器添付有無</summary>
             /// <value>機器添付有無</value>
             public string FileLinkEquipment { get; set; }
@@ -79,6 +91,29 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 承認日</summary>
             /// <value>承認日</value>
             public DateTime? ApprovalDate { get; set; }
+            /// <summary>Gets or sets 申請理由</summary>
+            /// <value>申請理由</value>
+            public string ApplicationReason { get; set; }
+            /// <summary>Gets or sets 否認理由</summary>
+            /// <value>否認理由</value>
+            public string RejectionReason { get; set; }
+            /// <summary>Gets or sets 申請区分(拡張項目)</summary>
+            /// <value>申請区分(拡張項目)</value>
+            public string ApplicationDivisionCode { get; set; }
+            /// <summary>Gets or sets 変更のあった項目</summary>
+            /// <value>変更のあった項目</value>
+            public string ValueChanged { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 変更管理詳細ID(機番情報変更管理テーブル)</summary>
+            /// <value>変更管理詳細ID(機番情報変更管理テーブル)</value>
+            public long MachineHistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</summary>
+            /// <value>表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</value>
+            public int DataType { get; set; }
+
+            #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
             /// <value>機器レベル</value>
             public string EquipmentLevel { get; set; }
@@ -88,6 +123,9 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 保全方式</summary>
             /// <value>保全方式</value>
             public string InspectionSiteConservationName { get; set; }
+            /// <summary>Gets or sets 適用法規</summary>
+            /// <value>適用法規</value>
+            public string ApplicableLawsName { get; set; }
             /// <summary>Gets or sets メーカー</summary>
             /// <value>メーカー</value>
             public string ManufacturerName { get; set; }
@@ -100,11 +138,9 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 申請区分</summary>
             /// <value>申請区分</value>
             public string ApplicationDivisionName { get; set; }
-            /// <summary>Gets or sets 申請区分</summary>
-            /// <value>申請区分</value>
-            public string ValueChanged { get; set; }
+            #endregion
 
-            #region 地区・職種機種
+            #region 地区・職種機種(変更管理テーブル)
             /// <summary>Gets or sets 地区ID</summary>
             /// <value>地区ID</value>
             public int? DistrictId { get; set; }
@@ -166,6 +202,94 @@ namespace BusinessLogic_HM0001
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }
             #endregion
+
+            #region 地区・職種機種(トランザクションテーブル)
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? OldLocationStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? OldJobStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? OldDistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string OldDistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? OldFactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string OldFactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? OldPlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string OldPlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? OldSeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string OldSeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? OldStrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string OldStrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? OldFacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string OldFacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int OldJobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string OldJobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? OldLargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string OldLargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? OldMiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string OldMiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? OldSmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string OldSmallClassficationName { get; set; }
+            #endregion
+        }
+
+        /// <summary>
+        /// 詳細画面の検索条件
+        /// </summary>
+        public class  detailSearchCondition
+        {
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long MachineId { get; set; }
+            /// <summary>Gets or sets 表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</summary>
+            /// <value>表示しているデータの種類(0:トランザクションデータ,1:変更管理データ)</value>
+            public int DataType { get; set; }
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
         }
     }
 }

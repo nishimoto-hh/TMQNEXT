@@ -105,6 +105,8 @@ namespace BusinessLogic_PT0001
                 public const string GetLabelDepartmentList = "GetLabelDepartmentList";
                 /// <summary>SQL名：ラベル用データ取得</summary>
                 public const string GetLabelData = "GetLabelData";
+                /// <summary>SQL名：一時テーブルに構成ID(共通工場ID)を追加するSQL/summary>
+                public const string InsertCommonFactoryIdToTemp = "InsertCommonFactoryIdToTemp";
             }
         }
 

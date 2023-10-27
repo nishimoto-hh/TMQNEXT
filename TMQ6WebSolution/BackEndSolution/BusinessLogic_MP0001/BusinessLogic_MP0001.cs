@@ -406,18 +406,12 @@ namespace BusinessLogic_MP0001
                             // 地区／工場階層で選択されている工場、プラント、工程、職種名を取得する
                             List<int> structureIdList = this.conditionSheetLocationList;
 
-                            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-                            string orParam = ComUtil.GetWhereSqlString("st.structure_id", structureIdList);
+                            //カンマ区切りの文字列にする
+                            string ids = string.Join(',', structureIdList);
 
-                            // SQL取得
-                            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out string sqlText);
-
-                            // 生成した条件文字列をSQLに設定する
-                            Regex paramReplace = new Regex("@StructureIdList");
-                            sqlText = paramReplace.Replace(sqlText, orParam);
                             // IDのリストより全ての階層を検索し、階層情報のリストを取得
-                            var param = new { LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
-                            IList<Dao.StructureGetInfo> structureInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sqlText, param);
+                            var param = new { StructureIdList = ids, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
+                            List<Dao.StructureGetInfo> structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
 
                             // 場所階層ツリーが選択されていなければエラー
                             if (structureInfoList == null || structureInfoList.Count == 0)
@@ -466,19 +460,13 @@ namespace BusinessLogic_MP0001
                             plantName = plantNameList.Count > 0 ? string.Join(",", plantNameList) : string.Empty;
                             strokeName = strokeNameList.Count > 0 ? string.Join(",", strokeNameList) : string.Empty;
 
-                            structureIdList = this.conditionSheetLocationList;
+                            structureIdList = this.conditionSheetJobList;
 
-                            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-                            orParam = ComUtil.GetWhereSqlString("st.structure_id", structureIdList);
+                            //カンマ区切りの文字列にする
+                            ids = string.Join(',', structureIdList);
 
-                            // SQL取得
-                            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out sqlText);
-
-                            // 生成した条件文字列をSQLに設定する
-                            paramReplace = new Regex("@StructureIdList");
-                            sqlText = paramReplace.Replace(sqlText, orParam);
-                            // 選択された構成IDリストから配下の構成IDをすべて取得
-                            IList<Dao.StructureGetInfo> structureJobInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sqlText, param);
+                            param = new { StructureIdList = ids, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
+                            List<Dao.StructureGetInfo> structureJobInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
 
                             // 職種階層ツリーが選択されていれば職種名を取得
                             if (structureJobInfoList != null && structureJobInfoList.Count > 0)
@@ -758,18 +746,11 @@ namespace BusinessLogic_MP0001
                 return ComConsts.RETURN_RESULT.NG;
             }
 
-            //where句を生成（IN句にはパラメータの個数制限があるので、すべてORで繋げる）
-            string orParam = ComUtil.GetWhereSqlString("st.structure_id", locationIdList);
-
-            // SQL取得
-            GetFixedSqlStatement(SqlName.SubDir, SqlName.GetStructureId, out string sql);
-
-            // 生成した条件文字列をSQLに設定する
-            Regex paramReplace = new Regex("@StructureIdList");
-            sql = paramReplace.Replace(sql, orParam);
-            // 選択された構成IDリストから配下の構成IDをすべて取得
-            var param = new { LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
-            IList<Dao.StructureGetInfo> structureInfoList = db.GetListByDataClass<Dao.StructureGetInfo>(sql, param);
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', locationIdList);
+            // IDのリストより全ての階層を検索し、階層情報のリストを取得
+            var param = new { StructureIdList = ids, LanguageId = this.LanguageId, FactoryId = TMQConsts.CommonFactoryId };
+            List<Dao.StructureGetInfo> structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureId, SqlName.SubDir, param, db);
 
             // ページ情報取得
             var hierarchyInfo = GetPageInfo(TargetCtrlId.Placehierarchy, this.pageInfoList);
@@ -1455,8 +1436,11 @@ namespace BusinessLogic_MP0001
             // 選択された構成リストから配下の構成IDを全て取得
             locationIdList = GetLowerStructureIdList(locationIdList);
 
+            //カンマ区切りの文字列にする
+            string ids = string.Join(',', locationIdList);
+
             // IDのリストより上位の階層を検索し、階層情報のリストを取得
-            var param = new { StructureIdList = locationIdList, LanguageId = this.LanguageId };
+            var param = new { StructureIdList = ids, LanguageId = this.LanguageId };
             var structureInfoList = SqlExecuteClass.SelectList<Dao.StructureGetInfo>(SqlName.GetStructureIdByexdata, SqlName.SubDir, param, db);
             if (structureInfoList == null)
             {
@@ -1466,11 +1450,12 @@ namespace BusinessLogic_MP0001
             // 取得した構成IDと拡張データを条件に追加
             foreach (var data in structureInfoList)
             {
+                int extensionData = data.extensionData ?? (int)MaintenanceHistoryFlg.General; //NULLの場合は一般工場
                 conditionObj.StructureId = data.StructureId;     // 構成ID
-                conditionObj.ExtensionData = data.extensionData; // 拡張データ(保全履歴個別工場フラグ)
+                conditionObj.ExtensionData = extensionData; // 拡張データ(保全履歴個別工場フラグ)
 
                 // 0の場合は一般工場
-                if (data.extensionData == (int)MaintenanceHistoryFlg.General)
+                if (extensionData == (int)MaintenanceHistoryFlg.General)
                 {
                     resultsList = getSummaryInfo(conditionObj, SqlName.GetOthersDetailFlg0, string.Empty);
                 }
