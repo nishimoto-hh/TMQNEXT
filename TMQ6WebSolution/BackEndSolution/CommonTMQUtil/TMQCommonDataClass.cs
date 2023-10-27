@@ -4420,5 +4420,224 @@ namespace CommonTMQUtil
             }
         }
 
+        /// <summary>
+        /// 変更管理
+        /// </summary>
+        public class HmHistoryManagementEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmHistoryManagementEntity()
+            {
+                TableName = "hm_history_management";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 申請状況ID</summary>
+            /// <value>申請状況ID</value>
+            public int ApplicationStatusId { get; set; }
+            /// <summary>Gets or sets 申請区分ID</summary>
+            /// <value>申請区分ID</value>
+            public int ApplicationDivisionId { get; set; }
+            /// <summary>Gets or sets 申請機能ID</summary>
+            /// <value>申請機能ID</value>
+            public int? ApplicationConductId { get; set; }
+            /// <summary>Gets or sets 承認時処理区分</summary>
+            /// <value>承認時処理区分</value>
+            public string ApprovalExecutionDivision { get; set; }
+            /// <summary>Gets or sets 申請者ID</summary>
+            /// <value>申請者ID</value>
+            public int? ApplicationUserId { get; set; }
+            /// <summary>Gets or sets 申請者名称</summary>
+            /// <value>申請者名称</value>
+            public string ApplicationUserName { get; set; }
+            /// <summary>Gets or sets 承認者ID</summary>
+            /// <value>承認者ID</value>
+            public int? approval_user_id { get; set; }
+            /// <summary>Gets or sets 承認者名称</summary>
+            /// <value>承認者名称</value>
+            public string ApprovalUserName { get; set; }
+            /// <summary>Gets or sets 申請日</summary>
+            /// <value>申請日</value>
+            public DateTime? ApplicationDate { get; set; }
+            /// <summary>Gets or sets 承認日</summary>
+            /// <value>承認日</value>
+            public DateTime? ApprovalDate { get; set; }
+            /// <summary>Gets or sets 申請理由</summary>
+            /// <value>申請理由</value>
+            public string ApplicationReason { get; set; }
+            /// <summary>Gets or sets 承認理由</summary>
+            /// <value>承認理由</value>
+            public string ApprovalReason { get; set; }
+            /// <summary>Gets or sets 否認理由</summary>
+            /// <value>否認理由</value>
+            public string RejectionReason { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 変更管理ID</summary>
+                /// <value>変更管理ID</value>
+                public long HistoryManagementId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHistoryManagementId)
+                {
+                    HistoryManagementId = pHistoryManagementId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HistoryManagementId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmHistoryManagementEntity GetEntity(long pHistoryManagementId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHistoryManagementId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmHistoryManagementEntity>(getEntitySql);
+            }
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHistoryManagementId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHistoryManagementId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
+        /// 機番情報変更管理
+        /// </summary>
+        public class HmMcMachineEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public HmMcMachineEntity()
+            {
+                TableName = "hm_mc_machine";
+            }
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機番情報変更管理ID</summary>
+            /// <value>機番情報変更管理ID</value>
+            public long HmMachineId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long MachineId { get; set; }
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 機器番号</summary>
+            /// <value>機器番号</value>
+            public string MachineNo { get; set; }
+            /// <summary>Gets or sets 機器名称</summary>
+            /// <value>機器名称</value>
+            public string MachineName { get; set; }
+            /// <summary>Gets or sets 設置場所</summary>
+            /// <value>設置場所</value>
+            public string InstallationLocation { get; set; }
+            /// <summary>Gets or sets 設置台数</summary>
+            /// <value>設置台数</value>
+            public decimal? NumberOfInstallation { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public int? EquipmentLevelStructureId { get; set; }
+            /// <summary>Gets or sets 設置日</summary>
+            /// <value>設置日</value>
+            public DateTime? DateOfInstallation { get; set; }
+            /// <summary>Gets or sets 重要度</summary>
+            /// <value>重要度</value>
+            public int? ImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public int? ConservationStructureId { get; set; }
+            /// <summary>Gets or sets 機番メモ</summary>
+            /// <value>機番メモ</value>
+            public string MachineNote { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機番情報変更管理ID</summary>
+                /// <value>機番情報変更管理ID</value>
+                public long HmMachineId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pHmMachineId)
+                {
+                    HmMachineId = pHmMachineId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.HmMachineId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public HmMcMachineEntity GetEntity(long pHmMachineId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmMachineId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<HmMcMachineEntity>(getEntitySql);
+            }
+        }
     }
 }

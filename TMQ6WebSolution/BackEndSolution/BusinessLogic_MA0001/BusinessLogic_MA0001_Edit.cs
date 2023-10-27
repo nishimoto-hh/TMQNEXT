@@ -81,8 +81,12 @@ namespace BusinessLogic_MA0001
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.StructureId, this.pageInfoList);
 
-            // 場所階層、職種の設定(長期計画の白丸「○」リンクから遷移してこなかった場合)
-            if (!isFromLongPlan)
+            // 場所階層、職種の設定(長期計画の白丸「○」リンクから遷移してきた場合)
+            if (isFromLongPlan)
+            {
+                structureLayer.FactoryId = resultFromLongPlan.FactoryId;
+            }
+            else
             {
                 SetSearchResultsByDataClass<Dao.detailSummaryInfo>(pageInfo, structureLayerList, 1);
             }
@@ -104,8 +108,8 @@ namespace BusinessLogic_MA0001
             // 長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
             if (isFromLongPlan)
             {
-                // 保全スケジュール詳細ID
-                result.MaintainanceScheduleDetailId = resultFromLongPlan.MaintainanceScheduleDetailId;
+                result.MaintainanceScheduleDetailId = resultFromLongPlan.MaintainanceScheduleDetailId; // 保全スケジュール詳細ID
+                result.MaxUpdateDatetimeSchedule = resultFromLongPlan.MaxUpdateDatetimeSchedule;       // 最大更新日時
             }
 
             // 保全活動区分、MQ分類(非表示)、ユーザ役割の設定
@@ -184,88 +188,6 @@ namespace BusinessLogic_MA0001
         }
 
         /// <summary>
-        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を取得する
-        /// </summary>
-        /// <param name="result">検索結果</param>
-        /// <returns>エラーの場合False</returns>
-        private bool getDataFromLongPlan(out Dao.searchResultFromLongPlan result)
-        {
-            result = new();
-
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetScheduleFromLongPlan, out string sql);
-
-            // 検索条件を設定
-            Dao.searchResultFromLongPlan condition = new();
-            // 保全スケジュール詳細ID
-            condition.MaintainanceScheduleDetailId = long.Parse(GetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey).ToString());
-
-            // SQL実行
-            IList<Dao.searchResultFromLongPlan> results = db.GetListByDataClass<Dao.searchResultFromLongPlan>(sql, condition);
-            if (results == null || results.Count == 0)
-            {
-                return false;
-            }
-
-            results[0].MaintainanceScheduleDetailId = condition.MaintainanceScheduleDetailId; // 保全スケジュール詳細ID
-            results[0].IssueDate = DateTime.Now;                                              // 発行日
-
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResultFromLongPlan>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
-
-            result = results[0];
-            return true;
-        }
-
-        /// <summary>
-        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
-        /// </summary>
-        /// <param name="isFromLongPlan">長期計画の白丸「○」リンクから遷移してきた場合はTrue</param>
-        /// <param name="result">検索結果</param>
-        /// <returns>エラーの場合False</returns>
-        private bool setDataFromLongPlan(bool isFromLongPlan, Dao.searchResultFromLongPlan result)
-        {
-            if(!isFromLongPlan)
-            {
-                return true;
-            }
-
-            // 取得している値を一覧に設定
-            foreach (string ctrlId in ConductInfo.FormRegist.ControlId.MakeMaintenanceFromLongPlan)
-            {
-                if (!SetFormByDataClass(ctrlId, new List<Dao.searchResultFromLongPlan> { result }))
-                {
-                    return false;
-                }
-            }
-
-            // 対象機器一覧検索
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMachineListFromLongPlan, out string sql);
-
-            // SQL実行
-            IList<Dao.detailMachine> resultMachineList = db.GetListByDataClass<Dao.detailMachine>(sql, result);
-            if(resultMachineList == null || resultMachineList.Count == 0)
-            {
-                return false;
-            }
-
-            // 職種機種階層IDから上位の階層を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailMachine>(ref resultMachineList, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
-
-            // ページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.MachineList, this.pageInfoList);
-
-            // 検索結果の設定
-            if(!SetSearchResultsByDataClass<Dao.detailMachine>(pageInfo, resultMachineList, resultMachineList.Count))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// MQ分類：設備工事、撤去工事の構成IDをカンマ区切り文字列にする
         /// </summary>
         /// <returns>カンマ区切り文字列</returns>
@@ -332,6 +254,12 @@ namespace BusinessLogic_MA0001
             }
             Dao.detailSummaryInfo registSummaryInfo = getRegistInfo<Dao.detailSummaryInfo>(grpNoList, now);
 
+            // 排他チェック(長期計画の白丸「○」リンクから遷移してきた場合)
+            if (isErrorExclusiveFromLongPlan(registSummaryInfo.MaxUpdateDatetimeSchedule, registSummaryInfo.MaintainanceScheduleDetailId))
+            {
+                return false;
+            }
+
             //最下層の構成IDを取得して機能場所階層ID、職種機種階層IDにセットする
             IList<Dao.detailSummaryInfo> results = new List<Dao.detailSummaryInfo>();
             results.Add(registSummaryInfo);
@@ -362,6 +290,19 @@ namespace BusinessLogic_MA0001
             //トランザクションを分けるため、依頼番号取得後に画面の内容を登録する
             // 保全活動件名登録
             long val = newSummaryId;
+
+            // 保全スケジュール詳細IDがnullでない(長期計画の白丸「○」リンクから遷移してきた)場合
+            if (!string.IsNullOrEmpty(registSummaryInfo.MaintainanceScheduleDetailId))
+            {
+                // 登録情報に長期計画件名IDを設定する
+                if (!getLongPlanIdByScheduleDetailId(registSummaryInfo.MaintainanceScheduleDetailId, out long? outLongPlanId))
+                {
+                    return false;
+                }
+
+                registSummaryInfo.LongPlanId = outLongPlanId;
+            }
+
             bool returnFlag = TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<long>(out val, isRegist ? SqlName.Regist.InsertSummary : SqlName.Regist.UpdateSummary, SqlName.SubDir, registSummaryInfo, this.db);
             if (!returnFlag)
             {
@@ -965,7 +906,8 @@ namespace BusinessLogic_MA0001
                     return false;
                 }
 
-                if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New))
+                // MaintainanceScheduleDetailIdがnullでないのは長期計画のリンクから遷移してきた場合の新規登録
+                if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New) || (registSummaryInfo.MaintainanceScheduleDetailId != null && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit)))
                 {
                     //追加行の登録
                     if (!registAddRow(machine))
@@ -993,6 +935,12 @@ namespace BusinessLogic_MA0001
                     }
                     continue;
                 }
+            }
+
+            // 保全スケジュール詳細の保全活動件名IDを更新
+            if (!updateScheduleInfo(summaryId, registSummaryInfo.MaintainanceScheduleDetailId))
+            {
+                return false;
             }
 
             return true;
@@ -1401,5 +1349,240 @@ namespace BusinessLogic_MA0001
 
             return ComConsts.RETURN_RESULT.OK;
         }
+
+        #region 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の処理
+        /// <summary>
+        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を取得する
+        /// </summary>
+        /// <param name="result">検索結果</param>
+        /// <returns>エラーの場合False</returns>
+        private bool getDataFromLongPlan(out Dao.searchResultFromLongPlan result)
+        {
+            result = new();
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetScheduleFromLongPlan, out string sql);
+
+            // 検索条件を設定
+            Dao.searchResultFromLongPlan condition = new();
+            // 保全スケジュール詳細ID
+            condition.MaintainanceScheduleDetailId = GetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey).ToString();
+
+            // SQL実行
+            IList<Dao.searchResultFromLongPlan> results = db.GetListByDataClass<Dao.searchResultFromLongPlan>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            results[0].MaintainanceScheduleDetailId = condition.MaintainanceScheduleDetailId; // 保全スケジュール詳細ID
+            results[0].IssueDate = DateTime.Now;                                              // 発行日
+
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResultFromLongPlan>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+
+            result = results[0];
+
+            // 保全スケジュール詳細データと同一の長期計画件名、同一年月データの最大更新日時を取得
+            if(!getMaxUpdateDateFromLongPlan(results[0].MaintainanceScheduleDetailId, out DateTime? maxUpdateDate))
+            {
+                return false;
+            }
+
+            // 取得した最大更新日時を設定
+            result.MaxUpdateDatetimeSchedule = maxUpdateDate;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の初期値を設定
+        /// </summary>
+        /// <param name="isFromLongPlan">長期計画の白丸「○」リンクから遷移してきた場合はTrue</param>
+        /// <param name="result">検索結果</param>
+        /// <returns>エラーの場合False</returns>
+        private bool setDataFromLongPlan(bool isFromLongPlan, Dao.searchResultFromLongPlan result)
+        {
+            if (!isFromLongPlan)
+            {
+                return true;
+            }
+
+            // 取得している値を一覧に設定
+            foreach (string ctrlId in ConductInfo.FormRegist.ControlId.MakeMaintenanceFromLongPlan)
+            {
+                if (!SetFormByDataClass(ctrlId, new List<Dao.searchResultFromLongPlan> { result }))
+                {
+                    return false;
+                }
+            }
+
+            // 対象機器一覧検索
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMachineListFromLongPlan, out string sql);
+
+            // SQL実行
+            IList<Dao.detailMachine> resultMachineList = db.GetListByDataClass<Dao.detailMachine>(sql, result);
+            if (resultMachineList == null || resultMachineList.Count == 0)
+            {
+                return false;
+            }
+
+            // 職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailMachine>(ref resultMachineList, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormRegist.ControlId.MachineList, this.pageInfoList);
+
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<Dao.detailMachine>(pageInfo, resultMachineList, resultMachineList.Count))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 保全スケジュール詳細の保全活動件名IDを更新
+        /// </summary>
+        /// <param name="summaryId">保全活動件名ID</param>
+        /// <param name="maintainanceScheduleDetailId">保全スケジュール詳細ID</param>
+        /// <returns>エラーの場合False</returns>
+        private bool updateScheduleInfo(long summaryId, string maintainanceScheduleDetailId)
+        {
+            // 保全スケジュール詳細IDがnullの場合は何もしない
+            if (string.IsNullOrEmpty(maintainanceScheduleDetailId))
+            {
+                return true;
+            }
+
+            //対象機器の情報取得
+            var mappingInfo = getResultMappingInfo(ConductInfo.FormRegist.ControlId.MachineList);
+            List<Dictionary<string, object>> machineDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormRegist.ControlId.MachineList);
+
+            // システム日付
+            DateTime now = DateTime.Now;
+            foreach (Dictionary<string, object> machineDic in machineDicList)
+            {
+                //データクラスに変換
+                Dao.detailSummaryInfo registInfo = new Dao.detailSummaryInfo();
+                if (!SetExecuteConditionByDataClass<Dao.detailSummaryInfo>(machineDic, ConductInfo.FormRegist.ControlId.MachineList, registInfo, now, this.UserId, this.UserId))
+                {
+                    return false;
+                }
+
+                // 保全スケジュール詳細IDをカンマ区切り
+                if(string.IsNullOrEmpty(registInfo.MaintainanceScheduleDetailId))
+                {
+                    continue;
+                }
+                string[] scheduleDetailIdList = registInfo.MaintainanceScheduleDetailId.Split(",");
+                foreach (string scheduleDetailId in scheduleDetailIdList)
+                {
+                    registInfo.MaintainanceScheduleDetailId = scheduleDetailId; // 保全スケジュール詳細ID
+                    registInfo.SummaryId = summaryId;                           // 保全活動件名ID
+
+                    // 更新処理
+                    if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.UpdateScheduleDetailSummaryId, SqlName.SubDir, registInfo, this.db))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 保全スケジュール詳細IDより長期計画件名IDを取得する
+        /// </summary>
+        /// <param name="maintainanceScheduleDetailId">保全スケジュール詳細ID</param>
+        /// <param name="longPlanId">長期計画件名ID</param>
+        /// <returns>エラーの場合False</returns>
+        private bool getLongPlanIdByScheduleDetailId(string maintainanceScheduleDetailId, out long? longPlanId)
+        {
+            longPlanId = null;
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetLongPlanIdByScheduleDetailId, out string sql);
+
+            // 検索条件を設定
+            Dao.searchResultFromLongPlan condition = new();
+            condition.MaintainanceScheduleDetailId = maintainanceScheduleDetailId; // 保全スケジュール詳細ID
+
+            // SQL実行
+            IList<ComDao.MaSummaryEntity> result = db.GetListByDataClass<ComDao.MaSummaryEntity>(sql, condition);
+            if (result == null || result.Count == 0)
+            {
+                return false;
+            }
+
+            // 取得した長期計画件名IDを設定
+            longPlanId = result[0].LongPlanId;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 保全スケジュール詳細データと同一の長期計画件名、同一年月データの最大更新日時を取得
+        /// </summary>
+        /// <param name="maintainanceScheduleDetailId">保全スケジュール詳細ID</param>
+        /// <param name="maxUpdateDate">最大更新日時</param>
+        /// <returns>エラーの場合False</returns>
+        private bool getMaxUpdateDateFromLongPlan(string maintainanceScheduleDetailId, out DateTime? maxUpdateDate)
+        {
+            maxUpdateDate = null;
+
+            // 検索条件を設定
+            Dao.searchResultFromLongPlan condition = new();
+            condition.MaintainanceScheduleDetailId = maintainanceScheduleDetailId;
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMaxUpdateDateByScheduleDetailId, out string sql);
+
+            // SQL実行
+            IList<Dao.searchResultFromLongPlan> result = db.GetListByDataClass<Dao.searchResultFromLongPlan>(sql, condition);
+            if (result == null || result.Count == 0)
+            {
+                return false;
+            }
+
+            // 取得した値を設定
+            maxUpdateDate = result[0].MaxUpdateDatetimeSchedule;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 排他チェック
+        /// </summary>
+        /// <param name="savedMaxUpdateDate">初期表示時の最大更新日時</param>
+        /// <param name="maintainanceScheduleDetailId">保全スケジュール詳細ID</param>
+        /// <returns>エラーの場合True</returns>
+        private bool isErrorExclusiveFromLongPlan(DateTime? savedMaxUpdateDate, string maintainanceScheduleDetailId)
+        {
+            // 保全スケジュール詳細IDがnullの場合は何もしない
+            if (string.IsNullOrEmpty(maintainanceScheduleDetailId))
+            {
+                return false;
+            }
+
+            // 保全スケジュール詳細データと同一の長期計画件名、同一年月データの最大更新日時を取得
+            if (!getMaxUpdateDateFromLongPlan(maintainanceScheduleDetailId, out DateTime? maxUpdateDate))
+            {
+                return true;
+            }
+
+            // 最大更新日時を比較
+            if (!CheckExclusiveStatusByUpdateDatetime(savedMaxUpdateDate, maxUpdateDate))
+            {
+                // 排他エラー
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
     }
 }

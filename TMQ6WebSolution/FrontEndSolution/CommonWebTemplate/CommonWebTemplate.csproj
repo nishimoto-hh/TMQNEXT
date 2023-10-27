@@ -171,6 +171,7 @@
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_DM0002\BusinessLogic_DM0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0001\BusinessLogic_HM0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0002\BusinessLogic_HM0002.csproj" />
+    <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_HM0003\BusinessLogic_HM0003.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_LN0001\BusinessLogic_LN0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_LN0002\BusinessLogic_LN0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MA0001\BusinessLogic_MA0001.csproj" />

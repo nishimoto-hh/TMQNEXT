@@ -939,12 +939,12 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     // 工場ID指定の場合
                     var factoryIds = factoryId.Split(",");
-                    var factoryIdList = new List<short>();
+                    var factoryIdList = new List<int>();
                     foreach (var id in factoryIds)
                     {
                         if (!string.IsNullOrWhiteSpace(id))
                         {
-                            factoryIdList.Add(Convert.ToInt16(id));
+                            factoryIdList.Add(Convert.ToInt32(id));
                         }
                     }
                     //システム共通の階層も併せて取得する

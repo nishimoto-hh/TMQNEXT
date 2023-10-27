@@ -421,7 +421,10 @@ namespace BusinessLogic_MA0001
             public int? TabNo { get; set; }
             /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
             /// <value>保全スケジュール詳細ID</value>
-            public long? MaintainanceScheduleDetailId { get; set; }
+            public string MaintainanceScheduleDetailId { get; set; }
+            /// <summary>Gets or sets 最大更新日時</summary>
+            /// <value>最大更新日時</value>
+            public DateTime? MaxUpdateDatetimeSchedule { get; set; }
         }
 
         /// <summary>
@@ -498,7 +501,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 機器ID</summary>
             /// <value>機器ID</value>
             public long EquipmentId { get; set; }
-
+            /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
+            /// <value>保全スケジュール詳細ID</value>
+            public string MaintainanceScheduleDetailId { get; set; }
         }
 
         /// <summary>
@@ -1010,7 +1015,7 @@ namespace BusinessLogic_MA0001
         {
             /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
             /// <value>保全スケジュール詳細ID</value>
-            public long? MaintainanceScheduleDetailId { get; set; }
+            public string MaintainanceScheduleDetailId { get; set; }
             /// <summary>Gets or sets 件名</summary>
             /// <value>件名</value>
             public string Subject { get; set; }
@@ -1029,6 +1034,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全時期ID</summary>
             /// <value>保全時期ID</value>
             public int? MaintenanceSeasonStructureId { get; set; }
+            /// <summary>Gets or sets 施工担当者ID</summary>
+            /// <value>施工担当者ID</value>
+            public int? ConstructionPersonnelId { get; set; }
+            /// <summary>Gets or sets 最大更新日時</summary>
+            /// <value>最大更新日時</value>
+            public DateTime? MaxUpdateDatetimeSchedule { get; set; }
 
             #region 場所・職種情報
             /// <summary>Gets or sets 機能場所階層ID</summary>

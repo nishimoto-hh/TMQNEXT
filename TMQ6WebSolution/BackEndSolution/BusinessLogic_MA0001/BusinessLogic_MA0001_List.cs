@@ -162,7 +162,7 @@ namespace BusinessLogic_MA0001
                     return;
                 }
 
-                // グルーバル変数に値を格納
+                // グルーバル変数に値を格納(遷移時は「SummaryId」に保全スケジュール詳細IDが入っている)
                 SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey, conditionObj.SummaryId);
             }
         }

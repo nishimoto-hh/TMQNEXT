@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using ComDao = CommonSTDUtil.CommonDataBaseClass;
+using TmqDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_HM0001
 {
@@ -14,28 +14,158 @@ namespace BusinessLogic_HM0001
     public class BusinessLogicDataClass_HM0001
     {
         /// <summary>
-        /// 検索条件のデータクラス
+        /// 一覧画面の検索条件のデータクラス
         /// </summary>
-        public class searchCondition : ComDao.SearchCommonClass
+        public class searchCondition
         {
-            // 検索条件に使用する場合は、検索条件格納共通クラスを継承してください。
-
-            /// <summary>Gets or sets 品目コード</summary>
-            /// <value>品目コード</value>
-            public string ItemCd { get; set; }
+            /// <summary>Gets or sets 自分の件名のみ表示</summary>
+            /// <value>自分の件名のみ表示</value>
+            public int DispOnlyMySubject { get; set; }
         }
 
         /// <summary>
-        /// 検索結果のデータクラス
+        /// 一覧画面の検索結果のデータクラス
         /// </summary>
-        public class searchResult : ComDao.CommonTableItem
+        public class searchResult : TmqDao.HmMcMachineEntity
         {
-            // SQLの検索結果の列を定義してください。
-            // 品目マスタから多くの列を取得する場合は、品目マスタのデータクラスを継承することで、それらの定義を省くことができます。
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public int? ManufacturerStructureId { get; set; }
+            /// <summary>Gets or sets メーカー型式</summary>
+            /// <value>メーカー型式</value>
+            public string ManufacturerType { get; set; }
+            /// <summary>Gets or sets 型式コード</summary>
+            /// <value>型式コード</value>
+            public string ModelNo { get; set; }
+            /// <summary>Gets or sets シリアル番号</summary>
+            /// <value>シリアル番号</value>
+            public string SerialNo { get; set; }
+            /// <summary>Gets or sets 製造日</summary>
+            /// <value>製造日</value>
+            public DateTime? DateOfManufacture { get; set; }
+            /// <summary>Gets or sets 納期</summary>
+            /// <value>納期</value>
+            public int? DeliveryDate { get; set; }
+            /// <summary>Gets or sets 機器メモ</summary>
+            /// <value>機器メモ</value>
+            public string EquipmentNote { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public int? UseSegmentStructureId { get; set; }
+            /// <summary>Gets or sets 固定資産番号</summary>
+            /// <value>固定資産番号</value>
+            public string FixedAssetNo { get; set; }
+            /// <summary>Gets or sets 機器添付有無</summary>
+            /// <value>機器添付有無</value>
+            public string FileLinkEquipment { get; set; }
+            /// <summary>Gets or sets 機番添付有無</summary>
+            /// <value>機番添付有無</value>
+            public string FileLinkMachine { get; set; }
+            /// <summary>Gets or sets 機器別管理基準変更有無</summary>
+            /// <value>機器別管理基準変更有無</value>
+            public int IsChangedComponent { get; set; }
+            /// <summary>Gets or sets 申請機能</summary>
+            /// <value>申請機能</value>
+            public string ConductName { get; set; }
+            /// <summary>Gets or sets 申請者</summary>
+            /// <value>申請者</value>
+            public string ApplicationUserName { get; set; }
+            /// <summary>Gets or sets 承認者</summary>
+            /// <value>承認者</value>
+            public string ApprovalUserName { get; set; }
+            /// <summary>Gets or sets 申請日</summary>
+            /// <value>申請日</value>
+            public DateTime? ApplicationDate { get; set; }
+            /// <summary>Gets or sets 承認日</summary>
+            /// <value>承認日</value>
+            public DateTime? ApprovalDate { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public string EquipmentLevel { get; set; }
+            /// <summary>Gets or sets 重要度</summary>
+            /// <value>重要度</value>
+            public string ImportanceName { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public string InspectionSiteConservationName { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerName { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public string UseSegmentName { get; set; }
+            /// <summary>Gets or sets 申請状況</summary>
+            /// <value>申請状況</value>
+            public string ApplicationStatusName { get; set; }
+            /// <summary>Gets or sets 申請区分</summary>
+            /// <value>申請区分</value>
+            public string ApplicationDivisionName { get; set; }
+            /// <summary>Gets or sets 申請区分</summary>
+            /// <value>申請区分</value>
+            public string ValueChanged { get; set; }
 
-            /// <summary>Gets or sets 品目名称(テスト)</summary>
-            /// <value>品目名称(テスト)</value>
-            public string ItemNameTest { get; set; }
+            #region 地区・職種機種
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? LargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string LargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? MiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string MiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? SmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string SmallClassficationName { get; set; }
+            #endregion
         }
     }
 }

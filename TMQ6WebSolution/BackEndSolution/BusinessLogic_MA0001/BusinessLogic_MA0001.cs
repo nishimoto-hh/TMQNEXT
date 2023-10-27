@@ -164,6 +164,12 @@ namespace BusinessLogic_MA0001
                 public const string GetScheduleFromLongPlan = "GetScheduleFromLongPlan";
                 /// <summary>SQL名：件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際の対象機器一覧初期値検索</summary>
                 public const string GetMachineListFromLongPlan = "GetMachineListFromLongPlan";
+                /// <summary>SQL名：保全スケジュール詳細 保全活動件名ID更新</summary>
+                public const string UpdateScheduleDetailSummaryId = "UpdateScheduleDetailSummaryId";
+                /// <summary>SQL名：保全スケジュール詳細IDより長期計画件名IDを取得</summary>
+                public const string GetLongPlanIdByScheduleDetailId = "GetLongPlanIdByScheduleDetailId";
+                /// <summary>SQL名：保全スケジュール詳細IDより最大更新日時を取得</summary>
+                public const string GetMaxUpdateDateByScheduleDetailId = "GetMaxUpdateDateByScheduleDetailId";
             }
 
             /// <summary>
@@ -391,7 +397,7 @@ namespace BusinessLogic_MA0001
                     /// <summary>
                     /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際に初期値を設定するコントロールID
                     /// </summary>
-                    public static ReadOnlyCollection<string> MakeMaintenanceFromLongPlan { get; } = new[] { "BODY_010_00_LST_2", "BODY_020_00_LST_2",  "BODY_110_00_LST_2", "BODY_170_00_LST_2", "BODY_190_00_LST_2" }.ToList().AsReadOnly();
+                    public static ReadOnlyCollection<string> MakeMaintenanceFromLongPlan { get; } = new[] { "BODY_010_00_LST_2", "BODY_020_00_LST_2",  "BODY_110_00_LST_2", "BODY_170_00_LST_2", "BODY_190_00_LST_2", "BODY_240_00_LST_2" }.ToList().AsReadOnly();
                 }
                 /// <summary>
                 /// グループ番号
