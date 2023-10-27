@@ -1591,10 +1591,40 @@
             /// ExcelPort利用可能工場以外の工場データは出力できません。
             /// </summary>
             public const string ID141040003 = "141040003";
+
             /// <summary>
             /// アップロード可能なファイルがありません。
             /// </summary>
             public const string ID941010006 = "941010006";
+            /// <summary>
+            /// 指定されたEXCELのフォーマットが不正です。
+            /// </summary>
+            public const string ID141120010 = "141120010";
+            /// <summary>
+            /// 指定されたEXCELはバージョンが最新ではありません。最新バージョンをダウンロードしてください。
+            /// </summary>
+            public const string ID141120011 = "141120011";
+            /// <summary>
+            ///指定されたEXCELから更新対象機能が特定できません。
+            /// </summary>
+            public const string ID141120012 = "141120012"; 
+            /// <summary>
+            /// {0}データを登録します。よろしいですか？
+            /// </summary>
+            public const string ID141190004 = "141190004";
+            /// <summary>
+            /// 変更履歴管理対象の工場データは登録できません。
+            /// </summary>
+            public const string ID141290007 = "141290007";
+            /// <summary>
+            /// ExcelPort利用可能工場以外のデータは登録できません。
+            /// </summary>
+            public const string ID141040004 = "141040004";
+            /// <summary>
+            /// 入力エラーが存在します。ダウンロードされたEXCELよりエラー内容を確認してください。
+            /// </summary>
+            public const string ID141220007 = "141220007";
+
             /// <summary>
             /// 表示されている機器に対し行う変更を登録してください。
             /// </summary>

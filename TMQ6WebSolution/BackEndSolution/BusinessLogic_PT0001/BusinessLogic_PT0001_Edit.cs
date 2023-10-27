@@ -162,6 +162,9 @@ namespace BusinessLogic_PT0001
             DateTime now = DateTime.Now;
             Dao.editResult registInfo = getRegistInfo<Dao.editResult>(ConductInfo.FormEdit.GroupNo, now);
 
+            // 枝番がNULLの場合は空文字にする
+            registInfo.PartsLocationDetailNo = ConvertNullToStringEmpty(registInfo.PartsLocationDetailNo);
+
             // 階層情報の取得
             IList<Dao.editResult> registStructureInfo = new List<Dao.editResult> { registInfo };
             TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.editResult>(ref registStructureInfo, new List<StructureType> { StructureType.SpareLocation });

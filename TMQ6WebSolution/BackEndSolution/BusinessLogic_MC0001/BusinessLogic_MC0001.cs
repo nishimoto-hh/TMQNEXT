@@ -21,6 +21,7 @@ using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureTy
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogic_MC0001
 {
@@ -1046,6 +1047,43 @@ namespace BusinessLogic_MC0001
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected override int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ExcelPortアップロードデータの取得
+            if(!excelPort.GetUploadDataList(file, this.IndividualDictionary,
+                out List<BusinessLogicDataClass_MC0001.searchResult> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // TODO:個別チェック＆登録処理
 
             return ComConsts.RETURN_RESULT.OK;
         }

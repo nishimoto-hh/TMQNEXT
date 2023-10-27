@@ -333,7 +333,7 @@ namespace BusinessLogic_PT0003
                 //棚ID
                 registData.PartsLocationId = inventory.PartsLocationId;
                 //棚番
-                registData.PartsLocationDetailNo = inventory.PartsLocationDetailNo;
+                registData.PartsLocationDetailNo = ConvertNullToStringEmpty(inventory.PartsLocationDetailNo);
                 //新旧区分ID
                 registData.OldNewStructureId = inventory.OldNewStructureId;
                 //部門ID

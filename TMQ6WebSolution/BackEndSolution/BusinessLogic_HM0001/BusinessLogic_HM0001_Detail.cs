@@ -1002,7 +1002,7 @@ namespace BusinessLogic_HM0001
                 var info = getResultMappingInfo(ctrlId);
 
                 // 同一機器、部位、保全項目重複チェック
-                if (getErrCnt(SqlName.Detail.GetManagementStandardCountCheck, SqlName.SubDirMachine, result) || checkContentDuplicateHistory(result))
+                if (getErrCnt(SqlName.Detail.GetManagementStandardCountCheckHistory, SqlName.SubDir, result))
                 {
                     // エラー情報格納クラス
                     ErrorInfo errorInfo = new ErrorInfo(targetDic);
@@ -1055,19 +1055,6 @@ namespace BusinessLogic_HM0001
                 }
 
                 return isError;
-
-                // 同一機器、部位、保全項目重複チェック(変更管理)
-                bool checkContentDuplicateHistory(Dao.managementStandardsResult result)
-                {
-                    // レコードに変更管理が紐付かない場合は何もしない
-                    if (result.ExecutionDivision <= 0)
-                    {
-                        return false;
-                    }
-
-                    // SQL実行
-                    return getErrCnt(SqlName.Detail.GetManagementStandardCountCheckHistory, SqlName.SubDir, result);
-                }
             }
         }
 
@@ -1091,47 +1078,13 @@ namespace BusinessLogic_HM0001
             }
 
             // 点検種別毎管理の機器
-            if (machineInfo.MaintainanceKindManage)
+            if (!machineInfo.MaintainanceKindManage)
             {
-                // 同一点検種別存在チェック(トランザクション・変更管理)
-                if (getErrCnt(SqlName.Detail.GetMaintainanceKindManageExistCheck, SqlName.SubDirMachine, managementStandardsInfo) || checkMaintainanceKindManageExistHistory(managementStandardsInfo))
-                {
-                    // 既に同じ点検種別が対象機器の機器別管理基準内に登録されていて、周期と開始日が違う場合、確認メッセージを表示する。
-                    // ※確認メッセージで「OK」だった際は、入力された周期と開始日で既に登録されている同じ点検種別のデータを更新する。（後勝ち登録)
-                    // 確認
-                    this.Status = CommonProcReturn.ProcStatus.Confirm;
-                    // 同一点検種別で既に異なる周期・開始日が設定されています。入力された周期・内容でスケジュールを再作成しますがよろしいですか？
-                    this.MsgId = GetResMessage(ComRes.ID.ID141200001);
-                    this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
-                    return true;
-                }
+                return false;
             }
 
-            // 同一点検種別存在チェック(変更管理)
-            bool checkMaintainanceKindManageExistHistory(Dao.managementStandardsResult result)
-            {
-                // チェックSQLでアンコメントにする項目
-                string uncommentItem = getUnCommentItem(machineInfo);
-
-                // 検索SQL文の取得
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceKindManageExistCheckHistory, out string sql, new List<string>() { uncommentItem });
-
-                // 総件数を取得
-                return db.GetCount(sql, result) > 0;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// 新規登録時確認チェック(点検種別毎管理)
-        /// </summary>
-        /// <param name="machineInfo">機番情報・機器情報</param>
-        /// <param name="managementStandardsInfo">保全項目情報</param>
-        /// <returns>エラーの場合はTrue</returns>
-        private bool isConfirmRegistCycleInsert(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
-        {
-            if (!checkInsertMaintainanceKindManageExist(machineInfo, managementStandardsInfo))
+            // 同一点検種別存在チェック
+            if (getErrCnt(SqlName.Detail.GetMaintainanceKindManageExistCheckHistory, SqlName.SubDir, managementStandardsInfo))
             {
                 // 既に同じ点検種別が対象機器の機器別管理基準内に登録されていて、周期と開始日が違う場合、確認メッセージを表示する。
                 // ※確認メッセージで「OK」だった際は、入力された周期と開始日で既に登録されている同じ点検種別のデータを更新する。（後勝ち登録)
@@ -1147,58 +1100,33 @@ namespace BusinessLogic_HM0001
         }
 
         /// <summary>
-        /// 同一点検種別存在チェック
+        /// 新規登録時確認チェック(点検種別毎管理)
         /// </summary>
         /// <param name="machineInfo">機番情報・機器情報</param>
         /// <param name="managementStandardsInfo">保全項目情報</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool checkInsertMaintainanceKindManageExist(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isConfirmRegistCycleInsert(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
         {
-            //  同一点検種別存在チェック(トランザクション)
-            if (!maintainanceKindCheckTransaction())
+            // 点検種別毎管理
+            if (!machineInfo.MaintainanceKindManage)
             {
                 return false;
             }
 
-            //  同一点検種別存在チェック(変更管理)
-            if (!maintainanceKindCheckHistory())
+            // 同一点検種別存在チェック
+            if (getErrCnt(SqlName.Detail.GetMaintainanceKindManageInsertExistCheckHistory, SqlName.SubDir, managementStandardsInfo))
             {
-                return false;
+                // 既に同じ点検種別が対象機器の機器別管理基準内に登録されていて、周期と開始日が違う場合、確認メッセージを表示する。
+                // ※確認メッセージで「OK」だった際は、入力された周期と開始日で既に登録されている同じ点検種別のデータを更新する。（後勝ち登録)
+                // 確認
+                this.Status = CommonProcReturn.ProcStatus.Confirm;
+                // 同一点検種別で既に異なる周期・開始日が設定されています。入力された周期・内容でスケジュールを再作成しますがよろしいですか？
+                this.MsgId = GetResMessage(ComRes.ID.ID141200001);
+                this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                return true;
             }
 
-            return true;
-
-            //  同一点検種別存在チェック(トランザクション)
-            bool maintainanceKindCheckTransaction()
-            {
-                // 点検種別毎管理
-                if (!machineInfo.MaintainanceKindManage)
-                {
-                    return true;
-                }
-
-                //SQL実行
-                return getErrCnt(SqlName.Detail.GetMaintainanceKindManageInsertExistCheck, SqlName.SubDirMachine, managementStandardsInfo);
-            }
-
-            //  同一点検種別存在チェック(変更管理)
-            bool maintainanceKindCheckHistory()
-            {
-                // 点検種別毎管理
-                if (!machineInfo.MaintainanceKindManage)
-                {
-                    return true;
-                }
-
-                // チェックSQLでアンコメントにする項目
-                string uncommentItem = getUnCommentItem(machineInfo);
-
-                // 検索SQL文の取得
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceKindManageInsertExistCheckHistory, out string sql, new List<string>() { uncommentItem });
-
-                // 総件数を取得
-                return db.GetCount(sql, managementStandardsInfo) > 0;
-            }
+            return false;
         }
 
         /// <summary>

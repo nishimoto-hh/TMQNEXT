@@ -14,13 +14,15 @@ using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using ComRes = CommonSTDUtil.CommonResources;
+using ComBase = CommonSTDUtil.CommonDataBaseClass;
+using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using ExcelUtil = CommonExcelUtil.CommonExcelUtil;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
 using Dao = CommonTMQUtil.CommonTMQUtilDataClass;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
-using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace CommonTMQUtil
 {
@@ -67,14 +69,29 @@ namespace CommonTMQUtil
             public int CompletionDivision { get; set; }
         }
 
+        public class ExcelPortUploadCondition
+        {
+            /// <summary>ExcelPortバージョン</summary>
+            public decimal ExcelPortVersion { get; set; }
+            /// <summary>機能ID</summary>
+            public string ConductId { get; set; }
+            /// <summary>シート番号</summary>
+            public int SheetNo { get; set; }
+        }
+
         /// <summary>
         /// ExcelPort共通
         /// </summary>
         public class ComExcelPort
         {
             #region 定数
-            /// <summary>条件コントロールグループIDフォーマット</summary>
-            public const string ConditionContorlGroupIdFmt = "BODY_000_00_LST_{0}";
+            public static class ControlGroupId
+            {
+                /// <summary>コントロールグループID：条件フォーマット</summary>
+                public const string ConditionFmt = "BODY_000_00_LST_{0}";
+                /// <summary>コントロールグループID：アップロード</summary>
+                public const string Upload = "LIST_000_1";
+            }
 
             /// <summary>
             /// プログラムID
@@ -168,6 +185,12 @@ namespace CommonTMQUtil
                 public const string CreateTempStructureAll = "Create_TempStructureAll";
                 /// <summary>SQL名：対象構成ID上下全階層登録</summary>
                 public const string InsertStructureList = "Insert_StructureList";
+                /// <summary>SQL名：ファイル取込項目定義情報取得用SQL</summary>
+                public const string GetInputControlDefineForExcelPort = "GetInputControlDefineForExcelPort";
+                /// <summary>SQL名：ExcelPortバージョン取得用SQL</summary>
+                public const string GetExcelPortVersion = "GetExcelPortVersion";
+                /// <summary>SQL名：ExcelPort対象情報取得用SQL</summary>
+                public const string GetExcelPortTargetInfo = "GetExcelPortTargetInfo";
 
                 /// <summary>コンボボックスデータ取得用SQL格納先サブディレクトリ名</summary>
                 public const string SubDirNameForCombo = @"Common\ExcelPort";
@@ -202,6 +225,27 @@ namespace CommonTMQUtil
                 public const string LocationIdList = "locationIdList";
                 /// <summary>項目名：職種IDリスト</summary>
                 public const string JobIdList = "jobIdList";
+
+                /// <summary>項目名：対象機能ID</summary>
+                public const string TargetConductId = "TargetConductId";
+                /// <summary>項目名：対象シート番号</summary>
+                public const string TargetSheetNo= "TargetSheetNo";
+            }
+
+            /// <summary>
+            /// レイアウト定義シート情報
+            /// </summary>
+            public static class DefineSheetInfo
+            {
+                /// <summary>列番号：ヘッダー値</summary>
+                public const int ColNoHeaderVal = 15;
+                /// <summary>行番号：ExcelPortバージョン番号</summary>
+                public const int RowNoVersion = 1;
+                /// <summary>行番号：対象機能ID</summary>
+                public const int RowNoConductId = 3;
+                /// <summary>行番号：対象シート番号</summary>
+                public const int RowNoSheetNo = 4;
+
             }
             #endregion
 
@@ -269,15 +313,25 @@ namespace CommonTMQUtil
 
             #region プロパティ
             /// <summary>ダウンロード条件コントロールグループID</summary>
-            public string ConditionControlGroupId { get { return string.Format(ConditionContorlGroupIdFmt, formNo); } }
+            public string ConditionControlGroupId { get { return string.Format(ControlGroupId.ConditionFmt, formNo); } }
             /// <summary>ダウンロード条件</summary>
             public ExcelPortDownloadCondition DownloadCondition { get; set; }
+            /// <summary>アップロード条件</summary>
+            public ExcelPortUploadCondition UploadCondition { get; set; }
             /// <summary>対象場所階層情報リスト</summary>
             public List<StructureInfo> TargetLocationInfoList { get; set; }
             /// <summary>対象職種情報リスト</summary>
             public List<StructureInfo> TargetJobInfoList { get; set; }
             /// <summary>対象工場IDリスト</summary>
             public List<int> TargetFactoryIdList { get; set; }
+            /// <summary>ExcelPort利用可能工場IDリスト</summary>
+            public List<int> ExcelPortFactoryIdList { get; set; }
+            /// <summary>変更履歴管理対象工場IDリスト</summary>
+            public List<int> ApprovalFactoryIdList { get; set; }
+            /// <summary>Excelコマンド処理クラス</summary>
+            public CommonExcelCmd ExcelCmd { get; set; }
+            /// <summary>エラー情報リスト</summary>
+            public List<ComBase.UploadErrorInfo> ErrorInfoList { get; set; }
             #endregion
 
             #region publicメソッド
@@ -297,9 +351,11 @@ namespace CommonTMQUtil
             /// <summary>
             /// ExcelPort用テンプレートファイル情報初期化
             /// </summary>
-            /// <param name="msg">詳細メッセージ</param>
+            /// <param name="resultMsg">結果メッセージ</param>
+            /// <param name="detailMsg">詳細メッセージ</param>
+            /// <param name="isUpload"></param>
             /// <returns></returns>
-            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg)
+            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg, bool isUpload = false)
             {
                 //==========
                 // 初期化
@@ -310,12 +366,21 @@ namespace CommonTMQUtil
                 // ExcelPort用マッピング情報の取得
                 var mapInfoList = GetDBMappingList();
 
-                // ダウンロード条件の取得
                 string ctrlGrpId = this.ConditionControlGroupId;
                 var targetDic = ComUtil.GetDictionaryByCtrlId(this.condition, ctrlGrpId);
-                ExcelPortDownloadCondition dlCondition = new();
-                ComUtil.SetConditionByDataClass(ctrlGrpId, mapInfoList, dlCondition, targetDic, ComUtil.ConvertType.Result);
-                this.DownloadCondition = dlCondition;
+                if (isUpload) {
+                    // アップロード条件の取得
+                    ExcelPortUploadCondition ulCondition = new();
+                    ComUtil.SetConditionByDataClass(ctrlGrpId, mapInfoList, ulCondition, targetDic, ComUtil.ConvertType.Execute);
+                    this.UploadCondition = ulCondition;
+                }
+                else
+                {
+                    // ダウンロード条件の取得
+                    ExcelPortDownloadCondition dlCondition = new();
+                    ComUtil.SetConditionByDataClass(ctrlGrpId, mapInfoList, dlCondition, targetDic, ComUtil.ConvertType.Execute);
+                    this.DownloadCondition = dlCondition;
+                }
 
                 this.locationIdList = getConditionList<int>(condition, ConditionValName.LocationIdList);
                 this.jobIdList = getConditionList<int>(condition, ConditionValName.JobIdList);
@@ -331,9 +396,9 @@ namespace CommonTMQUtil
                 // 場所階層条件から対象工場、対象場所階層情報を取得
                 HistoryManagement history = new HistoryManagement(
                     this.db, this.userId, this.languageId, DateTime.Now, CommonTMQConstants.MsStructure.StructureId.ApplicationConduct.None);
-                if (this.locationIdList.Count == 0)
+                if (this.locationIdList.Count == 0 || isUpload)
                 {
-                    // 場所階層条件が未指定の場合、所属情報から取得
+                    // 場所階層条件が未指定またはアップロードの場合、所属情報から取得
                     this.TargetFactoryIdList.AddRange(this.belongingInfo.BelongingFactoryIdList);
                     this.TargetLocationInfoList.AddRange(this.belongingInfo.LocationInfoList);
                 }
@@ -350,9 +415,9 @@ namespace CommonTMQUtil
                     }
                 }
                 // 職種条件から対象職種情報を取得
-                if (this.jobIdList.Count == 0)
+                if (this.jobIdList.Count == 0 || isUpload)
                 {
-                    // 職種条件が未指定の場合、所属情報から取得
+                    // 職種条件が未指定またはアップロードの場合、所属情報から取得
                     this.TargetJobInfoList.AddRange(this.belongingInfo.JobInfoList);
                 }
                 else
@@ -365,13 +430,21 @@ namespace CommonTMQUtil
                 }
 
                 // ExcelPort対象工場の取得
-                var excelPortFactoryList = getExcelPortTargetFactoryIdList();
+                this.ExcelPortFactoryIdList = getExcelPortTargetFactoryIdList();
                 var excludedFactoryIdList = new List<int>();
-                if (excelPortFactoryList.Count == 0)
+                if (this.ExcelPortFactoryIdList.Count == 0)
                 {
                     // ExcelPort利用可能工場が存在しない場合
-                    // 「ExcelPort利用可能工場以外の工場データは出力できません。」
-                    resultMsg = GetResMessage(ComRes.ID.ID141040003, this.languageId, this.msgResources);
+                    if (isUpload)
+                    {
+                        // 「ExcelPort利用可能工場以外の工場データは登録できません。」
+                        resultMsg = GetResMessage(ComRes.ID.ID141040004, this.languageId, this.msgResources);
+                    }
+                    else
+                    {
+                        // 「ExcelPort利用可能工場以外の工場データは出力できません。」
+                        resultMsg = GetResMessage(ComRes.ID.ID141040003, this.languageId, this.msgResources);
+                    }
                     return false;
                 }
                 else
@@ -380,7 +453,7 @@ namespace CommonTMQUtil
                     for (int i = this.TargetFactoryIdList.Count - 1; i >= 0; i--)
                     {
                         var id = this.TargetFactoryIdList[i];
-                        if (!excelPortFactoryList.Contains(id))
+                        if (!this.ExcelPortFactoryIdList.Contains(id))
                         {
                             // ExcelPort利用可能工場以外の場合、対象外
                             excludedFactoryIdList.Add(id);  // 除外工場
@@ -388,67 +461,73 @@ namespace CommonTMQUtil
                             contains = true;
                         }
                     }
-                    if (TargetFactoryIdList.Count == 0)
+                    if (!isUpload)
                     {
-                        // 対象工場にExcelPort利用可能工場が存在しない場合
-                        // 「ExcelPort利用可能工場以外の工場データは出力できません。」
-                        resultMsg = GetResMessage(ComRes.ID.ID141040003, this.languageId, this.msgResources);
-                        return false;
-                    }
-                    if (contains)
-                    {
-                        // ExcelPort利用可能工場以外の工場が含まれる場合
-                        // 「ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データは出力されていません。」
-                        resultMsg = GetResMessage(ComRes.ID.ID141160018, this.languageId, this.msgResources);
+                        if (TargetFactoryIdList.Count == 0)
+                        {
+                            // 対象工場にExcelPort利用可能工場が存在しない場合
+                            // 「ExcelPort利用可能工場以外の工場データは出力できません。」
+                            resultMsg = GetResMessage(ComRes.ID.ID141040003, this.languageId, this.msgResources);
+                            return false;
+                        }
+                        if (contains)
+                        {
+                            // ExcelPort利用可能工場以外の工場が含まれる場合
+                            // 「ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データは出力されていません。」
+                            resultMsg = GetResMessage(ComRes.ID.ID141160018, this.languageId, this.msgResources);
+                        }
                     }
                 }
 
                 // 変更管理対象工場の取得
-                var approvalList = history.GetUserApprovalFactoryList();
+                this.ApprovalFactoryIdList = history.GetUserApprovalFactoryList();
                 var excludedApprovalCnt = 0;
-                if (approvalList.Count > 0)
+                if (this.ApprovalFactoryIdList.Count > 0)
                 {
                     var contains = false;
                     for (int i = this.TargetFactoryIdList.Count - 1; i >= 0; i--)
                     {
-                        if (approvalList.Contains(this.TargetFactoryIdList[i]))
+                        if (this.ApprovalFactoryIdList.Contains(this.TargetFactoryIdList[i]))
                         {
                             // 変更管理対象工場の場合、対象外
                             this.TargetFactoryIdList.RemoveAt(i);
                             contains = true;
                         }
                     }
-                    foreach (var id in excludedFactoryIdList)
+                    if (!isUpload)
                     {
-                        if (approvalList.Contains(id))
+                        foreach (var id in excludedFactoryIdList)
                         {
-                            // ExcelPort利用可能工場以外の工場に変更管理対象工場が含まれる場合
-                            excludedApprovalCnt++;
-                            contains = true;
-                        }
-                    }
-                    if (this.TargetFactoryIdList.Count == 0)
-                    {
-                        // 対象工場が変更管理対象工場のみの場合
-                        // 「変更履歴管理対象の工場データは出力できません。」
-                        resultMsg = GetResMessage(ComRes.ID.ID141290001, this.languageId, this.msgResources);
-                        return false;
-                    }
-                    else
-                    {
-                        if (contains)
-                        {
-                            if (excludedApprovalCnt == excludedFactoryIdList.Count)
+                            if (this.ApprovalFactoryIdList.Contains(id))
                             {
-                                // 対象外の工場が変更管理対象工場のみの場合
-                                // 「ダウンロードされたExcelファイルに変更履歴管理対象の工場データは出力されていません。」
-                                resultMsg = GetResMessage(ComRes.ID.ID141160017, this.languageId, this.msgResources);
+                                // ExcelPort利用可能工場以外の工場に変更管理対象工場が含まれる場合
+                                excludedApprovalCnt++;
+                                contains = true;
                             }
-                            else
+                        }
+                        if (this.TargetFactoryIdList.Count == 0)
+                        {
+                            // 対象工場が変更管理対象工場のみの場合
+                            // 「変更履歴管理対象の工場データは出力できません。」
+                            resultMsg = GetResMessage(ComRes.ID.ID141290001, this.languageId, this.msgResources);
+                            return false;
+                        }
+                        else
+                        {
+                            if (contains)
                             {
-                                // 対象工場にExcelPort利用工場以外の工場と変更管理対象工場の両方が含まれる場合
-                                // 「ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データおよび変更履歴管理対象の工場データは出力されていません。」
-                                resultMsg = GetResMessage(ComRes.ID.ID141160019, this.languageId, this.msgResources);
+                                if (excludedApprovalCnt == excludedFactoryIdList.Count)
+                                {
+                                    // 対象外の工場が変更管理対象工場のみの場合
+                                    // 「ダウンロードされたExcelファイルに変更履歴管理対象の工場データは出力されていません。」
+                                    resultMsg = GetResMessage(ComRes.ID.ID141160017, this.languageId, this.msgResources);
+                                }
+                                else
+                                {
+                                    // 対象工場にExcelPort利用工場以外の工場と変更管理対象工場の両方が含まれる場合
+                                    // 「ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データおよび変更履歴管理対象の工場データは出力されていません。」
+                                    resultMsg = GetResMessage(ComRes.ID.ID141160019, this.languageId, this.msgResources);
+                                }
                             }
                         }
                     }
@@ -463,6 +542,7 @@ namespace CommonTMQUtil
                     detailMsg = "Failed to create the temporary table.";
                     return false;
                 }
+
                 return true;
             }
 
@@ -509,12 +589,8 @@ namespace CommonTMQUtil
                 option.TargetConductId = this.DownloadCondition.ConductId;
                 option.TargetSheetNo = this.DownloadCondition.SheetNo;
 
-                // ExcelPortバージョンを取得
-                var versionEntity = TMQUtil.SqlExecuteClass.SelectEntity<AutoCompleteEntity>(ComReport.GetExcelPortVersion, ExcelPath, null, db);
-                if (versionEntity != null)
-                {
-                    option.Version = Convert.ToDecimal(versionEntity.Exparam1);
-                }
+                // 構成マスタからExcelPortバージョンを取得
+                option.Version = getExcelPortVersion();
 
                 // テンプレート情報を取得
                 this.templateInfo = new ReportDao.MsOutputTemplateEntity().GetEntity(factoryId, reportId, templateId, db);
@@ -732,19 +808,19 @@ namespace CommonTMQUtil
                 }
                 // マッピングデータ作成
                 mappingDataList = CreateMappingList(
-                                                            factoryId,
-                                                            ProgramId.Download,
-                                                            reportId,
-                                                            sheetDefine.SheetNo,
-                                                            templateId,
-                                                            patternId,
-                                                            dataList,
-                                                            templateInfo.TemplateFileName,
-                                                            templateInfo.TemplateFilePath,
-                                                            languageId,
-                                                            db,
-                                                            out optionRowCount,
-                                                            out optionColomnCount);
+                                    factoryId,
+                                    ProgramId.Download,
+                                    reportId,
+                                    sheetDefine.SheetNo,
+                                    templateId,
+                                    patternId,
+                                    dataList,
+                                    templateInfo.TemplateFileName,
+                                    templateInfo.TemplateFilePath,
+                                    languageId,
+                                    db,
+                                    out optionRowCount,
+                                    out optionColomnCount);
                 // マッピング情報リストに追加
                 this.mappingInfoList.AddRange(mappingDataList);
 
@@ -775,6 +851,118 @@ namespace CommonTMQUtil
 
                 // エクセルファイル作成
                 ExcelUtil.CreateExcelFile(templateInfo.TemplateFileName, templateInfo.TemplateFilePath, userId, mappingInfoList, cmdInfoList, ref memoryStream, ref detailMsg);
+                return true;
+            }
+
+            /// <summary>
+            /// ExcelPortアップロード条件のチェック
+            /// </summary>
+            /// <param name="file">Excelファイル</param>
+            /// <param name="msg">メッセージ</param>
+            /// <returns></returns>
+            public bool CheckUploadCondition(IFormFile file, out string msg, out string conductId, out int sheetNo)
+            {
+                conductId = string.Empty;
+                sheetNo = -1;
+
+                // Excel読み込み
+                this.ExcelCmd = TMQUtil.FileOpen(file.OpenReadStream());
+
+                // Excelファイルから各条件を取得
+
+                // ExcelPortバージョン番号を取得
+                var versionNo = getCellValue(SheetName.DefineInfo, DefineSheetInfo.ColNoHeaderVal, DefineSheetInfo.RowNoVersion);
+                if (string.IsNullOrEmpty(versionNo))
+                {
+                    // 「指定されたEXCELのフォーマットが不正です。」
+                    msg = GetResMessage(ComRes.ID.ID141120010, this.languageId, this.msgResources);
+                    return false;
+                }
+
+                // 対象機能IDを取得
+                conductId = getCellValue(SheetName.DefineInfo, DefineSheetInfo.ColNoHeaderVal, DefineSheetInfo.RowNoConductId);
+                if (string.IsNullOrEmpty(conductId))
+                {
+                    // 「指定されたEXCELのフォーマットが不正です。」
+                    msg = GetResMessage(ComRes.ID.ID141120010, this.languageId, this.msgResources);
+                    return false;
+                }
+
+                // 対象シート番号を取得
+                var sheetNoStr = getCellValue(SheetName.DefineInfo, DefineSheetInfo.ColNoHeaderVal, DefineSheetInfo.RowNoSheetNo);
+                if (string.IsNullOrEmpty(sheetNoStr))
+                {
+                    // 「指定されたEXCELのフォーマットが不正です。」
+                    msg = GetResMessage(ComRes.ID.ID141120010, this.languageId, this.msgResources);
+                    return false;
+                }
+                sheetNo = Convert.ToInt32(sheetNoStr);
+
+                // 構成マスタからExcelPort番号を取得
+                decimal versionNo2 = getExcelPortVersion();
+                if(Convert.ToDecimal(versionNo) != versionNo2)
+                {
+                    // バージョン番号が一致しない場合
+                    // 「指定されたEXCELはバージョンが最新ではありません。最新バージョンをダウンロードしてください。」
+                    msg = GetResMessage(ComRes.ID.ID141120011, this.languageId, this.msgResources);
+                    return false;
+                }
+
+                // 構成マスタから対象機能名を取得(拡張項目1=対象機能ID、拡張項目2=対象シート番号のデータ)
+                string targetName = getTargetConductName(conductId, sheetNo);
+                if (string.IsNullOrEmpty(targetName))
+                {
+                    // 「指定されたEXCELから更新対象機能が特定できません。」
+                    msg = GetResMessage(ComRes.ID.ID141120012, this.languageId, this.msgResources);
+                    return false;
+                }
+
+                // 「{0}データを登録します。よろしいですか？」
+                msg = GetResMessage(new string[] { ComRes.ID.ID141120010, targetName }, this.languageId, this.msgResources);
+
+                return true;
+            }
+
+            /// <summary>
+            /// ExcelPortアップロード用データの取得
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="file"></param>
+            /// <param name="condition"></param>
+            /// <param name="resultList"></param>
+            /// <param name="errorMsg"></param>
+            /// <returns></returns>
+            public bool GetUploadDataList<T>(IFormFile file, Dictionary<string, object> condition, out List<T> resultList, out string errorMsg, 
+                ref string fileType, ref string fileName, ref MemoryStream ms)
+            {
+                resultList = new List<T>();
+                errorMsg = string.Empty;
+
+                // Excel読み込み
+                this.ExcelCmd = TMQUtil.FileOpen(file.OpenReadStream());
+
+                // アップロード条件を取得
+                if(!condition.ContainsKey(ConditionValName.TargetConductId) || !condition.ContainsKey(ConditionValName.TargetSheetNo))
+                {
+                    // 「指定されたEXCELから更新対象機能が特定できません。」
+                    errorMsg = GetResMessage(ComRes.ID.ID141120012, this.languageId, this.msgResources);
+                    return false;
+                }
+                this.UploadCondition.ConductId = condition[ConditionValName.TargetConductId].ToString();
+                this.UploadCondition.SheetNo = (int)(condition[ConditionValName.TargetSheetNo]);
+
+                // 入力チェック＆変換
+                this.ErrorInfoList = checkUploadCondition<T>(ref resultList, ref errorMsg);
+                if(!string.IsNullOrEmpty(errorMsg))
+                {
+                    return false;
+                }
+                else if(this.ErrorInfoList.Count > 0)
+                {
+                    // エラー情報シートへ設定
+                    setErrorInfoSheet(file, ref fileType, ref fileName, ref ms);
+                    return false;
+                }
                 return true;
             }
             #endregion
@@ -861,6 +1049,43 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
+            /// 構成マスタからExcelPortバージョンを取得
+            /// </summary>
+            /// <returns>ExelPortバージョン番号</returns>
+            private decimal getExcelPortVersion()
+            {
+                // 構成マスタからExcelPortバージョンを取得
+                var entity = TMQUtil.SqlExecuteClass.SelectEntity<AutoCompleteEntity>(SqlName.GetExcelPortVersion, SqlName.SubDirName, null, db);
+                if (entity != null)
+                {
+                    return Convert.ToDecimal(entity.Exparam1);
+                }
+                else
+                {
+                    return decimal.MinValue;
+                }
+            }
+
+            /// <summary>
+            /// 構成マスタからExcelPort対象機能名を取得
+            /// </summary>
+            /// <returns>ExcelPort対象機能名</returns>
+            private string getTargetConductName(string conductId, int sheetNo)
+            {
+                // 構成マスタからExcelPort対象機能名を取得
+                var entity = TMQUtil.SqlExecuteClass.SelectEntity<AutoCompleteEntity>(
+                    SqlName.GetExcelPortTargetInfo, SqlName.SubDirName, new { ConductId = conductId, SheetNo = sheetNo, LanguageId = this.languageId }, db);
+                if (entity != null)
+                {
+                    return entity.Labels;
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+
+            /// <summary>
             /// コンボボックス用SQL実行
             /// </summary>
             /// <param name="conditionDictionary"></param>
@@ -896,6 +1121,9 @@ namespace CommonTMQUtil
 
                 // 言語コードを設定
                 ((IDictionary<string, object>)condition).Add("languageId", this.languageId);
+
+                // ログインユーザIDを設定
+                ((IDictionary<string, object>)condition).Add("userId", this.userId);
 
                 // 検索実行
                 var results = this.db.GetListByOutsideSql(sqlId, sqlDir, condition);
@@ -1131,6 +1359,208 @@ namespace CommonTMQUtil
                     }
                 }
             }
+
+            /// <summary>
+            /// アップロード条件のチェック
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="resultList"></param>
+            /// <param name="errorMsg"></param>
+            /// <param name="checkFlg"></param>
+            /// <returns></returns>
+            private List<ComBase.UploadErrorInfo> checkUploadCondition<T>(ref List<T> resultList, ref string errorMsg, bool checkFlg = true)
+            {
+                // エラー内容格納クラス
+                List<ComBase.UploadErrorInfo> errorInfo = new List<ComBase.UploadErrorInfo>();
+
+                // ファイル入力項目定義情報を取得
+                int sheetNo = this.UploadCondition.SheetNo;
+                ComBase.InputDefineCondition param = new ComBase.InputDefineCondition()
+                {
+                    ReportId = Template.ReportId,
+                    SheetNo = sheetNo,
+                    ControlGroupId = ControlGroupId.Upload,
+                    LanguageId = this.languageId,
+                    FactoryId = TMQConsts.CommonFactoryId
+                };
+                var reportInfoList = TMQUtil.SqlExecuteClass.SelectList<InputDefineForExcelPort>(SqlName.GetInputControlDefineForExcelPort, SqlName.SubDirName, param, db);
+                if (reportInfoList == null || reportInfoList.Count == 0)
+                {
+                    // 取得できない場合、処理を戻す
+                    // 「指定されたEXCELのフォーマットが不正です。」
+                    errorMsg = GetResMessage(ComRes.ID.ID141120010, this.languageId, this.msgResources);
+                    return errorInfo;
+                }
+
+                // 検索結果クラスのプロパティを列挙
+                var properites = typeof(T).GetProperties();
+                // 1レコード分の行数、1レコード分の行数を取得する
+                int addRow = reportInfoList[0].RecordCount;
+                // 入力方式を取得
+                int dataDirection = reportInfoList[0].DataDirection;
+
+                int index = 0;
+                while (true)
+                {
+                    // エラー内容一時格納クラス
+                    List<ComBase.UploadErrorInfo> tmpErrorInfo = new List<ComBase.UploadErrorInfo>();
+
+                    bool flg = false; // データ存在チェックフラグ
+                    object tmpResult = Activator.CreateInstance<T>();
+
+                    // 取得できた項目定義分処理を行う
+                    foreach (ComBase.InputDefine reportInfo in reportInfoList)
+                    {
+                        // 2行目以降、入出力方式によって、表示位置をずらす
+                        if (index > 0)
+                        {
+                            switch (dataDirection)
+                            {
+                                case ComReport.SingleCell:
+                                    // 基本、到達しない
+                                    continue;
+                                case ComReport.LongitudinalDirection:
+                                    // 縦方向連続の場合、行番号を加算する
+                                    reportInfo.StartRowNo += addRow;
+                                    break;
+                                case ComReport.LateralDirection:
+                                    // 横方向連続の場合、列番号を加算する
+                                    reportInfo.StartColumnNo += addRow;
+                                    break;
+                                default:
+                                    // 入出力方式が未設定の場合、スキップ
+                                    break;
+                            }
+                        }
+
+                        // 設定値を取得
+                        string val = getCellValueBySheetNo(sheetNo, reportInfo.StartColumnNo, reportInfo.StartRowNo);
+
+                        if (checkFlg)
+                        {
+                            // 値が取得できない場合、スキップ
+                            if (string.IsNullOrEmpty(val))
+                            {
+                                if (reportInfo.RequiredFlg != null && (bool)reportInfo.RequiredFlg)
+                                {
+                                    // 必須入力項目の場合、エラー内容を設定
+                                    // 「必須項目です。入力してください。」
+                                    errorMsg = GetResMessage(ComRes.ID.ID941270001, languageId, msgResources);
+                                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, errorMsg, dataDirection));
+                                }
+                                continue;
+                            }
+                        }
+
+                        // 入力項目が存在する場合、フラグをたてる
+                        flg = true;
+
+                        if (checkFlg)
+                        {
+                            // アップロード共通チェック実行
+                            if (ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, this.db, tmpErrorInfo))
+                            {
+                                continue;
+                            }
+                        }
+
+                        // 値をデータクラスに設定
+                        string pascalItemName = ComUtil.SnakeCaseToPascalCase(reportInfo.AliasName != null ? reportInfo.AliasName : reportInfo.ColumnName).ToUpper();
+                        var prop = properites.FirstOrDefault(x => x.Name.ToUpper().Equals(pascalItemName));
+                        if (prop == null)
+                        {
+                            // 該当する項目が存在しない場合、スキップ
+                            continue;
+                        }
+                        ComUtil.SetPropertyValue<T>(prop, (T)tmpResult, val);
+                    }
+
+                    // データが1件も取得できなかった場合、処理を抜ける
+                    if (!flg)
+                    {
+                        break;
+                    }
+
+                    //エラーがある場合、エラーフラグを立てる
+                    var errProp = properites.FirstOrDefault(x => x.Name.ToUpper().Equals("ErrorFlg"));
+                    if (errProp != null && tmpErrorInfo.Count > 0)
+                    {
+                        ComUtil.SetPropertyValue<T>(errProp, (T)tmpResult, true);
+                    }
+
+                    // データが存在する場合、リストに追加する
+                    setErrorInfo(ref errorInfo, tmpErrorInfo);
+                    resultList.Add((T)tmpResult);
+                    index++;
+
+                    // 入力方式が単一セルの場合、処理を抜ける
+                    if ((int)dataDirection == ComReport.SingleCell)
+                    {
+                        break;
+                    }
+                }
+
+                return errorInfo;
+            }
+
+            /// <summary>
+            /// Excelセルの値を取得(シート名指定)
+            /// </summary>
+            /// <param name="sheetName">シート名</param>
+            /// <param name="colNo">列番号</param>
+            /// <param name="rowNo">行番号</param>
+            /// <returns></returns>
+            private string getCellValue(string sheetName, int colNo, int rowNo)
+            {
+                string error = string.Empty;
+                string msg = string.Empty;
+                string[,] vals = null;
+
+                // マッピングセルを設定
+                string address = ToAlphabet(colNo) + rowNo;
+                // セル単位でデータを取得する
+                if (!this.ExcelCmd.ReadExcel(sheetName, address, ref vals, ref msg))
+                {
+                    // 読込失敗した場合、nullを返す
+                    return null;
+                }
+                return vals[0, 0]; // セル単位で取得しているので先頭を対象データとみなす。
+            }
+
+            /// <summary>
+            /// Excelセルの値を取得(シート番号指定)
+            /// </summary>
+            /// <param name="sheetNo"></param>
+            /// <param name="colNo"></param>
+            /// <param name="rowNo"></param>
+            /// <returns></returns>
+            private string getCellValueBySheetNo(int sheetNo, int colNo, int rowNo)
+            {
+                string error = string.Empty;
+                string msg = string.Empty;
+                string[,] vals = null;
+
+                // マッピングセルを設定
+                string address = ToAlphabet(colNo) + rowNo;
+                // セル単位でデータを取得する
+                if (!this.ExcelCmd.ReadExcelBySheetNo(sheetNo, address, ref vals, ref msg))
+                {
+                    // 読込失敗した場合、nullを返す
+                    return null;
+                }
+                return vals[0, 0]; // セル単位で取得しているので先頭を対象データとみなす。
+            }
+
+            private void setErrorInfoSheet(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms)
+            {
+                // ファイルタイプ
+                fileType = ComConsts.REPORT.FILETYPE.EXCEL_MACRO;
+                // ダウンロードファイル名
+                fileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", file.FileName, DateTime.Now) + ComConsts.REPORT.EXTENSION.EXCEL_MACRO_BOOK;
+                // メモリストリーム
+                ms = new MemoryStream();
+
+            }
             #endregion
         }
         #endregion
@@ -1144,6 +1574,27 @@ namespace CommonTMQUtil
         /// <summary>必須項目区分(ExcelPort用)</summary>
         public bool EpRequiredFlg { get; set; }
 
+        /// <summary>関連情報ID(ExcelPort選択項目生成用)</summary>
+        public string EpRelationId { get; set; }
+
+        /// <summary>関連情報パラメータ(ExcelPort選択項目生成用)</summary>
+        public string EpRelationParameters { get; set; }
+
+        /// <summary>選択項目グループID(ExcelPort用)</summary>
+        public string EpSelectGroupId { get; set; }
+
+        /// <summary>選択項目ID格納先列番号(ExcelPort用)</summary>
+        public int EpSelectIdColumnNo { get; set; }
+
+        /// <summary>選択項目連動元列番号(ExcelPort用)</summary>
+        public int EpSelectLinkColumnNo { get; set; }
+    }
+
+    /// <summary>
+    /// ExcelPort用ファイル入力管理クラス
+    /// </summary>
+    public class InputDefineForExcelPort : ComBase.InputDefine
+    {
         /// <summary>関連情報ID(ExcelPort選択項目生成用)</summary>
         public string EpRelationId { get; set; }
 

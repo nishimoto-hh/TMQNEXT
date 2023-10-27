@@ -10,7 +10,7 @@ WITH duplication_count AS (
         /* 予備品id */
         AND pls.parts_location_id = @PartsLocationId 
         /* 棚id */
-        AND pls.parts_location_detail_no = @PartsLocationDetailNo 
+        AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(@PartsLocationDetailNo, '')
         /* 棚枝番 */
         AND pl.old_new_structure_id = @OldNewStructureId 
         /* 新旧区分id */
@@ -27,7 +27,7 @@ WITH duplication_count AS (
         /* 予備品id */
         AND pi.parts_location_id = @PartsLocationId 
         /* 棚id */
-        AND pi.parts_location_detail_no = @PartsLocationDetailNo 
+        AND COALESCE(pi.parts_location_detail_no, '') = COALESCE(@PartsLocationDetailNo, '')
         /* 棚枝番 */
         AND pi.old_new_structure_id = @OldNewStructureId 
         /* 新旧区分id */

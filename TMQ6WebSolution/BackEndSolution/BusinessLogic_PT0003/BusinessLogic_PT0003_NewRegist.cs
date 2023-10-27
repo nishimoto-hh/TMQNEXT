@@ -139,7 +139,7 @@ namespace BusinessLogic_PT0003
             //棚ID
             inventory.PartsLocationId = info.PartsLocationId ?? -1;
             //棚番
-            inventory.PartsLocationDetailNo = info.PartsLocationDetailNo;
+            inventory.PartsLocationDetailNo = ConvertNullToStringEmpty(info.PartsLocationDetailNo);
             //新旧区分ID
             inventory.OldNewStructureId = info.OldNewStructureId;
             //部門ID

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using Dao = BusinessLogic_EP0002.BusinessLogicDataClass_EP0002;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogic_EP0002
 {
@@ -161,6 +162,52 @@ namespace BusinessLogic_EP0002
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int UploadImpl()
         {
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <remarks>アップロード条件の確認後は各機能の個別処理を実行する</remarks>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected override int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ExcelPortアップロード条件チェック
+            string conductId = string.Empty;
+            int sheetNo = 0;
+            if(!excelPort.CheckUploadCondition(file, out resultMsg, out conductId, out sheetNo))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                this.MsgId = resultMsg;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // ExcelPortアップロード条件を個別実装条件へ設定
+            this.IndividualDictionary.Add(TMQUtil.ComExcelPort.ConditionValName.TargetConductId, conductId);
+            this.IndividualDictionary.Add(TMQUtil.ComExcelPort.ConditionValName.TargetSheetNo, sheetNo);
+
+            // 確認メッセージ表示
+            this.Status = CommonProcReturn.ProcStatus.Confirm;
+            this.LogNo = CommonProcReturn.ProcStatus.Confirm.ToString();
+            this.MsgId = resultMsg;
             return ComConsts.RETURN_RESULT.OK;
         }
         #endregion

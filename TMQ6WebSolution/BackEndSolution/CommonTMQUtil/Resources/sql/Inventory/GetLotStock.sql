@@ -17,7 +17,7 @@ WHERE
     AND pl.department_structure_id = @DepartmentStructureId 
     AND pl.account_structure_id = @AccountStructureId 
     AND pls.parts_location_id = @PartsLocationId 
-    AND pls.parts_location_detail_no = @PartsLocationDetailNo 
+    AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(@PartsLocationDetailNo, '')
 ORDER BY
     pl.receiving_datetime ASC
     , pl.lot_no ASC

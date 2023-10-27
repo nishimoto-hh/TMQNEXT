@@ -111,8 +111,6 @@ namespace BusinessLogic_HM0001
                 public const string InsertMaintainanceScheduleTransaction = "InsertMaintainanceScheduleTransaction";
                 /// <summary>SQL名：機器別管理基準 同一点検種別周期チェック</summary>
                 public const string GetMaintainanceKindManageInsertExistCheckHistory = "GetMaintainanceKindManageInsertExistCheckHistory";
-                /// <summary>SQL名：変更管理IDより、「機器の新規追加・複写」または「機器の変更」の変更管理詳細情報を取得する</summary>
-                public const string GetHistoryMachineInfoNewOrEdit = "GetHistoryMachineInfoNewOrEdit";
                 /// <summary>SQL名：機器別管理基準部位変更管理テーブル更新SQL</summary>
                 public const string UpdateHmMcManagementStandardsComponent = "UpdateHmMcManagementStandardsComponent";
                 /// <summary>SQL名：機器別管理基準内容変更管理テーブル更新SQL</summary>
@@ -186,18 +184,12 @@ namespace BusinessLogic_HM0001
                 public const string DeleteMpInfo = "DeleteMpInfo";
                 /// <summary>SQL名：機器別管理基準 保全項目データ取得</summary>
                 public const string GetManagementStandardDetail = "GetManagementStandardDetail";
-                /// <summary>SQL名：機器別管理基準 保全項目重複チェック</summary>
-                public const string GetManagementStandardCountCheck = "GetManagementStandardCountCheck";
                 /// <summary>SQL名：機器別管理基準 部位設定複数存在チェック</summary>
                 public const string GetInspectionMultiExistCheck = "GetInspectionMultiExistCheck";
                 /// <summary>SQL名：機器別管理基準 開始日以降保全活動存在チェック</summary>
                 public const string GetScheduleMsSummryCountAfterCheck = "GetScheduleMsSummryCountAfterCheck";
-                /// <summary>SQL名：機器別管理基準 同一点検種別周期チェック</summary>
-                public const string GetMaintainanceKindManageInsertExistCheck = "GetMaintainanceKindManageInsertExistCheck";
                 /// <summary>SQL名：機器別管理基準 開始日以降保全活動存在チェック(点検種別単位)</summary>
                 public const string GetScheduleMsSummryCountAfterMaintainanceKindManageCheck = "GetScheduleMsSummryCountAfterMaintainanceKindManageCheck";
-                /// <summary>SQL名：機器別管理基準 同一点検種別周期チェック</summary>
-                public const string GetMaintainanceKindManageExistCheck = "GetMaintainanceKindManageExistCheck";
                 /// <summary>SQL名：機器別管理基準 保全履歴存在チェック</summary>
                 public const string GetScheduleMsSummryCountCheck = "GetScheduleMsSummryCountCheck";
                 /// <summary>SQL名：保全スケジュール詳細  新規登録</summary>
@@ -1116,28 +1108,6 @@ namespace BusinessLogic_HM0001
                 }
             }
             return true;
-        }
-
-        /// <summary>
-        /// 変更管理に「機器の新規登録・複写」「機器の修正」の有無に応じて呼び出し元のSQLでアンコメントする項目を返す
-        /// </summary>
-        /// <param name="machineInfo">機番情報</param>
-        /// <returns>アンコメントする項目</returns>
-        private string getUnCommentItem(Dao.searchResult machineInfo)
-        {
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetHistoryMachineInfoNewOrEdit, out string sql);
-
-            // 一覧検索実行
-            IList<ComDao.HmMcMachineEntity> redetailRults = db.GetListByDataClass<ComDao.HmMcMachineEntity>(sql, machineInfo);
-            if (redetailRults == null || redetailRults.Count == 0)
-            {
-                return "Transaction";
-            }
-            else
-            {
-                return "History";
-            }
         }
 
         /// <summary>

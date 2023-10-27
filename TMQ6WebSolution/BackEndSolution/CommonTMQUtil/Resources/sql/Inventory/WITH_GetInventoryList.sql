@@ -81,7 +81,7 @@ WITH stock AS (
                     AND pi.account_structure_id = pl.account_structure_id 
                 LEFT JOIN pt_location_stock pls 
                     ON pi.parts_location_id = pls.parts_location_id 
-                    AND pi.parts_location_detail_no = pls.parts_location_detail_no 
+                    AND COALESCE(pi.parts_location_detail_no, '') = COALESCE(pls.parts_location_detail_no, '')
                 LEFT JOIN pt_inout_history pih 
                     ON pl.lot_control_id = pih.lot_control_id 
                     AND pls.inventory_control_id = pih.inventory_control_id 
@@ -172,7 +172,7 @@ WITH stock AS (
     --棚卸一覧（ロット情報、在庫データが存在するデータ）
     SELECT DISTINCT
         pls.parts_location_id                       --棚番ID
-        , pls.parts_location_detail_no              --棚枝番
+        , COALESCE(pls.parts_location_detail_no, '') AS parts_location_detail_no --棚枝番
         , pp.parts_no                               --予備品No
         , pp.parts_name                             --予備品名
         , pl.old_new_structure_id                   --新旧区分
@@ -285,7 +285,7 @@ WITH stock AS (
             AND pl.department_structure_id = pi.department_structure_id 
             AND pl.account_structure_id = pi.account_structure_id 
             AND pls.parts_location_id = pi.parts_location_id 
-            AND pls.parts_location_detail_no = pi.parts_location_detail_no
+            AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(pi.parts_location_detail_no, '')
             AND pi.target_month = @TargetYearMonth
         LEFT JOIN stock                             --在庫データ、ロット情報から在庫数を集計したデータ
             ON pl.parts_id = stock.parts_id 
@@ -293,11 +293,11 @@ WITH stock AS (
             AND pl.department_structure_id = stock.department_structure_id 
             AND pl.account_structure_id = stock.account_structure_id 
             AND pls.parts_location_id = stock.parts_location_id 
-            AND pls.parts_location_detail_no = stock.parts_location_detail_no
+            AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(stock.parts_location_detail_no, '')
         LEFT JOIN inventory_diff                    --棚差調整数（受払履歴）
             ON pl.parts_id = inventory_diff.parts_id 
             AND pls.parts_location_id = inventory_diff.parts_location_id 
-            AND pls.parts_location_detail_no = inventory_diff.parts_location_detail_no 
+            AND COALESCE(pls.parts_location_detail_no, '') = COALESCE(inventory_diff.parts_location_detail_no, '')
             AND pl.old_new_structure_id = inventory_diff.old_new_structure_id 
             AND pl.department_structure_id = inventory_diff.department_structure_id 
             AND pl.account_structure_id = inventory_diff.account_structure_id 
@@ -327,7 +327,7 @@ WITH stock AS (
     -- 棚卸一覧(ロット情報、在庫データが存在しない、新規登録画面から登録されたデータ)
     SELECT
         pi.parts_location_id                       --棚番ID
-        , pi.parts_location_detail_no              --棚枝番
+        , COALESCE(pi.parts_location_detail_no, '') AS parts_location_detail_no --棚枝番
         , pp.parts_no                               --予備品No
         , pp.parts_name                             --予備品名
         , pi.old_new_structure_id                   --新旧区分
@@ -426,7 +426,7 @@ WITH stock AS (
         LEFT JOIN inventory_diff                    --棚差調整数（受払履歴）
             ON pi.parts_id = inventory_diff.parts_id 
             AND pi.parts_location_id = inventory_diff.parts_location_id 
-            AND pi.parts_location_detail_no = inventory_diff.parts_location_detail_no 
+            AND COALESCE(pi.parts_location_detail_no, '') = COALESCE(inventory_diff.parts_location_detail_no, '')
             AND pi.old_new_structure_id = inventory_diff.old_new_structure_id 
             AND pi.department_structure_id = inventory_diff.department_structure_id 
             AND pi.account_structure_id = inventory_diff.account_structure_id 

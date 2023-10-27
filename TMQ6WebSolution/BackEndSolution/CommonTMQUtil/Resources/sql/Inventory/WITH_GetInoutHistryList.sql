@@ -180,7 +180,7 @@ WITH inout_division AS (
         ) 
         AND ids.extension_data = '1'                --受入
         AND pls.parts_location_id = @PartsLocationId --棚ID
-        AND pls.parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+        AND COALESCE(pls.parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 AND ((
                 @Status = 0
                 AND pih.inout_datetime BETWEEN dateadd(day, 1, @CleateDate) AND @MonthYear
@@ -199,7 +199,7 @@ WITH inout_division AS (
                         AND department_structure_id = @DepartmentStructureId --部門
                         AND account_structure_id = @AccountStructureId --勘定科目
                         AND parts_location_id = @PartsLocationId --棚ID
-                        AND parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+                        AND COALESCE(parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 )
             )
             OR (
@@ -216,7 +216,7 @@ WITH inout_division AS (
                         AND department_structure_id = @DepartmentStructureId --部門
                         AND account_structure_id = @AccountStructureId --勘定科目
                         AND parts_location_id = @PartsLocationId --棚ID
-                        AND parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+                        AND COALESCE(parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 )
             ))
         /*******************受払区分が払出のデータ*******************/
@@ -285,7 +285,7 @@ WITH inout_division AS (
         AND ids.extension_data = '2'                --払出
         AND plt.parts_id = @PartsId                 --予備品ID
         AND pls.parts_location_id = @PartsLocationId --棚ID
-        AND pls.parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+        AND COALESCE(pls.parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 AND ((
                 @Status = 0
                 AND pih.inout_datetime BETWEEN dateadd(day, 1, @CleateDate) AND @MonthYear
@@ -304,7 +304,7 @@ WITH inout_division AS (
                         AND department_structure_id = @DepartmentStructureId --部門
                         AND account_structure_id = @AccountStructureId --勘定科目
                         AND parts_location_id = @PartsLocationId --棚ID
-                        AND parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+                        AND COALESCE(parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 )
             )
             OR (
@@ -321,7 +321,7 @@ WITH inout_division AS (
                         AND department_structure_id = @DepartmentStructureId --部門
                         AND account_structure_id = @AccountStructureId --勘定科目
                         AND parts_location_id = @PartsLocationId --棚ID
-                        AND parts_location_detail_no = @PartsLocationDetailNo --棚枝番
+                        AND COALESCE(parts_location_detail_no, '') = @PartsLocationDetailNo --棚枝番
                 )
             ))
 )

@@ -100,9 +100,6 @@ namespace CommonTMQUtil
             /// <summary>SQL名：最大列取得用SQL</summary>
             public const string GetMaxColumnNo = "GetMaxColumnNo";
 
-            /// <summary>SQL名：ExcelPortバージョン取得用SQL</summary>
-            public const string GetExcelPortVersion = "GetExcelPortVersion";
-
             /// <summary>SQL名：オプション用SQL</summary>
             public const string Option = "_Option";
 
@@ -3934,49 +3931,54 @@ namespace CommonTMQUtil
 
                     if (checkFlg)
                     {
-                        // 入力チェック
-                        // 数値の場合、指数表記の可能性があるので、変換を実施
-                        if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+                        //// 入力チェック
+                        //// 数値の場合、指数表記の可能性があるので、変換を実施
+                        //if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+                        //{
+                        //    if (val != null && ComUtil.ConvertDecimal(val) != null)
+                        //    {
+                        //        val = ComUtil.ConvertDecimal(val).ToString();
+                        //    }
+                        //}
+                        //if (!checkCellType(reportInfo.DataType, val, languageId, msgResources, ref error))
+                        //{
+                        //    // 型が異なる場合、エラーを設定し、スキップ
+                        //    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                        //    continue;
+                        //}
+
+                        //// 桁数チェック
+                        //if (reportInfo.MaximumLength != null && reportInfo.MaximumLength > 0)
+                        //{
+                        //    // セルタイプが指定され、日付以外の場合、チェックを行う
+                        //    if (reportInfo.DataType != ComReport.DataTypeDat)
+                        //    {
+                        //        // 桁数を超えている場合、エラーを設定を設定し、スキップ
+                        //        if (val.Length > reportInfo.MaximumLength)
+                        //        {
+                        //            // 「入力値が設定桁数を超えています。」
+                        //            error = GetResMessage(new string[] { ComRes.ID.ID941220008 }, languageId, msgResources);
+                        //            tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                        //            continue;
+                        //        }
+                        //    }
+                        //}
+
+                        //// 数値の場合、上下限チェック
+                        //// 入力チェック
+                        //if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+                        //{
+                        //    if (!checkRange(reportInfo, val, db, languageId, msgResources, ref error))
+                        //    {
+                        //        // 範囲エラーの場合、エラーを設定し、スキップ
+                        //        tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                        //        continue;
+                        //    }
+                        //}
+                        // アップロード共通チェック実行
+                        if(ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, db, tmpErrorInfo))
                         {
-                            if (val != null && ComUtil.ConvertDecimal(val) != null)
-                            {
-                                val = ComUtil.ConvertDecimal(val).ToString();
-                            }
-                        }
-                        if (!checkCellType(reportInfo.DataType, val, languageId, msgResources, ref error))
-                        {
-                            // 型が異なる場合、エラーを設定し、スキップ
-                            tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
                             continue;
-                        }
-
-                        // 桁数チェック
-                        if (reportInfo.MaximumLength != null && reportInfo.MaximumLength > 0)
-                        {
-                            // セルタイプが指定され、日付以外の場合、チェックを行う
-                            if (reportInfo.DataType != ComReport.DataTypeDat)
-                            {
-                                // 桁数を超えている場合、エラーを設定を設定し、スキップ
-                                if (val.Length > reportInfo.MaximumLength)
-                                {
-                                    // 「入力値が設定桁数を超えています。」
-                                    error = GetResMessage(new string[] { ComRes.ID.ID941220008 }, languageId, msgResources);
-                                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
-                                    continue;
-                                }
-                            }
-                        }
-
-                        // 数値の場合、上下限チェック
-                        // 入力チェック
-                        if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
-                        {
-                            if (!checkRange(reportInfo, val, db, languageId, msgResources, ref error))
-                            {
-                                // 範囲エラーの場合、エラーを設定し、スキップ
-                                tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
-                                continue;
-                            }
                         }
                     }
 
@@ -4017,6 +4019,74 @@ namespace CommonTMQUtil
             }
 
             return errorInfo;
+        }
+
+        /// <summary>
+        /// アップロード時共通チェック
+        /// </summary>
+        /// <param name="reportInfo">ファイル入力項目定義情報</param>
+        /// <param name="val">セル値</param>
+        /// <param name="dataDirection">入力方式</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="msgResources">メッセージリソース</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <param name="tmpErrorInfo">エラー情報リスト</param>
+        /// <returns></returns>
+        public static bool ExecuteCommonUploadCheck(
+            ComBase.InputDefine reportInfo, 
+            string val, 
+            int dataDirection, 
+            string languageId, 
+            ComUtil.MessageResources msgResources, 
+            ComDB db,
+            List<ComBase.UploadErrorInfo> tmpErrorInfo)
+        {
+            string error = string.Empty;
+            // 入力チェック
+            // 数値の場合、指数表記の可能性があるので、変換を実施
+            if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+            {
+                if (val != null && ComUtil.ConvertDecimal(val) != null)
+                {
+                    val = ComUtil.ConvertDecimal(val).ToString();
+                }
+            }
+            if (!checkCellType(reportInfo.DataType, val, languageId, msgResources, ref error))
+            {
+                // 型が異なる場合、エラーを設定し、スキップ
+                tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                return false;
+            }
+
+            // 桁数チェック
+            if (reportInfo.MaximumLength != null && reportInfo.MaximumLength > 0)
+            {
+                // セルタイプが指定され、日付以外の場合、チェックを行う
+                if (reportInfo.DataType != ComReport.DataTypeDat)
+                {
+                    // 桁数を超えている場合、エラーを設定を設定し、スキップ
+                    if (val.Length > reportInfo.MaximumLength)
+                    {
+                        // 「入力値が設定桁数を超えています。」
+                        error = GetResMessage(new string[] { ComRes.ID.ID941220008 }, languageId, msgResources);
+                        tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                        return false;
+                    }
+                }
+            }
+
+            // 数値の場合、上下限チェック
+            // 入力チェック
+            if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+            {
+                if (!checkRange(reportInfo, val, db, languageId, msgResources, ref error))
+                {
+                    // 範囲エラーの場合、エラーを設定し、スキップ
+                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection));
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>

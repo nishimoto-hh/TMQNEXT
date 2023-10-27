@@ -175,16 +175,11 @@ namespace BusinessLogic_HM0003
             // 画面情報取得
             Dao.searchCondition result = GetFormDataByCtrlId<Dao.searchCondition>(TargetCtrlId.CtrlId);
 
-            //変更管理の情報を取得
-            ComDao.HmHistoryManagementEntity entity = new ComDao.HmHistoryManagementEntity().GetEntity(result.HistoryManagementId, this.db);
-
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.None);
             ComDao.HmHistoryManagementEntity condition = new();
             condition.HistoryManagementId = result.HistoryManagementId;
             if (result.RequestFlg)
             {
                 //承認依頼の場合
-                condition.ApprovalUserId = historyManagement.GetApprovalUser(entity.FactoryId);
                 condition.ApplicationReason = result.ApplicationReason;
             }
             else
@@ -193,6 +188,7 @@ namespace BusinessLogic_HM0003
                 condition.RejectionReason = result.RejectionReason;
             }
             //変更管理の更新
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.None);
             return historyManagement.UpdateApplicationStatus(condition, result.RequestFlg ? TMQConst.MsStructure.StructureId.ApplicationStatus.Request : TMQConst.MsStructure.StructureId.ApplicationStatus.Return);
         }
 

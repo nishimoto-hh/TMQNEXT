@@ -26,6 +26,10 @@ namespace CommonTMQUtil
     {
         #region マスタメンテナンス共通処理
         /// <summary>
+        /// ExcelPortダウンロード画面の機能ID
+        /// </summary>
+        public const string ConductIdEP0001 = "EP0001";
+        /// <summary>
         /// マスタメンテナンス共通
         /// </summary>
         public class ComMaster
@@ -105,12 +109,16 @@ namespace CommonTMQUtil
                 public const string GetChildStructureIdList = "GetChildStructureIdList";
                 /// <summary>SQL名：子アイテムを削除</summary>
                 public const string UpdateChildLayersAddDeleteFlg = "UpdateChildLayersAddDeleteFlg";
-                /// <summary>SQL名：翻訳マスタ情報取得(工場毎)</summary>
+                /// <summary>SQL名：ExcelPortマスタアイテム取得</summary>
                 public const string GetMsTranslationInfoByFactory = "GetMsTranslationInfoByFactory";
+
+                /// <summary>SQL名：</summary>
+                public const string GetExcelPortMasterList = "GetExcelPortMasterList";
 
                 /// <summary>SQL格納先サブディレクトリ名</summary>
                 public const string SubDir = @"Master";
                 public const string ComLayersDir = @"Master\ComLayers";
+                public const string ExcelPortDir = @"Master\ExcelPort";
             }
 
             /// <summary>
@@ -199,6 +207,23 @@ namespace CommonTMQUtil
                         /// アイテム一覧の画面項目定義テーブルのコントロールID
                         /// </summary>
                         public const string ItemOrderId = "BODY_000_00_LST_2";
+                    }
+                }
+
+                /// <summary>
+                /// ExcelPortダウンロード条件画面
+                /// </summary>
+                public static class FormExcelPortDownCondition
+                {
+                    /// <summary>
+                    /// コントロールID
+                    /// </summary>
+                    public static class ControlId
+                    {
+                        /// <summary>
+                        /// コントロールID
+                        /// </summary>
+                        public const string Condition = "BODY_000_00_LST_1";
                     }
                 }
             }
@@ -512,6 +537,44 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 構成グループI</summary>
             /// <value>構成グループID</value>
             public int StructureGroupId { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用共通データクラス
+        /// </summary>
+        public class CommonExcelPortMasterList : ComDao.MsStructureEntity
+        {
+            /// <summary>Gets or sets 工場名</summary>
+            /// <value>工場名</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets 翻訳ID</summary>
+            /// <value>翻訳ID</value>
+            public int TranslationId { get; set; }
+            /// <summary>Gets or sets アイテム翻訳</summary>
+            /// <value>アイテム翻訳</value>
+            public string TranslationText { get; set; }
+            /// <summary>Gets or sets 親構成アイテム</summary>
+            /// <value>親構成アイテム</value>
+            public string ParentTranslationText { get; set; }
+            /// <summary>Gets or sets 拡張項目1</summary>
+            /// <value>拡張項目1</value>
+            public string ExData1 { get; set; }
+            /// <summary>Gets or sets 拡張項目2</summary>
+            /// <value>拡張項目2</value>
+            public string ExData2 { get; set; }
+            /// <summary>Gets or sets 拡張項目3</summary>
+            /// <value>拡張項目2</value>
+            public string ExData3 { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPortマスタ用出力対象条件データクラス
+        /// </summary>
+        public class CommonExcelPortMasterComdition
+        {
+            /// <summary>Gets or sets メンテナンス対象</summary>
+            /// <value>メンテナンス対象</value>
+            public int MaintenanceTarget { get; set; }
         }
         #endregion
 

@@ -138,6 +138,9 @@
     <None Remove="Resources\sql\Common\Structure_GetPartsLocationList.sql" />
     <None Remove="Resources\sql\ExcelPort\Create_TempStructureAll.sql" />
     <None Remove="Resources\sql\ExcelPort\GetExcelPortDownLoadList.sql" />
+    <None Remove="Resources\sql\ExcelPort\GetExcelPortTargetInfo.sql" />
+    <None Remove="Resources\sql\ExcelPort\GetExcelPortVersion.sql" />
+    <None Remove="Resources\sql\ExcelPort\GetInputControlDefineForExcelPort.sql" />
     <None Remove="Resources\sql\ExcelPort\Insert_StructureList.sql" />
     <None Remove="Resources\sql\ExcelPort\WITH_GetExcelPortDownLoadList.sql" />
     <None Remove="Resources\sql\Excel\ComInoutItemDefine_GetInfo.sql" />
@@ -653,6 +656,8 @@
     <None Remove="Resources\sql\Master\DeleteMsStructureOrder.sql" />
     <None Remove="Resources\sql\Master\DeleteMsStructureUnused.sql" />
     <None Remove="Resources\sql\Master\DeleteMsTranslationInfo.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\WITH_GetExcelPortMasterList.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\DeleteFailureCausePersonalityStructureOrder.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\GetFailureCausePersonalityStructureFactoryItemList.sql" />
     <None Remove="Resources\sql\Master\FailureCausePersonalityStructure\GetFailureCausePersonalityStructureItemOrderList.sql" />
@@ -848,12 +853,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterList.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\WITH_GetExcelPortMasterList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetExcelPortPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\WITH_GetExcelPortPartsList.sql" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\sql\ExcelPort\Create_TempStructureAll.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\GetExcelPortTargetInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\GetExcelPortVersion.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\GetInputControlDefineForExcelPort.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0410_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\ExcelPort\Insert_StructureList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetMachineHistoryManagementCnt.sql" />

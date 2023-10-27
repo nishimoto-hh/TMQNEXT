@@ -87,7 +87,7 @@ WITH number_unit AS (
         AND plt.department_structure_id = @DepartmentStructureId        --部門
         AND plt.account_structure_id = @AccountStructureId              --勘定科目
         AND pls.parts_location_id = @PartsLocationId                    --棚ID
-        AND pls.parts_location_detail_no = @PartsLocationDetailNo       --棚枝番
+        AND COALESCE(pls.parts_location_detail_no, '') = @PartsLocationDetailNo       --棚枝番
         AND pfs.target_month = CASE @Status 
             WHEN 0 THEN ( 
                 --準備リスト未作成

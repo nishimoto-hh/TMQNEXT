@@ -1213,7 +1213,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 {
                     if (string.IsNullOrEmpty(resultMsg))
                     {
-                        // エラーメッセージがセットされていない場合、エラーログ出力
+                        // 結果メッセージがセットされていない場合
                         // 「ダウンロード処理に失敗しました。」
                         string errMsg = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
                         // エラーログ出力
@@ -1267,8 +1267,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns>実行結果(0:OK/0未満:NG)</returns>
         protected virtual int ExcelPortUpload()
         {
-            int result = 0;
-            this.LogNo = string.Empty;
+            string fileType = string.Empty;
+            string fileName = string.Empty;
+            MemoryStream ms = null;
+            string resultMsg = string.Empty;
+            string detailMsg = string.Empty;
 
             // ファイル読み込み&入力チェック
             if (this.InputStream == null)
@@ -1293,17 +1296,54 @@ namespace CommonSTDUtil.CommonBusinessLogic
             try
             {
                 // ExcelPortアップロード個別処理実行
-                result = ExcelPortUploadImpl();
+                var result = ExcelPortUploadImpl(file, ref fileType, ref fileName, ref ms, ref resultMsg, ref detailMsg);
 
-                if (result > 0)
+                if (result == ComConsts.RETURN_RESULT.OK)
                 {
                     // コミット
                     this.db.Commit();
+
+                    if (string.IsNullOrEmpty(resultMsg))
+                    {
+                        // 結果メッセージがセットされていない場合
+                        //「アップロード処理が完了しました。」
+                        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911010007 });
+                    }
+                    else
+                    {
+                        this.MsgId = resultMsg;
+                    }
                 }
                 else
                 {
                     // ロールバック
                     this.db.RollBack();
+
+                    if (string.IsNullOrEmpty(resultMsg))
+                    {
+                        // 結果メッセージがセットされていない場合
+                        // 「アップロード処理に失敗しました。」
+                        string errMsg = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911010007 });
+                        // エラーログ出力
+                        writeErrorLog(errMsg);
+                        this.MsgId = errMsg;
+                    }
+                    else
+                    {
+                        this.MsgId = resultMsg;
+                    }
+                    if (!string.IsNullOrEmpty(detailMsg))
+                    {
+                        // 詳細メッセージがセットされている場合、ログ出力
+                        writeErrorLog(detailMsg);
+                    }
+                    if(ms != null)
+                    {
+                        // OUTPUTパラメータに設定
+                        this.OutputFileType = fileType;
+                        this.OutputFileName = fileName;
+                        this.OutputStream = ms;
+                    }
                 }
             }
             catch (Exception ex)
@@ -1324,25 +1364,22 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 this.db.EndTransaction();
             }
 
-            // 正常終了
-            this.Status = CommonProcReturn.ProcStatus.Valid;
-            //「ExcelPortアップロード処理に成功しました。」
-            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911100002 });
             return ComConsts.RETURN_RESULT.OK;
         }
 
         /// <summary>
         /// ExcelPortアップロード個別処理
         /// </summary>
+        /// <param name="file">アップロード対象ファイル</param>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
         /// <returns>実行結果(0:OK/0未満:NG)</returns>
-        protected virtual int ExcelPortUploadImpl()
+        protected virtual int ExcelPortUploadImpl(IFormFile file, ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
         {
-
-            //TODO: ファイル読み込み＆入力内容チェック処理
-
-            //TODO: 登録処理
-
-            return 0;
+            return ComConsts.RETURN_RESULT.OK;
         }
 
         /// <summary>

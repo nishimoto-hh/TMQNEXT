@@ -29,7 +29,7 @@ SELECT mcp.management_standards_component_id,        -- 機器別管理基準部
 	        WHEN msc.update_datetime > mcp.update_datetime AND msc.update_datetime > ms.update_datetime THEN msc.update_datetime
 			ELSE ms.update_datetime
 	   END update_datetime,                          -- 更新日付
-       dbo.get_file_link(1620,msc.management_standards_content_id) AS attachment_file, -- 添付ファイル
+       dbo.get_file_download_info(1620,msc.management_standards_content_id) AS attachment_file, -- 添付ファイル
        (
            SELECT
                MAX(ac.update_datetime)
