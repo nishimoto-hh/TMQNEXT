@@ -91,6 +91,9 @@ var P_ExecRenComFlag = false;
 var P_TabulatorSortingFlag = false;
 var P_TabulatorFilteringFlag = false;
 
+/*Public変数：無効なキーワード*/
+var P_InvalidKeywords = [];
+
 /*Public変数：選択行のみ取得フラグ*/
 var P_IsSelectedOnly = false;
 /**定義 帳票出力の場合は、以下の機能の時に選択行のみ取得フラグをTrueにする*/
@@ -4758,6 +4761,25 @@ function initValidatorAddMethod() {
         // 正常終了
         return true;
 
+    }, null);
+
+    //無効なキーワードが含まれていないかどうか
+    $.validator.addMethod('comInvalidKeyword', function (value, element, param) {
+        var result = true;
+
+        //未入力の場合、ﾁｪｯｸをｽﾙｰ
+        if (this.optional(element)) {
+            return true;
+        }
+
+        $.each(P_InvalidKeywords, function (i, keyword) {
+            if (value.indexOf(keyword) >= 0) {
+                // 無効なキーワードが含まれている場合、エラー
+                result = false;
+                return false;   // break
+            }
+        });
+        return result;
     }, null);
 }
 

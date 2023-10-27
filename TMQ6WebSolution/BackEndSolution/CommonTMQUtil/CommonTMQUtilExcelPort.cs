@@ -1431,6 +1431,7 @@ namespace CommonTMQUtil
                     (int)((IDictionary<string, object>)x)[ColName.ColumnType] == ColumnType.MultiListBox ||
                     (int)((IDictionary<string, object>)x)[ColName.ColumnType] == ColumnType.FormSelect).ToList();
                 var itemDataList = new List<Dictionary<string, object>>();
+                //var itemDataList = new List<object>();
                 if (selectItemList.Count() > 0)
                 {
                     var factoryIdList = new List<int>();
@@ -1513,6 +1514,7 @@ namespace CommonTMQUtil
                 // 対象SQLファイルにてSQLを実行し、該当シート出力用データを取得する
                 targetSql = sheetDefine.TargetSql;
                 tmpDataList = GetReportData(new List<SelectKeyData>(), targetSql, db, userId, languageId, null);
+                // マッピングデータ作成
                 mappingDataList = CreateMappingListForExcelPort(
                                     factoryId,
                                     ProgramId.Download,
@@ -1935,15 +1937,14 @@ namespace CommonTMQUtil
 
                 if (this.DownloadCondition.SheetNo != SheetNo.ManagementStandards)
                 {
-                    // 対象テンプレートファイルシートのデータを読込み、開始行番号と開始列番号を設定
-                    SetStartInfo(ref reportInfoList, templateFileName, templateFilePath, sheetNo, sheetDefine.SheetDefineMaxRow, sheetDefine.SheetDefineMaxColumn, reportDefine.OutputItemType);
+                    // 開始行番号と開始列番号を設定
+                    SetStartInfoExcelPort(ref reportInfoList, reportDefine.OutputItemType);
                 }
                 else
                 {
                     // 長期計画 機器別管理基準シートの場合、スケジュール列の定義を設定(追加)
                     setScheduleRowReportInfo(sheetNo, templateFileName, templateFilePath, reportDefine, sheetDefine, reportInfoList, list, now);
                 }
-
                 // 共通用タイトル、共通用日付、共通用時刻をマッピング
                 // 項目定義
                 foreach (var reportInfo in reportInfoList)
@@ -2018,6 +2019,8 @@ namespace CommonTMQUtil
 
                     // マッピング情報設定
                     info.SetExlSetValueByAddress(address, val, format);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { val });
                     // マッピングリストに追加
                     mappingList.Add(info);
                     if (setTitle)
@@ -2031,6 +2034,8 @@ namespace CommonTMQUtil
                         info.SetSheetName(null);
                         info.SetSheetNo(sheetNo);
                         info.SetExlSetValueByAddress(address, val, format);
+                        info.SetAddress(address);
+                        info.SetColData(new[] { val });
                         // マッピングリストに追加
                         mappingList.Add(info);
                     }
@@ -2075,13 +2080,12 @@ namespace CommonTMQUtil
 
                         // マッピングセルを設定
                         string address = ToAlphabet(startColNo) + startRowNo;
-                        // フォーマット設定
-                        string format = null;
                         object val;
                         // 項目名がヘッダタイトル
                         val = reportInfo.ItemName;
                         // マッピング情報設定
-                        info.SetExlSetValueByAddress(address, val, format);
+                        info.SetAddress(address);
+                        info.SetColData(new[] { val });
                         // マッピングリストに追加
                         mappingList.Add(info);
                     }
@@ -2101,81 +2105,80 @@ namespace CommonTMQUtil
                     {
                         continue;
                     }
-                    int index = 0;
 
-                    // 出力結果分ループ
-                    foreach (var data in list)
+                    // 初期化
+                    var info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+                    //対象項目を取得する
+                    object[] rowData = null;
+                    string columnName = null;
+                    if (list.Any(x => x.ContainsKey(reportInfo.ColumnName)))
                     {
-                        // 2行目以降、出力方式によって、マッピング位置を変更
-                        if (index > 0)
-                        {
-                            switch (reportInfo.OutputMethod)
-                            {
-                                case ComReport.SingleCell:
-                                    // 単一セルの場合
-                                    continue;
-                                case ComReport.LongitudinalDirection:
-                                    // 縦方向連続の場合、行番号を加算する
-                                    reportInfo.StartRowNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
-                                    // 出力方式が 3:予算別の場合
-                                    if (option != null && option.OutputMode == TMQUtil.ComReport.OutputMode3)
-                                    {
-                                        // 1行開ける
-                                        reportInfo.StartRowNo += 1;
-                                    }
-                                    break;
-                                case ComReport.LateralDirection:
-                                    // 横方向連続の場合、列番号を加算する
-                                    reportInfo.StartColNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
-                                    break;
-                                default:
-                                    // 入出力方式が未設定の場合、スキップ
-                                    break;
-                            }
-                        }
+                        columnName = reportInfo.ColumnName;
+                    }
+                    else if (list.Any(x => x.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName))))
+                    {
+                        // パスカルケースも
+                        columnName = ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName);
+                    }
+                    if (!string.IsNullOrEmpty(columnName))
+                    {
+                        // カラム名ごとに値を設定
 
-                        // 初期化
-                        var info = new CommonExcelPrtInfo();
-                        info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
-                        info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
-
-                        // Dictionaryにキャストする
-                        var rowDic = (IDictionary<string, object>)data;
-                        object val;
-                        // 取得データに対象項目が存在するか
-                        if (rowDic.ContainsKey(reportInfo.ColumnName))
+                        object val = list.Where(x => x.ContainsKey(columnName) && x[columnName] != null).Select(x => x[columnName]).FirstOrDefault();
+                        if (val != null)
                         {
-                            val = rowDic[reportInfo.ColumnName];
-                        }
-                        else
-                        {
-                            // パスカルケースも
-                            if (rowDic.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)))
+                            //型を取得
+                            Type type = val.GetType();
+                            //フォーマットした値を取得
+                            if (type == typeof(DateTime))
                             {
-                                val = rowDic[ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)];
+                                //古すぎる日付の設定がエラーになるため、フォーマットして文字列として設定する
+                                rowData = list.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((DateTime)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
                             }
                             else
                             {
-                                // 取得データに対象項目名がない場合、空文字
-                                val = "";
+                                rowData = list.Select(x => x.ContainsKey(columnName) ? x[columnName] : null).ToArray();
                             }
                         }
-                        // マッピングセルを設定
-                        string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
-                        // フォーマット設定
-                        string format = null;
+                    }
+                    if (rowData != null)
+                    {
+                        switch (reportInfo.OutputMethod)
+                        {
+                            case ComReport.SingleCell:
+                                // 単一セルの場合
+                                rowData = new[] { rowData[0] };
+                                break;
+                            case ComReport.LongitudinalDirection:
+                                // 縦方向連続の場合
+                                break;
+                            case ComReport.LateralDirection:
+                                // 横方向連続の場合
+                                rowData = new[] { rowData };
+                                break;
+                            default:
+                                // 入出力方式が未設定の場合、スキップ
+                                break;
+                        }
+                    }
+                    // マッピングセルを設定
+                    string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
+                    // フォーマット設定
+                    string format = null;
 
                         if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
                         {
                             format = ComReport.StrFormat;
                         }
-                        // マッピング情報設定
-                        info.SetExlSetValueByAddress(address, val, format);
-                        // マッピングリストに追加
-                        mappingList.Add(info);
-                        // 行数を加算
-                        index++;
-                    }
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, null, format);
+                    info.SetAddress(address);
+                    info.SetColData(rowData);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
                 }
                 // マッピング情報リストを返却
                 return mappingList;
@@ -3763,6 +3766,48 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
+            /// 開始情報設定(ExcelPort用)
+            /// </summary>
+            /// <param name="reportInfoList">シート番号</param>
+            /// <param name="templateFileName">テンプレートファイル名</param>
+            /// <param name="templateFilePath">テンプレートファイルパス</param>
+            /// <param name="sheetNo">シート番号</param>
+            /// <param name="sheetDefineMaxRow">シート定義最大行</param>
+            /// <param name="sheetDefineMaxColumn">シート定義最大列</param>
+            /// <param name="outputItemType">出力項目種別</param>
+            public static void SetStartInfoExcelPort(ref IList<Dao.InoutDefine> reportInfoList, int outputItemType)
+            {
+                foreach (var reportInfo in reportInfoList)
+                {
+                    // 出力マスタに開始情報が設定されている場合
+                    if (reportInfo.OutputDefaultCellRowNo != null && reportInfo.OutputDefaultCellColumnNo != null)
+                    {
+                        // 出力項目種別が3:出力項目固定（出力パターン指定あり※ベタ票）の場合
+                        if (outputItemType == ComReport.OutputItemType3)
+                        {
+                            // 開始情報を設定する
+                            reportInfo.StartRowNo = reportInfo.OutputDefaultCellRowNo;
+                            reportInfo.StartColNo = reportInfo.OutputDefaultCellColumnNo;
+                            continue;
+                        }
+
+                    }
+                    // 定義マスタに開始情報が設定されている場合
+                    if (reportInfo.DefaultCellRowNo != null && reportInfo.DefaultCellColumnNo != null)
+                    {
+                        // 出力項目種別が3:出力項目固定（出力パターン指定あり※ベタ票）の場合
+                        if (outputItemType == ComReport.OutputItemType3)
+                        {
+                            // 開始情報を設定する
+                            reportInfo.StartRowNo = reportInfo.DefaultCellRowNo;
+                            reportInfo.StartColNo = reportInfo.DefaultCellColumnNo;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
             /// スケジュール列項目定義設定処理
             /// </summary>
             /// <param name="sheetNo">シート番号</param>
@@ -3793,7 +3838,7 @@ namespace CommonTMQUtil
                     string itemName;
                     for (int i = 1; i < ScheduleMonths; i++)
                     {
-                        itemName = "'" + now.AddMonths(i).ToString(Format.ScheduleDate);
+                        itemName = now.AddMonths(i).ToString(Format.ScheduleDate);
                         foreach (var reportInfo in scheduleIdReportInfoList)
                         {
                             // スケジュール列データをコピー
@@ -3807,7 +3852,7 @@ namespace CommonTMQUtil
                             reportInfoList.Add(tmpInfo);
                         }
                     }
-                    itemName = "'" + now.ToString(Format.ScheduleDate);
+                    itemName = now.ToString(Format.ScheduleDate);
                     foreach (var reportInfo in scheduleIdReportInfoList)
                     {
                         // 先頭のスケジュール列のカラム名に通し番号を付加
@@ -3817,8 +3862,8 @@ namespace CommonTMQUtil
                     }
                 }
 
-                // 対象テンプレートファイルシートのデータを読込み、開始行番号と開始列番号を設定
-                SetStartInfo(ref reportInfoList, templateFileName, templateFilePath, sheetNo, sheetDefine.SheetDefineMaxRow, sheetDefine.SheetDefineMaxColumn, reportDefine.OutputItemType);
+                // 開始行番号と開始列番号を設定
+                SetStartInfoExcelPort(ref reportInfoList, reportDefine.OutputItemType);
 
                 // スケジュール列のデータを取得
                 var scheduleIdData = list.Where(x => x.ContainsKey(ColName.ColumnName) && ColName.ScheduleId.Equals(x[ColName.ColumnName].ToString())).FirstOrDefault();
@@ -3838,7 +3883,7 @@ namespace CommonTMQUtil
                         var idData = new Dictionary<string, object>(scheduleIdData);
 
                         // ヘッダ表示名はスケジュール年月
-                        itemName = "'" + now.AddMonths(i).ToString(Format.ScheduleDate);
+                        itemName = now.AddMonths(i).ToString(Format.ScheduleDate);
 
                         // 項目ID
                         idData[ColName.ItemId] = Convert.ToInt32(idData[ColName.ItemId]) + (i * 2);
@@ -3875,7 +3920,7 @@ namespace CommonTMQUtil
                     scheduleIdData[ColName.ColumnName] = string.Format(fmtColName, scheduleIdData[ColName.ColumnName], 1);
                     scheduleTxData[ColName.ColumnName] = string.Format(fmtColName, scheduleTxData[ColName.ColumnName], 1);
                     // ヘッダ表示名
-                    itemName = "'" + now.ToString(Format.ScheduleDate);
+                    itemName = now.ToString(Format.ScheduleDate);
                     scheduleIdData[ColName.ItemName] = itemName;
                     scheduleTxData[ColName.ItemName] = itemName;
                 }

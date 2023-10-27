@@ -17,6 +17,9 @@ using System.Collections.Generic;
 using CommonSTDUtil;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
+using System.Xml.Linq;
+using Microsoft.AspNetCore.Authentication;
 
 namespace CommonWebTemplate.Controllers
 {
@@ -96,91 +99,41 @@ namespace CommonWebTemplate.Controllers
                 else if (isAzureAD())
                 {
                     //※AzureADからのLogin
-
+                    CommonProcData procData = new CommonProcData();
+                    CommonUserMst loginData = new CommonUserMst();
                     UserInfoDef userInfo = HttpContext.Session.GetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO);
                     if(userInfo != null)
                     {
                         //※ログイン済み
 
+                        var accessKey = HttpContext.Session.GetString(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY);
+                        if (!string.IsNullOrEmpty(accessKey))
+                        {
+                            var token = getRequestVerificationToken(Request);
+                            if (string.IsNullOrEmpty(token))
+                            {
+                                // 偽造防止トークンが取得できない場合、ログイン画面を経由して指定機能へ遷移
+                                setLoginFormData(loginData, accessKey, userInfo.UserId);
+
+                                //=== ﾛｸﾞｲﾝ画面を表示 ===
+                                return View(loginData);
+                            }
+
+                            //=== 指定機能に遷移 ===
+                            procData.LoginUserId = userInfo.UserId;
+                            return redirectToCommonAction(Request, procData, accessKey, token);
+                        }
+
                         //=== ｻｲﾄTopに遷移 ===
                         return RedirectSiteTop();
                     }
 
-                    //=== 遷移元のURL取得 ===
-                    string sourceURL = GetSourceURL();
-                    if (string.IsNullOrEmpty(sourceURL))
-                    {
-                        //※遷移元が空の場合、初回アクセス
-
-                        //=== 初期値ﾃﾞｰﾀを作成 ===
-                        CommonUserMst loginData = new CommonUserMst();
-                        setLoginFormData();
-
-                        //=== ﾛｸﾞｲﾝ画面を表示 ===
-                        return View(loginData);
-                    }
-
-                    //Idpからのレスポンスが来たという想定
-
-                    //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
-                    BusinessLogicUtil blogic = new BusinessLogicUtil();
-                    CommonProcData procData = new CommonProcData();
+                    //=== 初期値ﾃﾞｰﾀを作成 ===
                     SetRequestInfo(ref procData);
+                    setLoginFormData(loginData);
 
-                    //=== ｱｸｾｽ許可ﾁｪｯｸ ===
-                    // シングルサインオンURL
-                    string AzureADSingleSignOnServiceUrl = AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl;
-                    bool isAccessOK = false;
-                    string userId = string.Empty;
-                    if (!string.IsNullOrEmpty(AzureADSingleSignOnServiceUrl))
-                    {
-                        //※シングルサインオンURLが設定されている場合、チェックする
-                        if (AzureADSingleSignOnServiceUrl.StartsWith(sourceURL))
-                        {
-                            isAccessOK = true;
-
-                            // IdpのAttributeからユーザ情報を取得する
-                            // ClaimTypes.Name : http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-                            string email = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
-                            if (!string.IsNullOrEmpty(email))
-                            {
-                                // メールアドレスをTMQのDBと照合し、取得できれば認証OKとする
-                                blogic.GetUserIdByMailAdress(procData, email, out userId);
-                            }
-                        }
-                    }
-
-                    if (!isAccessOK || string.IsNullOrEmpty(userId))
-                    {
-                        if (procData.LanguageId == null)
-                        {
-                            //ブラウザの言語を取得
-                            procData.LanguageId = GetBrowserLanguage();
-                        }
-
-                        string resourceId = string.Empty;
-                        ReturnType type;
-                        if (!isAccessOK)
-                        {
-                            //※ｱｸｾｽ不正
-                            // 『許可されてないURLからのアクセスです。』
-                            resourceId = CommonResources.ID.ID941070006;
-                            type = ReturnType.AccessError;
-                        }
-                        else
-                        {
-                            //※認証NG
-                            // 『ログイン認証に失敗しました。ユーザー権限がありません。』
-                            resourceId = CommonResources.ID.ID941070006;
-                            type = ReturnType.AccessError;
-                        }
-                        blogic.GetResourceName(procData, new List<string> { resourceId }, out IDictionary<string, string> resources);
-                        return returnActionResult(type, new List<string>() { blogic.ConvertResourceName(resourceId, resources) });
-                    }
-
-                    //=== ﾛｸﾞｲﾝ処理 ===
-                    return Login(null, null, userId, string.Empty, sourceURL);
-
+                    //=== ﾛｸﾞｲﾝ画面を表示 ===
+                    return View(loginData);
                 }
                 else
                 {
@@ -188,7 +141,7 @@ namespace CommonWebTemplate.Controllers
 
                     //=== 初期値ﾃﾞｰﾀを作成 ===
                     CommonUserMst loginData = new CommonUserMst();
-                    setLoginFormData();
+                    setLoginFormData(loginData);
 
                     //=== ﾛｸﾞｲﾝ画面を表示 ===
                     return View(loginData);
@@ -226,10 +179,8 @@ namespace CommonWebTemplate.Controllers
                 if (isAzureAD() && string.IsNullOrEmpty(userId))
                 {
                     //※シングルサインオンでユーザID未取得の場合
-
-                    //=== AzureADログインへ302でリダイレクト ===
-                    // ★以下は仮処理
-                    return Redirect(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl);
+                    //===外部(SAML2)ログインへ302でリダイレクト ===
+                    return Redirect("ExternalLogin");
                 }
 
                 //=== ﾛｸﾞｲﾝ認証 ===
@@ -281,6 +232,28 @@ namespace CommonWebTemplate.Controllers
                 //例外ｴﾗｰ画面に遷移
                 return returnActionResult(ex);
             }
+        }
+
+        /// <summary>
+        /// GET:外部(SAML2)ログイン処理
+        /// SAMLログインのため、Idpにリダイレクトする
+        /// </summary>
+        /// <returns>
+        /// Idpへの認証要求付きリダイレクトレスポンス
+        /// </returns>
+        [HttpGet]
+        public ActionResult ExternalLogin()
+        {
+            var redirectUrl = AppCommonObject.Config.AppSettings.TMQReturnUrl;
+
+            AuthenticationProperties properties = new AuthenticationProperties
+            {
+                RedirectUri = redirectUrl,
+                Items = {
+                    {"LoginProvider", "Saml2"},
+                }
+            };
+            return new ChallengeResult("Saml2", properties);
         }
 
         /// <summary>
@@ -338,7 +311,7 @@ namespace CommonWebTemplate.Controllers
 
         //  [ADD_20190826_01][内部課題_No.93] start
         /// <summary>
-        /// POST:ログアウト処理
+        /// POST:ID変更処理
         /// </summary>
         /// <returns>
         /// ログイン認証：OKの場合、TOPﾍﾟｰｼﾞに遷移
@@ -402,6 +375,257 @@ namespace CommonWebTemplate.Controllers
             }
         }
         //  [ADD_20190826_01][内部課題_No.93] end
+
+        /// <summary>
+        /// POST:メールアドレス取得処理
+        /// </summary>
+        /// <returns>
+        /// ログイン認証：OKの場合、TOPﾍﾟｰｼﾞに遷移
+        /// </returns>
+        [HttpPost]
+        public ActionResult GetMailAddress()
+        {
+            try
+            {
+                //=== 初期値ﾃﾞｰﾀを作成 ===
+                CommonUserMst loginData = new CommonUserMst();
+                setLoginFormData(loginData);
+
+                //AzureADからのLoginか？
+                if (isAzureAD())
+                {
+                    //=== 遷移元のURL取得 ===
+                    string sourceURL = GetSourceURL();
+                    if (string.IsNullOrEmpty(sourceURL))
+                    {
+                        //※遷移元が空の場合、初回アクセス
+                        // ﾛｸﾞｲﾝ画面を表示
+                        return View("Index", loginData);
+                    }
+
+                    //Idpからのレスポンスが来たという想定
+
+                    //ﾘｸｴｽﾄ情報から業務ﾛｼﾞｯｸ処理に必要な情報を取得
+                    BusinessLogicUtil blogic = new BusinessLogicUtil();
+                    CommonProcData procData = new CommonProcData();
+                    SetRequestInfo(ref procData);
+
+                    //=== ｱｸｾｽ許可ﾁｪｯｸ ===
+                    // シングルサインオンURL
+                    string AzureADSingleSignOnServiceUrl = AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl;
+                    bool isAccessOK = false;
+                    List<int> userIdList = null;
+                    string userId = string.Empty;
+                    string resourceId = string.Empty;
+                    if (!string.IsNullOrEmpty(AzureADSingleSignOnServiceUrl))
+                    {
+                        //※シングルサインオンURLが設定されている場合、チェックする
+                        if (AzureADSingleSignOnServiceUrl.StartsWith(sourceURL))
+                        {
+                            isAccessOK = true;
+
+                            // IdpのAttributeからユーザ情報を取得する
+                            // ClaimTypes.Name : http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+                            string email = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+
+                            if (string.IsNullOrEmpty(email) && Request.Form.ContainsKey("SamlResponse"))
+                            {
+                                // 上記で取得できない場合はリクエスト情報を解析して直接取得する
+                                var bResponse = Convert.FromBase64String(Request.Form["SamlResponse"]);
+                                Encoding enc = Encoding.UTF8;
+                                string strResponse = enc.GetString(bResponse);
+                                XElement xml = XElement.Parse(strResponse);
+
+                                // 以下のタグ構成を前提に取得する(名前空間は省略)
+                                // <Response>
+                                //   <Assertion>
+                                //     <AttributeStatement>
+                                //       <Attribute Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name">
+                                //         <AttributeValue>メールアドレス</AttributeValue>
+                                //       </Attribute>
+                                //     </AttributeStatement>
+                                //   </Assertion>
+                                // </Response>
+                                var assertion = xml.Elements().Where(x => x.Name.LocalName.Equals("Assertion")).FirstOrDefault();
+                                var attributeStatement = assertion?.Elements().Where(x => x.Name.LocalName.Equals("AttributeStatement")).FirstOrDefault();
+                                var attributes = attributeStatement?.Elements().Where(x => x.Name.LocalName.Equals("Attribute"));
+                                var attribute = attributes?.Where(x => x.Attributes().Any(y => y.Name.LocalName.Equals("Name") && y.Value.Equals(ClaimTypes.Name))).FirstOrDefault();
+                                email = attribute?.Elements().Where(x => x.Name.LocalName.Equals("AttributeValue")).Select(x => x.Value).FirstOrDefault();
+                            }
+
+                            if (!string.IsNullOrEmpty(email))
+                            {
+                                // メールアドレスをTMQのDBと照合し、取得できれば認証OKとする
+                                blogic.GetUserIdByMailAdress(procData, email, out userIdList);
+                                if (userIdList != null && userIdList.Count == 1)
+                                {
+                                    userId = userIdList[0].ToString();
+                                    loginData.UserId = userId;
+                                    // 『ログイン処理中です。しばらくお待ちください』
+                                    resourceId = CommonResources.ID.ID941430006;
+                                    blogic.GetResourceName(procData, new List<string> { resourceId }, out IDictionary<string, string> resources);
+                                    ViewBag.Messages = new List<string> { blogic.ConvertResourceName(resourceId, resources) };
+                                }
+                            }
+                            // 遷移先をログイン画面へ変更
+                            sourceURL = AppCommonObject.Config.AppSettings.TMQPublicOrigin;
+                        }
+                    }
+
+                    if (!isAccessOK || string.IsNullOrEmpty(userId))
+                    {
+                        if (procData.LanguageId == null)
+                        {
+                            //ブラウザの言語を取得
+                            procData.LanguageId = GetBrowserLanguage();
+                        }
+
+                        ReturnType type;
+                        if (!isAccessOK)
+                        {
+                            //※ｱｸｾｽ不正
+                            // 『許可されてないURLからのアクセスです。』
+                            resourceId = CommonResources.ID.ID941070006;
+                            type = ReturnType.AccessError;
+                        }
+                        else if (userIdList == null || userIdList.Count == 0)
+                        {
+                            //※該当メールアドレスが未登録
+                            // 『メールアドレスがTMQユーザーマスタに登録されていません。』
+                            resourceId = CommonResources.ID.ID941340002;
+                            type = ReturnType.LoginError;
+                        }
+                        else if (userIdList.Count > 1)
+                        {
+                            //※該当メールアドレスが一意でない
+                            // 『メールアドレスがTMQユーザーマスタに複数登録されています。』
+                            resourceId = CommonResources.ID.ID941340003;
+                            type = ReturnType.LoginError;
+                        }
+                        else
+                        {
+                            //※認証NG
+                            // 『ログイン認証に失敗しました。ユーザー権限がありません。』
+                            resourceId = CommonResources.ID.ID941430004;
+                            type = ReturnType.LoginError;
+                        }
+                        blogic.GetResourceName(procData, new List<string> { resourceId }, out IDictionary<string, string> resources);
+                        return returnActionResult(type, new List<string>() { blogic.ConvertResourceName(resourceId, resources) }, sourceURL: sourceURL);
+                    }
+
+                    // セッションから遷移キーを取得
+                    var accessKey = HttpContext.Session.GetString(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY);
+                    if (!string.IsNullOrEmpty(accessKey))
+                    {
+                        // ※遷移キーが存在する場合
+                        // 遷移キーを設定
+                        setLoginFormData(loginData, accessKey);
+                    }
+
+                    // ﾛｸﾞｲﾝ画面を表示
+                    return View("Index", loginData);
+
+                }
+                else
+                {
+                    //※通常ﾛｸﾞｲﾝ
+                    // ﾛｸﾞｲﾝ画面を表示
+                    return View("Index", loginData);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //例外ｴﾗｰ画面に遷移
+                return returnActionResult(ex);
+            }
+            finally
+            {
+                if (isAzureAD())
+                {
+                    // セッションから遷移キーを削除
+                    HttpContext.Session.Remove(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY);
+                }
+            }
+        }
+
+        /// <summary>
+        /// エラー処理
+        /// </summary>
+        /// <param name="procData"></param>
+        /// <param name="code"></param>
+        /// <remarks>ログイン画面への遷移を行うケースが存在するため、HomeControllerへErrorアクションを配置する</remarks>
+        /// <returns></returns>
+        public IActionResult Error(CommonProcData procData, int code)
+        {
+            BusinessLogicUtil blogic = new BusinessLogicUtil();
+            //ブラウザの言語を取得
+            var languageId = Request.GetTypedHeaders().AcceptLanguage.OrderByDescending(x => x.Quality ?? 1).Select(x => x.Value.ToString()).ToList().FirstOrDefault();
+            if (procData.LanguageId == null)
+            {
+                procData.LanguageId = languageId;
+            }
+
+            string errorTitleId = string.Empty;
+            string errorMsgId = "941430005";    //ログインしてください。
+            string errorCtrlId = "911430006";   //ログイン画面へ遷移
+            string url = BaseController.SiteBaseURL;
+            bool autoLogin = false;
+            UserInfoDef userInfo = null;
+            switch (code)
+            {
+                case 400:
+
+                    // セッション情報を取得
+                    userInfo = HttpContext.Session.GetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO);
+                    if (userInfo != null)
+                    {
+                        // セッション情報が存在する場合、ログイン画面へ遷移
+                        autoLogin = true;
+                        errorMsgId = "941430006";    //ログイン処理中です。しばらくお待ちください。
+                    }
+                    else if (string.IsNullOrEmpty(procData.ConductId))
+                    {
+                        // 機能IDが設定されていない場合は未ログイン
+                        errorTitleId = "911430005"; // ログインエラー
+                    }
+                    else
+                    {
+                        errorTitleId = "911160002"; // タイムアウトエラー
+                    }
+                    break;
+                case 404:
+                    errorTitleId = "911010006"; // アクセスエラー
+                    break;
+                default:
+                    errorTitleId = "911120022"; // システムエラー
+                    break;
+            }
+
+            IDictionary<string, string> resources = null;
+            //メッセージ取得
+            blogic.GetResourceName(procData, new List<string> { errorTitleId, errorMsgId, errorCtrlId }, out resources);
+
+            if (autoLogin)
+            {
+                // ログイン情報を生成
+                CommonUserMst loginData = new CommonUserMst(string.Empty, string.Empty, string.Empty, userInfo.UserId);
+                ViewBag.Messages = new List<string> { blogic.ConvertResourceName(errorMsgId, resources) };
+                ViewBag.AutoLogin = "1";   // 自動ログイン
+                return View("Index", loginData);
+            }
+
+            ViewBag.Title = blogic.ConvertResourceName(errorTitleId, resources);
+            ViewBag.SourceURL = url;
+            if (!string.IsNullOrEmpty(errorMsgId))
+            {
+                ViewBag.ErrorMessage = new List<string> { blogic.ConvertResourceName(errorMsgId, resources) };
+            }
+            ViewBag.BackTitle = blogic.ConvertResourceName(errorCtrlId, resources);
+
+            // エラー画面へ遷移
+            return View("Error");
+        }
         #endregion
 
         #region === private処理 ===
@@ -448,12 +672,16 @@ namespace CommonWebTemplate.Controllers
                     blogic.GetResourceName(procData, new List<string> { CommonResources.ID.ID941130003 }, out IDictionary<string, string> resources);
                     return new CommonProcReturn(CommonProcReturn.ProcStatus.Error, blogic.ConvertResourceName(CommonResources.ID.ID941130003, resources));   //【CW00000.W10】すでにログインしています。一旦ログアウトしてから再ログインしてください。
                 }
-                if (!isStandardLogin)
-                {
-                    // SiteMinderまたはSSOからのLoginの場合はログイン認証をスキップ
-                    return new CommonProcReturn();
-                }
-                isNewLogin = false; // ログイン済み
+                // ログインの種類に関係なく、セッションにログイン情報が存在する場合はログイン認証をスキップする
+                //if (!isStandardLogin)
+                //{
+                //    // SiteMinderまたはSSOからのLoginの場合はログイン認証をスキップ
+                //    return new CommonProcReturn();
+                //}
+                //isNewLogin = false; // ログイン済み
+
+                // ログイン認証をスキップ
+                return new CommonProcReturn();
             }
 
             //※通常ﾛｸﾞｲﾝ時、ﾊﾟｽﾜｰﾄﾞﾁｪｯｸも行う
@@ -516,15 +744,42 @@ namespace CommonWebTemplate.Controllers
         /// <summary>
         /// ログイン画面データの設定
         /// </summary>
-        private void setLoginFormData()
+        private void setLoginFormData(CommonUserMst loginData, string accsessKey = "", string userId = "")
         {
             if (Request.HasFormContentType && Request.Form.ContainsKey("ACCESS_KEY"))
             {
-                ViewBag.AccessKey = Request.Form["ACCESS_KEY"];
+                if (Request.Form.ContainsKey("AUTO_LOGIN"))
+                {
+                    ViewBag.AutoLogin = Request.Form["AUTO_LOGIN"];
+                }
+                if (Request.Form.ContainsKey("ACCESS_KEY"))
+                {
+                    ViewBag.AccessKey = Request.Form["ACCESS_KEY"];
+                }
+                if (Request.Form.ContainsKey("MESSAGE"))
+                {
+                    ViewBag.Messages = new List<string>() { Request.Form["MESSAGE"] };
+                }
+                if (Request.Form.ContainsKey("ERROR_MESSAGE"))
+                {
+                    ViewBag.ErrorMessage = new List<string>() { Request.Form["ERROR_MESSAGE"] };
+                }
+                if (Request.Form.ContainsKey("UserId"))
+                {
+                    loginData.UserId = Request.Form["UserId"];
+                }
             }
-            if (Request.HasFormContentType && Request.Form.ContainsKey("MESSAGE"))
+            else
             {
-                ViewBag.ErrorMessage = new List<string>() { Request.Form["MESSAGE"] };
+                if (!string.IsNullOrEmpty(accsessKey))
+                {
+                    ViewBag.AccessKey = accsessKey;
+                    ViewBag.AutoLogin = "1";
+                }
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    loginData.UserId = userId;
+                }
             }
         }
         #endregion

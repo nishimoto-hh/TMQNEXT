@@ -845,9 +845,9 @@ namespace CommonWebTemplate.CommonUtil
         protected string GetSourceURL()
         {
             string sourceURL = string.Empty;
-            if (Request.Headers.ContainsKey("UrlReferrer"))
+            if (!string.IsNullOrEmpty(Request.Headers.Referer))
             {
-                sourceURL = Request.Headers["UrlReferrer"].ToString();
+                sourceURL = Request.Headers.Referer;
             }
             return sourceURL;
         }

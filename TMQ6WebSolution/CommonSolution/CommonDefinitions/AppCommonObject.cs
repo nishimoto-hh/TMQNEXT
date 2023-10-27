@@ -191,6 +191,11 @@ namespace CommonWebTemplate
         /// <summary>ダウンロードファイルフォルダパス（アプリフォルダからの参照パス）</summary>
         public string DownloadFileDir { get; set; }
 
+        /// <summary>偽造防止トークン更新対象キーワード</summary>
+        public List<string> TokenUpdateKeywords { get; set; }
+
+        /// <summary>自動ログイン待機時間[ms]</summary>
+        public int AutoLoginWaitTime { get; set; }
     }
     #endregion
 

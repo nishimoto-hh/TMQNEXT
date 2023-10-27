@@ -38,10 +38,10 @@ CREATE TABLE #temp_rep(
     loss_absence　　                int,            -- 休損量
     maintenance_season_name         nvarchar(800),  -- 時期
     construction_personnel_name     nvarchar(800),  -- 担当者
-	-- total_working_time              decimal(13, 3), -- 作業時間
-	-- working_time_self               decimal(13, 3), -- 自社
-	total_working_time              nvarchar(800), -- 作業時間
-	working_time_self               nvarchar(800), -- 自社
+    total_working_time              decimal(13, 3), -- 作業時間
+	working_time_self               decimal(13, 3), -- 自社
+	--total_working_time              nvarchar(800), -- 作業時間
+	--working_time_self               nvarchar(800), -- 自社
     construction_company            nvarchar(800),  -- 施工会社
     working_time_company            decimal(13, 3), -- 施工会社工数
 	plan_implementation_content     nvarchar(800),  -- 件名概要
@@ -322,10 +322,10 @@ BEGIN
             AND tra.structure_id = hs.maintenance_season_structure_id
         ) AS maintenance_season_name,                        -- 時期
         (SELECT TOP 1 display_name FROM ms_user WHERE user_id = construction_personnel_id) AS construction_personnel_name,      -- 担当者
-    	-- hs.total_working_time,           -- 作業時間
-        FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
-        -- working_time_self,
-        FORMAT(working_time_self, '0.##') AS working_time_self,  --自係(Hr)(表示用)
+    	 hs.total_working_time,           -- 作業時間
+        --FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
+         working_time_self,
+        --FORMAT(working_time_self, '0.##') AS working_time_self,  --自係(Hr)(表示用)
         hs.construction_company,
         working_time_company,
 	    sm.plan_implementation_content,  -- 作業内容結果
@@ -1173,10 +1173,10 @@ BEGIN
                  AND tra.structure_id = hs.maintenance_season_structure_id
             ) AS maintenance_season_name,                        -- 時期
             (SELECT TOP 1 display_name FROM ms_user WHERE user_id = construction_personnel_id) AS construction_personnel_name,  -- 担当者
-    	    -- hs.total_working_time,           -- 作業時間
-            FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
-            -- working_time_self,
-            FORMAT(working_time_self, '0.##') AS working_time_self,  --自係(Hr)(表示用)
+    	     hs.total_working_time,           -- 作業時間
+            --FORMAT(hs.total_working_time, '0.##') AS total_working_time,  --作業時間(Hr)(表示用)
+             working_time_self,
+            --FORMAT(working_time_self, '0.##') AS working_time_self,  --自係(Hr)(表示用)
             hs.construction_company,
             working_time_company,
 	        sm.plan_implementation_content, -- 作業内容結果

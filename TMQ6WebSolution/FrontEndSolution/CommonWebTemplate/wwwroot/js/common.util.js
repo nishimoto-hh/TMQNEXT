@@ -1763,3 +1763,16 @@ function setNumberToComma(num) {
     result = result.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
     return result;
 }
+
+/**
+ * 項目にValidatorのルールを追加する(無効なキーワードが含まれていないかどうか)
+ * @param {Element} ele :ルールを追加する項目要素
+ */
+function addValidatorRuleForInvalidKeyword(ele) {
+    //ルールの追加
+    var message = { comInvalidKeyword: P_ComMsgTranslated[941120018] }; // 指定できない文字列が含まれています。
+    var rule = {};
+    rule['comInvalidKeyword'] = true;
+    rule['messages'] = message;
+    $(ele).rules('add', rule);
+}

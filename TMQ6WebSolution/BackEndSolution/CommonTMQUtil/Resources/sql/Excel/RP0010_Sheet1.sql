@@ -179,7 +179,7 @@ SELECT
     , mc.installation_location                          -- 設置場所
     , mc.number_of_installation                         -- 設置台数
     , CASE
-        WHEN mc.date_of_installation IS NOT NULL THEN '''' + FORMAT(mc.date_of_installation, 'yyyy/MM') 
+        WHEN mc.date_of_installation IS NOT NULL THEN FORMAT(mc.date_of_installation, 'yyyy/MM') 
         ELSE ''
     END AS date_of_installation                         -- 設置年月
     , (
@@ -376,7 +376,7 @@ SELECT
     , eq.model_no                                       -- 型式コード
     , eq.serial_no                                      -- 製造番号
     , CASE
-        WHEN eq.date_of_manufacture IS NOT NULL THEN '''' + FORMAT(eq.date_of_manufacture, 'yyyy/MM')
+        WHEN eq.date_of_manufacture IS NOT NULL THEN FORMAT(eq.date_of_manufacture, 'yyyy/MM')
         ELSE ''
     END AS date_of_manufacture                          -- 製造年月
     , eq.equipment_note                                 -- 機器メモ

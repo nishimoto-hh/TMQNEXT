@@ -2164,12 +2164,12 @@ namespace CommonWebTemplate.CommonUtil
         /// </param>
         /// <param name="userId">ユーザID</param>
         /// <returns>処理ステータス情報</returns>
-        public CommonProcReturn GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out string userId)
+        public CommonProcReturn GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out List<int> userIdList)
         {
             procData.CtrlId = "GetUserIdByMailAdress";
             BusinessLogicIO logicIO = new BusinessLogicIO(procData);
             // ユーザID取得
-            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_GetUserIdByMailAdress(procData, mailAdress, out userId);
+            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_GetUserIdByMailAdress(procData, mailAdress, out userIdList);
 
             //処理結果
             return returnInfo;

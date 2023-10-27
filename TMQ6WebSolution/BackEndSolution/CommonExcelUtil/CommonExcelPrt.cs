@@ -240,7 +240,16 @@ namespace CommonExcelUtil
             {
                 foreach (CommonExcelPrtInfo prtInfo in lstPrtInfo)
                 {
-                    exlCmdMain.SetValue(prtInfo.GetExlOutputData(), prtInfo.GetSheetName(), prtInfo.GetSheetNo());
+                    if (prtInfo.GetColFlg())
+                    {
+                        //列単位にマッピング
+                        exlCmdMain.InsertData(prtInfo.GetSheetNo(), prtInfo.GetAdress(), prtInfo.GetColData(), prtInfo.GetExlOutputData(), prtInfo.GetNumFlg());
+                    }
+                    else
+                    {
+                        //セル単位にマッピング
+                        exlCmdMain.SetValue(prtInfo.GetExlOutputData(), prtInfo.GetSheetName(), prtInfo.GetSheetNo());
+                    }
                 }
             }
             catch (Exception ex)

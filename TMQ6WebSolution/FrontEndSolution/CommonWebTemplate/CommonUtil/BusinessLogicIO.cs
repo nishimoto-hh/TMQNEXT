@@ -1469,10 +1469,10 @@ namespace CommonWebTemplate.CommonUtil
         /// <param name="mailAdress">メールアドレス</param>
         /// <param name="userId">ユーザID</param>
         /// <returns></returns>
-        public CommonProcReturn CallDllBusinessLogic_GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out string userId)
+        public CommonProcReturn CallDllBusinessLogic_GetUserIdByMailAdress(CommonProcData procData, string mailAdress, out List<int> userIdList)
         {
             // 初期化
-            userId = "";
+            userIdList = new List<int>();
 
             //INパラメータ
             // - 実行条件(JSON文字列)
@@ -1509,9 +1509,9 @@ namespace CommonWebTemplate.CommonUtil
             {
                 var dicResult = dicResults[0];
                 // ユーザIDが取得できる場合、戻り値に設定する
-                if (dicResult.ContainsKey("UserId") && dicResult["UserId"] != null)
+                if (dicResult.ContainsKey("UserIdList") && dicResult["UserIdList"] != null)
                 {
-                    userId = dicResult["UserId"].ToString();
+                    userIdList = (List<int>)dicResult["UserIdList"];
                 }
             }
 

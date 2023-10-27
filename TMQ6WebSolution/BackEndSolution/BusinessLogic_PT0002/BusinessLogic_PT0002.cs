@@ -347,6 +347,22 @@ namespace BusinessLogic_PT0002
                     //集計結果の取得
                     Dictionary<int, IList<dynamic>> dicSummaryDataList = new Dictionary<int, IList<dynamic>>();
 
+                    // SQLの出力項目でシングルクォーテーション「'」を付けない項目
+                    List<string> keyNameList = new();
+                    switch (this.CtrlId)
+                    {
+                        case TargetCtrlId.Button.OutputEnter: // 入庫
+                            keyNameList = new() { "lot_no" };
+                            break;
+                        case TargetCtrlId.Button.OutputIssue: // 出庫
+                            keyNameList = new() { "work_no", "lot_no_child" };
+                            break;
+                        case TargetCtrlId.Button.OutputShed:     // 棚番移庫
+                        case TargetCtrlId.Button.OutputCategory: // 部門移庫
+                            keyNameList = new() { "lot_no", "transfer_no" };
+                            break;
+                    }
+
                     // シート定義毎にループ
                     foreach (var sheetDefine in sheetDefineList)
                     {
@@ -419,7 +435,20 @@ namespace BusinessLogic_PT0002
                                     {
                                         sqlItem = sqlItem + ",";
                                     }
-                                    sqlItem += "'" + keyValuePair.Value + "'" + " AS " + keyValuePair.Key;
+
+                                    // 数値項目(リストに格納されている項目)はシングルクォーテーションを付けないようにする
+                                    // リストにキー名称が存在するか判定
+                                    if (keyNameList.Contains(keyValuePair.Key))
+                                    {
+                                        // シングルクォーテーションなし
+                                        sqlItem += " " + keyValuePair.Value + " AS " + keyValuePair.Key;
+                                    }
+                                    else
+                                    {
+                                        // シングルクォーテーションあり
+                                        sqlItem += "'" + keyValuePair.Value + "'" + " AS " + keyValuePair.Key;
+                                    }
+
                                     /*
                                                                         // 個別処理：新旧区分の埋め込み
                                                                         if(keyValuePair.Key == OutputReportDefine.ColumnNameNewOldStructureId)

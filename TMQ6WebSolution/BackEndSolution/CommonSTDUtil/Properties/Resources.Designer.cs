@@ -61,6 +61,15 @@ namespace CommonSTDUtil.Properties {
         }
         
         /// <summary>
+        ///   Top に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string _111200006 {
+            get {
+                return ResourceManager.GetString("111200006", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Back に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string _111350001 {

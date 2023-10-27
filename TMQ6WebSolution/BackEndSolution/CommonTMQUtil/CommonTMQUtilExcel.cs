@@ -1466,6 +1466,7 @@ namespace CommonTMQUtil
 
                         }
                     }
+
                     // マッピングデータ作成
                     List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingList(
                                                                             factoryId,
@@ -2736,6 +2737,8 @@ namespace CommonTMQUtil
 
                 // マッピング情報設定
                 info.SetExlSetValueByAddress(address, val, format);
+                info.SetAddress(address);
+                info.SetColData(new[] { val });
                 // マッピングリストに追加
                 mappingList.Add(info);
                 if (setTitle)
@@ -2749,6 +2752,8 @@ namespace CommonTMQUtil
                     info.SetSheetName(null);
                     info.SetSheetNo(sheetNo);
                     info.SetExlSetValueByAddress(address, val, format);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { val });
                     // マッピングリストに追加
                     mappingList.Add(info);
                 }
@@ -2800,6 +2805,8 @@ namespace CommonTMQUtil
                     val = reportInfo.ItemName;
                     // マッピング情報設定
                     info.SetExlSetValueByAddress(address, val, format);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { val });
                     // マッピングリストに追加
                     mappingList.Add(info);
                 }
@@ -3032,6 +3039,8 @@ namespace CommonTMQUtil
                 }
             }
 
+            //ディクショナリーに変換
+            var dicList = ((List<dynamic>)list).ConvertAll(x => (IDictionary<string, object>)x).ToList();
             // 項目定義
             foreach (var reportInfo in reportInfoList)
             {
@@ -3053,35 +3062,19 @@ namespace CommonTMQUtil
                 }
                 int index = 0;
 
-                // 出力結果分ループ
-                foreach (var data in list)
+                if (sheetDefine.ListFlg && option == null && optionDataList == null)
                 {
-                    // 2行目以降、出力方式によって、マッピング位置を変更
-                    if (index > 0)
+                    //列単位でマッピング可能な一覧
+
+                    // 開始行番号、開始列番号が未指定の場合、スキップ
+                    if (reportInfo.StartRowNo == null || reportInfo.StartColNo == null)
                     {
-                        switch (reportInfo.OutputMethod)
-                        {
-                            case ComReport.SingleCell:
-                                // 単一セルの場合
-                                continue;
-                            case ComReport.LongitudinalDirection:
-                                // 縦方向連続の場合、行番号を加算する
-                                reportInfo.StartRowNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
-                                // 出力方式が 3:予算別の場合
-                                if (option != null && option.OutputMode == TMQUtil.ComReport.OutputMode3)
-                                {
-                                    // 1行開ける
-                                    reportInfo.StartRowNo += 1;
-                                }
-                                break;
-                            case ComReport.LateralDirection:
-                                // 横方向連続の場合、列番号を加算する
-                                reportInfo.StartColNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
-                                break;
-                            default:
-                                // 入出力方式が未設定の場合、スキップ
-                                break;
-                        }
+                        continue;
+                    }
+                    // カラム名が共通用タイトル、共通用日付、共通用時刻の場合、スキップ
+                    if (ColumnName.IsCommonColumn(reportInfo.ColumnName))
+                    {
+                        continue;
                     }
 
                     // 初期化
@@ -3089,61 +3082,209 @@ namespace CommonTMQUtil
                     info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
                     info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
 
-                    // Dictionaryにキャストする
-                    var rowDic = (IDictionary<string, object>)data;
-                    object val;
-                    // 取得データに対象項目が存在するか
-                    if (rowDic.ContainsKey(reportInfo.ColumnName))
+                    //対象項目を取得する
+                    object[] rowData = null;
+                    string columnName = null;
+                    bool rigthAlign = false;
+                    if (dicList.Any(x => x.ContainsKey(reportInfo.ColumnName)))
                     {
-                        val = rowDic[reportInfo.ColumnName];
+                        columnName = reportInfo.ColumnName;
                     }
-                    else
+                    else if (dicList.Any(x => x.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName))))
                     {
                         // パスカルケースも
-                        if (rowDic.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)))
+                        columnName = ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName);
+                    }
+                    if (!string.IsNullOrEmpty(columnName))
+                    {
+                        // カラム名ごとに値を設定
+
+                        if (!string.IsNullOrEmpty(reportInfo.FormatText))
                         {
-                            val = rowDic[ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)];
+                            //###.##等
+                            int idx = reportInfo.FormatText.IndexOf("#.#");
+                            if (idx >= 0)
+                            {
+                                int decimalLength = reportInfo.FormatText.Length - idx - 2;
+                                // ###.## → ##0.00
+                                reportInfo.FormatText = reportInfo.FormatText.Substring(0, idx) + "0." + new string('0', decimalLength);
+                            }
+                            else if(reportInfo.FormatText.IndexOf("#") >= 0)
+                            {
+                                //小数なしの数値 #,### → #,##0 (値「0」がブランクにならないよう変換)
+                                reportInfo.FormatText = reportInfo.FormatText.Substring(0, reportInfo.FormatText.Length - 1) + "0";
+                            }
                         }
-                        else
+
+                        object val = dicList.Where(x => x[columnName] != null).Select(x => x[columnName]).FirstOrDefault();
+                        if (val != null)
                         {
-                            // 取得データに対象項目名がない場合、空文字
-                            val = "";
+                            //型を取得
+                            Type type = val.GetType();
+                            //フォーマットした値を取得
+                            if (type == typeof(int))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((int)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(long))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((long)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(decimal))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((decimal)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(DateTime))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((DateTime)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                            }
+                            else
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? x[columnName] : null).ToArray();
+                            }
                         }
+                    }
+                    
+                    if (rowData != null)
+                    {
+                        switch (reportInfo.OutputMethod)
+                        {
+                            case ComReport.SingleCell:
+                                // 単一セルの場合
+                                rowData = new[] { rowData[0] };
+                                break;
+                            case ComReport.LongitudinalDirection:
+                                // 縦方向連続の場合
+                                break;
+                            case ComReport.LateralDirection:
+                                // 横方向連続の場合
+                                rowData = new[] { rowData };
+                                break;
+                            default:
+                                // 入出力方式が未設定の場合、スキップ
+                                break;
+                        }
+                    }
+                    if (rowData == null)
+                    {
+                        rowData = new[] { "" };
                     }
                     // マッピングセルを設定
                     string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
                     // フォーマット設定
                     string format = null;
-
-                    if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
+                    if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr || !string.IsNullOrEmpty(reportInfo.FormatText))
                     {
                         format = ComReport.StrFormat;
                     }
-                    // 1行目の場合
-                    if (index == 0)
-                    {
-                        // 出力方式が 3:予算別で表示単位が 2:年度の場合
-                        if (option != null &&
-                            option.OutputMode == TMQUtil.ComReport.OutputMode3 &&
-                            option.DisplayUnit == (int)Const.MsStructure.StructureId.ScheduleDisplayUnit.Year)
-                        {
-                            // マッピング情報設定
-                            info.SetExlSetValueByAddress(address, "", format);
-                            // マッピングリストに追加
-                            mappingList.Add(info);
-                            // 1行開ける
-                            reportInfo.StartRowNo += 1;
-                            // アドレス再設定
-                            address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
-                        }
-                    }
+
                     // マッピング情報設定
-                    info.SetExlSetValueByAddress(address, val, format);
+                    info.SetExlSetValueByAddress(address, null, format);
+                    info.SetAddress(address);
+                    info.SetColData(rowData, rigthAlign);
                     // マッピングリストに追加
                     mappingList.Add(info);
-                    // 行数を加算
-                    index++;
                 }
+                else
+                {
+                    //セル単位でマッピング
+
+                    // 出力結果分ループ
+                    foreach (var rowDic in dicList)
+                    {
+                        // 2行目以降、出力方式によって、マッピング位置を変更
+                        if (index > 0)
+                        {
+                            switch (reportInfo.OutputMethod)
+                            {
+                                case ComReport.SingleCell:
+                                    // 単一セルの場合
+                                    continue;
+                                case ComReport.LongitudinalDirection:
+                                    // 縦方向連続の場合、行番号を加算する
+                                    reportInfo.StartRowNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
+                                    // 出力方式が 3:予算別の場合
+                                    if (option != null && option.OutputMode == TMQUtil.ComReport.OutputMode3)
+                                    {
+                                        // 1行開ける
+                                        reportInfo.StartRowNo += 1;
+                                    }
+                                    break;
+                                case ComReport.LateralDirection:
+                                    // 横方向連続の場合、列番号を加算する
+                                    reportInfo.StartColNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
+                                    break;
+                                default:
+                                    // 入出力方式が未設定の場合、スキップ
+                                    break;
+                            }
+                        }
+
+                        // 初期化
+                        var info = new CommonExcelPrtInfo();
+                        info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                        info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+                        // Dictionaryにキャストする
+                        //var rowDic = (IDictionary<string, object>)data;
+                        object val;
+                        // 取得データに対象項目が存在するか
+                        if (rowDic.ContainsKey(reportInfo.ColumnName))
+                        {
+                            val = rowDic[reportInfo.ColumnName];
+                        }
+                        else
+                        {
+                            // パスカルケースも
+                            if (rowDic.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)))
+                            {
+                                val = rowDic[ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)];
+                            }
+                            else
+                            {
+                                // 取得データに対象項目名がない場合、空文字
+                                val = "";
+                            }
+                        }
+                        // マッピングセルを設定
+                        string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
+                        // フォーマット設定
+                        string format = null;
+
+                        if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
+                        {
+                            format = ComReport.StrFormat;
+                        }
+                        // 1行目の場合
+                        if (index == 0)
+                        {
+                            // 出力方式が 3:予算別で表示単位が 2:年度の場合
+                            if (option != null &&
+                                option.OutputMode == TMQUtil.ComReport.OutputMode3 &&
+                                option.DisplayUnit == (int)Const.MsStructure.StructureId.ScheduleDisplayUnit.Year)
+                            {
+                                // マッピング情報設定
+                                info.SetExlSetValueByAddress(address, "", format);
+                                // マッピングリストに追加
+                                mappingList.Add(info);
+                                // 1行開ける
+                                reportInfo.StartRowNo += 1;
+                                // アドレス再設定
+                                address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
+                            }
+                        }
+                        // マッピング情報設定
+                        info.SetExlSetValueByAddress(address, val, format);
+                        // マッピングリストに追加
+                        mappingList.Add(info);
+                        // 行数を加算
+                        index++;
+                    }
+                }
+
             }
 
             // オプション指定のある場合
@@ -3179,10 +3320,10 @@ namespace CommonTMQUtil
                         int offsetRow = 0;
                         int index = 0;
                         // 取得データ分ループ
-                        foreach (var data in list)
+                        foreach (var rowDic in dicList)
                         {
                             // Dictionaryにキャストする
-                            var rowDic = (IDictionary<string, object>)data;
+                            //var rowDic = (IDictionary<string, object>)data;
                             // 取得データに対象項目が存在するか
                             if (rowDic.ContainsKey(ColumnName.KeyId))
                             {

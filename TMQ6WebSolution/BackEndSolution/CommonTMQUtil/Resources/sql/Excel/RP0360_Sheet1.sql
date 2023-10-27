@@ -78,7 +78,7 @@ SELECT
         AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_name, -- 新旧区分(翻訳)
     sum(ISNULL(pih_to.inout_quantity, 0)) as inout_quantity, -- 出庫数
-    FORMAT(SUM(dbo.get_rep_rounding_value(pih_to.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as transfer_amount, -- 移庫金額
+    SUM(dbo.get_rep_rounding_value(pih_to.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)) as transfer_amount, -- 移庫金額
     FORMAT(pih_to.inout_datetime,'yyyy/MM') as inout_datetime, -- 検収年月
 
     pih.account_structure_id, -- 勘定項目

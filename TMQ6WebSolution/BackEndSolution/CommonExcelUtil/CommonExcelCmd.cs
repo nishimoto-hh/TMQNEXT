@@ -2738,6 +2738,32 @@ namespace CommonExcelUtil
             }
             return workSheet.LastColumnUsed().ColumnLetter();
         }
+
+        /// <summary>
+        /// 列単位に値をマッピング
+        /// </summary>
+        /// <param name="sheetNo">シート番号</param>
+        /// <param name="address">開始セル</param>
+        /// <param name="data">設定データ</param>
+        /// <param name="formatList">フォーマット</param>
+        /// <param name="numFlg">数値フラグ(数値の場合右寄せ)</param>
+        public void InsertData(int sheetNo, string address, object[] data, List<MappingInfo> formatList, bool numFlg)
+        {
+            //対象シート
+            workSheet = workBook.Worksheet(sheetNo);
+            //列の値設定
+            var range = workSheet.Cell(address).InsertData(data);
+            //フォーマット設定
+            if (range != null && formatList.Any(x => !string.IsNullOrEmpty(x.Format)))
+            {
+                range.Style.NumberFormat.Format = formatList.Select(x => x.Format).FirstOrDefault();
+            }
+            if (range != null && numFlg)
+            {
+                //数値列の場合、右寄せ
+                range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            }
+        }
         #endregion
 
         #region privateメソッド

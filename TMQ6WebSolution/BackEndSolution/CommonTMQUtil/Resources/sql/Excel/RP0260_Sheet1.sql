@@ -51,7 +51,7 @@ SELECT
         AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_name, -- 新旧区分(翻訳)
     ISNULL(pls.stock_quantity, 0) as stock_quantity, -- 在庫数
-    FORMAT(dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as stock_amount, -- 購入金額
+    dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) as stock_amount, -- 購入金額
     FORMAT(pl.receiving_datetime,'yyyy/MM') as receiving_datetime, -- 入庫日
 
     pl.account_structure_id, -- 勘定項目

@@ -51,8 +51,8 @@ SELECT
             )
         AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_name, -- 新旧区分(翻訳)
-    FORMAT(SUM(ISNULL(pih.inout_quantity, 0)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as inout_quantity, -- 出庫数
-    FORMAT(SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as issue_monney, -- 出庫金額
+    SUM(ISNULL(pih.inout_quantity, 0)) as inout_quantity, -- 出庫数
+    SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)) as issue_monney, -- 出庫金額
     FORMAT(pih.inout_datetime,'yyyy/MM') as inout_datetime, -- 検収年月
     pih.account_structure_id, -- 勘定項目
     [dbo].[get_rep_extension_data](pih.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,

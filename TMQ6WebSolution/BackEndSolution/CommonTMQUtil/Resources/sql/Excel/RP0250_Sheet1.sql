@@ -50,7 +50,7 @@ SELECT
     ) AS old_new_name, -- 新旧区分(翻訳)  
     SUM(ISNULL(pih.inout_quantity, 0)) as inout_quantity, -- 入庫数
     ISNULL(pl.unit_price, 0) as unit_price, -- 入庫単価
-    FORMAT(SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as amount_money,
+    SUM(dbo.get_rep_rounding_value(pih.inout_quantity * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision)) as amount_money,
     FORMAT(pih.inout_datetime,'yyyy/MM') as inout_datetime, -- 検収年月
     pl.account_structure_id, -- 勘定項目
     [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,

@@ -188,7 +188,7 @@ SELECT
             )
         AND tra.structure_id = parts.location_warehouse_structure_id
     ) AS warehouse_name, -- 標準予備品倉庫
-    '''' + (
+    (
         SELECT
             tra.translation_text
         FROM

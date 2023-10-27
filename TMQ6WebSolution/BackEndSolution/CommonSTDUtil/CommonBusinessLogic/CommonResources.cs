@@ -93,6 +93,10 @@
             /// </summary>
             public const string ID111200005 = "111200005";
             /// <summary>
+            /// TOP画面へ遷移
+            /// </summary>
+            public const string ID111200006 = "111200006";
+            /// <summary>
             /// ログイン
             /// </summary>
             public const string ID911430002 = "911430002";
@@ -1765,6 +1769,22 @@
             /// 変更管理の承認者は一般ユーザか特権ユーザを指定してください。
             /// </summary>
             public const string ID141290009 = "141290009";
+            /// <summary>
+            /// ログイン処理中です。しばらくお待ちください。
+            /// </summary>
+            public const string ID941430006 = "941430006";
+            /// <summary>
+            /// メールアドレスがTMQユーザーマスタに登録されていません。
+            /// </summary>
+            public const string ID941340002 = "941340002";
+            /// <summary>
+            /// メールアドレスがTMQユーザーマスタに複数登録されています。
+            /// </summary>
+            public const string ID941340003 = "941340003";
+            /// <summary>
+            /// 指定できない文字列が含まれています。
+            /// </summary>
+            public const string ID941120018 = "941120018";
         }
     }
 }

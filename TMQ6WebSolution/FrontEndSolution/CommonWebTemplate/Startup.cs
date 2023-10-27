@@ -8,11 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
 using Sustainsys.Saml2;
 using Sustainsys.Saml2.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace CommonWebTemplate
@@ -95,19 +97,19 @@ namespace CommonWebTemplate
                         options.SPOptions.EntityId = new EntityId(AppCommonObject.Config.AppSettings.TMQEntityId);
                         options.SPOptions.PublicOrigin = new Uri(AppCommonObject.Config.AppSettings.TMQPublicOrigin);
 
-                    //使用する証明書の設定（本来はローカルファイルではなく証明書ストアを利用する）
-                    //options.SPOptions.ServiceCertificates.Add(new X509Certificate2("Sustainsys.Saml2.Tests.pfx"));
+                        //使用する証明書の設定（本来はローカルファイルではなく証明書ストアを利用する）
+                        //options.SPOptions.ServiceCertificates.Add(new X509Certificate2("stubidp.sustainsys.com.cer"));
 
-                    //Idp設定
-                    IdentityProvider idp = new IdentityProvider(
-                                new EntityId(AppCommonObject.Config.AppSettings.AzureADEntityId), options.SPOptions)
-                        {
-                            LoadMetadata = true,
-                            SingleSignOnServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl),
-                            SingleLogoutServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleLogoutServiceUrl),
-                            MetadataLocation = "次期TMQ_GSRなし.xml",
-                        };
-                        options.IdentityProviders.Add(idp);
+                        //Idp設定
+                        IdentityProvider idp = new IdentityProvider(
+	                        new EntityId(AppCommonObject.Config.AppSettings.AzureADEntityId), options.SPOptions)
+	                        {
+	                            LoadMetadata = true,
+	                            SingleSignOnServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl),
+	                            SingleLogoutServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleLogoutServiceUrl),
+	                            MetadataLocation = "Stub_Metadata.xml",
+	                        };
+	                        options.IdentityProviders.Add(idp);
                     }
                 ).AddCookie("scheme");
             }
@@ -122,7 +124,8 @@ namespace CommonWebTemplate
             }
             else
             {
-                app.UseExceptionHandler("/Error");
+                //app.UseExceptionHandler("/Error");
+                app.UseExceptionHandler("/Home");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
@@ -161,7 +164,8 @@ namespace CommonWebTemplate
                 HttpOnly = HttpOnlyPolicy.Always
             });
 
-            app.UseStatusCodePagesWithRedirects("~/Error?code={0}");
+            //app.UseStatusCodePagesWithRedirects("~/Error?code={0}");
+            app.UseStatusCodePagesWithRedirects("~/Home/Error?code={0}");
 
             app.UseEndpoints(endpoints =>
             {

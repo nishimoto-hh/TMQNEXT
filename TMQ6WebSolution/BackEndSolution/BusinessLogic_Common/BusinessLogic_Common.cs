@@ -1133,7 +1133,10 @@ namespace BusinessLogic_Common
 
                     List<Dictionary<string, object>> resultList = new();
                     Dictionary<string, object> dicList = new();
-                    dicList.Add("UserId", result.UserId);
+                    if (result != null && result.Count > 0)
+                    {
+                        dicList.Add("UserIdList", result.Select(x => x.UserId).ToList());
+                    }
                     resultList.Add(dicList);
 
                     this.resultInfoDictionary = resultList;

@@ -315,6 +315,24 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機能場所階層ID</summary>
             /// <value>機能場所階層ID</value>
             public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? LocationPlantStructureId { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? LocationSeriesStructureId { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? LocationStrokeStructureId { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? LocationFacilityStructureId { get; set; }
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public int? JobStructureId { get; set; }

@@ -158,7 +158,7 @@ SELECT
             AND tra.structure_id = mh.maintenance_season_structure_id
       ) AS maintenance_season_name                        -- 保全時期名称
     , CASE
-        WHEN ms.completion_date IS NOT NULL THEN '''' + FORMAT(ms.completion_date, 'yyyy/MM/dd') 
+        WHEN ms.completion_date IS NOT NULL THEN FORMAT(ms.completion_date, 'yyyy/MM/dd') 
         ELSE ''
     END AS completion_date                              -- 完了年月日
     , CASE

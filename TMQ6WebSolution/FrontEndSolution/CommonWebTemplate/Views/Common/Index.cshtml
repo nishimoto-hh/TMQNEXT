@@ -286,8 +286,34 @@
 
 @section Scripts{
     <script>
+        P_InvalidKeywords = [];
         $(function () {
             @*console.time('javascript');*@
+            var reload = false;
+            @{
+                foreach (var keyword in AppCommonObject.Config.AppSettings.TokenUpdateKeywords)
+                {
+                    @:P_InvalidKeywords.push('@keyword');
+                }
+            }
+            if (P_InvalidKeywords.length > 0) {
+                var token = $("input:hidden[name='__RequestVerificationToken']").val();
+                $.each(P_InvalidKeywords, function (i, keyword) {
+                    if (token.indexOf(keyword) >= 0) {
+                        @*偽造防止トークンに指定キーワードが含まれる場合、再描画して偽造防止トークンを更新する*@
+                        @* ↓↓↓動作検証用処理　検証完了後削除すること！↓↓↓*@
+                        @*alert("keyword:" + keyword + "\ntoken:" + token);*@
+                        @* ↑↑↑動作検証用処理　検証完了後削除すること！↑↑↑*@
+                        reload = true;
+                        window.location.reload();
+                        return false;
+                    }
+                });
+            }
+            if (reload) {
+                @*再描画が有効な場合は以降の処理は実行しない*@
+                return false;
+            }
 
             @* ブラウザタブ識別番号取得 *@
             P_BrowserTabNo = getBrowserTabNo();

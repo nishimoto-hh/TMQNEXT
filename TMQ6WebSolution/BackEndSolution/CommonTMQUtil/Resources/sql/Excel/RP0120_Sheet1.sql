@@ -81,8 +81,7 @@ WITH st_com(
         , su.location_stroke_structure_id AS stroke_id          -- 機能場所階層id（工程）
         , su.location_facility_structure_id AS facility_id      -- 機能場所階層id（設備）
         , su.stop_system_structure_id           --系停止
---        , su.stop_time                          --系停止時間(Hr)
-        , FORMAT(su.stop_time, '0.##') AS stop_time --系停止時間(Hr)
+        , su.stop_time                          --系停止時間(Hr)
         , hi.cost_note                          --費用メモ
         , su.sudden_division_structure_id       --突発区分
         , pl.expected_construction_date         --着工予定日

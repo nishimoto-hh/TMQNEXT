@@ -5,18 +5,24 @@
 @using CommonSTDUtil.CommonSTDUtil
 
 @{
+    // シングルサインオンのログイン画面かどうか
+    var isSSOLogin = AppCommonObject.Config.AppSettings.AzureADLogin;
+    var isAutoLogin = "1".Equals(ViewBag.AutoLogin) || isSSOLogin;
+    var className = isSSOLogin ? "sso" : "";
+
     //ブラウザの言語を取得
     var browserLang = Context.Request.Headers["Accept-Language"].ToString().Split(";").FirstOrDefault()?.Split(",").FirstOrDefault();
     //ログイン
-    var login = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911430002, browserLang);
+    var msgId = CommonResources.ID.ID911430002;
+    if (isAutoLogin && !string.IsNullOrEmpty(Model.UserId))
+    {
+        msgId = CommonResources.ID.ID111200006;
+    }
+    var login = CommonSTDUtil.GetPropertiesMessage(msgId, browserLang);
     //ログインID
     var loginId = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911430004, browserLang);
     //パスワード
     var password = CommonSTDUtil.GetPropertiesMessage(CommonResources.ID.ID911260003, browserLang);
-
-    // シングルサインオンのログイン画面かどうか
-    var isSSOLogin = AppCommonObject.Config.AppSettings.AzureADLogin;
-    var className = isSSOLogin ? "sso" : "";
 
     ViewBag.Title = login;
     Layout = "~/Views/Shared/_LayoutSub.cshtml";
@@ -45,26 +51,37 @@
         {
             <div class="success">@ViewBag.Message</div>
         }
-    </section>
+        else if (ViewBag.Messages != null && ViewBag.Messages.Count > 0)
+        {
+            <div class="success">
+            @foreach (string message in ViewBag.Messages)
+            {
+                @message<br>
+            }       
+            </div>
+        }
+        </section>
 
     @*=====ログイン情報入力エリア=====*@
-    <section id="login_area" class="@className">
-        @using (Html.BeginForm(
-               null,      // アクション名
-               null,    // コントローラー名
-               new { id = "" },        // ルートパラメーター
-               FormMethod.Post,                               // HTTP メソッド
-               true,
-               new { id = "formSearch", enctype = "multipart/form-data", autocomplete = "nope" } // その他の属性
-           ))
-        {
-            @*@Html.AntiForgeryToken()*@
-            @*== ※post用ﾃﾞｰﾀ ==*@
-            <input name="LoginUser" type="hidden" value="">
-            <input name="LoginPassword" type="hidden" value="">
-            <input name="AccessKey" type="hidden" value="@ViewBag.AccessKey">
+<section id="login_area" class="@className">
+    @using (Html.BeginForm(
+          null,      // アクション名
+          null,    // コントローラー名
+          new { id = "" },        // ルートパラメーター
+          FormMethod.Post,                               // HTTP メソッド
+          true,
+          new { id = "formSearch", enctype = "multipart/form-data", autocomplete = "nope" } // その他の属性
+      ))
+    {
+        @*@Html.AntiForgeryToken()*@
+        @*== ※post用ﾃﾞｰﾀ ==*@
+        <input name="LoginUser" type="hidden" value="">
+        <input name="LoginPassword" type="hidden" value="">
+        <input name="AccessKey" type="hidden" value="@ViewBag.AccessKey">
+        <input name="UserId" type="hidden" value="@Model.UserId">
 
-            @if (!isSSOLogin) {
+        @if (!isAutoLogin)
+        {
             @*<div class="mark_required">ログインID</div>*@
             <div class="required">
                 <label for="user login">@loginId</label>
@@ -93,16 +110,16 @@
                 <input type="password" name="dummy1" value="" style="display:none;" disabled>
                 <input type="password" name="dummy1" value="" style="display:none;" disabled>
             </div>
-            }
-
-            @*=====ログインボタンエリア=====*@
-            @*<div>*@
-            <div class="submit">
-                <input type="submit" id="login" class="btn btn-primary btn-Cover" value="@login" />
-            </div>
-
         }
-    </section>
+
+        @*=====ログインボタンエリア=====*@
+        @*<div>*@
+        <div class="submit">
+            <input type="submit" id="login" class="btn btn-primary btn-Cover" value="@login" />
+        </div>
+
+    }
+</section>
 
 </article>
 
@@ -113,60 +130,95 @@
     }
 
 <script>
-        $(function () {
-
-            @* 閉じるﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
-            $("#login").on('click', function () {
-                var formSearch = $("#formSearch");
-
-                $(formSearch).attr("action", "@actionUrl");  //~/Home/Login
-
-                //ﾛｸﾞｲﾝﾕｰｻﾞｰをhidden項目に設定
-                var loginUser = $(formSearch).find("input:text[name='LoginUser_text']").val();
-                $(formSearch).find("input:hidden[name='LoginUser']").val(loginUser);
-
-                //ﾛｸﾞｲﾝﾊﾟｽﾜｰﾄﾞをhidden項目に設定
-                var loginPassword = $(formSearch).find("input:password[name='LoginPassword_text']").val();
-                $(formSearch).find("input:hidden[name='LoginPassword']").val(loginPassword);
-
-                $(formSearch).submit();
+    var P_InvalidKeywords = [];
+    $(function () {
+        var reload = false;
+        $("#login").prop('disabled', true);
+        @{
+            foreach(var keyword in AppCommonObject.Config.AppSettings.TokenUpdateKeywords)
+            {
+                @:P_InvalidKeywords.push('@keyword');
+            }
+        }
+        if (P_InvalidKeywords.length > 0) {
+            var token = $("input:hidden[name='__RequestVerificationToken']").val();
+            $.each(P_InvalidKeywords, function (i, keyword) {
+                if (token.indexOf(keyword) >= 0) {
+                    @*偽造防止トークンに指定キーワードが含まれる場合、再描画して偽造防止トークンを更新する*@
+                    @* ↓↓↓動作検証用処理　検証完了後削除すること！↓↓↓*@
+                    @*alert("keyword:" + keyword + "\ntoken:" + token);*@
+                    @* ↑↑↑動作検証用処理　検証完了後削除すること！↑↑↑*@
+                    reload = true;
+                    window.location.reload();
+                    return false;
+                }
             });
+        }
+        if (reload) {
+            @* 再描画が有効な場合は以降の処理は実行しない *@
+            return false;
+        }
 
-            $(document).keydown(function (event) {
-                // クリックされたキーのコード
-                var keyCode = event.keyCode;
+        $("#login").prop('disabled', false);
 
-                // Ctrlキーがクリックされたか(true or false)
-                var ctrlClick = event.ctrlKey;
+        @if (isAutoLogin && !string.IsNullOrEmpty(Model.UserId))
+        {
+            @*自動ログインが有効でユーザIDが設定済みの場合、自動ログイン*@
+            @:setTimeout(function () { $("#login").click(); }, @AppCommonObject.Config.AppSettings.AutoLoginWaitTime);
+        }
 
-                // Altキーがクリックされたか(true or false)
-                var altClick = event.altKey;
+        @* ログインﾎﾞﾀﾝｲﾍﾞﾝﾄ処理割り当て *@
+        $("#login").on('click', function () {
+            var formSearch = $("#formSearch");
 
-                // キーイベントが発生した対象のオブジェクト
-                var obj = event.target;
+            $(formSearch).attr("action", "@actionUrl");  @*~/Home/Login*@
 
-                // バックスペースキーを制御
-                if (keyCode == 8) {
-                    // テキストボックス／テキストエリアを制御
-                    if ((obj.tagName == "INPUT"
-                        && (obj.type == "text" || obj.type == "password" || obj.type == "num" || obj.type == "date" || obj.type == "time" || obj.type == "search"))
-                        || obj.tagName == "TEXTAREA") {
-                        if (!obj.readOnly && !obj.disable) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
+            @*ﾛｸﾞｲﾝﾕｰｻﾞｰをhidden項目に設定*@
+            var loginUser = $(formSearch).find("input:text[name='LoginUser_text']").val();
+            $(formSearch).find("input:hidden[name='LoginUser']").val(loginUser);
 
-                // Alt + ←を制御する
-                if (altClick && (keyCode == 37 || keyCode == 39)) {
-                    return false;
-                }
+            @*ﾛｸﾞｲﾝﾊﾟｽﾜｰﾄﾞをhidden項目に設定*@
+            var loginPassword = $(formSearch).find("input:password[name='LoginPassword_text']").val();
+            $(formSearch).find("input:hidden[name='LoginPassword']").val(loginPassword);
 
-                return true;
-            })
-
+            $(formSearch).submit();
         });
+
+        $(document).keydown(function (event) {
+            @*クリックされたキーのコード*@
+            var keyCode = event.keyCode;
+
+            @*Ctrlキーがクリックされたか(true or false)*@
+            var ctrlClick = event.ctrlKey;
+
+            @*Altキーがクリックされたか(true or false)*@
+            var altClick = event.altKey;
+
+            @*キーイベントが発生した対象のオブジェクト*@
+            var obj = event.target;
+
+            @*バックスペースキーを制御*@
+            if (keyCode == 8) {
+                @*テキストボックス／テキストエリアを制御*@
+                if ((obj.tagName == "INPUT"
+                    && (obj.type == "text" || obj.type == "password" || obj.type == "num" || obj.type == "date" || obj.type == "time" || obj.type == "search"))
+                    || obj.tagName == "TEXTAREA") {
+                    if (!obj.readOnly && !obj.disable) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @*Alt + ←を制御する*@
+            if (altClick && (keyCode == 37 || keyCode == 39)) {
+                return false;
+            }
+
+            return true;
+        })
+
+    });
 
 </script>
 }

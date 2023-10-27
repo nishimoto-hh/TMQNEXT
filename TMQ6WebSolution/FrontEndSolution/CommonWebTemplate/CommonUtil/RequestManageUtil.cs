@@ -39,6 +39,10 @@ namespace CommonWebTemplate.CommonUtil
             /// 遷移元URL（ﾛｸﾞｲﾝ時の遷移元：※ｻｲﾄﾏｲﾝﾀﾞｰ用）
             /// </summary>
             public const string CIM_TRANS_SRC_URL = @"CIM_TRANS_SRC_URL";
+            /// <summary>
+            /// URL直接起動時遷移キー(※シングルサインオン用)
+            /// </summary>
+            public const string TMQ_SSO_ACCESS_KEY = "TMQ_SSO_ACCESS_KEY";
         }
         #endregion
 

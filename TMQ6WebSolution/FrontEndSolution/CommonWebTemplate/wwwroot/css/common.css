@@ -773,11 +773,15 @@ ul.multiSelect > li > ul > li {
     color: red;
 }
 
+article[name="login_areaAll"] .message_div div{
+    text-align: center;
+}
+
 /*=== ◆ボタンエリア ===*/
 /*メッセージエリア*/
-#action_message_div{
-   overflow: hidden;
-   padding: 2px 10px 3px 10px;
+#action_message_div {
+    overflow: hidden;
+    padding: 2px 10px 3px 10px;
 }
 
 .action_search_div,

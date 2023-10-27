@@ -1,0 +1,17 @@
+マクロの内容をExcelファイルにより差分管理するのは難しいため、変更後に出力できるよう処理を追加しました。
+
+「modExportSource」を実行してください。全シートのソースが出力されます。(標準では手作業が必要)
+この出力ファイルは動作に必要ありません。
+
+以下、説明です。コード内にも記載しています。
+
+■出力に必要な参照をチェック
+[参照設定] Microsoft Visual Basic for Applications Extensibility 必要
+[参照設定] Microsoft Scripting Runtime 必要
+■マクロのセキュリティ設定を変更
+マクロのセキュリティ「VBAプロジェクトオブジェクトモデルへのアクセスを信頼する」にチェック
+■modExportSourceを開いてF5で実行
+■MacroSourceフォルダに出力される
+■コミットする場合、上記の設定を戻す
+
+参考：https://fumokmm.github.io/it/vba/batch_export_all_sources_of_a_vba_project

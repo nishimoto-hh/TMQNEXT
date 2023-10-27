@@ -1169,10 +1169,13 @@ namespace BusinessLogic_MA0001
                 case ConductInfo.FormDetail.Button.RequestSlipOutput:
                     //依頼票出力
                     reportId = ReportInfo.ReportIdRP0130;
-                    // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    // ユーザの本務工場取得
-                    int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
-                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
+
+                    //保全活動件名IDより工場IDを取得
+                    ComDao.MaSummaryEntity param = GetFormDataByCtrlId<ComDao.MaSummaryEntity>(ConductInfo.FormDetail.ControlId.DetailInfoIds[0], true);
+                    ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(param.SummaryId, this.db);
+                    int factoryId = summary.LocationFactoryStructureId ?? -1;
+                    // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する(ユーザの本務工場ではなく対象データの工場)
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(factoryId, this.PgmId, reportId, this.db) ? factoryId : 0;
 
                     // 帳票定義取得
                     // 出力帳票シート定義のリストを取得
@@ -1244,7 +1247,7 @@ namespace BusinessLogic_MA0001
                 case "Report":
                     reportId = ReportInfo.ReportIdRP0150;
                     // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
-                    userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
                     reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
 
                     // ページ情報取得

@@ -5223,9 +5223,9 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// <param name="mailAdress">メールアドレス</param>
         /// <param name="db">DB接続</param>
         /// <returns></returns>
-        public static Dao.MsUserEntity GetUserInfoByMailAdress(Dictionary<string, object> condition, ComDB db)
+        public static List<Dao.MsUserEntity> GetUserInfoByMailAdress(Dictionary<string, object> condition, ComDB db)
         {
-            Dao.MsUserEntity userInfo = null;
+            List<Dao.MsUserEntity> userInfoList = null;
 
             const string condKey = "MailAdress";
             if (condition.ContainsKey(condKey) && !IsNullOrEmpty(condition[condKey]))
@@ -5235,10 +5235,10 @@ namespace CommonSTDUtil.CommonSTDUtil
                 if (resultList != null && resultList.Count > 0)
                 {
                     // ユーザ情報
-                    userInfo = resultList[0];
+                    userInfoList = resultList.ToList();
                 }
             }
-            return userInfo;
+            return userInfoList;
         }
 
         /// <summary>

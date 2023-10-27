@@ -21,6 +21,23 @@ namespace CommonExcelUtil
         private List<MappingInfo> exlSetValue;
 
         /// <summary>
+        /// セルのアドレス
+        /// </summary>
+        private string address;
+        /// <summary>
+        /// 列データ
+        /// </summary>
+        private object[] colData;
+        /// <summary>
+        /// 列単位フラグ(列単位毎の管理の場合true)
+        /// </summary>
+        private bool colFlg;
+        /// <summary>
+        /// 数値フラグ(文字の位置設定に使用)
+        /// </summary>
+        private bool numFlg;
+
+        /// <summary>
         /// コンストラクタ
         /// </summary>
         public CommonExcelPrtInfo()
@@ -167,6 +184,36 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
+        /// セルのアドレスを設定
+        /// </summary>
+        /// <param name="address">セルのアドレス（A1等）</param>
+        public void SetAddress(string address)
+        {
+            this.address = address;
+        }
+
+        /// <summary>
+        /// 列データを設定
+        /// </summary>
+        /// <param name="data">列データ</param>
+        /// <param name="isNum">数値の場合true</param>
+        public void SetColData(object[] data, bool isNum = false)
+        {
+            this.colData = data;
+            this.colFlg = true;
+            this.numFlg = isNum;
+        }
+
+        /// <summary>
+        /// 列単位フラグを設定
+        /// </summary>
+        /// <param name="flg">列単位の場合true</param>
+        public void SetColFlg(bool flg)
+        {
+            this.colFlg = flg;
+        }
+
+        /// <summary>
         /// マッピング情報リスト取得
         /// </summary>
         /// <returns>マッピング情報リスト</returns>
@@ -191,6 +238,42 @@ namespace CommonExcelUtil
         public int GetSheetNo()
         {
             return this.sheetNo;
+        }
+
+        /// <summary>
+        /// セルのアドレスを取得
+        /// </summary>
+        /// <returns>セルのアドレス（A1等）</returns>
+        public string GetAdress()
+        {
+            return this.address;
+        }
+
+        /// <summary>
+        /// 列データを取得
+        /// </summary>
+        /// <returns>列データ</returns>
+        public object[] GetColData()
+        {
+            return this.colData;
+        }
+
+        /// <summary>
+        /// 列単位フラグを取得
+        /// </summary>
+        /// <returns>列単位の場合true</returns>
+        public bool GetColFlg()
+        {
+            return this.colFlg;
+        }
+
+        /// <summary>
+        /// 数値フラグを取得
+        /// </summary>
+        /// <returns>数値の場合true</returns>
+        public bool GetNumFlg()
+        {
+            return this.numFlg;
         }
 
         /// <summary>

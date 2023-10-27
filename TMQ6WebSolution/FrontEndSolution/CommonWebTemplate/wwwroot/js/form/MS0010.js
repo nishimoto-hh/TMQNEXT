@@ -17,6 +17,7 @@ const MS0010_FormList = {
     UserInfo: {
         Id: "BODY_030_00_LST_1",                // ユーザー情報
         UserId: 1,                              // ユーザーID
+        MailAddress: 2,                         // メールアドレス
         LoginId: 3,                             // ログインID
         AuthLevel: 4,                           // 権限レベル
         PassWord: 5,                            // パスワード
@@ -76,6 +77,9 @@ function initFormOriginalForMS0010(appPath, conductId, formNo, articleForm, curP
     if (conductId == MS0010_FormList.ConductId && formNo == MS0010_FormList.EditNo) {
         // ログインIDにフォーカスをセット
         setFocus(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.LoginId, MS0010_FormList.UserInfo.FirstRowNo, CtrlFlag.TextBox, false);
+        // ログインIDテキストボックスに無効なキーワードチェックのルールを追加
+        var loginId = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.LoginId, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
+        addValidatorRuleForInvalidKeyword(loginId);
 
         // 権限レベル拡張項目取得
         var exData = getValue(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.ExData, MS0010_FormList.FirstRowNo, CtrlFlag.Label, false, false);
@@ -137,6 +141,12 @@ function initFormOriginalForMS0010(appPath, conductId, formNo, articleForm, curP
         // パスワードの項目設定
         var password = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.PassWord, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
         setAttrByNativeJs(password, "type", "password");
+        // パスワードテキストボックスに無効なキーワードチェックのルールを追加
+        addValidatorRuleForInvalidKeyword(password);
+
+        // メールアドレステキストボックスに無効なキーワードチェックのルールを追加
+        var mailAddress = getCtrl(MS0010_FormList.UserInfo.Id, MS0010_FormList.UserInfo.MailAddress, MS0010_FormList.FirstRowNo, CtrlFlag.TextBox);
+        addValidatorRuleForInvalidKeyword(mailAddress);
     }
 }
 

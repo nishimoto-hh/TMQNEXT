@@ -598,6 +598,7 @@ namespace CommonWebTemplate.Controllers.Common
             try
             {
                 BusinessLogicUtil blogic = new BusinessLogicUtil();
+                string message;
 
                 // セッションからログイン情報を取得
                 CommonProcData procData = new CommonProcData();
@@ -608,24 +609,54 @@ namespace CommonWebTemplate.Controllers.Common
                     // アクセスエラー画面に遷移
                     // アクセスが不正です。
                     blogic.GetResourceName(procData, new List<string> { "941010004" }, out IDictionary<string, string> resources);
-                    string message = blogic.ConvertResourceName("941010004", resources);
+                    message = blogic.ConvertResourceName("941010004", resources);
                     return returnActionResult(ReturnType.AccessError, new List<string>() { message });
                 }
 
                 // 偽造防止トークンを取得
                 var token = getRequestVerificationToken(Request);
-                if (string.IsNullOrEmpty(procData.LoginUserId) || string.IsNullOrEmpty(token))
+                if (string.IsNullOrEmpty(procData.LoginUserId))
                 {
                     // 未ログインの場合、ログイン画面へ遷移
-                    //メッセージ取得
-                    blogic.GetResourceName(procData, new List<string> { "941430005" }, out IDictionary<string, string> resources);
 
                     //ログインしてください。
-                    string message = blogic.ConvertResourceName("941430005", resources);
+                    blogic.GetResourceName(procData, new List<string> { "941430005" }, out IDictionary<string, string> resources);
+                    message = blogic.ConvertResourceName("941430005", resources);
+
                     // POSTパラメータの生成
                     Dictionary<string, object> postData = new Dictionary<string, object>();
                     postData.Add("ACCESS_KEY", key);
+                    postData.Add("ERROR_MESSAGE", message);
+                    if (isAzureAD())
+                    {
+                        // シングルサインオンの場合、セッションへ遷移キーを保存
+                        HttpContext.Session.SetString(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY, key);
+                    }
+
+                    // HomeコントローラのIndexアクションへPOSTメソッドでリダイレクト
+                    var url = getRedirectUrl(Request, "/Home/");
+                    return (ActionResult)ActionResultEx.RedirectAndPost(url, postData);
+                }
+                else if (string.IsNullOrEmpty(token))
+                {
+                    // 偽造防止トークンが取得できない場合、ログイン画面に遷移して対象機能へ自動遷移
+
+                    // ログイン処理中です。しばらくお待ちください。
+                    blogic.GetResourceName(procData, new List<string> { "941430006" }, out IDictionary<string, string> resources);
+                    message = blogic.ConvertResourceName("941430006", resources);
+
+                    // POSTパラメータの生成
+                    Dictionary<string, object> postData = new Dictionary<string, object>();
+                    postData.Add("AUTO_LOGIN", "1");
+                    postData.Add("ACCESS_KEY", key);
+                    postData.Add("UserId", procData.LoginUserId);
                     postData.Add("MESSAGE", message);
+
+                    if (isAzureAD())
+                    {
+                        // シングルサインオンの場合、セッションへ遷移キーを保存
+                        HttpContext.Session.SetString(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY, key);
+                    }
 
                     // HomeコントローラのIndexアクションへPOSTメソッドでリダイレクト
                     var url = getRedirectUrl(Request, "/Home/");
@@ -640,6 +671,11 @@ namespace CommonWebTemplate.Controllers.Common
             }
             catch (Exception ex)
             {
+                if (isAzureAD())
+                {
+                    // シングルサインオンの場合、セッションから遷移キーを削除
+                    HttpContext.Session.Remove(RequestManageUtil.SessionKey.TMQ_SSO_ACCESS_KEY);
+                }
                 //　例外エラー画面に遷移
                 return returnActionResult(ex);
             }
