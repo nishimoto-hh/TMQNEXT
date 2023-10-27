@@ -185,11 +185,15 @@ WITH st_com(structure_layer_no, structure_id, parent_structure_id, org_structure
         fac.structure_id
     FROM
          com_factory AS fac
-        INNER JOIN
-            spare_location AS loc
-        ON  (
-                fac.parent_structure_id = loc.structure_id
-            AND loc.structure_layer_no = 0
+    WHERE
+        fac.parent_structure_id
+        IN (
+            SELECT DISTINCT
+                loc.structure_id 
+            FROM
+                spare_location loc 
+            WHERE
+                loc.structure_layer_no = 0
             )
 )
 SELECT

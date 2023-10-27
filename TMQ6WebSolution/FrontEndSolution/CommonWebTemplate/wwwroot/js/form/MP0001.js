@@ -723,7 +723,7 @@ function totallingGetNumberOfRepairsDetail()
         else if (i == 16) {
             setValue(DetailList.RepairsList.Id, DetailRow.Machine, i, CtrlFlag.Link, Math.trunc(mTotal.Half2).toLocaleString()); //機械
             setValue(DetailList.RepairsList.Id, DetailRow.Electricity, i, CtrlFlag.Link, Math.trunc(eTotal.Half2).toLocaleString()); //電気
-            setValue(DetailList.RepairsList.Id, DetailRow.Instrumentation, i, CtrlFlag.Link, Math.trunc(iTotal.This2).toLocaleString()); //計装
+            setValue(DetailList.RepairsList.Id, DetailRow.Instrumentation, i, CtrlFlag.Link, Math.trunc(iTotal.Half2).toLocaleString()); //計装
             setValue(DetailList.RepairsList.Id, DetailRow.Other, i, CtrlFlag.Link, Math.trunc(oTotal.Half2).toLocaleString()); //その他
             setValue(DetailList.RepairsList.Id, DetailRow.Total, i, CtrlFlag.Link, Math.trunc(tTotal.Half2).toLocaleString()); //合計
 
