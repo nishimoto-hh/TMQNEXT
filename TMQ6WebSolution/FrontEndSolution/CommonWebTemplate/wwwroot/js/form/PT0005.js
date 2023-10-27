@@ -165,6 +165,24 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         changeNoEdit(account);
     }, 300); //300ミリ秒
 
+
+    // 標準仕入先の値が「0」の場合は空にする(存在しない構成IDが入ってしまっているため)
+    var venderId = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Vender, 1, CtrlFlag.TextBox, false, false);
+    if (venderId == 0) {
+        setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Vender, 1, CtrlFlag.TextBox, '', false, false);
+        setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.VenderStructureId, 1, CtrlFlag.Label, '', false, false);
+    }
+
+    // 標準仕入先からフォーカスアウトした場合
+    var vender = getCtrl(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Vender, 1, CtrlFlag.TextBox, false, false);
+    $(vender).blur(function () {
+        var venderCode = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.Vender, 1, CtrlFlag.TextBox, false, false);
+        // 入力されていない場合は非表示項目を空に設定する
+        if (!venderCode || venderCode == '') {
+            setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.VenderStructureId, 1, CtrlFlag.Label, '', false, false);
+        }
+    });
+
     // 登録ボタンにフォーカスをセット
     setFocusButton(PT0005_BtnName.Regist);
 }

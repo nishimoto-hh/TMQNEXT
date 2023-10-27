@@ -1,6 +1,6 @@
 /*
 * 予備品　部門のオートコンプリート
-* ユーザが特権(30)、システム管理者(99)の場合は全工場、そうでなければユーザ所属マスタの本務工場の地区に紐づく部門表示
+* ユーザがシステム管理者(99)の場合は全工場、そうでなければユーザ所属マスタの本務工場の地区に紐づく部門表示
 */
 WITH user_narrow AS(
     SELECT
@@ -82,13 +82,12 @@ user_factory AS(
                 dbo.get_target_layer_id(ub.location_structure_id, 1) = st.structure_id
             )
 )
--- ユーザ権限を取得、特権か管理者なら「all_flg」が1
+-- ユーザ権限を取得、管理者なら「all_flg」が1
 ,
 user_auth AS(
     SELECT
         us.user_id,
         CASE au.extension_data
-            WHEN '30' THEN 1
             WHEN '99' THEN 1
             ELSE 0
         END AS all_flg
@@ -100,10 +99,10 @@ user_auth AS(
                 us.authority_level_id = au.structure_id
             )
 )
--- 表示する工場の一覧を取得 特権・システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
+-- 表示する工場の一覧を取得 システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
 ,
 temp AS(
-    -- 特権・システム管理者の場合
+    -- システム管理者の場合
     SELECT
         factoryId
     FROM
@@ -118,7 +117,7 @@ temp AS(
                 au.all_flg = 1
         )
     UNION
-    -- 一般ユーザの場合
+    -- 特権・一般ユーザの場合
     SELECT
         fc.factoryId
     FROM
@@ -162,7 +161,7 @@ FROM
     ( 
         SELECT
             *
-            , row_number() over (ORDER BY exparam2) row_num 
+            , row_number() over(ORDER BY coalesce(tbl.display_order,32768), tbl.structure_id) row_num
         FROM
             ( 
                 SELECT distinct
@@ -172,8 +171,16 @@ FROM
                     , item.translation_text AS 'labels'
                     , item.structure_id AS exparam1
                     , COALESCE(ex2.extension_data, 0) AS exparam2 
+                    , order_common.display_order
+                    , item.structure_id
                 FROM
-                    v_structure_item_all item 
+                   /*IF !getNameFlg */
+                    v_structure_item
+                    /*END*/
+                    /*IF getNameFlg */
+                    v_structure_item_all
+                     /*END*/
+                    item
                     INNER JOIN facatory_max fmax 
                         ON item.structure_id = fmax.structure_id 
                         AND item.location_structure_id = fmax.location_structure_id 
@@ -183,9 +190,13 @@ FROM
                         AND ex.sequence_no = 1 
                     LEFT JOIN ms_item_extension AS ex2 
                         ON ex2.item_id = item.structure_item_id 
-                        AND ex2.sequence_no = 2 
+                        AND ex2.sequence_no = 2
+                    -- 全工場共通の表示順
+                    LEFT OUTER JOIN ms_structure_order AS order_common
+                    ON  item.structure_id = order_common.structure_id
+                    AND order_common.factory_id = 0
                 WHERE
-                    structure_group_id = /*param1*/1760 
+                    item.structure_group_id = /*param1*/1760 
                     AND language_id = /*languageId*/'ja' 
                 /*IF param2 != null && param2 != ''*/
                     /*IF !getNameFlg */

@@ -9,7 +9,7 @@ INTO hm_history_management_detail(
     , [update_datetime]            -- 更新日時
     , [update_user_id]             -- 更新ユーザー
 ) 
-OUTPUT inserted.history_management_id
+OUTPUT inserted.history_management_detail_id
 VALUES ( 
     NEXT VALUE FOR seq_hm_history_management_detail_history_management_detail_id -- 変更管理詳細ID
     , @HistoryManagementId                                                       -- 変更管理ID

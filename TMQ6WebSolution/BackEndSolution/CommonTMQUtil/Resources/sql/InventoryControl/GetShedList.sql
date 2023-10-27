@@ -6,12 +6,12 @@ SELECT DISTINCT
     , ts.work_no AS transfer_no                                --移庫No.
     , pp.parts_no                                             --予備品No.
     , pp.parts_name                                           --予備品名
-    , ts.parts_location_id AS storage_location_id              --移庫元 予備品倉庫
-    , lcn.translation_text AS location_id                     --移庫元 棚番
-    , ts.parts_location_detail_no                              --移庫元 棚枝番
-    , td.parts_location_id AS to_storage_location_id           --移庫先 予備品倉庫
-    , lcn2.translation_text AS to_location_id                 --移庫先 棚番
-    , td.parts_location_detail_no AS to_parts_location_detail_no  --移庫先 棚枝番
+    , ts.parts_location_id AS to_storage_location_id             --移庫先 予備品倉庫
+    , lcn.translation_text AS to_location_id                     --移庫先 棚番
+    , ts.parts_location_detail_no AS to_parts_location_detail_no --移庫先 棚枝番
+    , td.parts_location_id AS storage_location_id --移庫先 予備品倉庫
+    , lcn2.translation_text AS location_id        --移庫先 棚番
+    , td.parts_location_detail_no                 --移庫先 棚枝番
             , ( 
         SELECT
             tra.translation_text --新旧区分

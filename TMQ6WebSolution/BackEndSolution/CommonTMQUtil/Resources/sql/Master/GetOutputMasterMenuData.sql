@@ -84,7 +84,8 @@ SELECT
     END AS default_item,                                              -- 標準(=工場なし)
     CASE
 	WHEN ms.structure_group_id = 1040 and ms.structure_layer_no = 2			-- 予備品倉庫のとき
-	THEN 'AR'+RIGHT('          ' + CONVERT(NVARCHAR, ms.structure_item_id), 10)		-- structure_item_id標記変更　by　AEC
+	--	THEN 'AR'+RIGHT('          ' + CONVERT(NVARCHAR, ms.structure_item_id), 10)		-- structure_item_id標記変更　by　AEC
+	THEN 'AR'+RIGHT('          ' + CONVERT(NVARCHAR, ms.structure_id), 10)		-- structure_id標記変更　by　AEC
 	ELSE　CONVERT(NVARCHAR, ms.structure_item_id)
     END　AS structure_item_id,                                             -- アイテムID
     mt.translation_text,                                              -- アイテム翻訳

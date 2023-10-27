@@ -341,6 +341,10 @@ const actionkbn = {
     Report: 311,
     //Excel出力(非同期)
     ReportHidoki: 312,
+    //Excelportダウンロード
+    ExcelPortDownload: 313,
+    //ExcelPortアップロード
+    ExcelPortUpload: 314,
     //クリア
     Clear: 401,
     //個別実装
@@ -618,6 +622,10 @@ const iconKbnDef = {
 const structureGroupDef = {
     //場所階層
     Location: 1000,
+    //場所階層(変更履歴管理工場含まず)
+    LocationNoHistory: 1001,
+    //場所階層(変更履歴管理工場のみ)
+    LocationHistory: 1002,
     //ユーザーマスタ用場所階層
     LocationForUserMst: 1004,
     //職種機種
@@ -7091,9 +7099,10 @@ function initButtons(appPath, FileSize, target) {
     closeBtn = null;
 
     // Excel出力ボタン
-    //　-  5:Excel出力
-    //　- 51:Excel出力（非同期）
-    var reportBtn = $(target + 'input:button[data-actionkbn="' + actionkbn.Report + '"],input:button[data-actionkbn="' + actionkbn.ReportHidoki + '"]');
+    //　- 311:Excel出力
+    //　- 312:Excel出力（非同期）
+    //  - 313:ExcelPortダウンロード
+    var reportBtn = $(target + 'input:button[data-actionkbn="' + actionkbn.Report + '"],input:button[data-actionkbn="' + actionkbn.ReportHidoki + '"],input:button[data-actionkbn="' + actionkbn.ExcelPortDownload + '"]');
     if (reportBtn != null && reportBtn.length > 0) {
         // Excel出力ボタンの初期化
         initReportBtn(appPath, reportBtn);
@@ -7259,11 +7268,11 @@ function initButtons(appPath, FileSize, target) {
     }
     switchBtn = null;
 
-    // 【共通 - 取り込み機能】データ取込ダイアログ - 取り込みボタン
+    // 【共通 - 取り込み機能】データ取込ダイアログ - 取り込みボタン、ExcelPortアップロードボタン
     //　※template2.0：画面定義可能なボタンにアップグレード
-    var comUploadBtn = $(target + 'input:button[data-actionkbn="' + actionkbn.ComUpload + '"]');
+    var comUploadBtn = $(target + 'input:button[data-actionkbn="' + actionkbn.ComUpload + '"],input:button[data-actionkbn="' + actionkbn.ExcelPortUpload + '"]');
     if (comUploadBtn != null && comUploadBtn.length > 0) {
-        // 取り込みボタンの初期化
+        // 取り込みボタン、ExcelPortアップロードボタンの初期化
         initComUploadBtn(appPath, comUploadBtn, FileSize);
     }
     comUploadBtn = null;
@@ -8801,6 +8810,19 @@ function clickReportBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, conduct
         //$(formSearch).submit();
         /*--同期処理--*/
     }
+    else if (actionkbnW == actionkbn.ExcelPortDownload) {
+        // - 313:ExceoPortダウンロード
+        // 実行中フラグON
+        P_ProcExecuting = true;
+        // ボタンを不活性化
+        $(btn).prop("disabled", true);
+
+        // イベントを削除
+        $(window).off('beforeunload');
+
+        /*--ExcelPortダウンロード処理--*/
+        excelPortDownload(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtrlId);
+    }
     else {
         // - 51:Excel出力(非同期)～非同期タブを表示する
 
@@ -9298,6 +9320,178 @@ function reportCreate(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtr
     //$(P_Article).find("#search_divid").focus();
 }
 
+/**
+ *  ExceclPortダウンロードボタン - 確認メッセージOK時、実行処理
+ *  @param {string} ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string} ：機能ID
+ *  @param {string} ：プログラムID
+ *  @param {number} ：画面番号
+ *  @param {string} ：ボタンCtrlId
+ *  @param {number} ：定義区分(1:一覧画面 2:明細入力画面 3:単票入力画面)
+ *  @param {number} ：確認ﾒｯｾｰｼﾞ番号
+ */
+function excelPortDownload(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtrlId, confirmNo) {
+
+    //処理中メッセージ：on
+    processMessage(true);
+    dispLoading();
+
+    if (confirmNo == null || confirmNo < 0) {
+        confirmNo = 0;
+    }
+
+    // 出力条件取得
+    var conditionDataList = [];
+    if (formNo == 0) {
+        // ExcelPortダウンロード一覧画面の場合、選択行データから取得
+        var rowNo = $(btn).closest("div.tabulator-row").find("div[tabulator-field=ROWNO]")[0].innerText;
+        var tblId = "#" + $(btn).closest("div.ctrlId").attr("id");
+        conditionDataList.push(getTempDataForTabulator(formNo, rowNo, tblId));
+
+    } else {
+        // 条件画面からのダウンロードの場合、条件エリアから取得
+        var tblSearch = getConditionTable();            //条件一覧要素
+        conditionDataList = getConditionData(formNo, tblSearch); //条件ﾃﾞｰﾀ
+    }
+    // 実行対象のプログラムIDは選択行の隠し項目から取得
+    var pgmIdW = conditionDataList[0]["VAL5"];
+
+    // 場所階層/職種機種データ取得
+    var locationIdList = getSelectedStructureIdList(structureGroupDef.Location, treeViewDef.TreeMenu, false);
+    var jobIdList = getSelectedStructureIdList(structureGroupDef.Job, treeViewDef.TreeMenu, true);
+    var saveTreeMenuCondition = true;
+    if (saveTreeMenuCondition) {
+        // LocalStorageへ保存
+        //場所階層
+        setSaveDataToLocalStorage(locationIdList, localStorageCode.LocationTree);
+        //職種機種
+        setSaveDataToLocalStorage(jobIdList, localStorageCode.JobTree);
+    }
+
+    var btnDefines = P_buttonDefine[conductId];
+
+    // POSTデータを生成
+    var postdata = {
+        conductId: conductId,                       // メニューの機能ID
+        pgmId: pgmIdW,                              // 実行対象のプログラムID
+        formNo: formNo,                             // 画面番号
+        ctrlId: btnCtrlId,                          // Excel出力ボタンの画面定義のコントロールID
+        conditionData: conditionDataList,           // 出力条件入力データ
+        ListIndividual: P_dicIndividual,            // 個別実装用汎用ﾘｽﾄ
+        FileDownloadSet: FileDownloadSet.Hidouki,   // 1:非同期
+
+        confirmNo: confirmNo,                       // 確認ﾒｯｾｰｼﾞ番号
+        buttonDefines: btnDefines,
+
+        browserTabNo: P_BrowserTabNo,   // ブラウザタブ識別番号
+
+        locationIdList: locationIdList,         // 場所階層構成IDリスト
+        jobIdList: jobIdList,     // 職種機種構成IDリスト
+    };
+
+    $.ajax({
+        url: appPath + 'api/CommonProcApi/' + actionkbn.ExcelPortDownload,   // ExcelPortダウンロード
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify(postdata),
+        headers: { 'X-XSRF-TOKEN': getRequestVerificationToken() },
+        traditional: true,
+        cache: false
+    }).then(
+        // 1つめは通信成功時のコールバック
+        function (resultInfo) {
+            //正常時
+            var status = resultInfo[0];                     //[0]:処理ステータス - CommonProcReturn
+            var data = separateDicReturn(resultInfo[1], conductId);    //[1]:結果データ - Dictionary<string, object>※結果ﾃﾞｰﾀ："Result"、個別実装用ﾃﾞｰﾀ："Individual"
+
+            // メッセージをクリア
+            clearMessage();
+
+            //処理メッセージを表示
+            if (status.MESSAGE != null && status.MESSAGE.length > 0) {
+                addMessage(status.MESSAGE, status.STATUS);
+            }
+
+            var afterExecKbn = $(btn).data("afterexeckbn"); //  実行処理後区分
+            if (formNo > 0 && afterExecKbn != null && afterExecKbn == afterExecKbnDef.AutoBack) {
+                // 自動で戻る場合、実行結果のセット
+                setExecuteResults(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, false, true, data, status);
+            } else {
+                // ボタンの権限制御のみ実施
+                setButtonStatus();
+            }
+
+
+            // ダウンロードファイル名
+            var fileName = status.FILEDOWNLOADNAME;
+            var filePath = status.FILEPATH;
+
+            if (fileName != null && fileName.length > 0) {
+                // ダウンロードファイル名が指定されている場合のみ、ダウンロード処理実行
+                var formDetail = $(P_Article).find("#" + P_formDetailId);
+                setAttrByNativeJs(formDetail, "method", "POST");
+                setAttrByNativeJs(formDetail, "action", appPath + "Common/Report?output=2&fileName=" + fileName + "&filePath=" + filePath);
+
+                $(formDetail).submit();
+            }
+            // 画面変更ﾌﾗｸﾞ初期化
+            dataEditedFlg = false;
+
+        },
+        // 2つめは通信失敗時のコールバック
+        function (resultInfo) {
+            // 検索処理失敗
+
+            // ボタンを活性化
+            $(btn).prop("disabled", false);
+
+            // メッセージをクリア
+            clearMessage();
+
+            //処理結果ｽﾃｰﾀｽ(CommonProcReturn)
+            var result = resultInfo.responseJSON;
+            var status;
+            if (result.length > 1) {
+                status = result[0];
+                var data = separateDicReturn(result[1], conductId);
+
+                //エラー詳細を表示
+                dispErrorDetail(data);
+            }
+            else {
+                status = result;
+            }
+
+            //処理結果ｽﾃｰﾀｽ(CommonProcReturn)
+            //var status = resultInfo.responseJSON;
+            //処理継続用ｺｰﾙﾊﾞｯｸ関数を生成
+            var confirmNo = 0;
+            if (!isNaN(status.LOGNO)) {
+                confirmNo = parseInt(status.LOGNO, 10);
+            }
+            var eventFunc = function () {
+                reportCreate(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtrlId, confirmNo);
+            }
+
+            //処理結果ｽﾃｰﾀｽを画面状態に反映
+            if (!setReturnStatus(appPath, status, eventFunc)) {
+                return false;
+            }
+        }
+    ).always(
+        //通信の完了時に必ず実行される
+        function (resultInfo) {
+            //処理中メッセージ：off
+            processMessage(false);
+            // 実行中フラグOFF
+            P_ProcExecuting = false;
+            // ボタンを活性化
+            $(btn).prop("disabled", false);
+        });
+
+    $('html,body').animate({ scrollTop: 0 }, '1');      //ｽｸﾛｰﾙを先頭へ移動
+}
 
 /**
  *  削除ボタンの初期化処理
@@ -14224,20 +14418,23 @@ function setSubmitCtrlId(form, ctrlId) {
 
 /**
  *  条件ﾃﾞｰﾀをJSON形式文字列にしてhidden項目にｾｯﾄ（※submit用）
- *  @param {要素}      ：検索ｴﾘｱﾌｫｰﾑ要素
- *  @param {byte}      ：画面番号
- *  @param {number}    ：値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
+ *  @param {number} formNo      ：画面番号
+ *  @param {Element} form       ：検索ｴﾘｱﾌｫｰﾑ要素
+ *  @param {number} isDispVal   ：値取得ﾓｰﾄﾞ(0:ｺｰﾄﾞ値を採用, 1：表示値を採用)
+ *  @param {Array.<object>} conditionDataList   ：検索条件リスト
  */
-function setSubmitDataCondition(formNo, form, isDispVal) {
+function setSubmitDataCondition(formNo, form, isDispVal, conditionDataList) {
 
-    // 検索条件取得
-    var tblSearch = getConditionTable();            //条件一覧要素
-    //var conditionDataList = [];   //条件ﾃﾞｰﾀﾘｽﾄ
-    //var conditionData = getConditionData(formNo, tblSearch, isDispVal);   //条件ﾃﾞｰﾀ
-    //if (conditionData != null) {
-    //    conditionDataList.push(conditionData);
-    //}
-    var conditionDataList = getConditionData(formNo, tblSearch);    //条件ﾃﾞｰﾀ
+    if (!conditionDataList) {
+        // 検索条件取得
+        var tblSearch = getConditionTable();            //条件一覧要素
+        //var conditionDataList = [];   //条件ﾃﾞｰﾀﾘｽﾄ
+        //var conditionData = getConditionData(formNo, tblSearch, isDispVal);   //条件ﾃﾞｰﾀ
+        //if (conditionData != null) {
+        //    conditionDataList.push(conditionData);
+        //}
+        conditionDataList = getConditionData(formNo, tblSearch);    //条件ﾃﾞｰﾀ
+    }
 
     $(form).find("input:hidden[name='ConditionData']").val(JSON.stringify(conditionDataList));
 }
@@ -16773,9 +16970,9 @@ function getTreeViewLocalData(grpId) {
 function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructureId, minLayerNo, maxLayerNo, modalValues) {
     var jsonDataW = jsonData;
     const isTreeMenu = treeViewType.Val == treeViewDef.TreeMenu.Val;
-
-    //if (grpId != structureGroupDef.Location) {
-    if (grpId != structureGroupDef.Location && grpId != structureGroupDef.LocationForUserMst) {
+    // 場所階層の構成グループは、以下の処理を行わない。場所階層だが取得内容を制御するために構成グループが異なるものも含む
+    var noNarrowGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+    if (!noNarrowGrpIds.includes(grpId)) {
         // 予備品ツリーは工場により絞込を行わない
         if (grpId != structureGroupDef.Parts) {
             // 場所階層以外のツリーの場合、選択中の工場IDを取得

@@ -1,53 +1,56 @@
 
 SELECT
-    target.machine_id,                   -- ‹@”ÔID
-    target.equipment_id,                 -- ‹@ŠíID
-    target.machine_no,                   -- ‹@Ší”Ô†
-    target.machine_name,                 -- ‹@Ší–¼Ì
-    target.location_structure_id,        -- êŠŠK‘w(•ÏXŠÇ—ƒe[ƒuƒ‹)
-    target.installation_location,        -- İ’uêŠ
-    target.number_of_installation,       -- İ’u‘ä”
-    target.date_of_installation,         -- İ’u”NŒ
-    target.machine_note,                 -- ‹@”Ôƒƒ‚
-    target.applicable_laws_structure_id, -- “K—p–@‹K
-    target.job_structure_id,             -- Eí‹@í(•ÏXŠÇ—ƒe[ƒuƒ‹)
-    target.manufacturer_type,            -- ƒ[ƒJ[Œ^®
-    target.model_no,                     -- Œ^®ƒR[ƒh
-    target.serial_no,                    -- »‘¢”Ô†
-    target.date_of_manufacture,          -- »‘¢”NŒ
-    target.delivery_date,                -- ”[Šú
-    target.file_link_equipment,          -- ‹@Ší“Y•t—L–³
-    target.file_link_machine,            -- ‹@”Ô“Y•t—L–³
-    target.fixed_asset_no,               -- ŒÅ’è‘Y”Ô†
-    target.equipment_note,               -- ‹@Šíƒƒ‚
-    target.is_changed_component,         -- ‹@Ší•ÊŠÇ—Šî€•ÏX—L–³
-    target.application_user_name,        -- \¿Ò
-    target.approval_user_name,           -- ³”FÒ
-    target.application_date,             -- \¿“ú
-    target.approval_date,                -- ³”F“ú
-    target.application_division_code,    -- \¿‹æ•ª(Šg’£€–Ú)
-    target.application_status_code,      -- \¿ó‹µ(Šg’£€–Ú)
-    target.value_changed,                -- ’l‚É•ÏX‚Ì‚ ‚Á‚½€–Ú
-    target.history_management_id,        -- •ÏXŠÇ—ID
-    target.history_management_detail_id, -- •ÏXŠÇ—Ú×ID
-    target.update_serialid,              -- XVƒVƒŠƒAƒ‹ID(•ÏXŠÇ—ƒe[ƒuƒ‹)
-    target.old_location_structure_id,    -- êŠŠK‘w(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ƒe[ƒuƒ‹)
-    target.old_job_structure_id,         -- Eí‹@í(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ƒe[ƒuƒ‹)
+    target.machine_id,                   -- æ©Ÿç•ªID
+    target.equipment_id,                 -- æ©Ÿå™¨ID
+    target.machine_no,                   -- æ©Ÿå™¨ç•ªå·
+    target.machine_name,                 -- æ©Ÿå™¨åç§°
+    target.location_structure_id,        -- å ´æ‰€éšå±¤(å¤‰æ›´ç®¡ç†ãƒ†ãƒ¼ãƒ–ãƒ«)
+    target.installation_location,        -- è¨­ç½®å ´æ‰€
+    target.number_of_installation,       -- è¨­ç½®å°æ•°
+    target.date_of_installation,         -- è¨­ç½®å¹´æœˆ
+    target.machine_note,                 -- æ©Ÿç•ªãƒ¡ãƒ¢
+    target.applicable_laws_structure_id, -- é©ç”¨æ³•è¦
+    target.job_structure_id,             -- è·ç¨®æ©Ÿç¨®(å¤‰æ›´ç®¡ç†ãƒ†ãƒ¼ãƒ–ãƒ«)
+    target.manufacturer_type,            -- ãƒ¡ãƒ¼ã‚«ãƒ¼å‹å¼
+    target.model_no,                     -- å‹å¼ã‚³ãƒ¼ãƒ‰
+    target.serial_no,                    -- è£½é€ ç•ªå·
+    target.date_of_manufacture,          -- è£½é€ å¹´æœˆ
+    target.delivery_date,                -- ç´æœŸ
+    target.file_link_equipment,          -- æ©Ÿå™¨æ·»ä»˜æœ‰ç„¡
+    target.file_link_machine,            -- æ©Ÿç•ªæ·»ä»˜æœ‰ç„¡
+    target.fixed_asset_no,               -- å›ºå®šè³‡ç”£ç•ªå·
+    target.equipment_note,               -- æ©Ÿå™¨ãƒ¡ãƒ¢
+    target.is_changed_component,         -- æ©Ÿå™¨åˆ¥ç®¡ç†åŸºæº–å¤‰æ›´æœ‰ç„¡
+    target.application_user_name,        -- ç”³è«‹è€…
+    target.approval_user_name,           -- æ‰¿èªè€…
+    target.application_date,             -- ç”³è«‹æ—¥
+    target.approval_date,                -- æ‰¿èªæ—¥
+    target.application_division_code,    -- ç”³è«‹åŒºåˆ†(æ‹¡å¼µé …ç›®)
+    target.application_status_code,      -- ç”³è«‹çŠ¶æ³(æ‹¡å¼µé …ç›®)
+    target.value_changed,                -- å€¤ã«å¤‰æ›´ã®ã‚ã£ãŸé …ç›®
+    target.history_management_id,        -- å¤‰æ›´ç®¡ç†ID
+    target.update_serialid,              -- æ›´æ–°ã‚·ãƒªã‚¢ãƒ«ID(å¤‰æ›´ç®¡ç†ãƒ†ãƒ¼ãƒ–ãƒ«)
+    target.old_location_structure_id,    -- å ´æ‰€éšå±¤(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³ãƒ†ãƒ¼ãƒ–ãƒ«)
+    target.old_job_structure_id,         -- è·ç¨®æ©Ÿç¨®(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³ãƒ†ãƒ¼ãƒ–ãƒ«)
+    target.application_status_id,        -- ç”³è«‹çŠ¶æ³
+    target.application_division_id,      -- ç”³è«‹åŒºåˆ†
 
-    ---------- ˆÈ‰º‚ÍÚ×‰æ–Ê‚Åg—p ----------
-    target.equipment_level_structure_id, -- ‹@ŠíƒŒƒxƒ‹
-    target.importance_structure_id,      -- d—v“x
-    target.conservation_structure_id AS inspection_site_conservation_structure_id, -- •Û‘S•û®
-    target.use_segment_structure_id,     -- g—p‹æ•ª
-    target.circulation_target_flg,       -- zŠÂ‘ÎÛ
-    target.manufacturer_structure_id,    -- ƒ[ƒJ[
-    target.maintainance_kind_manage,     -- “_ŒŸí•Ê–ˆŠÇ—
-    target.application_reason,           -- \¿——R
-    target.rejection_reason,             -- ”Û”F——R
-    target.mc_update_serial_id,          -- XVƒVƒŠƒAƒ‹ID(‹@”Ôî•ñ)
-    target.eq_update_serial_id,          -- XVƒVƒŠƒAƒ‹ID(‹@Šíî•ñ)
+    ---------- ä»¥ä¸‹ã¯è©³ç´°ç”»é¢ã§ä½¿ç”¨ ----------
+    target.hm_machine_id,                -- æ©Ÿç•ªæƒ…å ±å¤‰æ›´ç®¡ç†ID
+    target.hm_equipment_id,              -- æ©Ÿå™¨æƒ…å ±å¤‰æ›´ç®¡ç†ID
+    target.equipment_level_structure_id, -- æ©Ÿå™¨ãƒ¬ãƒ™ãƒ«
+    target.importance_structure_id,      -- é‡è¦åº¦
+    target.conservation_structure_id AS inspection_site_conservation_structure_id, -- ä¿å…¨æ–¹å¼
+    target.use_segment_structure_id,     -- ä½¿ç”¨åŒºåˆ†
+    target.circulation_target_flg,       -- å¾ªç’°å¯¾è±¡
+    target.manufacturer_structure_id,    -- ãƒ¡ãƒ¼ã‚«ãƒ¼
+    target.maintainance_kind_manage,     -- ç‚¹æ¤œç¨®åˆ¥æ¯ç®¡ç†
+    target.application_reason,           -- ç”³è«‹ç†ç”±
+    target.rejection_reason,             -- å¦èªç†ç”±
+    target.mc_update_serial_id,          -- æ›´æ–°ã‚·ãƒªã‚¢ãƒ«ID(æ©Ÿç•ªæƒ…å ±)
+    target.eq_update_serial_id,          -- æ›´æ–°ã‚·ãƒªã‚¢ãƒ«ID(æ©Ÿå™¨æƒ…å ±)
 
-    ---------- ˆÈ‰º‚Í–|–ó‚ğæ“¾ ----------
+    ---------- ä»¥ä¸‹ã¯ç¿»è¨³ã‚’å–å¾— ----------
     (
         SELECT
             tra.translation_text
@@ -65,7 +68,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.equipment_level_structure_id
-    ) AS equipment_level, -- ‹@ŠíƒŒƒxƒ‹
+    ) AS equipment_level, -- æ©Ÿå™¨ãƒ¬ãƒ™ãƒ«
     (
         SELECT
             tra.translation_text
@@ -83,7 +86,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.importance_structure_id
-    ) AS importance_name, -- d—v“x
+    ) AS importance_name, -- é‡è¦åº¦
     (
         SELECT
             tra.translation_text
@@ -101,7 +104,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.conservation_structure_id
-    ) AS inspection_site_conservation_name, -- •Û‘S•û®
+    ) AS inspection_site_conservation_name, -- ä¿å…¨æ–¹å¼
     CASE WHEN target.data_type = 0 THEN
     trim(
         ','
@@ -137,10 +140,10 @@ SELECT
                 SELECT
                     tra.translation_text + ','
                 FROM
-                    hm_history_management_detail detail
+                    hm_history_management history
                     LEFT JOIN
                         hm_mc_applicable_laws laws
-                    ON  detail.history_management_detail_id = laws.history_management_detail_id
+                    ON  history.history_management_id = laws.history_management_id
                     LEFT JOIN
                         v_structure_item_all tra
                     ON  laws.applicable_laws_structure_id = tra.structure_id
@@ -156,10 +159,10 @@ SELECT
                         AND st_f.factory_id IN(0, target.factory_id)
                     )
                 AND tra.structure_id = laws.applicable_laws_structure_id
-                AND target.history_management_detail_id = laws.history_management_detail_id FOR XML PATH('')
+                AND target.history_management_id = laws.history_management_id FOR XML PATH('')
             )
     ) 
-    END AS applicable_laws_name, -- “K—p–@‹K •\¦‚µ‚Ä‚¢‚éƒf[ƒ^‚Ìí—Ş(0:•ÏXŠÇ—‚Ìƒf[ƒ^‚ª‚È‚¢,1:•ÏXŠÇ—‚Ìƒf[ƒ^‚ª‚ ‚é)
+    END AS applicable_laws_name, -- é©ç”¨æ³•è¦ è¡¨ç¤ºã—ã¦ã„ã‚‹ãƒ‡ãƒ¼ã‚¿ã®ç¨®é¡(0:å¤‰æ›´ç®¡ç†ã®ãƒ‡ãƒ¼ã‚¿ãŒãªã„,1:å¤‰æ›´ç®¡ç†ã®ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚‹)
     (
         SELECT
             tra.translation_text
@@ -177,7 +180,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.manufacturer_structure_id
-    ) AS manufacturer_name, -- ƒ[ƒJ[
+    ) AS manufacturer_name, -- ãƒ¡ãƒ¼ã‚«ãƒ¼
     (
         SELECT
             tra.translation_text
@@ -195,7 +198,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.use_segment_structure_id
-    ) AS use_segment_name, -- g—p‹æ•ª
+    ) AS use_segment_name, -- ä½¿ç”¨åŒºåˆ†
     (
         SELECT
             tra.translation_text
@@ -213,7 +216,7 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.application_status_id
-    ) AS application_status_name, -- \¿ó‹µ
+    ) AS application_status_name, -- ç”³è«‹çŠ¶æ³
     (
         SELECT
             tra.translation_text
@@ -231,6 +234,6 @@ SELECT
                 AND st_f.factory_id IN(0, target.factory_id)
             )
         AND tra.structure_id = target.application_division_id
-    ) AS application_division_name -- \¿‹æ•ª
+    ) AS application_division_name -- ç”³è«‹åŒºåˆ†
 FROM
     target

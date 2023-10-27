@@ -1269,6 +1269,54 @@ namespace BusinessLogic_MA0001
             return result;
 
         }
+
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            else if (!string.IsNullOrEmpty(resultMsg))
+            {
+                // 正常終了時、詳細メッセージがセットされている場合、警告メッセージ
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+            }
+
+            //TODO: 個別データ検索処理
+            IList<Dictionary<string, object>> dataList = null;
+            if (dataList == null || dataList.Count == 0)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                resultMsg = GetResMessage(ComRes.ID.ID941060001);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 個別シート出力処理
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
         #endregion
 
         #region privateメソッド

@@ -29,8 +29,12 @@ SELECT
     ,target.application_division_id
     ,target.application_conduct_id
     ,target.application_user_name
+    ,target.approval_user_name
     ,target.application_date
+    ,target.application_reason
+    ,target.rejection_reason
     ,target.application_division_code
+    ,target.application_status_code
     ,target.history_management_id        -- 変更管理ID
     ,target.update_serialid              -- 更新シリアルID(変更管理テーブル)
     ,target.value_changed

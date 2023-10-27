@@ -141,6 +141,14 @@
             /// </summary>
             public const string ID911200004 = "911200004";
             /// <summary>
+            /// ダウンロード処理
+            /// </summary>
+            public const string ID911160003 = "911160003";
+            /// <summary>
+            /// アップロード処理
+            /// </summary>
+            public const string ID911010007 = "911010007";
+            /// <summary>
             /// パラメータ
             /// </summary>
             public const string ID911260002 = "911260002";
@@ -1535,9 +1543,63 @@
             /// 対象データに申請が存在するため処理を行えません。
             /// </summary>
             public const string ID141160016 = "141160016";
+            /// <summary>
+            /// 登録された変更管理に対して処理を行います。
+            /// </summary>
+            public const string ID141200007 = "141200007";
+            /// <summary>
+            /// 表示されている件名に対し行う変更を登録してください。
+            /// </summary>
+            public const string ID141270002 = "141270002";
+            /// <summary>
+            /// 入力された部位、保全項目の組み合わせは既に登録されています。
+            /// </summary>
+            public const string ID141220002 = "141220002";
+            /// <summary>
+            /// 開始日には保全活動が登録されたスケジュール以降の日付を設定してください。
+            /// </summary>
+            public const string ID141060005 = "141060005";
+            /// <summary>
+            /// 保全履歴が既に登録されてますが周期・開始日が変更されています。スケジュールを再作成しますがよろしいですか？
+            /// </summary>
+            public const string ID141300005 = "141300005";
+            /// <summary>
+            /// 同一点検種別で既に異なる周期・開始日が設定されています。入力された周期・内容でスケジュールを再作成しますがよろしいですか？
+            /// </summary>
+            public const string ID141200001 = "141200001";
+            /// <summary>
+            /// 長期計画で使用されている為、削除できません。
+            /// </summary>
+            public const string ID141170002 = "141170002";
+            /// <summary>
+            /// 変更履歴管理対象の工場データは出力できません。
+            /// </summary>
+            public const string ID141290001 = "141290001";
+            /// <summary>
+            /// ダウンロードされたExcelファイルに変更履歴管理対象の工場データは出力されていません。
+            /// </summary>
+            public const string ID141160017 = "141160017";
+            /// <summary>
+            /// ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データは出力されていません。
+            /// </summary>
+            public const string ID141160018 = "141160018";
+            /// <summary>
+            /// ダウンロードされたExcelファイルにExcelPort利用可能工場以外の工場データおよび変更履歴管理対象の工場データは出力されていません。
+            /// </summary>
+            public const string ID141160019 = "141160019";
+            /// <summary>
+            /// ExcelPort利用可能工場以外の工場データは出力できません。
+            /// </summary>
+            public const string ID141040003 = "141040003";
+            /// <summary>
+            /// アップロード可能なファイルがありません。
+            /// </summary>
+            public const string ID941010006 = "941010006";
+            /// <summary>
+            /// 表示されている機器に対し行う変更を登録してください。
+            /// </summary>
+            public const string ID141270003 = "141270003";
 
-
-            
         }
     }
 }

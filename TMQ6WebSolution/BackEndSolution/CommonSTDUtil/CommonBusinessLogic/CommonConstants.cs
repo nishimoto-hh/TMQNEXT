@@ -141,15 +141,23 @@ namespace CommonSTDUtil
             public static class FILETYPE
             {
                 /// <summary>EXCEL</summary>
+                public static string UNDEFINED = "0";
+                /// <summary>EXCEL</summary>
                 public static string EXCEL = "1";
+                /// <summary>EXCELマクロ</summary>
+                public static string EXCEL_MACRO = "2";
+                /// <summary>EXCELテンプレート</summary>
+                public static string EXCEL_TEMPLATE = "3";
+                /// <summary>EXCELテンプレート</summary>
+                public static string EXCEL_TEMPLATE_MACRO = "4";
+                /// <summary>EXCELアドイン</summary>
+                public static string EXCEL_ADDIN = "5";
                 /// <summary>CSV</summary>
-                public static string CSV = "2";
+                public static string CSV = "6";
                 /// <summary>PDF</summary>
-                public static string PDF = "3";
+                public static string PDF = "7";
                 /// <summary>Zip</summary>
-                public static string ZIP = "4";
-                /// <summary>UnDefined</summary>
-                public static string UNDEFINED = "5";
+                public static string ZIP = "8";
             }
 
             /// <summary>
@@ -159,6 +167,8 @@ namespace CommonSTDUtil
             {
                 /// <summary>.xlsx</summary>
                 public static string EXCEL_BOOK = ".xlsx";
+                /// <summary>.xlsm</summary>
+                public static string EXCEL_MACRO_BOOK = ".xlsm";
                 /// <summary>.zip</summary>
                 public static string ZIP_FILE = ".zip";
                 /// <summary>.csv</summary>

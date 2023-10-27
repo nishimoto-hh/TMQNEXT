@@ -68,6 +68,10 @@ namespace BusinessLogic_MC0001
 
             /// <summary>SQL名：一覧取得</summary>
             public const string GetList = "GetMachineList";
+            /// <summary>SQL名：ExcelPort機器台帳取得</summary>
+            public const string GetExcelPortMachineList = "GetExcelPortMachineList";
+            /// <summary>SQL名：ExcelPort機器別管理基準取得</summary>
+            public const string GetExcelPortManagementStandard = "GetExcelPortManagementStandard";
             /// <summary>SQL名：一覧取得</summary>
             //public const string GetListCount = "Count_MachineList";
             /// <summary>SQL名：出力一覧取得</summary>
@@ -178,9 +182,17 @@ namespace BusinessLogic_MC0001
             /// </summary>
             public const string SearchList = "BODY_020_00_LST_0";
             /// <summary>
+            /// 機器台帳 非表示一覧
+            /// </summary>
+            public const string HiddenInfo = "BODY_030_00_LST_0";
+            /// <summary>
             /// 機器台帳詳細 キー情報非表示一覧
             /// </summary>
             public const string Detail00 = "BODY_000_00_LST_1";
+            /// <summary>
+            /// 機器台帳詳細 非表示一覧
+            /// </summary>
+            public const string Detail07 = "BODY_007_00_LST_1";
             /// <summary>
             /// 機器台帳詳細 機番情報 場所階層(地区～設備)
             /// </summary>
@@ -895,6 +907,148 @@ namespace BusinessLogic_MC0001
 
         }
 
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            else if (!string.IsNullOrEmpty(resultMsg))
+            {
+                // 正常終了時、詳細メッセージがセットされている場合、警告メッセージ
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+            }
+
+            //TODO: 個別データ検索処理
+            IList<Dictionary<string, object>> dataList = null;
+
+            if (excelPort.DownloadCondition.SheetNo == 1)
+            {
+                // 機器台帳
+                // ページ情報取得
+                var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string baseSql);
+                // WITH句は別に取得
+                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortMachineList, out string withSql);
+
+                //// 場所分類＆職種機種＆詳細検索条件取得
+                if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+                ////SQLパラメータに言語ID設定
+                whereParam.LanguageId = this.LanguageId;
+                // 一覧検索SQL文の取得
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+                var selectSql = new StringBuilder(executeSql);
+                selectSql.AppendLine("ORDER BY");
+                selectSql.AppendLine("machine_no ");
+                selectSql.AppendLine(",machine_name ");
+
+                // 一覧検索実行
+                IList<Dao.excelPortMachineList> results = db.GetListByDataClass<Dao.excelPortMachineList>(selectSql.ToString(), whereParam);
+                if (results == null || results.Count == 0)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+                List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortMachineList>(ref results, typeLst, this.db, this.LanguageId);
+
+                // Dicitionalyに変換
+                dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortMachineList>(results);
+
+            }
+            else if (excelPort.DownloadCondition.SheetNo == 2)
+            {
+                // 機器別管理基準
+                // ページ情報取得
+                var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string baseSql);
+                // WITH句は別に取得
+                TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string withSql);
+
+                //// 場所分類＆職種機種＆詳細検索条件取得
+                if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+                ////SQLパラメータに言語ID設定
+                whereParam.LanguageId = this.LanguageId;
+                // 一覧検索SQL文の取得
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+                var selectSql = new StringBuilder(executeSql);
+                selectSql.AppendLine("ORDER BY");
+                selectSql.AppendLine("machine_no ");
+                selectSql.AppendLine(",machine_name ");
+                selectSql.AppendLine(",inspection_site_structure_id ");
+                selectSql.AppendLine(",inspection_content_structure_id ");
+
+                // 一覧検索実行
+                IList<Dao.excelPortManagementStandardResult> results = db.GetListByDataClass<Dao.excelPortManagementStandardResult>(selectSql.ToString(), whereParam);
+                if (results == null || results.Count == 0)
+                {
+                    // 「ダウンロード処理に失敗しました。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+                List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+                typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortManagementStandardResult>(ref results, typeLst, this.db, this.LanguageId);
+
+                // Dicitionalyに変換
+                dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortManagementStandardResult>(results);
+
+            }
+            if (dataList == null || dataList.Count == 0)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                resultMsg = GetResMessage(ComRes.ID.ID941060001);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 個別シート出力処理
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
         #endregion
 
         #region privateメソッド
@@ -952,6 +1106,9 @@ namespace BusinessLogic_MC0001
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
 
+            // 非表示項目
+            // 変更管理ボタンの表示制御用フラグ
+            setHistoryManagementFlg(TargetCtrlId.HiddenInfo);
             return true;
         }
 
@@ -1178,6 +1335,10 @@ namespace BusinessLogic_MC0001
                 pageInfos.Add(GetPageInfo(TargetCtrlId.Detail40, this.pageInfoList));
                 pageInfos.Add(GetPageInfo(TargetCtrlId.Detail50, this.pageInfoList));
                 pageInfos.Add(GetPageInfo(TargetCtrlId.Detail60, this.pageInfoList));
+                // 非表示項目
+                // 変更管理ボタンの表示制御用フラグ
+                setHistoryManagementFlg(TargetCtrlId.Detail07, (int)results[0].FactoryId);
+
             }
             else
             {
@@ -2499,6 +2660,32 @@ namespace BusinessLogic_MC0001
             }
             return new Key(keyParam1, keyParam2, keyParam3);
         }
+
+        /// <summary>
+        /// 変更管理ボタンの表示制御用のフラグを設定
+        /// </summary>
+        /// <param name="listCtrlId">設定する非表示項目のID</param>
+        /// <param name="factoryId">省略可能　変更管理を行うか判定する工場ID</param>
+        private void setHistoryManagementFlg(string listCtrlId, int factoryId = -1)
+        {
+            // 変更管理フラグを取得
+            TMQUtil.HistoryManagement history = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            // 変更管理対象外の工場の権限有無(工場ID未指定の、ユーザに対する権限を取得する場合に使用)
+            bool isExistsNoHistory = false;
+            // 工場ID省略時は引数に含めずに、変更管理フラグを取得
+            bool isHitoryManagementFlg = factoryId == -1 ? history.IsHistoryManagementFactoryUserBelong(out isExistsNoHistory) : history.IsHistoryManagementFactory(factoryId);
+            // 画面に設定する内容
+            Dao.HiddenInfo hideInfo = new();
+            // 変更管理ボタンの表示フラグ
+            // 0:変更管理対象外、表示しない
+            // 1:変更管理対象、表示する
+            // 2:混在する(一覧画面のみ)、変更管理する場合としない場合両方を表示
+            hideInfo.IsHistoryManagementFlg = isHitoryManagementFlg ? (isExistsNoHistory ? 2 : 1) : 0;
+            // 画面に設定
+            var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
+            SetSearchResultsByDataClass<Dao.HiddenInfo>(pageInfo, new List<Dao.HiddenInfo> { hideInfo }, 1);
+        }
+
         #endregion
     }
 }

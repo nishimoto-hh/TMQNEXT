@@ -1,8 +1,9 @@
 INSERT 
 INTO hm_mc_machine( 
     [hm_machine_id]                             -- 機番情報変更管理ID
-    , [history_management_detail_id]            -- 変更管理詳細ID
+    , [history_management_id]                   -- 変更管理ID
     , [machine_id]                              -- 機番ID
+    , [execution_division]                      -- 処理区分
     , [location_structure_id]                   -- 機能場所階層ID
     , [job_structure_id]                        -- 職種機種階層ID
     , [machine_no]                              -- 機器番号
@@ -20,23 +21,11 @@ INTO hm_mc_machine(
     , [update_datetime]                         -- 更新日時
     , [update_user_id]                          -- 更新ユーザー
 ) 
-/*@NewMachineId
-OUTPUT inserted.hm_machine_id
-@NewMachineId*/
 VALUES ( 
     NEXT VALUE FOR seq_hm_mc_machine_hm_machine_id -- 機番情報変更管理ID
-    , @HistoryManagementDetailId                   -- 変更管理詳細ID
-
-      /*@NewMachineId
-      -- 機器の新規登録・複写の場合
-    , NEXT VALUE FOR seq_mc_machine_machine_id     -- 機番ID
-      @NewMachineId*/
-
-      /*@DefaultMachineId
-      -- 機器の修正・削除の場合は既存の機番ID
+    , @HistoryManagementId                         -- 変更管理ID
     , @MachineId                                   -- 機番ID
-      @DefaultMachineId*/
-
+    , @ExecutionDivision                           -- 処理区分
     , @LocationStructureId                         -- 機能場所階層ID
     , @JobStructureId                              -- 職種機種階層ID
     , @MachineNo                                   -- 機器番号

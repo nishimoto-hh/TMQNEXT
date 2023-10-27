@@ -113,6 +113,31 @@ WHERE
                     loop.machine_id = @MachineId
             )
     )
+    
+/*@HistoryManage
+-- 変更履歴管理制御追加
+-- 削除申請中で承認済でないものは含めない
+AND NOT EXISTS (
+SELECT hmm.machine_id,hm.application_status_id,vi1.translation_text,hm.application_division_id,vi2.translation_text
+      -- ,ie1.extension_data,ie2.extension_data,hm.history_management_id
+FROM hm_mc_machine hmm,
+     hm_history_management hm,
+	 (SELECT * FROM v_structure_item_all WHERE structure_group_id = 2090 AND language_id = @LanguageId) vi1,
+	 (SELECT * FROM v_structure_item_all WHERE structure_group_id = 2100 AND language_id = @LanguageId) vi2,
+	 ms_item_extension ie1,
+	 ms_item_extension ie2
+WHERE hmm.history_management_id = hm.history_management_id
+AND hm.application_status_id = vi1.structure_id
+AND hm.application_division_id = vi2.structure_id
+AND vi1.structure_item_id = ie1.item_id
+AND vi2.structure_item_id = ie2.item_id
+AND ie1.sequence_no = 1
+AND ie2.sequence_no = 1
+AND ie1.extension_data <> '40' -- 承認済でないもの
+AND ie2.extension_data = '30' -- 削除申請
+AND machine.machine_id = hmm.machine_id
+)
+@HistoryManage*/
 
 /*@LocationStructureIdList
 -- 地区

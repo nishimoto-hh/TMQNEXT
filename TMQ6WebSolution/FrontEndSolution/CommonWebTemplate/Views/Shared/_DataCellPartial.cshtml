@@ -142,7 +142,7 @@
         }
         var grpId = !string.IsNullOrWhiteSpace(Model.ListItem.RELATIONID) ? Convert.ToInt32(Model.ListItem.RELATIONID) : -1;
         var layerNo = !string.IsNullOrWhiteSpace(Model.ListItem.RELATIONPARAM) ? Convert.ToInt32(Model.ListItem.RELATIONPARAM) : 0;
-        var isFacroty = (grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location || grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst) && layerNo == STRUCTURE_CONSTANTS.LAYER_NO.Factory;
+        var isFacroty = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Locations.Contains(grpId) && layerNo == STRUCTURE_CONSTANTS.LAYER_NO.Factory;
         @:<td data-name="@name" data-type="treeLabel" data-colname="@Model.ListItem.ITEMNAME" class="@tdClass" data-deftabindex="@defTabIndex" colspan="@Model.ListItem.COLSPAN" rowspan="@Model.ListItem.ROWSPAN" data-structuregrpid="@Model.ListItem.RELATIONID" data-structureno="@Model.ListItem.RELATIONPARAM" data-structureid="@structureId" title="@Model.ListItem.TOOLTIP"
               if (!Model.IsHorizontal) { @: data-initverticalvalue="@Model.ListItem.INITVAL"
               }

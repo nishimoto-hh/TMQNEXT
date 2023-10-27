@@ -1,8 +1,8 @@
 INSERT 
 INTO hm_mc_equipment( 
     [hm_equipment_id]                           -- 機器情報変更管理ID
-    ,[history_management_detail_id]             -- 変更管理詳細ID
-    ,[equipment_id]                             -- 機器ID
+    , [history_management_id]                   -- 変更管理ID
+    , [equipment_id]                            -- 機器ID
     , [machine_id]                              -- 機番ID
     , [circulation_target_flg]                  -- 循環対象
     , [manufacturer_structure_id]               -- メーカー
@@ -21,20 +21,18 @@ INTO hm_mc_equipment(
     , [update_datetime]                         -- 更新日時
     , [update_user_id]                          -- 更新ユーザー
 ) 
-/*@NewEquipmentId
-OUTPUT inserted.hm_equipment_id
-@NewEquipmentId*/
+OUTPUT inserted.equipment_id
 VALUES ( 
     NEXT VALUE FOR seq_hm_mc_equipment_hm_equipment_id -- 機器情報変更管理ID
-    , @HistoryManagementDetailId                       -- 変更管理詳細ID
+    , @HistoryManagementId                             -- 変更管理ID
 
       /*@NewEquipmentId
-      -- 機器の新規登録・複写の場合
+      -- 新規採番
     , NEXT VALUE FOR seq_mc_equipment_equipment_id     -- 機器ID
-　　　@NewEquipmentId*/
+      @NewEquipmentId*/
 
       /*@DefaultEquipmentId
-      -- 機器の修正の場合は既存の機器ID
+      -- 既存の機器ID
     , @EquipmentId                                     -- 機器ID
       @DefaultEquipmentId*/
 

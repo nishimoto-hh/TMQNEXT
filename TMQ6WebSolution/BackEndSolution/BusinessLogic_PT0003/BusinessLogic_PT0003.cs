@@ -358,9 +358,9 @@ namespace BusinessLogic_PT0003
         private static class UploadFile
         {
             /// <summary>棚卸準備表(EXCEL)の帳票ID</summary>
-            public const string ExcelReportId = "RP0310";
+            public const string ExcelReportId = "RP0410";
             /// <summary>棚卸準備表(CSV)の帳票ID</summary>
-            public const string CsvReportId = "RP0410";
+            public const string CsvReportId = "RP0310";
             /// <summary>シート番号</summary>
             public const int SheetNo = 1;
             /// <summary>ヘッダー情報のコントロールグループID</summary>

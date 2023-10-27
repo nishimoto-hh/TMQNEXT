@@ -3,14 +3,11 @@ SELECT
 FROM
     hm_history_management history
     LEFT JOIN
-        hm_history_management_detail detail
-    ON  history.history_management_id = detail.history_management_id
-    LEFT JOIN
         hm_mc_machine hmachine
-    ON  detail.history_management_detail_id = hmachine.history_management_detail_id
+    ON  history.history_management_id = hmachine.history_management_id
     LEFT JOIN
         hm_mc_management_standards_component component
-    ON  detail.history_management_detail_id = component.history_management_detail_id
+    ON  history.history_management_id = component.history_management_id
     LEFT JOIN
         ms_structure ms
     ON  history.application_status_id = ms.structure_id

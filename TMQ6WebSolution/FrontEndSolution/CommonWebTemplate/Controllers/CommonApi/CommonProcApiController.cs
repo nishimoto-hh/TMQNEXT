@@ -591,6 +591,53 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 return Ok(retObj);
                 /* ボタン権限制御 切替 end ================================================== */
             }
+            else if (processId == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortDownload)
+            {
+                // ExcelPortダウンロード
+                object results = null;
+                CommonProcReturn returnInfo = blogic.ReportProcess(procData, out results);
+                if (returnInfo.IsProcEnd())
+                {
+                    //エラーの場合、エラー情報を返却
+                    IList<object> retObj2 = new List<object>();
+                    retObj2.Add(returnInfo);                     //[0]:処理ステータス
+                    retObj2.Add(results);                        //[1]:結果データ
+                    return BadRequest(retObj2);
+                }
+
+                // ファイル情報をセッションに設定、再リクエストの際のパラメータをそのキーに変更
+                var session = HttpContext.Session;
+                blogic.SetSessionFileInfo(ref session, ref returnInfo, procData.LoginUserId);
+
+                IList<object> retObj = new List<object>();
+                retObj.Add(returnInfo);     //[0]:処理ステータス
+                retObj.Add(results);        //[1]:結果データ
+                return Ok(retObj);
+            }
+            else if (processId == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload)
+            {
+                // ExcelPortアップロード
+                object results = null;
+                CommonProcReturn returnInfo = blogic.ReportProcess(procData, out results);
+                if (returnInfo.IsProcEnd())
+                {
+                    //エラーの場合、エラー情報を返却
+                    IList<object> retObj2 = new List<object>();
+                    retObj2.Add(returnInfo);                     //[0]:処理ステータス
+                    retObj2.Add(results);                        //[1]:結果データ
+
+                    // ファイル情報をセッションに設定、再リクエストの際のパラメータをそのキーに変更
+                    var session = HttpContext.Session;
+                    blogic.SetSessionFileInfo(ref session, ref returnInfo, procData.LoginUserId);
+
+                    return BadRequest(retObj2);
+                }
+
+                IList<object> retObj = new List<object>();
+                retObj.Add(returnInfo);     //[0]:処理ステータス
+                retObj.Add(results);        //[1]:結果データ
+                return Ok(retObj);
+            }
             else if (processId == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComGetStructureList)
             {
                 //【共通 - 階層ツリー】構成マスタ情報取得

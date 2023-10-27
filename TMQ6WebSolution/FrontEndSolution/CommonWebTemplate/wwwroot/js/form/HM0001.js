@@ -19,6 +19,7 @@ function getPath() {
     return root;
 }
 document.write("<script src=\"" + getPath() + "/tmqcommon.js\"></script>");
+document.write("<script src=\"" + getPath() + "/HM0003.js\"></script>");
 
 // 一覧画面 コントロール番号
 const FormList = {
@@ -27,6 +28,12 @@ const FormList = {
     {
         Id: "BODY_010_00_LST_0", // コントロールグループID
         ColumnNo: 1              // 項目番号
+    },
+    SearchCondition: { // 検索条件
+        Id: "BODY_020_00_LST_0", // コントロールグループID
+        ColumnNo: {
+            IsApprovalUser: 2    // 承認権限の有無
+        }
     },
     List: { // 検索結果一覧
         Id: "BODY_040_00_LST_0",         // コントロールグループID
@@ -61,8 +68,8 @@ const FormList = {
             FixedAssetNo: 30,            // 固定資産番号
             EquipmentNote: 31,           // 機器メモ
             Component: 32,               // 機器別管理基準変更有無
-            ApplicationDivisionCode: 37, // 申請区分(拡張項目)
-            ValueChanged: 38             // 変更のあった項目
+            ApplicationDivisionCode: 38, // 申請区分(拡張項目)
+            ValueChanged: 39             // 変更のあった項目
         }
     },
     Button: {                                 // ボタンコントロールID
@@ -78,6 +85,18 @@ const FormList = {
 // 詳細画面 コントロール番号
 const FormDetail = {
     No: 1, // 画面番号
+    HistoryManagementInfo: { // 変更管理情報
+        Info: { // 申請状況～承認者
+            Id: "BODY_100_00_LST_1",    // コントロールグループID
+            ColumnNo: {                 // 項目番号
+                ApplicationDivision: 2, // 申請区分
+                ApprovalUser: 3         // 承認者
+            }
+        },
+        Reason: { // 申請理由～否認理由
+            Id: "BODY_110_00_LST_1", // コントロールグループID
+        }
+    },
     MachineInfo: { // 機番情報
         Location: { // 地区～設備
             Id: "BODY_020_00_LST_1", // コントロールグループID
@@ -91,7 +110,7 @@ const FormDetail = {
             }
         },
         Machine: { // 機器番号～保全方式
-            Id: "BODY_030_00_LST_1",         // コントロールグループID
+            Id: "BODY_030_00_LST_1",                   // コントロールグループID
             ColumnNo: {                                // 項目番号
                 MachineNo: 1,                          // 機器番号
                 MachineName: 2,                        // 機器名称
@@ -109,6 +128,8 @@ const FormDetail = {
                 ProcessMode: 14,                       // 処理モード(0：トランザクションモード、1：変更管理モード)
                 IsCertified: 15,                       // 申請の申請者またはシステム管理者の場合はTrue
                 IsCertifiedFactory: 16,                // 変更管理IDが紐付く機番情報の場所階層IDに設定されている工場の拡張項目がログインユーザIDの場合はTrue
+                StatusCntExceptApproved: 23,           // キーIDに紐付く「承認済」以外のデータ有無
+                TabChangeCnt: 24                       // タブ切替回数(背景色変更などに使用)
             }
         },
         Reason: { // 適用法規～否認理由
@@ -119,6 +140,9 @@ const FormDetail = {
                 ApplicationReason: 3, // 申請理由
                 RejectionReason: 4    // 否認理由
             }
+        },
+        CssClass: {
+            Condition_HM0001: ".condition_HM0001" // 機番情報に付与しているCSSクラス(保全項目一覧の登録に使用)
         }
     },
     EquipmentInfo: { // 機器情報
@@ -154,7 +178,33 @@ const FormDetail = {
         },
     },
     ManagementStandardsList: { // 保全項目一覧
-        Id: "BODY_080_00_LST_1" // コントロールグループID
+        Id: "BODY_080_00_LST_1",                // コントロールグループID
+        TabNo: 2,                               // タブ番号
+        ColumnNo: {                             // 項目番号
+            EquipmentLevel: 1,                  // 機器レベル
+            MachineNo: 2,                       // 機器番号
+            MachineName: 3,                     // 機器名称
+            InspectionSite: 25,                 // 保全部位
+            InspectionSiteImportance: 5,        // 部位重要度
+            InspectionSiteConservation: 6,      // 保全方式
+            MaintainanceDivision: 7,            // 保全区分
+            InspectionContent: 26,              // 保全項目
+            MaintainanceKind: 9,                // 点検種別
+            BudgetAmount: 10,                   // 予算金額
+            ScheduleType: 11,                   // スケジュール管理
+            PreparationPeriod: 12,              // 準備期間(日)
+            CycleYear: 13,                      // 周期(年)
+            CycleMonth: 14,                     // 周期(月)
+            CycleDay: 15,                       // 周期(日)
+            DispCycle: 16,                      // 表示周期
+            StartDate: 17,                      // 開始日
+            ManagementStandardsComponentId: 19, // 機器別管理基準部位ID
+            ManagementStandardsContentId: 20,   // 機器別管理基準内容ID
+            MaintainanceScheduleId: 21,         // 保全スケジュールID
+            MachineId: 23,                      // 機番ID
+            ApplicationDivisionCode: 27,        // 申請区分(拡張項目)
+            ValueChanged: 28,                   // 変更のあった項目
+        }
     },
     Button: {                                                   // ボタンコントロールID
         CopyRequest: "CopyRequest",                             // 複写申請
@@ -166,7 +216,9 @@ const FormDetail = {
         PullBackRequest: "PullBackRequest",                     // 承認依頼引戻
         ChangeApplicationApproval: "ChangeApplicationApproval", // 承認
         ChangeApplicationDenial: "ChangeApplicationDenial",     // 否認
-        BeforeChange: "BeforeChange"                            // 変更前
+        BeforeChange: "BeforeChange",                           // 変更前
+        ManagementStandardRegist: "ManagementStandardRegist",   // 保全項目一覧 登録
+        Deletet: "Delete"                                       // 保全項目一覧 非表示 削除
     },
     CssClass: {
         displayNone: "displayNone" // ボタンの非表示
@@ -179,22 +231,12 @@ const FormEdit = {
 
     MachineInfo: { // 機番情報
         Machine: { // 機器番号～保全方式
-            Id: "BODY_010_00_LST_2",         // コントロールグループID
-            ColumnNo: {                                // 項目番号
-                MachineNo: 1,                          // 機器番号
-
-            }
+            Id: "BODY_010_00_LST_2" // コントロールグループID
         }
     },
     Button: { // ボタンコントロールID
         Regist: "Regist", // 登録
     }
-}
-
-// フラグ判定用定数
-const JudgeFlg = {
-    False: "false", // False
-    True: "true"    // True
 }
 
 // 詳細画面の 変更前 ボタンクリック時に表示する機器台帳詳細画面(MC0001)のタブ番号
@@ -214,20 +256,53 @@ const tabNoToMC0001 = 1;
  */
 function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data) {
 
+    //申請状況変更画面の初期化処理
+    HM0003_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
+
     // 画面番号を判定
     if (formNo == FormList.No) { // 一覧画面
+
+        //一括承認ボタン、一括否認ボタンの表示制御
+        var isApprovalUser = getValue(FormList.SearchCondition.Id, FormList.SearchCondition.ColumnNo.IsApprovalUser, 1, CtrlFlag.Label, false, false);
+        setHideButton(FormList.Button.ApprovalAllTrans, !convertStrToBool(isApprovalUser));
+        setHideButton(FormList.Button.DenialAllTrans, !convertStrToBool(isApprovalUser));
 
         //フォーカス設定(新規申請ボタンが不可の場合、出力ボタン)
         setFocusButtonAvailable(FormList.Button.New, FormList.Button.Output)
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
+        // タブ切替回数を「0」にする
+        setValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, 0, false, false);
+
         // ボタン非表示
         var condition = getConditionToHideButton();
-        //commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
+        commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
+
+        //申請区分、承認者、申請理由、否認理由を一度すべて表示する
+        changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApplicationDivision, true);
+        changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApprovalUser, true);
+        changeListDisplay(FormDetail.HistoryManagementInfo.Reason.Id, true);
+
+        // 変更管理情報 非表示
+        if (condition.isTransactionMode) {
+            //申請区分、承認者、申請理由、否認理由を非表示
+            changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApplicationDivision, false);
+            changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApprovalUser, false);
+            changeListDisplay(FormDetail.HistoryManagementInfo.Reason.Id, false);
+        }
 
         // 背景色変更処理
-        //changeBackGroundColorDetail();
+        changeBackGroundColorHistoryDetail(condition.applicationDivisionCode, getColumnList(), FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ValueChanged);
+
+        // ボタン押下可能なボタンにフォーカスをセット
+        var processMode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ProcessMode, 1, CtrlFlag.Label, false, false);
+        setFocusButtonHistory(processMode);
+    }
+    else if (formNo == FormEdit.No) {
+
+        // 登録ボタンにフォーカス
+        setFocusButton(FormEdit.Button.Regist);
     }
 }
 
@@ -273,13 +348,13 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         if (btn_ctrlId == FormList.Button.ApprovalAllTrans) { // 一括承認(画面遷移)
 
             // 遷移をキャンセルして一括承認処理実行
-            $(getButtonCtrl(FormList.Button.ApprovalAll)).click()
+            $(getButtonCtrl(FormList.Button.ApprovalAll)).click();
             return [false, conditionDataList];
         }
         else if (btn_ctrlId == FormList.Button.DenialAllTrans) { // 一括否認(画面遷移)
 
             // 画面遷移をキャンセルして一括否認処理実行
-            $(getButtonCtrl(FormList.Button.DenialAll)).click()
+            $(getButtonCtrl(FormList.Button.DenialAll)).click();
             return [false, conditionDataList];
         }
     }
@@ -298,26 +373,48 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         }
         else if (btn_ctrlId == FormDetail.Button.ChangeRequest) { // 変更申請
 
+            // 排他チェック(機器に変更管理が紐付いている場合はエラー)
+            if (!isExistsHistoryManagement(appPath, formNo)) {
+                return [false, conditionDataList];
+            }
+
             // 詳細編集画面の検索のための情報を設定
             conditionDataList = getListDataByCtrlIdList([FormDetail.MachineInfo.Machine.Id], FormDetail.No, 0);
-
-
-
-            //var aaa = isInProgress(btn_ctrlId, appPath, formNo, ConductId_HM0001);
-
-
-            //return [false, conditionDataList];
-
         }
         else if (btn_ctrlId == FormDetail.Button.EditRequest) { // 申請内容修正
 
+            // 変更管理テーブルの排他チェック エラーの場合は遷移しない
+            if (!checkHisoryManagemtntExclusive(appPath, formNo)) {
+                return [false, conditionDataList];
+            }
+
             // 詳細編集画面の検索のための情報を設定
             conditionDataList = getListDataByCtrlIdList([FormDetail.MachineInfo.Machine.Id], FormDetail.No, 0);
         }
+        else if (btn_ctrlId == FormDetail.Button.ChangeApplicationRequest || btn_ctrlId == FormDetail.Button.ChangeApplicationDenial) { // 承認依頼・否認
 
-    }
-    else if (formNo == FormEdit.No) { // 詳細編集画面
+            // 変更管理テーブルの排他チェック エラーの場合は遷移しない
+            if (!checkHisoryManagemtntExclusive(appPath, formNo)) {
+                return [false, conditionDataList];
+            }
 
+            // 詳細申請状況変更画面(HM0003)を開くための条件を設定する
+            var historyManagementId = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.HistoyManagementId, 1, CtrlFlag.Label, false, false);
+            conditionDataList = getParamToHM0003(btn_ctrlId == FormDetail.Button.ChangeApplicationRequest, historyManagementId);
+
+        }
+        else if ((!btn_ctrlId || btn_ctrlId == "") && transTarget == FormDetail.ManagementStandardsList.Id) { // 保全項目一覧の単票に遷移
+
+            // 変更管理IDを取得する
+            var historyManagementId = parseInt(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.HistoyManagementId, 1, CtrlFlag.Label, false, false));
+            if (historyManagementId <= 0) {
+
+                // 変更管理テーブルの排他チェック エラーの場合は遷移しない
+                if (!isExistsHistoryManagement(appPath, formNo)) {
+                    return [false, conditionDataList];
+                }
+            }
+        }
     }
 
     return [true, conditionDataList];
@@ -358,16 +455,40 @@ function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
  */
 function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
 
+    //申請状況変更画面の実行後処理
+    HM0003_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
     if (formNo == FormDetail.No) {
+
+        // 申請内容取消・承認後は再検索しないため何もしない
+        if (btn[0].attributes.name.value == FormDetail.Button.CancelRequest ||
+            btn[0].attributes.name.value == FormDetail.Button.ChangeApplicationApproval) {
+            return;
+        }
+
+        // タブ切替回数を「0」にする
+        setValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, 0, false, false);
 
         // ボタン非表示
         var condition = getConditionToHideButton();
-        //commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
+        commonButtonHideHistory(condition.isTransactionMode, condition.applicationStatusCode, condition.applicationDivisionCode, condition.isCertified, condition.isCertifiedFactory);
+
+        //申請区分、承認者、申請理由、否認理由を一度すべて表示する
+        changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApplicationDivision, true);
+        changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApprovalUser, true);
+        changeListDisplay(FormDetail.HistoryManagementInfo.Reason.Id, true);
+
+        // 変更管理情報 非表示
+        if (condition.isTransactionMode) {
+            //申請区分、承認者、申請理由、否認理由を非表示
+            changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApplicationDivision, false);
+            changeColumnDisplay(FormDetail.HistoryManagementInfo.Info.Id, FormDetail.HistoryManagementInfo.Info.ColumnNo.ApprovalUser, false);
+            changeListDisplay(FormDetail.HistoryManagementInfo.Reason.Id, false);
+        }
 
         // 背景色変更処理
-        //changeBackGroundColorDetail();
+        changeBackGroundColorHistoryDetail(condition.applicationDivisionCode, getColumnList(), FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ValueChanged);
     }
-
 }
 
 /**
@@ -382,6 +503,17 @@ function postBuiltTabulator(tbl, id) {
 
         // 背景色変更処理
         commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
+    }
+    else if (id == "#" + FormDetail.ManagementStandardsList.Id + getAddFormNo()) { // 詳細画面 保全項目一覧
+
+        // 機器別管理基準タブが選択されている場合、背景色変更処理
+        if (isTabManagementStandardsSelected()) {
+            commonChangeBackGroundColorHistory(tbl, FormDetail.ManagementStandardsList.ColumnNo.ApplicationDivisionCode, FormDetail.ManagementStandardsList.ColumnNo.ValueChanged, FormDetail.ManagementStandardsList.ColumnNo);
+
+            //　行追加・行削除アイコン非表示
+            var condition = getConditionToHideButton();
+            hideCtrlManagementStandardsList(condition);
+        }
     }
 }
 
@@ -400,6 +532,11 @@ function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
         // 背景色変更処理
         commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
     }
+    else if (id == "#" + FormDetail.ManagementStandardsList.Id + getAddFormNo()) { // 詳細画面 保全項目一覧
+
+        // 背景色変更処理
+        commonChangeBackGroundColorHistory(tbl, FormDetail.ManagementStandardsList.ColumnNo.ApplicationDivisionCode, FormDetail.ManagementStandardsList.ColumnNo.ValueChanged, FormDetail.ManagementStandardsList.ColumnNo);
+    }
 }
 
 /**
@@ -417,6 +554,202 @@ function postTabulatorDataFiltered(tbl, id, filters, rows) {
         // 背景色変更処理
         commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo, rows);
     }
+    else if (id == "#" + FormDetail.ManagementStandardsList.Id + getAddFormNo()) { // 詳細画面 保全項目一覧
+
+        // 背景色変更処理
+        commonChangeBackGroundColorHistory(tbl, FormDetail.ManagementStandardsList.ColumnNo.ApplicationDivisionCode, FormDetail.ManagementStandardsList.ColumnNo.ValueChanged, FormDetail.ManagementStandardsList.ColumnNo);
+    }
+}
+
+/**
+ *【オーバーライド用関数】登録前追加条件取得処理
+ *  @param appPath       ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId     ：機能ID
+ *  @param formNo        ：画面番号
+ *  @param btn           ：押下されたボタン要素
+ */
+function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
+
+    var conditionDataList = [];
+
+    // 詳細画面 保全項目一覧の単票の登録ボタンの場合
+    if (formNo == FormDetail.No && btn[0].attributes.name.value == FormDetail.Button.ManagementStandardRegist ||
+        formNo == FormDetail.No && btn[0].attributes.name.value == FormDetail.Button.Deletet) {
+
+        // 機番情報・機器情報の一覧を独自のCSSクラスを指定して取得
+        var targetElements = [];
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[0]);
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[1]);
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[2]);
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[3]);
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[4]);
+        targetElements.push($(FormDetail.MachineInfo.CssClass.Condition_HM0001)[5]);
+        targetElements.push(($(P_Article).find("div #" + FormDetail.ManagementStandardsList.Id + getAddFormNo())[0]));
+        return getListDataElements(targetElements, formNo, 0);
+    }
+
+    // それ以外の場合
+    return conditionDataList;
+}
+
+/**
+ *【オーバーライド用関数】
+ *  画面再表示ﾃﾞｰﾀ取得関数呼出前
+ *
+ *  @appPath {string} ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} ：ﾌﾟﾛｸﾞﾗﾑID
+ *  @formNo {number} ：画面番号
+ *  @originNo {number} ：遷移元の親画面番号
+ *  @btnCtrlId {number} ：ｱｸｼｮﾝﾎﾞﾀﾝのCTRLID
+ *  @conductPtn {number} ：機能処理ﾊﾟﾀｰﾝ(10:入力、11：バッチ、20：帳票、30：マスタ)
+ *  @selectData {number} ：NOﾘﾝｸ選択行のﾃﾞｰﾀ {List<Dictionary<string, object>>}
+ *  @targetCtrlId {number} ：単票入力画面から戻る時、該当一覧のCTRLID
+ *  @listData {} ：
+ *  @codeTransFlg {int}    ：1:コード＋翻訳 選ボタンから画面遷移/1以外:それ以外
+ *  @status  {CommonProcReturn} : 実行処理結果ｽﾃｰﾀｽ
+ *  @param	{number}	selFlg : 共通機能から選択ボタン押下で戻った場合のみ、「1:selFlgDef.Selected」が渡る
+ *  @param	{string}	backFrom : 共通機能からの戻る処理時、戻る前の共通機能ID ※他機能同タブ遷移でも使える？
+ */
+function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom, transPtn) {
+
+    // 共通-申請状況変更画面の画面再表示前処理
+    // 共通-申請状況変更画面を閉じたときの再表示処理はこちらで行うので、各機能での呼出は不要
+    HM0003_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+
+    // 保全項目一覧の単票で登録された場合 初期化処理を行う
+    if (btnCtrlId == FormDetail.Button.ManagementStandardRegist && targetCtrlId == FormDetail.ManagementStandardsList.Id) {
+
+        initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);
+    }
+}
+
+/**
+ *【オーバーライド用関数】
+ *  遷移処理の後
+ *
+ *  @param {string}     appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {number}     transPtn    ：画面遷移ﾊﾟﾀｰﾝ(1：子画面、2：単票入力、4：共通機能、5：他機能別ﾀﾌﾞ、6：他機能表示切替)
+ *  @param {number}     transDiv    ：画面遷移アクション区分(1：新規、2：修正、3：複製、4：出力、)
+ *  @param {string}     transTarget ：遷移先(子画面NO / 単票一覧ctrlId / 共通機能ID / 他機能ID|画面NO)
+ *  @param {number}     dispPtn     ：遷移表示ﾊﾟﾀｰﾝ(1：表示切替、2：ﾎﾟｯﾌﾟｱｯﾌﾟ、3：一覧直下)
+ *  @param {number}     formNo      ：遷移元formNo
+ *  @param {string}     ctrlId      ：遷移元の一覧ctrlid
+ *  @param {string}     btn_ctrlId  ：ボタンのbtn_ctrlid
+ *  @param {number}     rowNo       ：遷移元の一覧の選択行番号（新規の場合は-1）
+ *  @param {Element}    element     ：ｲﾍﾞﾝﾄ発生要素
+ *  @return {bool} 遷移を行わない場合はfalse、行う場合はtrue
+ *  @return {Array.<Dictionary<string, object>>} 個別取得の遷移条件データ
+ */
+function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element) {
+
+    // 詳細画面の保全項目一覧で単票が開かれた場合
+    if (formNo = FormDetail.No && transPtn == transPtnDef.Edit && transTarget == FormDetail.ManagementStandardsList.Id) {
+
+        //行追加アイコンが詳細リンクか判定
+        if (rowNo == -1) {
+
+            // 詳細画面より機器の情報を取得して設定する
+            // 機器レベル
+            var equipmentLevel = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo);
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo, equipmentLevel, true, false);
+
+            // 機器番号
+            var machineNo = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineNo, 1, CtrlFlag.TextBox);
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MachineNo, 1, CtrlFlag.TextBox, machineNo, true, false);
+
+            // 機器名称
+            var machineName = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineName, 1, CtrlFlag.TextBox);
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MachineName, 1, CtrlFlag.TextBox, machineName, true, false);
+
+            // 機番ID
+            var machineId = getValueByOtherForm(FormDetail.No, FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.MachineId, 1, CtrlFlag.Label);
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MachineId, 1, CtrlFlag.Label, machineId, true, false);
+
+            // キー項目に「-1」を設定
+            // 機器別管理基準部位ID
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.ManagementStandardsComponentId, 1, CtrlFlag.Label, "-1", true, false);
+
+            // 機器別管理基準内容ID
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.ManagementStandardsContentId, 1, CtrlFlag.Label, "-1", true, false);
+
+            // 保全スケジュールID
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MaintainanceScheduleId, 1, CtrlFlag.Label, "-1", true, false);
+
+            // 入力エリアを非活性にする
+            // 機器レベル
+            var equipmentLevelCtrl = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.EquipmentLevel, 1, CtrlFlag.Combo, true, false);
+            changeInputControl(equipmentLevelCtrl, false);
+
+            // 機器番号
+            var machineNoCtrl = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MachineNo, 1, CtrlFlag.TextBox, true, false);
+            changeInputControl(machineNoCtrl, false);
+
+            // 機器名称
+            var machineNameCtrl = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.MachineName, 1, CtrlFlag.TextBox, true, false);
+            changeInputControl(machineNameCtrl, false);
+        }
+        else {
+
+            // 選択されたレコードの申請状況を取得
+            var applicationDivisionCode = getValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.ApplicationDivisionCode, rowNo, CtrlFlag.Label, true, false);
+
+            // 行削除が行われている場合は登録ボタンを非表示にする
+            if (applicationDivisionCode == ApplicationDivision.Delete) {
+
+                getButtonCtrl(FormDetail.Button.ManagementStandardRegist).hide();
+            }
+        }
+
+        // 登録ボタンにフォーカス(描画に間に合わないので少し遅らせる)
+        setTimeout(function () {
+            setFocusButton(FormDetail.Button.ManagementStandardRegist);
+        }, 300); //300ミリ秒
+    }
+}
+
+/**
+ *【オーバーライド用関数】タブ切替時
+ * @tabNo ：タブ番号
+ * @tableId : 一覧のコントロールID
+ */
+function initTabOriginal(tabNo, tableId) {
+
+    if (tabNo == FormDetail.ManagementStandardsList.TabNo) {
+
+        // 初回(タブ切替数 = 0)の場合のみ保全項目一覧の背景色変更・コントロール非表示処理を行う
+        var tabChangeCnt = parseInt(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, false, false));
+
+        if (tabChangeCnt == 0) {
+
+            // 保全項目一覧の背景色変更処理
+            var table = P_listData['#' + FormDetail.ManagementStandardsList.Id + getAddFormNo()];
+            commonChangeBackGroundColorHistory(table, FormDetail.ManagementStandardsList.ColumnNo.ApplicationDivisionCode, FormDetail.ManagementStandardsList.ColumnNo.ValueChanged, FormDetail.ManagementStandardsList.ColumnNo);
+
+            //　行追加・行削除アイコン非表示
+            var condition = getConditionToHideButton();
+            hideCtrlManagementStandardsList(condition);
+
+            // タブ切替数を加算
+            setValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.TabChangeCnt, 1, CtrlFlag.Label, tabChangeCnt + 1, false, false);
+
+        }
+    }
+}
+
+
+/**
+ *【オーバーライド用関数】
+ *  行削除の前
+ *
+ *  @appPath    {string}    ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn        {<a>}       ：行削除ﾘﾝｸのa要素
+ *  @id         {string}    ：行削除ﾘﾝｸの対象一覧のCTRLID
+ *  @checkes    {要素}      ：削除対象の要素リスト
+ */
+function preDeleteRow(appPath, btn, id, checkes) {
+
+    return preDeleteRowCommon(id, [FormDetail.ManagementStandardsList.Id]);
 }
 
 /**
@@ -435,155 +768,79 @@ function getConditionToHideButton() {
     condition.applicationDivisionCode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ApplicationDivisionCode, 1, CtrlFlag.Label, false, false);
 
     // 申請の申請者またはシステム管理者の場合True、それ以外はFalse
-    condition.isCertified = JudgeFlg.True == getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertified, 1, CtrlFlag.Label, false, false);
+    condition.isCertified = convertStrToBool(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertified, 1, CtrlFlag.Label, false, false));
 
     // 工場の承認ユーザの場合True
-    condition.isCertifiedFactory = JudgeFlg.True == getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertifiedFactory, 1, CtrlFlag.Label, false, false);
+    condition.isCertifiedFactory = convertStrToBool(getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.IsCertifiedFactory, 1, CtrlFlag.Label, false, false));
 
     return condition;
 }
 
 /**
- * 詳細画面 背景色変更
- * */
-function changeBackGroundColorDetail() {
+ * 詳細画面 背景色を変更するセルのリストを取得
+ */
+function getColumnList() {
+    var list = [];
+    list.push(FormDetail.MachineInfo.Location);        // 地区～設備
+    list.push(FormDetail.MachineInfo.Machine);         // 機器番号～保全方式
+    list.push(FormDetail.MachineInfo.Reason);          // 適用法規～否認理由
+    list.push(FormDetail.EquipmentInfo.Job);           // 職種～機種小分類
+    list.push(FormDetail.EquipmentInfo.Equipment);     // 使用区分～点検種別毎管理
+    list.push(FormDetail.EquipmentInfo.EquipmentNote); // 機器メモ
 
-    var valueChanged; // 変更のあった項目名
-    var colName;      // 背景色を変更する項目名(列名と申請区分に分割)
-    var ctrlId;       // 背景色変更対象の一覧ID 
-    var val;          // 背景色変更対象の項目番号
-
-    // 申請区分(拡張項目を取得)
-    var applicationDivisionCode = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ApplicationDivisionCode, 1, CtrlFlag.Label, false, false);
-
-    // 取得した申請区分を判定
-    if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) { // 新規登録申請・削除申請
-
-        // 変更管理対象項目の全セルの背景色を変更
-        valueChanged = getValueChangedAllItem(applicationDivisionCode);
-    }
-    else { // 変更申請
-
-        // 変更のあった項目名を取得(「|」区切りになっているので分割)
-        var valueChanged = getValue(FormDetail.MachineInfo.Machine.Id, FormDetail.MachineInfo.Machine.ColumnNo.ValueChanged, 1, CtrlFlag.Label, false, false).split("|");
-    }
-
-    // 変更対象項目より背景色を変更
-    valueChanged.forEach(function (columnDetail, colIdx) {
-
-        // 変更のあった項目の列名が存在する場合
-        if ((columnDetail.trim()).length) {
-
-            // 列名と申請区分に分割
-            colName = columnDetail.split("_");
-
-            // 変更のあった項目を表示している一覧のIDと項目番号を判定
-            if (FormDetail.MachineInfo.Location.ColumnNo[colName[0]]) {
-
-                // 地区～設備
-                ctrlId = FormDetail.MachineInfo.Location.Id;
-                val = FormDetail.MachineInfo.Location.ColumnNo[colName[0]];
-            }
-            else if (FormDetail.MachineInfo.Machine.ColumnNo[colName[0]]) {
-
-                // 機器番号～保全方式
-                ctrlId = FormDetail.MachineInfo.Machine.Id;
-                val = FormDetail.MachineInfo.Machine.ColumnNo[colName[0]];
-            }
-            else if (FormDetail.MachineInfo.Reason.ColumnNo[colName[0]]) {
-
-                // 適用法規～否認理由
-                ctrlId = FormDetail.MachineInfo.Reason.Id;
-                val = FormDetail.MachineInfo.Reason.ColumnNo[colName[0]];
-            }
-            else if (FormDetail.EquipmentInfo.Job.ColumnNo[colName[0]]) {
-
-                // 職種～機種小分類
-                ctrlId = FormDetail.EquipmentInfo.Job.Id;
-                val = FormDetail.EquipmentInfo.Job.ColumnNo[colName[0]];
-            }
-            else if (FormDetail.EquipmentInfo.Equipment.ColumnNo[colName[0]]) {
-
-                // 使用区分～点検種別毎管理
-                ctrlId = FormDetail.EquipmentInfo.Equipment.Id;
-                val = FormDetail.EquipmentInfo.Equipment.ColumnNo[colName[0]];
-            }
-            else if (FormDetail.EquipmentInfo.EquipmentNote.ColumnNo[colName[0]]) {
-
-                // 機器メモ
-                ctrlId = FormDetail.EquipmentInfo.EquipmentNote.Id;
-                val = FormDetail.EquipmentInfo.EquipmentNote.ColumnNo[colName[0]];
-            }
-            else {
-                return false;
-            }
-
-            // 背景色変更処理
-            changeBackGroundColorHistory(ctrlId, val, colName[1]);
-        }
+    var columnList = [];
+    $.each(list, function (i, obj) {
+        $.each(obj.ColumnNo, function (key, val) {
+            //例：{CtrlId: 'BODY_010_00_LST_1', Key: 'District', Val: 1}
+            columnList.push({ CtrlId: obj.Id, Key: key, Val: val })
+        });
     });
+    return columnList;
 }
 
 /**
- * 詳細画面 背景色変更時の「変更対象項目」を作成(新規登録申請・削除申請の場合)
- * @param {any} applicationDivisionCode
+ * 保全項目一覧のコントロールを非表示にする
+ * @param {any} condition 非表示条件
  */
-function getValueChangedAllItem(applicationDivisionCode) {
+function hideCtrlManagementStandardsList(condition) {
 
-    // 背景色を変更するセルの項目名を取得
-    var list = [];
-    list.push(Object.keys(FormDetail.MachineInfo.Location.ColumnNo));        // 地区～設備
-    list.push(Object.keys(FormDetail.MachineInfo.Machine.ColumnNo));         // 機器番号～保全方式
-    list.push(Object.keys(FormDetail.MachineInfo.Reason.ColumnNo));          // 適用法規～否認理由
-    list.push(Object.keys(FormDetail.EquipmentInfo.Job.ColumnNo));           // 職種～機種小分類
-    list.push(Object.keys(FormDetail.EquipmentInfo.Equipment.ColumnNo));     // 使用区分～点検種別毎管理
-    list.push(Object.keys(FormDetail.EquipmentInfo.EquipmentNote.ColumnNo)); // 機器メモ
+    // 保全項目一覧の行追加・行削除・詳細リンク 非表示処理
+    //行追加、行削除ボタンの表示フラグ
+    //トランザクションモードの場合、または、申請状況が「申請データ作成中」or「差戻中」かつ申請者（システム管理者含む）かつ申請区分が「削除」以外　の場合表示
+    var flg = (condition.isTransactionMode ||
+        (!condition.isTransactionMode && ((condition.applicationStatusCode == ApplicationStatus.Making && condition.isCertified && condition.applicationDivisionCode != ApplicationDivision.Delete)
+            || (condition.applicationStatusCode == ApplicationStatus.Return && condition.isCertified && condition.applicationDivisionCode != ApplicationDivision.Delete))));
 
-    // 「項目名_背景色設定値」のリストを作成
-    var valueChanged = [];
-    list.forEach(function (item, listIdx) {
-        item.forEach(function (name, itemIdx) {
-
-            valueChanged.push(name + "_" + applicationDivisionCode);
-        });
-    });
-
-    return valueChanged;
+    //　行追加・行削除アイコン・詳細リンク 非表示
+    changeRowControlAndDispRowNo(FormDetail.ManagementStandardsList.Id, flg);
 }
 
+/**
+ * 機器別管理基準タブが選択状態かどうかを返す
+ * */
+function isTabManagementStandardsSelected() {
 
+    // 機器別管理基準タブが選択状態かどうかを返す
+    return $($("#tab_btn_detail_1").find("a[data-tabno='" + FormDetail.ManagementStandardsList.TabNo + "']")[0]).hasClass("selected");
+}
 
+/**
+ * 機器に変更管理が紐付いているかチェックする
+ * */
+function isExistsHistoryManagement(appPath, formNo) {
 
-function isInProgress(btn_ctrlId, appPath, formNo, conductId) {
+    var strMessage = P_ComMsgTranslated[141160016]; //「対象データに申請が存在するため処理を行えません。」
 
-    var eventFunc = function (status, data) {
+    return checkTransition(appPath, formNo, ConductId_HM0001, "judgeStatusCntExceptApproved", FormDetail.MachineInfo.Machine.ColumnNo.StatusCntExceptApproved, strMessage);
 
-        // 申請状況の拡張項目
-        var applicationStatusCode = data.filter(x => x.ROWNO === 1)[0]["VAL" + FormDetail.MachineInfo.Machine.ColumnNo.ApplicationStatusCode];
+}
 
-        applicationStatusCode = "20";
-        // 申請状況を判定
-        if (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Request) {
+/**
+ * 変更管理の排他チェック
+ */
+function checkHisoryManagemtntExclusive(appPath, formNo) {
 
-            // 仕掛中(20：承認依頼中、30：差戻中)の場合はエラーメッセ―ジを表示して画面遷移しない
+    var strMessage = P_ComMsgTranslated[941290001]; //「編集していたデータは他のユーザにより更新されました。もう一度編集する前にデータを再表示してください。」
 
-            //メッセージ「保全履歴情報、故障分析情報の入力内容が変更になります。」
-            var strMessage = P_ComMsgTranslated[141300006];
-            setMessage(strMessage, 9);
-            //popupMessage([strMessage], messageType.Error, null);
-
-            return false;
-        }
-        else {
-
-            return true;
-        }
-    }
-
-    var getValHM0001 = function () {
-        //return getValue(btn_ctrlId);
-    }
-
-    var formData = getListDataByCtrlIdList([], formNo, 0);
-    ajaxCommon("checkIsInProgress", appPath, formNo, conductId, false, null, eventFunc);
+    return checkTransition(appPath, formNo, ConductId_HM0001, "checkHisoryManagemtntExclusive", FormDetail.MachineInfo.Machine.ColumnNo.StatusCntExceptApproved, strMessage);
 }

@@ -54,68 +54,89 @@ namespace BusinessLogic_LN0001
         /// <returns>エラーの場合False</returns>
         private bool initDetail(DetailDispType type)
         {
-            if (type == DetailDispType.AfterRegist)
-            {
-                // 修正画面で登録押下時と機器別管理基準選択画面で登録押下時の判定が出来ない
-                // 修正画面で登録押下時は修正画面の非表示エリア(BODY_050_00_LST_2)がSearchConditionDictionaryに設定されているため、それにより判定する
-                var fromEditParam = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormEdit.ControlId.Hide);
-                if (fromEditParam == null || fromEditParam.Count == 0)
-                {
-                    // 機器別管理基準選択画面より登録で表示した場合は、戻ると同じ
-                    type = DetailDispType.Search;
-                }
-            }
-
-            // キー情報取得元のコントロールID
-            string ctrlId = string.Empty;
-            switch (type)
-            {
-                case DetailDispType.Init:
-                    // 初期表示の場合、一覧画面の一覧より取得(選択された列)
-                    ctrlId = ConductInfo.FormList.ControlId.List;
-                    break;
-                case DetailDispType.AfterRegist:
-                    // 新規登録後の場合、詳細編集画面の非表示項目より取得(新規採番したキー)
-                    ctrlId = ConductInfo.FormEdit.ControlId.Hide;
-                    break;
-                default:
-                    // それ以外の場合(再表示など)、この画面の非表示項目より取得
-                    ctrlId = ConductInfo.FormDetail.ControlId.Hide;
-                    break;
-            }
+            // 表示タイプの再設定
+            type = updateType(type);
+            // キー情報取得元のコントロールIDを取得
+            string ctrlId = getCtrlIdForKeyInfo(type);
             // 長期計画IDを取得
             var param = getParam(ctrlId, type == DetailDispType.Redisplay);
-
             // 初期化処理呼出
             // 一覧画面の一覧より取得した情報で参照画面の項目に値を設定する
             initFormByLongPlanId(param, getResultMappingInfoByGrpNo(ConductInfo.FormDetail.HeaderGroupNo).CtrlIdList, out bool isDisplayMaintainanceKind, out int factoryId, true, ctrlId == ConductInfo.FormList.ControlId.List);
-
-            if (type == DetailDispType.Init || type == DetailDispType.AfterRegist)
-            {
-                // 年度開始月の取得
-                int monthStartNendo = getYearStartMonth(factoryId);
-                // 初期表示の場合、システム年度初期化処理
-                SetSysFiscalYear<Dao.Detail.Condition>(ConductInfo.FormDetail.ControlId.ScheduleCondition, monthStartNendo);
-            }
-
-            SchedulePlanContent contentType = getSchedulePlanContentDetail();
-            // 画面下部の一覧の値を取得
-            var list = getMaintainanceList(param.LongPlanId, factoryId, isDisplayMaintainanceKind, contentType);
-            // ページ情報取得
-            string listCtrlId = getDetailListCtrlId(isDisplayMaintainanceKind);
-            var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
-            // 画面にセット
-            SetSearchResultsByDataClass<Dao.Detail.List>(pageInfo, list, list.Count);
-
-            // スケジュール情報のセット
-            // 保全活動の場合移動可能
-            setSchedule(listCtrlId, true, param.LongPlanId, factoryId, contentType);
-
+            // スケジュールのシステム年度設定処理
+            setScheduleYear(type, factoryId);
+            // 一覧の設定
+            setDetailList(isDisplayMaintainanceKind, factoryId);
             // 非表示項目
             // 変更管理ボタンの表示制御用フラグ
             setHistoryManagementFlg(ConductInfo.FormDetail.ControlId.Hide, factoryId);
 
             return true;
+
+            // 画面タイプの再設定
+            DetailDispType updateType(DetailDispType type)
+            {
+                if (type == DetailDispType.AfterRegist)
+                {
+                    // 修正画面で登録押下時と機器別管理基準選択画面で登録押下時の判定が出来ない
+                    // 修正画面で登録押下時は修正画面の非表示エリア(BODY_050_00_LST_2)がSearchConditionDictionaryに設定されているため、それにより判定する
+                    var fromEditParam = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormEdit.ControlId.Hide);
+                    if (fromEditParam == null || fromEditParam.Count == 0)
+                    {
+                        // 機器別管理基準選択画面より登録で表示した場合は、戻ると同じ
+                        type = DetailDispType.Search;
+                    }
+                }
+                return type;
+            }
+            // 画面タイプに応じて、キー情報取得元の画面コントロールIDの取得
+            string getCtrlIdForKeyInfo(DetailDispType type)
+            {
+                string ctrlId = string.Empty;
+                switch (type)
+                {
+                    case DetailDispType.Init:
+                        // 初期表示の場合、一覧画面の一覧より取得(選択された列)
+                        ctrlId = ConductInfo.FormList.ControlId.List;
+                        break;
+                    case DetailDispType.AfterRegist:
+                        // 新規登録後の場合、詳細編集画面の非表示項目より取得(新規採番したキー)
+                        ctrlId = ConductInfo.FormEdit.ControlId.Hide;
+                        break;
+                    default:
+                        // それ以外の場合(再表示など)、この画面の非表示項目より取得
+                        ctrlId = ConductInfo.FormDetail.ControlId.Hide;
+                        break;
+                }
+                return ctrlId;
+            }
+            // スケジュールのシステム年度の設定
+            void setScheduleYear(DetailDispType type, int factoryId)
+            {
+                if (type == DetailDispType.Init || type == DetailDispType.AfterRegist)
+                {
+                    // 年度開始月の取得
+                    int monthStartNendo = getYearStartMonth(factoryId);
+                    // 初期表示の場合、システム年度初期化処理
+                    SetSysFiscalYear<Dao.Detail.Condition>(ConductInfo.FormDetail.ControlId.ScheduleCondition, monthStartNendo);
+                }
+            }
+
+            // 一覧の取得・設定
+            void setDetailList(bool isDisplayMaintainanceKind, int factoryId)
+            {
+                SchedulePlanContent contentType = getSchedulePlanContentDetail();
+                // 画面下部の一覧の値を取得
+                var list = getMaintainanceList(param.LongPlanId, factoryId, isDisplayMaintainanceKind, contentType);
+                // ページ情報取得
+                string listCtrlId = getDetailListCtrlId(isDisplayMaintainanceKind);
+                var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
+                // 画面にセット
+                SetSearchResultsByDataClass<Dao.Detail.List>(pageInfo, list, list.Count);
+                // スケジュール情報のセット
+                // 保全活動の場合移動可能
+                setSchedule(listCtrlId, true, param.LongPlanId, factoryId, contentType);
+            }
         }
 
         /// <summary>
@@ -135,8 +156,10 @@ namespace BusinessLogic_LN0001
                 // intをEnumに変換して返す
                 return ComUtil.IntToEnum<SchedulePlanContent>(value);
             }
-            // 値が取得できない場合、機器を返す
-            return SchedulePlanContent.Equipment;
+            // 値が取得できない場合、保全活動を返す
+            // 別タブ表示の場合、遷移前処理でセットできないためここでセット
+            // 画面側はJavaScriptで設定していて、こちらはSQLの検索条件
+            return SchedulePlanContent.Maintainance;
         }
 
         /// <summary>

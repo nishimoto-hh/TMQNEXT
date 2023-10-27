@@ -3,17 +3,18 @@
  */
 select
     it.item_id                                                      -- 項目ID
-    , it.column_name                                                -- カラム名
+    , COALESCE(NULLIF(it.column_name,''), co.column_name) AS column_name    -- カラム名
     , it.output_method                                              -- 出力方式
     , it.continuous_output_interval                                 -- 連続出力間隔
     --, tr.translation_text as item_name                              -- 項目名
-    ,[dbo].[get_rep_translation_text](@FactoryId, it.control_id , 'ja') AS item_name
+    ,[dbo].[get_rep_translation_text](@FactoryId, it.control_id, @LanguageId) AS item_name
     , it.default_cell_row_no                                        -- デフォルトセル行No
     , it.default_cell_column_no                                     -- デフォルトセル列No
     , oi.default_cell_row_no as output_default_cell_row_no          -- 出力デフォルトセル行No
     , oi.default_cell_column_no as output_default_cell_column_no    -- 出力デフォルトセル列No
     , oi.display_order                                              -- 表示順
     , co.data_type                                                  -- データ種別
+    ,[dbo].[get_rep_translation_text](@FactoryId, co.format_translation_id , @LanguageId) AS format_text    -- 書式文字列
 from
     ms_output_report_item_define it         -- 出力帳票項目定義
     inner join

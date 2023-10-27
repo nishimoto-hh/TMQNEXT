@@ -1309,8 +1309,8 @@ namespace CommonWebTemplate.CommonUtil
                 {
                     // OutputStreamが設定されている場合のみ出力処理を行う
                     stream = resultsW["OutputStream"] as MemoryStream;
-                    var fileType = resultsW["fileType"];
-                    var fileName = resultsW["fileName"];
+                    var fileType = resultsW["fileType"].ToString();
+                    var fileName = resultsW["fileName"].ToString();
 
                     //⑦以降、ファイル出力処理
                     //※4：出力②～の処理に同じ
@@ -1318,8 +1318,8 @@ namespace CommonWebTemplate.CommonUtil
                     // ファイル保存処理
                     // - ﾌｧｲﾙを一時ﾌｫﾙﾀﾞに保存
                     //作成ファイル情報設定
-                    FileUtil.Extension ext = FileUtil.GetFileExtFromFileType((string)fileType);      //ファイル拡張子
-                    CommonProcReturn returnInfoW = setCreateFileInfo(procData, stream.ToArray(), (string)fileName, ext);
+                    FileUtil.Extension ext = FileUtil.GetFileExtFromFileType(fileType);      //ファイル拡張子
+                    CommonProcReturn returnInfoW = setCreateFileInfo(procData, stream.ToArray(), fileName, ext);
                     if (returnInfoW.IsProcEnd())
                     {
                         return returnInfoW;

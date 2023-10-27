@@ -18,6 +18,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 
 namespace BusinessLogic_LN0001
 {
@@ -178,7 +179,11 @@ namespace BusinessLogic_LN0001
             // selectedRowList:選択行の内容
             bool isErrorInputCheck(Dao.ListSearchResult hideInfo, List<Dao.Detail.List> selectedRowList)
             {
-                if (!hideInfo.IsDisplayMaintainanceKind)
+                // 長期計画の工場IDが点検種別毎一覧表示工場であるか判定
+                // 入力チェックは工場により判定するため、登録された機器に関係せず判定する
+                bool factoryIsDisplayMaintainanceKind = isFactoryDisplayMaintainanceKind(hideInfo.FactoryId);
+
+                if (!factoryIsDisplayMaintainanceKind)
                 {
                     // 点検種別毎一覧表示工場でない場合は、入力チェック無し
                     return false;
@@ -198,6 +203,16 @@ namespace BusinessLogic_LN0001
                 }
 
                 return false;
+
+                // 工場IDにより点検種別毎一覧表示工場であるか判定
+                bool isFactoryDisplayMaintainanceKind(int? factoryId)
+                {
+                    // 点検種別毎一覧表示工場
+                    var list = new ComDao.MsStructureEntity().GetGroupList(TMQConst.MsStructure.GroupId.MaintainanceKindManageFactory, this.db);
+                    // この結果の工場IDと一致するかを判定
+                    var isMaintainanceKindFactory = list.Count(x => x.FactoryId == factoryId) > 0;
+                    return isMaintainanceKindFactory;
+                }
 
                 // 機番IDで点検種別毎管理の有無統一チェック
                 // 長期計画IDで機番IDを取得、加えて画面の機番IDを取得

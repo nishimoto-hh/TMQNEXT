@@ -231,6 +231,16 @@ namespace BusinessLogic_MC0001
             // 機番IDを設定
             condition.MachineId = machineId;
 
+            // 元の機器が変更管理工場か取得
+            if (getHistManageFlg(machineId))
+            {
+                condition.HistoryManage = 1;
+            }
+            else
+            {
+                condition.HistoryManage = null;
+            }
+
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string baseSql, listUnComment);
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, sqlName, out string withSql, listUnComment);
@@ -286,6 +296,52 @@ namespace BusinessLogic_MC0001
                     // ループ構成一覧
                     return SqlNameSelectMachine.GetSelectMachineLoopList;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 変更管理する工場の機器かどうかを判定
+        /// </summary>
+        /// <param name="machineId">機番ID</param>
+        /// <returns>結果</returns>
+        private bool getHistManageFlg(long? machineId)
+        {
+            // SQL文の取得
+            string selectSql;
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameSelectMachine.GetSelectMachineListStructure, out selectSql);
+
+            dynamic whereParam = new ExpandoObject(); // WHERE句パラメータ
+            whereParam.MachineId = machineId;    // 機番ID
+                                                           // 検索実行
+            IList<Dao.selectMachineList> results = db.GetListByDataClass<Dao.selectMachineList>(selectSql.ToString(), whereParam);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.selectMachineList>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+
+            // 変更管理フラグを取得
+            TMQUtil.HistoryManagement history = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConsts.MsStructure.StructureId.ApplicationConduct.HM0001);
+            // 変更管理対象外の工場の権限有無(工場ID未指定の、ユーザに対する権限を取得する場合に使用)
+            bool isExistsNoHistory = false;
+            // 工場ID省略時は引数に含めずに、変更管理フラグを取得
+            bool isHitoryManagementFlg = results[0].FactoryId == -1 ? history.IsHistoryManagementFactoryUserBelong(out isExistsNoHistory) : history.IsHistoryManagementFactory((int)results[0].FactoryId);
+            // 画面に設定する内容
+            Dao.HiddenInfo hideInfo = new();
+            // 変更管理ボタンの表示フラグ
+            // 0:変更管理対象外、表示しない
+            // 1:変更管理対象、表示する
+            // 2:混在する(一覧画面のみ)、変更管理する場合としない場合両方を表示
+            hideInfo.IsHistoryManagementFlg = isHitoryManagementFlg ? (isExistsNoHistory ? 2 : 1) : 0;
+
+            if (hideInfo.IsHistoryManagementFlg == 1)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

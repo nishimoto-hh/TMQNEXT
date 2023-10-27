@@ -187,6 +187,8 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機種小分類名称</summary>
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }
+            /// <summary>Gets or sets タブNO</summary>
+            /// <value>タブNO</value>
             public int TabNo { get; set; }
         }
 
@@ -819,6 +821,9 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long? MachineId { get; set; }
+            /// <summary>Gets or sets 変更管理対象</summary>
+            /// <value>変更管理対象</value>
+            public int? HistoryManage { get; set; }
         }
 
         /// <summary>
@@ -1149,6 +1154,297 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 構成マスタ検索対象の工場ID</summary>
             /// <value>構成マスタ検索対象の工場ID</value>
             public List<int> FactoryIdList { get; set; }
+        }
+        /// <summary>
+        /// 非表示項目設定用のデータクラス
+        /// </summary>
+        public class HiddenInfo
+        {
+            /// <summary>Gets or sets 変更管理の制御用フラグ</summary>
+            /// <value>変更管理の制御用フラグ</value>
+            /// <remarks>変更管理を行う工場の場合1</remarks>
+            public int IsHistoryManagementFlg { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPort 機器台帳のデータクラス
+        /// </summary>
+        public class excelPortMachineList : ComDao.CommonTableItem
+        {
+            // SQLの検索結果の列を定義してください。
+            // 品目マスタから多くの列を取得する場合は、品目マスタのデータクラスを継承することで、それらの定義を省くことができます。
+
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
+            /// <summary>Gets or sets 機器ID</summary>
+            /// <value>機器ID</value>
+            public long? EquipmentId { get; set; }
+            /// <summary>Gets or sets 機器番号</summary>
+            /// <value>機器番号</value>
+            public string MachineNo { get; set; }
+            /// <summary>Gets or sets 機器名称</summary>
+            /// <value>機器名称</value>
+            public string MachineName { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public int? EquipmentLevelStructureId { get; set; }
+            /// <summary>Gets or sets 機器レベル名称</summary>
+            /// <value>機器レベル名称</value>
+            public string EquipmentLevelName { get; set; }
+            /// <summary>Gets or sets 重要度</summary>
+            /// <value>重要度</value>
+            public int? ImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 重要度名称</summary>
+            /// <value>重要度名称</value>
+            public string ImportanceName { get; set; }
+            /// <summary>Gets or sets 保全方式</summary>
+            /// <value>保全方式</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 保全方式名称</summary>
+            /// <value>保全方式名称</value>
+            public string InspectionSiteConservationName { get; set; }
+            /// <summary>Gets or sets 設置場所</summary>
+            /// <value>設置場所</value>
+            public string InstallationLocation { get; set; }
+            /// <summary>Gets or sets 設置台数</summary>
+            /// <value>設置台数</value>
+            public decimal? NumberOfInstallation { get; set; }
+            /// <summary>Gets or sets 設置年月</summary>
+            /// <value>設置年月</value>
+            public DateTime? DateOfInstallation { get; set; }
+            /// <summary>Gets or sets 適用法規</summary>
+            /// <value>適用法規</value>
+            public string ApplicableLawsStructureId { get; set; }
+            /// <summary>Gets or sets 適用法規名称</summary>
+            /// <value>適用法規名称</value>
+            public string ApplicableLawsName { get; set; }
+            /// <summary>Gets or sets 機番メモ</summary>
+            /// <value>機番メモ</value>
+            public string MachineNote { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerStructureId { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufacturerName { get; set; }
+            /// <summary>Gets or sets メーカー型式</summary>
+            /// <value>メーカー型式</value>
+            public string ManufacturerType { get; set; }
+            /// <summary>Gets or sets 型式コード</summary>
+            /// <value>型式コード</value>
+            public string ModelNo { get; set; }
+            /// <summary>Gets or sets 製造番号</summary>
+            /// <value>製造番号</value>
+            public string SerialNo { get; set; }
+            /// <summary>Gets or sets 製造年月</summary>
+            /// <value>製造年月</value>
+            public DateTime? DateOfManufacture { get; set; }
+            /// <summary>Gets or sets 納期</summary>
+            /// <value>納期</value>
+            public int? DeliveryDate { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public int? UseSegmentStructureId { get; set; }
+            /// <summary>Gets or sets 使用区分名称</summary>
+            /// <value>使用区分名称</value>
+            public string UseSegmentName { get; set; }
+            /// <summary>Gets or sets 機番添付有無</summary>
+            /// <value>機番添付有無</value>
+            public string FileLinkMachine { get; set; }
+            /// <summary>Gets or sets 機器添付有無</summary>
+            /// <value>機器添付有無</value>
+            public string FileLinkEquip { get; set; }
+            /// <summary>Gets or sets 固定資産番号</summary>
+            /// <value>固定資産番号</value>
+            public string FixedAssetNo { get; set; }
+            /// <summary>Gets or sets 循環対象</summary>
+            /// <value>循環対象</value>
+            public int? CirculationTargetFlg { get; set; }
+            /// <summary>Gets or sets 循環対象</summary>
+            /// <value>循環対象</value>
+            public string CirculationTargetFlgName { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public int? MaintainanceKindManage { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public string MaintainanceKindManageName { get; set; }
+            /// <summary>Gets or sets 機器メモ</summary>
+            /// <value>機器メモ</value>
+            public string EquipmentNote { get; set; }
+            /// <summary>Gets or sets 更新シリアルID(機番情報)</summary>
+            /// <value>更新シリアルID</value>
+            public string McUpdateSerialId { get; set; }
+            /// <summary>Gets or sets 更新シリアルID(機器情報)</summary>
+            /// <value>更新シリアルID</value>
+            public string EqUpdateSerialId { get; set; }
+            /// <summary>Gets or sets 場所階層</summary>
+            /// <value>場所階層</value>
+            public int LocationStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層</summary>
+            /// <value>職種機種階層</value>
+            public int JobStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? LargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string LargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? MiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string MiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? SmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string SmallClassficationName { get; set; }
+            /// <summary>Gets or sets タブNO</summary>
+            /// <value>タブNO</value>
+            public int TabNo { get; set; }
+        }
+
+        /// <summary>
+        /// ExcelPort機器別管理基準のデータクラス
+        /// </summary>
+        public class excelPortManagementStandardResult : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
+            /// <summary>Gets or sets 機器レベル</summary>
+            /// <value>機器レベル</value>
+            public int? EquipmentLevelStructureId { get; set; }
+            /// <summary>Gets or sets 機器番号</summary>
+            /// <value>機器番号</value>
+            public string MachineNo { get; set; }
+            /// <summary>Gets or sets 機器名称</summary>
+            /// <value>機器名称</value>
+            public string MachineName { get; set; }
+            /// <summary>Gets or sets 点検種別毎管理</summary>
+            /// <value>点検種別毎管理</value>
+            public bool MaintainanceKindManage { get; set; }
+            /// <summary>Gets or sets 部位ID</summary>
+            /// <value>部位ID</value>
+            public int? InspectionSiteStructureId { get; set; }
+            /// <summary>Gets or sets 部位重要度</summary>
+            /// <value>部位重要度</value>
+            public int? InspectionSiteImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 部位保全方式</summary>
+            /// <value>部位保全方式</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準フラグ</summary>
+            /// <value>機器別管理基準フラグ</value>
+            public bool? IsManagementStandardConponent { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 点検内容ID</summary>
+            /// <value>点検内容ID</value>
+            public int? InspectionContentStructureId { get; set; }
+            /// <summary>Gets or sets 保全区分</summary>
+            /// <value>保全区分</value>
+            public int? MaintainanceDivision { get; set; }
+            /// <summary>Gets or sets 点検種別</summary>
+            /// <value>点検種別</value>
+            public int? MaintainanceKindStructureId { get; set; }
+            /// <summary>Gets or sets 予算金額</summary>
+            /// <value>予算金額</value>
+            public decimal? BudgetAmount { get; set; }
+            /// <summary>Gets or sets 準備期間(日)</summary>
+            /// <value>準備期間(日)</value>
+            public int? PreparationPeriod { get; set; }
+            /// <summary>Gets or sets 長計件名ID</summary>
+            /// <value>長計件名ID</value>
+            public int? LongPlanId { get; set; }
+            /// <summary>Gets or sets 並び順</summary>
+            /// <value>並び順</value>
+            public int? OrderNo { get; set; }
+            /// <summary>Gets or sets スケジュール管理基準ID</summary>
+            /// <value>スケジュール管理基準ID</value>
+            public int? ScheduleTypeStructureId { get; set; }
+            /// <summary>Gets or sets 保全スケジュールID</summary>
+            /// <value>保全スケジュールID</value>
+            public long MaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 周期ありフラグ</summary>
+            /// <value>周期ありフラグ</value>
+            public bool? IsCyclic { get; set; }
+            /// <summary>Gets or sets 周期(年)</summary>
+            /// <value>周期(年)</value>
+            public int? CycleYear { get; set; }
+            /// <summary>Gets or sets 周期(月)</summary>
+            /// <value>周期(月)</value>
+            public int? CycleMonth { get; set; }
+            /// <summary>Gets or sets 周期(日)</summary>
+            /// <value>周期(日)</value>
+            public int? CycleDay { get; set; }
+            /// <summary>Gets or sets 表示周期</summary>
+            /// <value>表示周期</value>
+            public string DispCycle { get; set; }
+            /// <summary>Gets or sets 開始日</summary>
+            /// <value>開始日</value>
+            public DateTime? StartDate { get; set; }
+            /// <summary>Gets or sets 添付ファイル</summary>
+            /// <value>添付ファイル</value>
+            public string AttachmentFile { get; set; }
+            /// <summary>Gets or sets 最大更新日時</summary>
+            /// <value>最大更新日時</value>
+            public DateTime? MaxUpdateDatetime { get; set; }
+            /// <summary>Gets or sets 添付ファイル削除用キーID</summary>
+            /// <value>添付ファイル削除用キーID</value>
+            public int? KeyId { get; set; }
+            /// <summary>Gets or sets 機能タイプID</summary>
+            /// <value>機能タイプID</value>
+            public int? FunctionTypeId { get; set; }
         }
     }
 }

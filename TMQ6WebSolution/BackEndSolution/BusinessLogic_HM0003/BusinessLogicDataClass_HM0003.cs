@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using ComDao = CommonSTDUtil.CommonDataBaseClass;
+using TmqDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_HM0003
 {
@@ -16,26 +16,11 @@ namespace BusinessLogic_HM0003
         /// <summary>
         /// 検索条件のデータクラス
         /// </summary>
-        public class searchCondition : ComDao.SearchCommonClass
+        public class searchCondition : TmqDao.HmHistoryManagementEntity
         {
-            // 検索条件に使用する場合は、検索条件格納共通クラスを継承してください。
-
-            /// <summary>Gets or sets 品目コード</summary>
-            /// <value>品目コード</value>
-            public string ItemCd { get; set; }
-        }
-
-        /// <summary>
-        /// 検索結果のデータクラス
-        /// </summary>
-        public class searchResult : ComDao.CommonTableItem
-        {
-            // SQLの検索結果の列を定義してください。
-            // 品目マスタから多くの列を取得する場合は、品目マスタのデータクラスを継承することで、それらの定義を省くことができます。
-
-            /// <summary>Gets or sets 品目名称(テスト)</summary>
-            /// <value>品目名称(テスト)</value>
-            public string ItemNameTest { get; set; }
+            /// <summary>Gets or sets 表示制御用フラグ（承認依頼の場合true、否認の場合false）</summary>
+            /// <value>表示制御用フラグ（承認依頼の場合true、否認の場合false）</value>
+            public bool RequestFlg { get; set; }
         }
     }
 }

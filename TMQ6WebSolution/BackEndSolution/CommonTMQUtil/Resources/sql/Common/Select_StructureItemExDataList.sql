@@ -61,3 +61,6 @@ WHERE
 /*@NotDeleteOnly
     AND si.delete_flg = 0
 @NotDeleteOnly*/
+/*@LanguageId
+    AND si.language_id = @LanguageId
+@LanguageId*/  

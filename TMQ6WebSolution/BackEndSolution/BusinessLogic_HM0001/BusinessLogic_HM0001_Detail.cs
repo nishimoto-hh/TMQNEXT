@@ -25,19 +25,17 @@ namespace BusinessLogic_HM0001
     /// </summary>
     public partial class BusinessLogic_HM0001 : CommonBusinessLogicBase
     {
-        #region 定数
-        #endregion
-
         #region 検索
         /// <summary>
         /// 詳細画面検索処理
         /// </summary>
         /// <param name="historyManagementId">変更管理ID(再検索以外はNULL)</param>
+        /// <param name="isInit">初期検索の場合のみTrue</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool searchDetailList(long? historyManagementId = null)
+        private bool searchDetailList(long? historyManagementId = null, long? machineId = null, bool isInit = false)
         {
             // 検索条件を取得
-            Dao.detailSearchCondition condition = getDetailSearchCondition(historyManagementId);
+            Dao.detailSearchCondition condition = getDetailSearchCondition(historyManagementId, machineId, isInit);
 
             // 機番情報・機器情報
             if (!searchMachineAndEquipmentInfo(condition))
@@ -58,14 +56,16 @@ namespace BusinessLogic_HM0001
         /// 検索条件を取得
         /// </summary>
         /// <param name="historyManagementId">変更管理ID(再検索以外はNULL)</param>
+        /// <param name="isInit">初期検索の場合のみTrue</param>
         /// <returns>検索条件</returns>
-        private Dao.detailSearchCondition getDetailSearchCondition(long? historyManagementId = null)
+        private Dao.detailSearchCondition getDetailSearchCondition(long? historyManagementId = null, long? machineId = null, bool isInit = false)
         {
             // 引数の変更管理IDがNULLでない(再検索処理の)場合
             if (historyManagementId != null)
             {
                 Dao.detailSearchCondition researchCondition = new();
                 researchCondition.HistoryManagementId = (long)historyManagementId;                         // 変更管理ID
+                researchCondition.MachineId = (long)machineId;                                             // 機番ID
                 researchCondition.LanguageId = this.LanguageId;                                            // 言語ID
                 researchCondition.UserId = int.Parse(this.UserId);                                         // ログインユーザID
                 researchCondition.ProcessMode = (int)TMQConst.MsStructure.StructureId.ProcessMode.history; // 処理モード
@@ -78,9 +78,9 @@ namespace BusinessLogic_HM0001
 
             // 遷移元のCtrlIdを判定
             CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId);
-            if (compareId.IsStartId("checkIsInProgress"))
+            if (compareId.IsStartId("judgeStatusCntExceptApproved"))
             {
-                // 変更申請・承認依頼・申請内容修正ボタン押下時のAjax通信
+                // 変更申請ボタン押下時のAjax通信
                 conditionDictionary = this.resultInfoDictionary;
                 fromCtrlId = ConductInfo.FormDetail.ControlId.Machine;
             }
@@ -93,6 +93,7 @@ namespace BusinessLogic_HM0001
             else if (compareId.IsStartId(ConductInfo.FormDetail.ButtonId.CopyRequest) ||
                     compareId.IsStartId(ConductInfo.FormDetail.ButtonId.ChangeRequest) ||
                     compareId.IsStartId(ConductInfo.FormDetail.ButtonId.EditRequest) ||
+                    compareId.IsStartId(ConductInfo.FormDetail.ButtonId.ManagementStandardRegist) ||
                     compareId.IsStartId(ConductInfo.FormEdit.ButtonId.Back))
             {
                 // 詳細画面の複写申請ボタンクリック
@@ -119,16 +120,41 @@ namespace BusinessLogic_HM0001
             condition.LanguageId = this.LanguageId;    // 言語ID
             condition.UserId = int.Parse(this.UserId); // ログインユーザID
 
+            // 変更管理IDを引き継がなかった場合、対象の機器で申請状況が「承認済」以外の変更管理IDを取得する
+            if (condition.HistoryManagementId <= 0)
+            {
+                TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+                long? tmpHistoryManagementId = historyManagement.getHistoryManagementIdByKeyId(condition.MachineId);
+                if (tmpHistoryManagementId != null && tmpHistoryManagementId > 0)
+                {
+                    condition.HistoryManagementId = (long)tmpHistoryManagementId;
+                }
+            }
+
             // 変更管理IDの有無で処理モードを設定
             if (condition.HistoryManagementId <= 0)
             {
                 // 変更管理IDなし の場合、トランザクションモード
                 condition.ProcessMode = (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction;
+
+                // 初期表示の場合はメッセージを表示
+                if (isInit)
+                {
+                    // 表示されている機器に対し行う変更を登録してください。
+                    this.MsgId = GetResMessage(ComRes.ID.ID141270003);
+                }
             }
             else
             {
                 // 変更管理IDあり の場合、変更管理モード
                 condition.ProcessMode = (int)TMQConst.MsStructure.StructureId.ProcessMode.history;
+
+                //保全項目一覧の単票以外で初期検索の場合
+                if (!compareId.IsStartId(ConductInfo.FormDetail.ButtonId.ManagementStandardRegist) && isInit)
+                {
+                    //登録された変更管理に対して処理を行います。
+                    this.MsgId = GetResMessage(ComRes.ID.ID141200007);
+                }
             }
 
             return condition;
@@ -180,13 +206,19 @@ namespace BusinessLogic_HM0001
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job, StructureType.OldLocation, StructureType.OldJob }, this.db, this.LanguageId, true);
 
             // 申請状況の拡張項目を取得
-            results[0].ApplicationStatusCode = getApplicationStatusCode(condition, condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history);
+            results[0].ApplicationStatusCode = getApplicationStatusCode(condition);
 
             // 変更があった項目を取得(変更管理モードの場合)
             if (condition.ProcessMode == (int)TMQConst.MsStructure.StructureId.ProcessMode.history)
             {
                 // 変更があった項目を取得
                 TMQUtil.HistoryManagement.setValueChangedItem<Dao.searchResult>(results);
+            }
+            else
+            {
+                //トランザクションモードの場合、申請状況に「申請なし」を設定
+                TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+                results[0].ApplicationStatusId = historyManagement.getApplicationStatus(TMQConst.MsStructure.StructureId.ApplicationStatus.None);
             }
 
             // ボタン表示/非表示フラグを取得
@@ -195,19 +227,22 @@ namespace BusinessLogic_HM0001
             // 処理モードを検索結果に設定
             results[0].ProcessMode = condition.ProcessMode;
 
-            // 検索結果の設定(機番情報)
-            if (!setSearchResult(ConductInfo.FormDetail.GroupNoMachine, results))
-            {
-                return false;
-            }
-
-            // 検索結果の設定(機器情報)
-            if (!setSearchResult(ConductInfo.FormDetail.GroupNoEquipment, results))
+            // 検索結果の設定(変更管理情報・機番情報・機器情報)
+            if (!setSearchResult(ConductInfo.FormDetail.GroupNoHistory, results) ||
+                !setSearchResult(ConductInfo.FormDetail.GroupNoMachine, results) ||
+                !setSearchResult(ConductInfo.FormDetail.GroupNoEquipment, results))
             {
                 return false;
             }
 
             return true;
+
+            // 申請状況の拡張項目を取得
+            string getApplicationStatusCode(Dao.detailSearchCondition condition)
+            {
+                TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+                return historyManagement.getApplicationStatusByHistoryManagementId(new ComDao.HmHistoryManagementEntity() { HistoryManagementId = condition.HistoryManagementId });
+            }
         }
 
         /// <summary>
@@ -277,90 +312,95 @@ namespace BusinessLogic_HM0001
         /// 削除申請
         /// </summary>
         /// <returns>エラーの場合-1、正常の場合1</returns>
-        public int deleteRequest()
+        private bool deleteRequest()
         {
-            // 一覧の表示情報取得
-            Dao.searchResult searchResult = getRegistInfo<Dao.searchResult>(ConductInfo.FormDetail.GroupNoMachine, DateTime.Now);
+            // 機番情報・機器情報取得
+            DateTime now = DateTime.Now;
+            Dao.searchResult registInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now);
 
             // 排他チェック
-            if (!deleteRequestCheckExclusiveSingle(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "mc_machine", "mc_equipment" }))
+            if (!checkExclusiveSingleForTable(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "mc_machine", "mc_equipment" }))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 入力チェック
-            if (deleteRequestIsError(searchResult.MachineId))
+            if (deleteRequestIsError(registInfo.MachineId))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
-            // 変更管理テーブル・変更管理詳細テーブル 登録処理
-            ComDao.HmHistoryManagementEntity historyInfo = new();
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            // 変更管理テーブル 登録処理
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
 
-            // SQL実行(申請区分は「削除申請」)
-            (bool returnFlag, long historyManagementId, long historyManagementDetailId) historyManagementResult =
-                historyManagement.InsertHistoryManagementBaseTable(TMQConst.MsStructure.StructureId.ApplicationDivision.Delete,
-                                                                   (int)executionDiv.machineDelete,
-                                                                   searchResult.MachineId,
-                                                                   getFactoryId(historyManagement, searchResult.MachineId));
+            // 登録処理
+            // 引数1：申請区分は「削除申請」
+            // 引数2：機番ID
+            // 引数3：画面で入力された内容の場所階層ID
+            (bool returnFlag, long historyManagementId) historyManagementResult =
+                historyManagement.InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision.Delete,
+                                                          registInfo.MachineId,
+                                                          historyManagement.getFactoryId((int)registInfo.LocationStructureId));
+
             // 登録に失敗した場合は終了
             if (!historyManagementResult.returnFlag)
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
+            // 新規採番した変更管理IDを設定
+            registInfo.HistoryManagementId = historyManagementResult.historyManagementId;
+
             // 以下は削除する情報を各変更管理テーブルに登録する
-            DateTime now = DateTime.Now;
 
             // 機番情報変更管理テーブル 登録処理
-            if (!registHmMcMachine(historyManagementResult.historyManagementDetailId, searchResult.MachineId, now))
+            // 実行処理区分を設定
+            registInfo.ExecutionDivision = executionDiv.MachineDelete;
+
+            // 機番情報変更管理 登録処理
+            if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Edit.InsertMachineInfo, SqlName.SubDir, registInfo, this.db, string.Empty))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 機器情報変更管理テーブル 登録処理
-            if (!registHmMcEquipment(historyManagementResult.historyManagementDetailId, searchResult.EquipmentId, now))
+            if (!registEquipmentInfo(ref registInfo, true))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 適用法規情報変更管理テーブル 登録処理
-            if (!registHmMcApplicableLaws(historyManagementResult.historyManagementDetailId, searchResult.MachineId, now))
+            if (!registApplocableLaws(registInfo.MachineId, registInfo.HistoryManagementId, now))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 機器別管理基準部位変更管理テーブル 登録処理
-            if (!registHmMcManagementStandardsComponent(historyManagementResult.historyManagementDetailId, searchResult.MachineId, now, out List<long> componentIdList))
+            if (!registHmMcManagementStandardsComponent(historyManagementResult.historyManagementId, registInfo.MachineId, now, "MachineId", out List<long> componentIdList))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 機器別管理基準内容変更管理テーブル 登録処理
-            if (!registHmMcManagementStandardsContent(historyManagementResult.historyManagementDetailId, now, componentIdList, out List<long> contentIdList))
+            if (!registHmMcManagementStandardsContent(historyManagementResult.historyManagementId, now, componentIdList, out List<long> contentIdList))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 保全スケジュール変更管理テーブル 登録処理
-            if (!registMaintainanceSchedule(historyManagementResult.historyManagementDetailId, now, contentIdList))
+            if (!registMaintainanceSchedule(historyManagementResult.historyManagementId, now, contentIdList))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
             // 詳細画面再検索処理
-            if (!searchDetailList(historyManagementResult.historyManagementId))
+            if (!searchDetailList(historyManagementResult.historyManagementId, registInfo.MachineId))
             {
-                return ComConsts.RETURN_RESULT.NG;
+                return false;
             }
 
-            return ComConsts.RETURN_RESULT.OK;
+            return true;
         }
-
-        #region 排他チェック
-
-        #endregion
 
         #region 入力チェック
         /// <summary>
@@ -376,43 +416,24 @@ namespace BusinessLogic_HM0001
             }
 
             // 長期計画存在チェック
-            if (!checkLongPlan(machineId))
+            if (checkLongPlan(machineId))
             {
                 return true;
             }
 
             //保全活動存在チェック
-            if (!checkMsSummary(machineId))
+            if (checkMsSummary(machineId))
             {
                 return true;
             }
 
             // 構成存在チェック
-            if (!checkComposition(machineId, true))
+            if (checkComposition(machineId, true))
             {
                 return true;
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// 機器に対する「承認済み」以外のデータ存在チェック
-        /// </summary>
-        /// <param name="machineId">機番ID</param>
-        /// <returns>存在しない:True 存在する:False</returns>
-        private bool checkHistoryManagement(long machineId)
-        {
-            // 承認済み」以外のデータ件数取得
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
-            if (historyManagement.getApplicationStatusCntByKeyId(machineId, TMQConst.MsStructure.StructureId.ApplicationStatus.Approved, false) > 0)
-            {
-                // 「 対象データに申請が存在するため処理を行えません。」
-                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141160016 });
-                return false;
-            }
-
-            return true;
         }
 
         /// <summary>
@@ -426,15 +447,14 @@ namespace BusinessLogic_HM0001
             TMQUtil.GetFixedSqlStatement(SqlName.SubDirMachine, SqlName.Detail.GetChkLongPlan, out string sql);
 
             // 総件数を取得
-            int cnt = db.GetCount(sql, new { MachineId = machineId });
-            if (cnt > 0)
+            if (db.GetCount(sql, new { MachineId = machineId }) > 0)
             {
                 // 「 長期計画で使用される機器の為、削除できません。」
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141170001 });
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -448,17 +468,14 @@ namespace BusinessLogic_HM0001
             TMQUtil.GetFixedSqlStatement(SqlName.SubDirMachine, SqlName.Detail.GetChkMsSummary, out string sql);
 
             // 総件数を取得
-            int cnt = db.GetCount(sql, new { MachineId = machineId });
-            if (cnt > 0)
+            if (db.GetCount(sql, new { MachineId = machineId }) > 0)
             {
-                // エラー終了
-                this.Status = CommonProcReturn.ProcStatus.Error;
                 // 「 保全活動で使用される機器の為、削除できません。」
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141300003 });
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -475,13 +492,10 @@ namespace BusinessLogic_HM0001
             foreach (string sqlId in sqlIdList)
             {
                 // 構成検索SQL文の取得
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDirMachine, SqlName.Detail.GetChkParentInfo, out string sql);
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDirMachine, sqlId, out string sql);
 
                 // 総件数を取得
-                int cnt = db.GetCount(sql, new { MachineId = machineId });
-
-                // 構成が存在する場合
-                if (cnt > 0)
+                if (db.GetCount(sql, new { MachineId = machineId }) > 0)
                 {
                     // 引数のフラグに応じてエラーメッセージを画面のメッセージに設定する
                     if (isSetFormMsgId)
@@ -489,119 +503,30 @@ namespace BusinessLogic_HM0001
                         // 「 構成機器が登録されている機器の為、削除できません。」
                         this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141070001 });
                     }
-                    return false;
+
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
         #endregion
 
-        #region 変更管理テーブル登録処理
         /// <summary>
-        /// 機番情報変更管理テーブル 登録処理
+        /// 適用法規情報管理テーブル 登録処理
         /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
         /// <param name="machineId">機番ID</param>
+        /// <param name="historyManagementId">変更管理ID</param>
         /// <param name="now">現在日時</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registHmMcMachine(long historyManagementDetailId, long machineId, DateTime now)
-        {
-            // 機番IDより機番情報を取得する
-            ComDao.McMachineEntity machineEntity = new();
-            machineEntity = machineEntity.GetEntity(machineId, this.db);
-
-            // 取得した機番情報の値を機番情報変更管理データクラスに設定する
-            ComDao.HmMcMachineEntity historyMachineEntity = new();
-            historyMachineEntity.HistoryManagementDetailId = historyManagementDetailId;               // 変更管理詳細ID
-            historyMachineEntity.MachineId = machineEntity.MachineId;                                 // 機番ID
-            historyMachineEntity.LocationStructureId = machineEntity.LocationStructureId;             // 機能場所階層ID
-            historyMachineEntity.JobStructureId = machineEntity.JobStructureId;                       // 職種機種階層ID
-            historyMachineEntity.MachineNo = machineEntity.MachineNo;                                 // 機器番号
-            historyMachineEntity.MachineName = machineEntity.MachineName;                             // 機器毎証
-            historyMachineEntity.InstallationLocation = machineEntity.InstallationLocation;           // 設置場所
-            historyMachineEntity.NumberOfInstallation = machineEntity.NumberOfInstallation;           // 設置台数
-            historyMachineEntity.EquipmentLevelStructureId = machineEntity.EquipmentLevelStructureId; // 機器レベル
-            historyMachineEntity.DateOfInstallation = machineEntity.DateOfInstallation;               // 設置日
-            historyMachineEntity.ImportanceStructureId = machineEntity.ImportanceStructureId;         // 重要度
-            historyMachineEntity.ConservationStructureId = machineEntity.ConservationStructureId;     // 保全方式
-            historyMachineEntity.MachineNote = machineEntity.MachineNote;                             // 機番メモ
-
-            // テーブル共通項目を設定
-            setCommonItem(ref historyMachineEntity, now);
-
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.InsertMachineInfo, out string sql, new List<string>() { UnCommentItem.DefaultMachineId });
-
-            // SQL実行
-            if (db.Regist(sql, historyMachineEntity) <= 0)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 機器情報変更管理テーブル 登録処理
-        /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
-        /// <param name="equipmentId">機器ID</param>
-        /// <param name="now">現在日時</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registHmMcEquipment(long historyManagementDetailId, long equipmentId, DateTime now)
-        {
-            // 機器IDより機器情報を取得する
-            ComDao.McEquipmentEntity equipmentEntity = new();
-            equipmentEntity = equipmentEntity.GetEntity(equipmentId, this.db);
-
-            // 取得した機器情報の値を機器情報変更管理データクラスに設定する
-            ComDao.HmMcEquipmentEntity historyEquipmentEntity = new();
-            historyEquipmentEntity.HistoryManagementDetailId = historyManagementDetailId;             // 変更管理詳細ID
-            historyEquipmentEntity.EquipmentId = equipmentEntity.EquipmentId;                         // 機器ID
-            historyEquipmentEntity.MachineId = equipmentEntity.MachineId;                             // 機番ID
-            historyEquipmentEntity.CirculationTargetFlg = equipmentEntity.CirculationTargetFlg;       // 循環対象
-            historyEquipmentEntity.ManufacturerStructureId = equipmentEntity.ManufacturerStructureId; // メーカー
-            historyEquipmentEntity.ManufacturerType = equipmentEntity.ManufacturerType;               // メーカー型式
-            historyEquipmentEntity.ModelNo = equipmentEntity.ModelNo;                                 // 型式コード
-            historyEquipmentEntity.SerialNo = equipmentEntity.SerialNo;                               // シリアル番号
-            historyEquipmentEntity.DateOfManufacture = equipmentEntity.DateOfManufacture;             // 製造日
-            historyEquipmentEntity.DeliveryDate = equipmentEntity.DeliveryDate;                       // 納期
-            historyEquipmentEntity.EquipmentNote = equipmentEntity.EquipmentNote;                     // 機器メモ
-            historyEquipmentEntity.UseSegmentStructureId = equipmentEntity.UseSegmentStructureId;     // 使用区分
-            historyEquipmentEntity.FixedAssetNo = equipmentEntity.FixedAssetNo;                       // 固定資産番号
-            historyEquipmentEntity.MaintainanceKindManage = equipmentEntity.MaintainanceKindManage;   // 点検種別毎管理
-
-            // テーブル共通項目を設定
-            setCommonItem(ref historyEquipmentEntity, now);
-
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.InsertEquipmentInfo, out string sql, new List<string>() { UnCommentItem.DefaultEquipmentId });
-
-            // SQL実行
-            if (db.Regist(sql, historyEquipmentEntity) <= 0)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 適用法規情報変更管理テーブル 登録処理
-        /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
-        /// <param name="machineId">機番ID</param>
-        /// <param name="now">現在日時</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registHmMcApplicableLaws(long historyManagementDetailId, long machineId, DateTime now)
+        /// <returns>エラーの倍はFalse</returns>
+        private bool registApplocableLaws(long machineId, long historyManagementId, DateTime now)
         {
             // 検索条件を作成
             ComDao.McApplicableLawsEntity condition = new();
             condition.MachineId = machineId; // 機番ID
 
             // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetApplicableLaws, out string sql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetApplicableLawsTransaction, out string sql);
 
             // SQL実行
             IList<ComDao.McApplicableLawsEntity> results = db.GetListByDataClass<ComDao.McApplicableLawsEntity>(sql, condition);
@@ -611,22 +536,20 @@ namespace BusinessLogic_HM0001
                 return true;
             }
 
-            // 登録用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.InsertApplicableLawsInfo, out string insertSql);
             // 取得したデータを適用法規情報変更管理テーブルに登録
             foreach (ComDao.McApplicableLawsEntity result in results)
             {
-                ComDao.HmMcApplicableLawsEntity historyApplicableLawsEntity = new();
-                historyApplicableLawsEntity.HistoryManagementDetailId = historyManagementDetailId;        // 変更管理詳細ID
-                historyApplicableLawsEntity.ApplicableLawsId = result.ApplicableLawsId;                   // 適用法規ID
-                historyApplicableLawsEntity.ApplicableLawsStructureId = result.ApplicableLawsStructureId; // 適用法規アイテムID
-                historyApplicableLawsEntity.MachineId = result.MachineId;                                 // 機番ID
+                ComDao.HmMcApplicableLawsEntity applicableLawsEntity = new();
+                applicableLawsEntity.HistoryManagementId = historyManagementId;                    // 変更管理ID
+                applicableLawsEntity.ApplicableLawsId = result.ApplicableLawsId;                   // 適用法規ID
+                applicableLawsEntity.ApplicableLawsStructureId = result.ApplicableLawsStructureId; // 適用法規アイテムID
+                applicableLawsEntity.MachineId = result.MachineId;                                 // 機番ID
 
                 // テーブル共通項目を設定
-                setCommonItem(ref historyApplicableLawsEntity, now);
+                setExecuteConditionByDataClassCommon(ref applicableLawsEntity, now, int.Parse(this.UserId), int.Parse(this.UserId));
 
                 // SQL実行
-                if (db.Regist(insertSql, historyApplicableLawsEntity) <= 0)
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Edit.InsertApplicableLawsInfo, SqlName.SubDir, applicableLawsEntity, this.db, string.Empty, new List<string>() { "DefaultApplicableLawsId" }))
                 {
                     return false;
                 }
@@ -634,218 +557,23 @@ namespace BusinessLogic_HM0001
 
             return true;
         }
-
-        /// <summary>
-        /// 機器別管理基準部位変更管理テーブル 登録処理
-        /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
-        /// <param name="machineId">機番ID</param>
-        /// <param name="now">現在日時</param>
-        /// <param name="componentIdList">機器別管理基準部位IDリスト</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registHmMcManagementStandardsComponent(long historyManagementDetailId, long machineId, DateTime now, out List<long> componentIdList)
-        {
-            componentIdList = new();
-
-            // 検索条件を作成
-            ComDao.McManagementStandardsComponentEntity condition = new();
-            condition.MachineId = machineId; // 機番ID
-
-            // SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetManagementStandardsComponent, out string sql);
-
-            // SQL実行
-            IList<ComDao.McManagementStandardsComponentEntity> results = db.GetListByDataClass<ComDao.McManagementStandardsComponentEntity>(sql, condition);
-            if (results == null || results.Count == 0)
-            {
-                // データが紐付いていない場合もあるので取得できなくてもtrueを返す
-                return true;
-            }
-
-            // 機器別管理基準部位変更管理テーブル登録用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.InsertManagementStandardsComponentInfo, out string insertSql);
-            // 取得したデータを機器別管理基準部位変更管理テーブルに登録
-            foreach (ComDao.McManagementStandardsComponentEntity result in results)
-            {
-                // 機器別管理基準部位IDを返り値のリストに格納
-                componentIdList.Add(result.ManagementStandardsComponentId);
-
-                ComDao.HmMcManagementStandardsComponentEntity historyComponentEntity = new();
-                historyComponentEntity.HistoryManagementDetailId = historyManagementDetailId;                    // 変更管理詳細ID
-                historyComponentEntity.ManagementStandardsComponentId = result.ManagementStandardsComponentId;   // 機器別管理基準部位ID
-                historyComponentEntity.MachineId = result.MachineId;                                             // 機番ID
-                historyComponentEntity.InspectionSiteStructureId = result.InspectionSiteStructureId;             // 部位ID
-                historyComponentEntity.IsManagementStandardConponent = result.IsManagementStandardConponent;     // 機器別管理基準フラグ
-
-                // テーブル共通項目を設定
-                setCommonItem(ref historyComponentEntity, now);
-
-                // SQL実行
-                if (db.Regist(insertSql, historyComponentEntity) <= 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 機器別管理基準部内容変更管理テーブル 登録処理
-        /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
-        /// <param name="now">現在日時</param>
-        /// <param name="componentIdList">機器別管理基準部位IDリスト</param>
-        /// <param name="contentIdList">機器別管理基準内容IDリスト</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registHmMcManagementStandardsContent(long historyManagementDetailId, DateTime now, List<long> componentIdList, out List<long> contentIdList)
-        {
-            contentIdList = new();
-
-            // 機器別管理基準内容データを取得するSQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetManagementStandardsContent, out string sql);
-            // 機器別管理基準内容変更管理テーブル登録用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.InsertManagementStandardsContentInfo, out string insertSql);
-
-            // 機器別管理基準部位IDより機器別管理基準内容のデータを取得
-            foreach (long componentId in componentIdList)
-            {
-                // 検索条件を作成
-                ComDao.McManagementStandardsContentEntity condition = new();
-                condition.ManagementStandardsComponentId = componentId; // 機器別管理基準部位ID
-
-                // SQL実行
-                IList<ComDao.McManagementStandardsContentEntity> results = db.GetListByDataClass<ComDao.McManagementStandardsContentEntity>(sql, condition);
-                if (results == null || results.Count == 0)
-                {
-                    // データが紐付いていない場合もあるのでエラーにはしない
-                    break;
-                }
-
-                // 取得したデータを機器別管理基準内容変更管理テーブルに登録
-                foreach (ComDao.McManagementStandardsContentEntity result in results)
-                {
-                    // 機器別管理基準部位IDを返り値のリストに格納
-                    contentIdList.Add(result.ManagementStandardsContentId);
-
-                    ComDao.HmMcManagementStandardsContentEntity historyContentEntity = new();
-                    historyContentEntity.HistoryManagementDetailId = historyManagementDetailId;                                // 変更管理詳細ID
-                    historyContentEntity.ManagementStandardsContentId = result.ManagementStandardsContentId;                   // 機器別管理基準内容ID
-                    historyContentEntity.ManagementStandardsComponentId = componentId;                                         // 機器別管理基準部位ID
-                    historyContentEntity.InspectionContentStructureId = result.InspectionContentStructureId;                   // 点検内容ID
-                    historyContentEntity.InspectionSiteImportanceStructureId = result.InspectionSiteImportanceStructureId;     // 部位重要度
-                    historyContentEntity.InspectionSiteConservationStructureId = result.InspectionSiteConservationStructureId; // 部位保全方式
-                    historyContentEntity.MaintainanceDivision = result.MaintainanceDivision;                                   // 保全区分
-                    historyContentEntity.MaintainanceKindStructureId = result.MaintainanceKindStructureId;                     // 点検種別
-                    historyContentEntity.BudgetAmount = result.BudgetAmount;                                                   // 予算金額
-                    historyContentEntity.PreparationPeriod = result.PreparationPeriod;                                         // 準備期間(日)
-                    historyContentEntity.LongPlanId = result.LongPlanId;                                                       // 長計件名ID
-                    historyContentEntity.OrderNo = result.OrderNo;                                                             // 並び順
-                    historyContentEntity.ScheduleTypeStructureId = result.ScheduleTypeStructureId;                             // スケジュール管理基準ID
-
-                    // テーブル共通項目を設定
-                    setCommonItem(ref historyContentEntity, now);
-
-                    // SQL実行
-                    if (db.Regist(insertSql, historyContentEntity) <= 0)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 保全スケジュール変更管理テーブル 登録処理
-        /// </summary>
-        /// <param name="historyManagementDetailId">変更管理詳細ID</param>
-        /// <param name="now">現在日時</param>
-        /// <param name="contentIdList">機器別管理基準内容IDリスト</param>
-        /// <returns>エラーの場合はFalse</returns>
-        private bool registMaintainanceSchedule(long historyManagementDetailId, DateTime now, List<long> contentIdList)
-        {
-
-            // 保全スケジュールデータを取得するSQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceSchedule, out string sql);
-            // 保全スケジュール変更管理テーブル登録用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.InsertMaintainanceScheduleInfo, out string insertSql);
-
-            // 機器別管理基準内容IDに紐付く保全スケジュールを取得
-            foreach (long contentId in contentIdList)
-            {
-                ComDao.McMaintainanceScheduleEntity condition = new();
-                condition.ManagementStandardsContentId = contentId;
-
-                // SQL実行
-                IList<ComDao.McMaintainanceScheduleEntity> results = db.GetListByDataClass<ComDao.McMaintainanceScheduleEntity>(sql, condition);
-                if (results == null || results.Count == 0)
-                {
-                    // データが紐付いていない場合もあるのでエラーにはしない
-                    break;
-                }
-
-                // 取得したデータを保全スケジュール変更管理テーブルに登録
-                foreach (ComDao.McMaintainanceScheduleEntity result in results)
-                {
-                    ComDao.HmMcMaintainanceScheduleEntity historyScheduleEntity = new();
-                    historyScheduleEntity.HistoryManagementDetailId = historyManagementDetailId;              // 変更管理詳細ID
-                    historyScheduleEntity.MaintainanceScheduleId = result.MaintainanceScheduleId;             // 保全スケジュールID
-                    historyScheduleEntity.ManagementStandardsContentId = result.ManagementStandardsContentId; // 機器別管理基準内容ID
-                    historyScheduleEntity.IsCyclic = result.IsCyclic;                                         // 周期ありフラグ
-                    historyScheduleEntity.CycleYear = result.CycleYear;                                       // 周期(年)
-                    historyScheduleEntity.CycleMonth = result.CycleMonth;                                     // 周期(月)
-                    historyScheduleEntity.CycleDay = result.CycleDay;                                         // 周期(日)
-                    historyScheduleEntity.DispCycle = result.DispCycle;                                       // 表示周期
-                    historyScheduleEntity.StartDate = result.StartDate;                                       // 開始日
-
-                    // テーブル共通項目を設定
-                    setCommonItem(ref historyScheduleEntity, now);
-
-                    // SQL実行
-                    if (db.Regist(insertSql, historyScheduleEntity) <= 0)
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-        /// <summary>
-        /// テーブル共通項目を設定する
-        /// </summary>
-        /// <typeparam name="T">テーブル共通クラス</typeparam>
-        /// <param name="result">登録データクラス</param>
-        /// <param name="now">現在日時</param>
-        private void setCommonItem<T>(ref T result, DateTime now)
-            where T : ComDao.CommonTableItem, new()
-        {
-            result.InsertUserId = int.Parse(this.UserId); // 登録者ID
-            result.InsertDatetime = now;                  // 登録日時
-            result.UpdateUserId = int.Parse(this.UserId); // 更新者ID
-            result.UpdateDatetime = now;                  // 更新日時
-        }
-        #endregion
         #endregion
 
         #region 申請内容取消・承認依頼引戻・承認 共通処理
         /// <summary>
         /// 申請内容取消・承認依頼引戻・承認 共通処理
         /// </summary>
-        /// <param name="historyManagementId">画面に表示されている変更管理ID</param>
+        /// <param name="registInfo">登録情報</param>
         /// <param name="applicationStatus">登録する申請状況</param>
         /// <returns>エラーの場合はFalse</returns>
-        private bool detailCommonRegist(out long historyManagementId, int? applicationStatus = null)
+        private bool detailCommonRegist(out Dao.searchResult registInfo, int? applicationStatus = null)
         {
-            // 画面の表示内容取得
-            Dao.searchResult searchResult = getRegistInfo<Dao.searchResult>(ConductInfo.FormDetail.GroupNoMachine, DateTime.Now);
-
-            // 画面に表示している変更管理IDを返り値に設定
-            historyManagementId = searchResult.HistoryManagementId;
+            // 機番情報・機器情報取得
+            DateTime now = DateTime.Now;
+            registInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now);
 
             // 排他チェック
-            if (!checkExclusiveSingle(ConductInfo.FormDetail.ControlId.Machine))
+            if (!checkExclusiveSingleForTable(ConductInfo.FormDetail.ControlId.Machine, new List<string>() { "hm_history_machine" }))
             {
                 return false;
             }
@@ -858,10 +586,10 @@ namespace BusinessLogic_HM0001
 
             // 登録情報を作成
             ComDao.HmHistoryManagementEntity condition = new();
-            condition.HistoryManagementId = searchResult.HistoryManagementId; // 変更管理ID
+            condition.HistoryManagementId = registInfo.HistoryManagementId; // 変更管理ID
 
             // 登録処理
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
             if (!historyManagement.UpdateApplicationStatus(condition, (TMQConst.MsStructure.StructureId.ApplicationStatus)Enum.ToObject(typeof(TMQConst.MsStructure.StructureId.ApplicationStatus), applicationStatus)))
             {
                 return false;
@@ -879,19 +607,153 @@ namespace BusinessLogic_HM0001
         public int cancelRequest()
         {
             // 排他チェック
-            if (!detailCommonRegist(out long historoyManagementId))
+            if (!detailCommonRegist(out Dao.searchResult registInfo))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
 
-            // 変更管理テーブル、変更管理詳細テーブル 削除処理
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
-            if (!historyManagement.DeleteHistoryManagement(historoyManagementId))
+            // 変更管理テーブル 削除処理
+            ComDao.HmHistoryManagementEntity historyManagement = new();
+            if (!historyManagement.DeleteByPrimaryKey(registInfo.HistoryManagementId, this.db))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 機番情報変更管理テーブル 削除処理
+            ComDao.HmMcMachineEntity machineEntity = new();
+            if (registInfo.HmMachineId > 0 && !machineEntity.DeleteByPrimaryKey(registInfo.HmMachineId, this.db))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 機器情報変更管理テーブル 削除処理
+            ComDao.HmMcEquipmentEntity equipmentEntity = new();
+            if (registInfo.HmEquipmentId > 0 && !equipmentEntity.DeleteByPrimaryKey(registInfo.HmEquipmentId, this.db))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 適用法規情報変更管理テーブル 削除処理
+            if (!deleteApplicableLawsHistory(registInfo))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 機器別管理基準部位変更管理テーブル 削除処理
+            if (!deleteHmMcManagementStandardsComponent(registInfo))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 機器別管理基準内容変更管理テーブル 削除処理
+            if (!deleteHmMcManagementStandardsContent(registInfo))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 保全スケジュール変更管理テーブル 削除処理
+            if (!deleteMaintainanceSchedule(registInfo))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
 
             return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// 機器別管理基準部位変更管理テーブル 削除処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteHmMcManagementStandardsComponent(Dao.searchResult condition)
+        {
+            // 検索SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetManagementStandardsComponentByHistoryManagementId, out string sql);
+
+            // SQL実行
+            IList<ComDao.HmMcManagementStandardsComponentEntity> results = db.GetListByDataClass<ComDao.HmMcManagementStandardsComponentEntity>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                // データが紐付いていない場合もあるので取得できなくてもtrueを返す
+                return true;
+            }
+
+            // 取得したデータを削除
+            ComDao.HmMcManagementStandardsComponentEntity component = new();
+            foreach (ComDao.HmMcManagementStandardsComponentEntity result in results)
+            {
+                // 削除処理
+                if (!component.DeleteByPrimaryKey(result.HmManagementStandardsComponentId, this.db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 機器別管理基準内容変更管理テーブル 削除処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteHmMcManagementStandardsContent(Dao.searchResult condition)
+        {
+            // 検索SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetManagementStandardsContentByHistoryManagementId, out string sql);
+
+            // SQL実行
+            IList<ComDao.HmMcManagementStandardsContentEntity> results = db.GetListByDataClass<ComDao.HmMcManagementStandardsContentEntity>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                // データが紐付いていない場合もあるので取得できなくてもtrueを返す
+                return true;
+            }
+
+            // 取得したデータを削除
+            ComDao.HmMcManagementStandardsContentEntity content = new();
+            foreach (ComDao.HmMcManagementStandardsContentEntity result in results)
+            {
+                // 削除処理
+                if (!content.DeleteByPrimaryKey(result.HmManagementStandardsContentId, this.db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 保全スケジュール変更管理テーブル 削除処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteMaintainanceSchedule(Dao.searchResult condition)
+        {
+            // 検索SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceScheduleByHistoryManagementId, out string sql);
+
+            // SQL実行
+            IList<ComDao.HmMcMaintainanceScheduleEntity> results = db.GetListByDataClass<ComDao.HmMcMaintainanceScheduleEntity>(sql, condition);
+            if (results == null || results.Count == 0)
+            {
+                // データが紐付いていない場合もあるので取得できなくてもtrueを返す
+                return true;
+            }
+
+            // 取得したデータを削除
+            ComDao.HmMcMaintainanceScheduleEntity schedule = new();
+            foreach (ComDao.HmMcMaintainanceScheduleEntity result in results)
+            {
+                // 削除処理
+                if (!schedule.DeleteByPrimaryKey(result.HmMaintainanceScheduleId, this.db))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
         #endregion
 
@@ -902,14 +764,14 @@ namespace BusinessLogic_HM0001
         /// <returns>エラーの場合-1、正常の場合1</returns>
         public int pullBackRequest()
         {
-            // 申請状況を「差戻中」に更新
-            if (!detailCommonRegist(out long historoyManagementId, (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Return))
+            // 排他チェック + 申請状況を「差戻中」に更新
+            if (!detailCommonRegist(out Dao.searchResult registInfo, (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Return))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
 
             // 詳細画面再検索処理
-            if (!searchDetailList(historoyManagementId))
+            if (!searchDetailList(registInfo.HistoryManagementId, registInfo.MachineId))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
@@ -925,23 +787,833 @@ namespace BusinessLogic_HM0001
         public int changeApplicationApproval()
         {
             // 申請状況を「承認済」に更新
-            if (!detailCommonRegist(out long historoyManagementId, (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Approved))
+            if (!detailCommonRegist(out Dao.searchResult registInfo, (int)TMQConst.MsStructure.StructureId.ApplicationStatus.Approved))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
 
-
-
-
-
-
-
-
-
-
+            // 承認処理
+            ComDao.HmHistoryManagementEntity histoyManagement = new();
+            histoyManagement.HistoryManagementId = registInfo.HistoryManagementId; // 画面に表示されている変更管理IDを設定
+            if (!approval(histoyManagement, registInfo.UpdateDatetime, registInfo.UpdateUserId))
+            {
+                return ComConsts.RETURN_RESULT.NG;
+            }
 
             return ComConsts.RETURN_RESULT.OK;
         }
+        #endregion
+
+        #region 保全項目一覧 登録・削除
+
+        #region 登録ボタン押下時処理
+        /// <summary>
+        /// 保全項目一覧 登録処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registManagementStandards()
+        {
+            DateTime now = DateTime.Now;
+
+            // 機番情報取得
+            Dao.searchResult machineInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine, ConductInfo.FormDetail.GroupNoEquipment }, now, true);
+
+            // 保全項目一覧取得
+            Dao.managementStandardsResult managementStandardsInfo = getRegistInfo<Dao.managementStandardsResult>(new List<string>() { ConductInfo.FormDetail.ControlId.ManagementStandardsList }, now, true, this.UserId);
+
+            // 登録情報を設定
+            managementStandardsInfo.IsManagementStandardConponent = true;                  // 機器別管理基準フラグ
+            managementStandardsInfo.HistoryManagementId = machineInfo.HistoryManagementId; // 変更管理D
+
+            // 周期ありフラグ
+            if ((managementStandardsInfo.CycleYear == null || managementStandardsInfo.CycleYear == 0) &&
+                (managementStandardsInfo.CycleMonth == null || managementStandardsInfo.CycleMonth == 0) &&
+                (managementStandardsInfo.CycleDay == null || managementStandardsInfo.CycleDay == 0))
+            {
+                // 周期無し
+                managementStandardsInfo.IsCyclic = false;
+            }
+            else
+            {
+                // 周期あり
+                managementStandardsInfo.IsCyclic = true;
+            }
+
+            //  変更管理が紐付いているかどうか
+            bool isExistsHistory = machineInfo.HistoryManagementId > 0;
+
+            // 新規登録か更新かどうか
+            bool isUpdate = managementStandardsInfo.ManagementStandardsComponentId > 0;
+
+            // 変更管理登録クラス
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+
+            // 排他チェック
+            if (isErrorExclusiveManagementStandard(historyManagement, machineInfo, managementStandardsInfo, isExistsHistory, isUpdate, out IList<Dao.managementStandardsResult> dbresult))
+            {
+                return false;
+            }
+
+            // 入力チェック
+            if (isErrorRegistManagementStandard(machineInfo, managementStandardsInfo, isUpdate, dbresult))
+            {
+                return false;
+            }
+
+            // 周期または開始日が変更されている
+            if (dbresult != null)
+            {
+                if (managementStandardsInfo.CycleYear != dbresult[0].CycleYear ||
+                    managementStandardsInfo.CycleMonth != dbresult[0].CycleMonth ||
+                    managementStandardsInfo.CycleDay != dbresult[0].CycleDay ||
+                    managementStandardsInfo.StartDate != dbresult[0].StartDate)
+                {
+                    // 更新時確認チェック(周期・開始日変更チェック 点検種別毎時周期・開始日変更チェック)
+                    if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                    {
+                        if (isUpdate)
+                        {
+                            // 確認項目存在チェック
+                            if (isConfirmRegistCycle(machineInfo, managementStandardsInfo))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // 更新時確認チェック(点検種別毎時周期・開始日変更チェック)
+                if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                {
+                    // 確認チェック
+                    if (isConfirmRegistCycleInsert(machineInfo, managementStandardsInfo))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    // 同一点検種別内に開始日以降で保全活動が紐づいているものがあるかチェック
+                    if (isErrorRegistMaintainanceKindManage(managementStandardsInfo, ConductInfo.FormDetail.ControlId.ManagementStandardsList))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // 変更管理テーブル 登録・更新処理
+            if (!registHistoryManagement(historyManagement, ref machineInfo, ref managementStandardsInfo, isExistsHistory, now))
+            {
+                return false;
+            }
+
+            // 保全項目関連テーブル  登録・更新処理
+            if (!registHistoryManagementDetail(historyManagement, machineInfo, managementStandardsInfo, isUpdate, now))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        #region 排他チェック
+        /// <summary>
+        /// 排他チェック
+        /// </summary>
+        /// <param name="historyManagement">変更管理登録クラス</param>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <param name="isExistsHistory">変更管理が存在する場合はTrue</param>
+        /// <param name="isUpdate">更新の場合はTrue</param>
+        /// <param name="dbresult">変更前の値</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool isErrorExclusiveManagementStandard(TMQUtil.HistoryManagement historyManagement, Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo, bool isExistsHistory, bool isUpdate, out IList<Dao.managementStandardsResult> dbresult)
+        {
+            dbresult = null;
+
+            // 変更管理排他チェック
+            if (checkExclusiveHistoryManagement(machineInfo, isExistsHistory))
+            {
+                return true;
+            }
+
+            // 更新の場合、変更前のデータを取得
+            if (isUpdate)
+            {
+                // レコードに変更管理が紐付いているか判定
+                if (managementStandardsInfo.ExecutionDivision > 0)
+                {
+                    // 変更管理が紐付いている場合
+                    dbresult = getManagementStandardsData<Dao.managementStandardsResult>(SqlName.SubDir, SqlName.Detail.GetHistoryManagementStandardsList, managementStandardsInfo, new List<string>() { "ComponentId" });
+
+                }
+                else
+                {
+                    // 変更管理が紐付いていない場合
+                    dbresult = getManagementStandardsData<Dao.managementStandardsResult>(SqlName.SubDirMachine, SqlName.Detail.GetManagementStandardDetail, managementStandardsInfo);
+                    // 排他チェック
+                    if (dbresult == null || dbresult.Count == 0 || managementStandardsInfo.UpdateDatetime < dbresult[0].UpdateDatetime)
+                    {
+                        setExclusiveError();
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        #endregion
+
+        #region 入力チェック
+        /// <summary>
+        /// 保全項目編集画面入力チェック
+        /// </summary>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <param name="isUpdate">更新の場合はTrue</param>
+        /// <param name="dbresult">変更前の値</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isErrorRegistManagementStandard(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo, bool isUpdate, IList<Dao.managementStandardsResult> dbresult)
+        {
+            // チェック対象の保全項目一覧のコントロールグループID
+            string ctrlId = ConductInfo.FormDetail.ControlId.ManagementStandardsList;
+            Dictionary<string, object> targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.ManagementStandardsList);
+
+            // エラー情報セット用Dictionary
+            var errorInfoDictionary = new List<Dictionary<string, object>>();
+
+            // チェック
+            if (isErrorRegistManagementStandardForSingle(ref errorInfoDictionary, managementStandardsInfo, isUpdate, ctrlId, targetDic))
+            {
+                // エラー情報を画面に反映
+                SetJsonResult(errorInfoDictionary);
+                return true;
+            }
+
+            return false;
+
+            // メソッド内処理
+            bool isErrorRegistManagementStandardForSingle(ref List<Dictionary<string, object>> errorInfoDictionary, Dao.managementStandardsResult result, bool isUpdate, string ctrlId, Dictionary<string, object> targetDic)
+            {
+                bool isError = false;   // 処理全体でエラーの有無を保持
+                // エラー情報を画面に設定するためのマッピング情報リスト
+                var info = getResultMappingInfo(ctrlId);
+
+                // 同一機器、部位、保全項目重複チェック
+                if (getErrCnt(SqlName.Detail.GetManagementStandardCountCheck, SqlName.SubDirMachine, result) || checkContentDuplicateHistory(result))
+                {
+                    // エラー情報格納クラス
+                    ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                    isError = true;
+                    // 「入力された部位、保全項目の組み合わせは既に登録されています。」
+                    string errMsg = GetResMessage(ComRes.ID.ID141220002);
+                    string val = info.getValName("inspection_site_structure_id"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    errorInfo.setError(errMsg, val);
+                    val = info.getValName("inspection_content_structure_i");     // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    errorInfo.setError(errMsg, val);
+                    errorInfoDictionary.Add(errorInfo.Result);
+                }
+
+                // 更新時なら周期・開始日変更チェック
+                if (isUpdate)
+                {
+                    // 周期または開始日が変更されている
+                    if (managementStandardsInfo.CycleYear != dbresult[0].CycleYear ||
+                        managementStandardsInfo.CycleMonth != dbresult[0].CycleMonth ||
+                        managementStandardsInfo.CycleDay != dbresult[0].CycleDay ||
+                        managementStandardsInfo.StartDate != dbresult[0].StartDate)
+                    {
+                        // 開始日が過去日だった際はエラー
+                        if (managementStandardsInfo.StartDate < DateTime.Now.Date)
+                        {
+                            // エラー情報格納クラス
+                            ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                            isError = true;
+                            // 「過去日付は設定できません。」
+                            string errMsg = GetResMessage(ComRes.ID.ID141060003);
+                            string val = info.getValName("start_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                            errorInfo.setError(errMsg, val);
+                            errorInfoDictionary.Add(errorInfo.Result);
+                        }
+
+                        // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+                        if (getErrCnt(SqlName.Detail.GetScheduleMsSummryCountAfterCheck, SqlName.SubDirMachine, result))
+                        {
+                            // エラー情報格納クラス
+                            ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                            isError = true;
+                            // 「開始日には保全活動が登録されたスケジュール以降の日付を設定してください。」
+                            string errMsg = GetResMessage(ComRes.ID.ID141060005);
+                            string val = info.getValName("start_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                            errorInfo.setError(errMsg, val);
+                            errorInfoDictionary.Add(errorInfo.Result);
+                        }
+
+                    }
+                }
+
+                return isError;
+
+                // 同一機器、部位、保全項目重複チェック(変更管理)
+                bool checkContentDuplicateHistory(Dao.managementStandardsResult result)
+                {
+                    // レコードに変更管理が紐付かない場合は何もしない
+                    if (result.ExecutionDivision <= 0)
+                    {
+                        return false;
+                    }
+
+                    // SQL実行
+                    return getErrCnt(SqlName.Detail.GetManagementStandardCountCheckHistory, SqlName.SubDir, result);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 確認項目存在チェック
+        /// </summary>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isConfirmRegistCycle(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
+        {
+            // 既に保全履歴の登録されているデータが存在する場合、確認メッセージ表示
+            if (getErrCnt(SqlName.Detail.GetScheduleMsSummryCountCheck, SqlName.SubDirMachine, managementStandardsInfo))
+            {
+                // 確認
+                this.Status = CommonProcReturn.ProcStatus.Confirm;
+                // 「保全履歴が既に登録されてますが周期・開始日が変更されています。スケジュールを再作成しますがよろしいですか？」
+                this.MsgId = GetResMessage(ComRes.ID.ID141300005);
+                this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                return true;
+            }
+
+            // 点検種別毎管理の機器
+            if (machineInfo.MaintainanceKindManage)
+            {
+                // 同一点検種別存在チェック(トランザクション・変更管理)
+                if (getErrCnt(SqlName.Detail.GetMaintainanceKindManageExistCheck, SqlName.SubDirMachine, managementStandardsInfo) || checkMaintainanceKindManageExistHistory(managementStandardsInfo))
+                {
+                    // 既に同じ点検種別が対象機器の機器別管理基準内に登録されていて、周期と開始日が違う場合、確認メッセージを表示する。
+                    // ※確認メッセージで「OK」だった際は、入力された周期と開始日で既に登録されている同じ点検種別のデータを更新する。（後勝ち登録)
+                    // 確認
+                    this.Status = CommonProcReturn.ProcStatus.Confirm;
+                    // 同一点検種別で既に異なる周期・開始日が設定されています。入力された周期・内容でスケジュールを再作成しますがよろしいですか？
+                    this.MsgId = GetResMessage(ComRes.ID.ID141200001);
+                    this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                    return true;
+                }
+            }
+
+            // 同一点検種別存在チェック(変更管理)
+            bool checkMaintainanceKindManageExistHistory(Dao.managementStandardsResult result)
+            {
+                // チェックSQLでアンコメントにする項目
+                string uncommentItem = getUnCommentItem(machineInfo);
+
+                // 検索SQL文の取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceKindManageExistCheckHistory, out string sql, new List<string>() { uncommentItem });
+
+                // 総件数を取得
+                return db.GetCount(sql, result) > 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 新規登録時確認チェック(点検種別毎管理)
+        /// </summary>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isConfirmRegistCycleInsert(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
+        {
+            if (!checkInsertMaintainanceKindManageExist(machineInfo, managementStandardsInfo))
+            {
+                // 既に同じ点検種別が対象機器の機器別管理基準内に登録されていて、周期と開始日が違う場合、確認メッセージを表示する。
+                // ※確認メッセージで「OK」だった際は、入力された周期と開始日で既に登録されている同じ点検種別のデータを更新する。（後勝ち登録)
+                // 確認
+                this.Status = CommonProcReturn.ProcStatus.Confirm;
+                // 同一点検種別で既に異なる周期・開始日が設定されています。入力された周期・内容でスケジュールを再作成しますがよろしいですか？
+                this.MsgId = GetResMessage(ComRes.ID.ID141200001);
+                this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 同一点検種別存在チェック
+        /// </summary>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool checkInsertMaintainanceKindManageExist(Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo)
+        {
+            //  同一点検種別存在チェック(トランザクション)
+            if (!maintainanceKindCheckTransaction())
+            {
+                return false;
+            }
+
+            //  同一点検種別存在チェック(変更管理)
+            if (!maintainanceKindCheckHistory())
+            {
+                return false;
+            }
+
+            return true;
+
+            //  同一点検種別存在チェック(トランザクション)
+            bool maintainanceKindCheckTransaction()
+            {
+                // 点検種別毎管理
+                if (!machineInfo.MaintainanceKindManage)
+                {
+                    return true;
+                }
+
+                //SQL実行
+                return getErrCnt(SqlName.Detail.GetMaintainanceKindManageInsertExistCheck, SqlName.SubDirMachine, managementStandardsInfo);
+            }
+
+            //  同一点検種別存在チェック(変更管理)
+            bool maintainanceKindCheckHistory()
+            {
+                // 点検種別毎管理
+                if (!machineInfo.MaintainanceKindManage)
+                {
+                    return true;
+                }
+
+                // チェックSQLでアンコメントにする項目
+                string uncommentItem = getUnCommentItem(machineInfo);
+
+                // 検索SQL文の取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetMaintainanceKindManageInsertExistCheckHistory, out string sql, new List<string>() { uncommentItem });
+
+                // 総件数を取得
+                return db.GetCount(sql, managementStandardsInfo) > 0;
+            }
+        }
+
+        /// <summary>
+        /// 点検種別毎登録時のチェック
+        /// </summary>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <param name="ctrlId">エラー情報を設定する一覧のコントロールID</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool isErrorRegistMaintainanceKindManage(Dao.managementStandardsResult managementStandardsInfo, string ctrlId)
+        {
+            // エラー情報セット用Dictionary
+            var errorInfoDictionary = new List<Dictionary<string, object>>();
+
+            // チェック
+            // 開始日以降に保全活動が紐づいているスケジュールが存在する際はエラーとする
+            if (getErrCnt(SqlName.Detail.GetScheduleMsSummryCountAfterMaintainanceKindManageCheck, SqlName.SubDirMachine, managementStandardsInfo))
+            {
+                // 単一の内容を取得
+                Dictionary<string, object> targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ctrlId);
+                // エラー情報を画面に設定するためのマッピング情報リスト
+                var info = getResultMappingInfo(ctrlId);
+                // エラー情報格納クラス
+                ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                // 「開始日には保全活動が登録されたスケジュール以降の日付を設定してください。」
+                string errMsg = GetResMessage(ComRes.ID.ID141060005);
+                string val = info.getValName("start_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                errorInfo.setError(errMsg, val);
+                errorInfoDictionary.Add(errorInfo.Result);
+                SetJsonResult(errorInfoDictionary);
+                // エラー情報を画面に反映
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
+
+        #region 登録処理
+        /// <summary>
+        /// 変更管理テーブル 登録・更新処理
+        /// </summary>
+        /// <param name="historyManagement">変更管理登録クラス</param>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <param name="isExistsHistory">変更管理が存在する場合はTrue</param>
+        /// <param name="now">現在日時</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registHistoryManagement(TMQUtil.HistoryManagement historyManagement, ref Dao.searchResult machineInfo, ref Dao.managementStandardsResult managementStandardsInfo, bool isExistsHistory, DateTime now)
+        {
+            // 変更管理が存在するか判定
+            if (isExistsHistory)
+            {
+                // 機器に変更管理が紐付いている場合は更新
+                ComDao.HmHistoryManagementEntity historyManagementEntity = new() { HistoryManagementId = machineInfo.HistoryManagementId };
+                // テーブル共通項目を設定
+                setExecuteConditionByDataClassCommon(ref historyManagementEntity, now, int.Parse(this.UserId), int.Parse(this.UserId));
+                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>()))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 変更管理が紐付いていない場合は登録
+                // 変更管理 登録処理
+                // 引数1：変更申請
+                // 引数2：機番ID
+                // 引数3：機番IDより求めた場所階層ID
+                (bool returnFlag, long historyManagementId) historyManagementResult =
+                    historyManagement.InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision.Update,
+                                                              machineInfo.MachineId,
+                                                              historyManagement.getFactoryId((int)machineInfo.LocationStructureId));
+
+                // 登録に失敗した場合は終了
+                if (!historyManagementResult.returnFlag)
+                {
+                    return false;
+                }
+
+                // 採番した変更管理IDを設定
+                machineInfo.HistoryManagementId = historyManagementResult.historyManagementId;
+                managementStandardsInfo.HistoryManagementId = historyManagementResult.historyManagementId;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 変更管理詳細テーブル・保全項目関連テーブル 登録・更新処理
+        /// </summary>
+        /// <param name="historyManagement">変更管理登録クラス</param>
+        /// <param name="machineInfo">機番情報・機器情報</param>
+        /// <param name="managementStandardsInfo">保全項目情報</param>
+        /// <param name="isUpdate">更新の場合はTrue</param>
+        /// <param name="now">現在日時</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registHistoryManagementDetail(TMQUtil.HistoryManagement historyManagement, Dao.searchResult machineInfo, Dao.managementStandardsResult managementStandardsInfo, bool isUpdate, DateTime now)
+        {
+            // レコードに変更管理が紐付いているか判定
+            if (managementStandardsInfo.ExecutionDivision > 0)
+            {
+                // 変更管理が紐付いている場合は更新
+                return updateManagementStandards();
+            }
+            else
+            {
+                // 変更管理が紐付いていない場合は登録
+                return insertManagementStandards();
+            }
+
+            return true;
+
+            // 保全項目関連テーブル登録処理
+            bool insertManagementStandards()
+            {
+                // 機器別管理基準部位変更管理 登録処理 + 採番した値を返す
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<long>(out long managementStandardsComponentId, SqlName.Detail.InsertManagementStandardsComponentInfo, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty, new List<string>() { isUpdate ? "DefaultComponent" : "NewComponent" }))
+                {
+                    return false;
+                }
+
+                // 採番した機器別管理基準部位IDを登録情報に設定
+                managementStandardsInfo.ManagementStandardsComponentId = managementStandardsComponentId;
+
+                // 実行処理区分を設定
+                managementStandardsInfo.ExecutionDivision = isUpdate ? executionDiv.ComponentEdit : executionDiv.ComponentNew;
+
+                // 機器別管理基準内容変更管理 登録処理 + 採番した値を返す
+                if (!TMQUtil.SqlExecuteClass.RegistAndGetKeyValue<long>(out long managementStandardsContentId, SqlName.Detail.InsertManagementStandardsContentInfo, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty, new List<string>() { isUpdate ? "DefaultContent" : "NewContent" }))
+                {
+                    return false;
+                }
+
+                // 採番した機器別管理基準内容IDを登録情報に設定
+                managementStandardsInfo.ManagementStandardsContentId = managementStandardsContentId;
+
+                // 保全スケジュール変更管理 登録処理
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.InsertMaintainanceScheduleInfo, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty, new List<string>() { isUpdate ? "DefaultSchedule" : "NewSchedule" }))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            // 保全項目関連テーブル更新処理
+            bool updateManagementStandards()
+            {
+                // 機器別管理基準部位変更管理 更新処理
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateHmMcManagementStandardsComponent, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty))
+                {
+                    return false;
+                }
+
+                // 機器別管理基準内容変更管理 更新処理
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateHmMcManagementStandardsContent, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty))
+                {
+                    return false;
+                }
+
+                // 保全スケジュール変更管理 更新処理
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateHmMaintainanceSchedule, SqlName.SubDir, managementStandardsInfo, this.db, string.Empty))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+        #endregion
+
+        /// <summary>
+        /// 画面に登録する内容をデータクラスで取得
+        /// </summary>
+        /// <typeparam name="T">データクラスの型</typeparam>
+        /// <param name="ctrlIdList">取得するコントロールID</param>
+        /// <param name="now">システム日時</param>
+        /// <param name="userId">ユーザーID</param>
+        /// <returns>登録内容のデータクラス</returns>
+        private T getRegistInfo<T>(List<string> ctrlIdList, DateTime now, bool isManagementStandards, string userId = "-1")
+            where T : CommonDataBaseClass.CommonTableItem, new()
+        {
+
+            T resultInfo = new();
+            foreach (string ctrlId in ctrlIdList)
+            {
+                // コントロールIDにより画面の項目(一覧)を取得
+                Dictionary<string, object> result = ComUtil.GetDictionaryByCtrlId(isManagementStandards ? this.resultInfoDictionary : this.searchConditionDictionary, ctrlId);
+
+                if (!SetExecuteConditionByDataClass<T>(result, ctrlId, resultInfo, now, this.UserId, userId))
+                {
+                    // エラーの場合終了
+                    return resultInfo;
+                }
+            }
+
+            return resultInfo;
+        }
+        #endregion
+
+        #region 行削除ボタン押下時処理
+        /// <summary>
+        /// 保全項目一覧 削除処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteManagementStandards()
+        {
+            DateTime now = DateTime.Now;
+            int userId = int.Parse(this.UserId);
+
+            // 機番情報取得
+            Dao.searchResult machineInfo = getRegistInfoBySearchResult(new List<short>() { ConductInfo.FormDetail.GroupNoMachine }, now, true);
+
+            // 変更管理排他チェック
+            if (checkExclusiveHistoryManagement(machineInfo, machineInfo.HistoryManagementId > 0))
+            {
+                return false;
+            }
+
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            // 変更管理が紐付いていない場合は登録
+            if (machineInfo.HistoryManagementId <= 0)
+            {
+                // SQL実行(申請区分は「変更申請」)
+                (bool returnFlag, long historyManagementId) historyManagementResult =
+                    historyManagement.InsertHistoryManagement(TMQConst.MsStructure.StructureId.ApplicationDivision.Update,
+                                                              machineInfo.MachineId,
+                                                              historyManagement.getFactoryId((int)machineInfo.LocationStructureId));
+
+                // 採番した変更管理IDを設定
+                machineInfo.HistoryManagementId = historyManagementResult.historyManagementId;
+
+            }
+            else
+            {
+                // 機器に変更管理が紐付いている場合は更新
+                ComDao.HmHistoryManagementEntity historyManagementEntity = new() { HistoryManagementId = machineInfo.HistoryManagementId };
+                // テーブル共通項目を設定
+                setExecuteConditionByDataClassCommon(ref historyManagementEntity, now, userId, userId);
+                if (!historyManagement.UpdateHistoryManagement(historyManagementEntity, new List<string>()))
+                {
+                    return false;
+                }
+            }
+
+            // 選択されたレコード取得
+            var deleteList = getSelectedRowsByList(this.searchConditionDictionary, ConductInfo.FormDetail.ControlId.ManagementStandardsList);
+
+            foreach (var deleteRow in deleteList)
+            {
+                // 選択されたレコードをデータクラスに変換ｎ
+                Dao.managementStandardsResult deleteCondition = new();
+                // 変換できない場合はエラー
+                if (!SetExecuteConditionByDataClass<Dao.managementStandardsResult>(deleteRow, ConductInfo.FormDetail.ControlId.ManagementStandardsList, deleteCondition, now, this.UserId))
+                {
+                    return false;
+                }
+
+                // テーブル共通項目を設定
+                setExecuteConditionByDataClassCommon(ref deleteCondition, now, userId, userId);
+
+                // 既に行削除されている場合は何もしない
+                if (deleteCondition.ExecutionDivision == executionDiv.ComponentDelete)
+                {
+                    continue;
+                }
+
+                // 入力チェック
+                if (inputCheckStandardsManagement(deleteCondition))
+                {
+                    return false;
+                }
+
+                // 「保全項目一覧の追加」「保全項目一覧の項目編集」の場合、申請しているレコードを削除
+                if (deleteCondition.ExecutionDivision == executionDiv.ComponentNew ||
+                    deleteCondition.ExecutionDivision == executionDiv.ComponentEdit)
+                {
+                    // 機器別管理基準部位変更管理
+                    ComDao.HmMcManagementStandardsComponentEntity component = new();
+                    if (!component.DeleteByPrimaryKey(deleteCondition.HmManagementStandardsComponentId, this.db))
+                    {
+                        return false;
+                    }
+
+                    // 機器別管理基準内容変更管理
+                    ComDao.HmMcManagementStandardsContentEntity content = new();
+                    if (!content.DeleteByPrimaryKey(deleteCondition.HmManagementStandardsContentId, this.db))
+                    {
+                        return false;
+                    }
+
+                    // 保全スケジュール変更管理
+                    ComDao.HmMcMaintainanceScheduleEntity schedule = new();
+                    if (!schedule.DeleteByPrimaryKey(deleteCondition.HmMaintainanceScheduleId, this.db))
+                    {
+                        return false;
+                    }
+                }
+
+                // 「保全項目一覧の項目編集」「トランザクションデータの削除」の場合レコードを削除申請として登録する
+                if (deleteCondition.ExecutionDivision == executionDiv.ComponentEdit ||
+                    deleteCondition.ExecutionDivision <= 0)
+                {
+                    // 機器別管理基準部位変更管理テーブル 登録処理
+                    if (!registHmMcManagementStandardsComponent(machineInfo.HistoryManagementId, deleteCondition.ManagementStandardsComponentId, now, "ComponentId", out List<long> componentList))
+                    {
+                        return false;
+                    }
+
+                    // 機器別管理基準内容変更管理テーブル 登録処理
+                    if (!registHmMcManagementStandardsContent(machineInfo.HistoryManagementId, now, componentList, out List<long> contentList))
+                    {
+                        return false;
+                    }
+
+                    // 保全スケジュール変更管理テーブル 登録処理
+                    if (!registMaintainanceSchedule(machineInfo.HistoryManagementId, now, contentList))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // 詳細画面再検索処理
+            if (!searchDetailList(machineInfo.HistoryManagementId, machineInfo.MachineId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        #region 入力チェック
+        /// <summary>
+        /// 入力チェック
+        /// </summary>
+        /// <param name="deleteCondition">削除条件</param>
+        /// <returns>エラーの場合はTrue</returns>
+        private bool inputCheckStandardsManagement(Dao.managementStandardsResult deleteCondition)
+        {
+            //選択されたレコードに変更管理が紐付いていない場合
+            if (deleteCondition.ExecutionDivision <= 0)
+            {
+                // 変更前のデータ取得
+                IList<Dao.managementStandardsResult> dbresult = getManagementStandardsData<Dao.managementStandardsResult>(SqlName.SubDirMachine, SqlName.Detail.GetManagementStandardDetail, deleteCondition);
+
+                // 排他チェック
+                if (dbresult == null || dbresult.Count == 0 || deleteCondition.UpdateDatetime < dbresult[0].UpdateDatetime)
+                {
+                    setExclusiveError();
+                    return true;
+                }
+            }
+
+            // 長期計画存在チェック
+            if (deleteCondition.ExecutionDivision <= 0)
+            {
+                // レコードに変更管理が紐付いていない場合はトランザクションテーブル
+                if (getErrCnt(SqlName.Detail.GetLongPlanSingle, SqlName.SubDirMachine, deleteCondition))
+                {
+                    // 「 長期計画で使用されている為、削除できません。」
+                    this.MsgId = this.MsgId = GetResMessage(ComRes.ID.ID141170002);
+                    return true;
+                }
+            }
+            else
+            {
+                // レコードに変更管理が紐付いている場合は機器別管理基準内容変更管理テーブル
+                if (getErrCnt(SqlName.Detail.GetLongPlanSingleHistory, SqlName.SubDir, deleteCondition))
+                {
+                    // 「 長期計画で使用されている為、削除できません。」
+                    this.MsgId = this.MsgId = GetResMessage(ComRes.ID.ID141170002);
+                    return true;
+                }
+            }
+
+            // 保全活動存在チェック
+            if (getErrCnt(SqlName.Detail.GetMsSummarySingle, SqlName.SubDirMachine, deleteCondition))
+            {
+                // 「 保全活動が作成されている為、削除できません。」
+                this.MsgId = this.MsgId = GetResMessage(ComRes.ID.ID141300004);
+                return true;
+            }
+
+            // 添付ファイル排他チェック
+            if (exclusiveAttachment(deleteCondition))
+            {
+                return true;
+            }
+
+            return false;
+
+            // 添付ファイル 排他チェック
+            bool exclusiveAttachment(Dao.managementStandardsResult deleteCondition)
+            {
+                // 添付ファイルの最大更新日時を取得
+                // SQL取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDirMachine, SqlName.Detail.GetMaxDateByKeyId, out string sql);
+
+                // SQL実行
+                var maxDateResult = db.GetEntity(sql, new { KeyId = deleteCondition.ManagementStandardsContentId, FunctionTypeId = (int)TMQConst.Attachment.FunctionTypeId.Content });
+
+                // 次第更新日時で比較
+                DateTime? maxDateOfList = deleteCondition.MaxUpdateDatetime != null ? deleteCondition.MaxUpdateDatetime : null;
+                if (!CheckExclusiveStatusByUpdateDatetime(maxDateOfList, maxDateResult.max_update_datetime))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+        #endregion
+
+        #endregion
         #endregion
     }
 }

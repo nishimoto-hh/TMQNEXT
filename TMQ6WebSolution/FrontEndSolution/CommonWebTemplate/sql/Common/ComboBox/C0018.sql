@@ -1,6 +1,6 @@
 /*
-* 予備品　管理工場の一覧を取得するSQL
-* ユーザが特権(30)、システム管理者(99)の場合は全工場、そうでなければユーザ所属マスタの工場
+* ExcelPortダウンロード、工場の一覧を取得するSQL
+* システム管理者(99)の場合は全工場、そうでなければユーザ所属マスタの工場
 */
 -- C0018
 -- 構成マスタより工場または職種を取得
@@ -60,6 +60,13 @@ WITH factory AS(
         INNER JOIN
             factory AS st
         ON  (
+        /*IF param3==1*/
+        -- 予備品以外(ExcelPortなど)、自身の所属工場のみを表示する場合
+                st.factoryId = dbo.get_target_layer_id(ub.location_structure_id, 1))
+            )
+        /*END*/
+        /*IF param3!=1*/
+        -- 予備品の場合、自身の本務工場の所属する地区の工場をすべて表示する場合
                 dbo.get_target_layer_id(ub.location_structure_id, 0) = st.districtId
             )
     WHERE
@@ -71,14 +78,14 @@ WITH factory AS(
              WHERE
                  mub.user_id =/*userId*/0
              AND mub.duty_flg = 1
-        )                   
+        )
+        /*END*/
 )
--- ユーザ権限を取得、特権か管理者なら「all_flg」が1
+-- ユーザ権限を取得、管理者なら「all_flg」が1
 ,user_auth AS(
      SELECT
          us.user_id
         ,CASE au.extension_data
-            WHEN '30' THEN 1
             WHEN '99' THEN 1
             ELSE 0
         END AS all_flg
@@ -90,9 +97,9 @@ WITH factory AS(
                 us.authority_level_id = au.structure_id
             )
 )
--- 表示する工場の一覧を取得 特権・システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
+-- 表示する工場の一覧を取得 システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
 ,temp AS(
-    -- 特権・システム管理者の場合
+    -- システム管理者の場合
     SELECT
         *
     FROM
@@ -107,7 +114,7 @@ WITH factory AS(
                 au.all_flg = 1
         )
     UNION
-    -- 一般ユーザの場合
+    --  特権・一般ユーザの場合
     SELECT
         fc.*
     FROM

@@ -449,7 +449,7 @@ namespace BusinessLogic_PT0003
             {
                 string title = string.Empty;       // タイトル
                 string preperationDate = null;  // 棚卸準備日時
-                string targetMonth = string.Empty; // 対象年月
+                string targetMonth = string.Empty; // 対象年月(yyyy/MM)
                 if (dataList == null || dataList.Count == 0)
                 {
                     title = "[]" + transList[111380061];
@@ -478,7 +478,7 @@ namespace BusinessLogic_PT0003
                 preperationDate,                               // 棚卸準備日時(値)
                 "",                                            // 空データ
                 "",                                            // 空データ
-                targetMonth,                                   // システム年月
+                targetMonth + "/01",                           // システム年月(yyyy/MM/01)※CSVをEXCELで開いたときにyyyy/MM形式だとEXCELでフォーマットされてしまうので、日付を付与する
                 condition.StorageLocationId,                   // 倉庫ID
                 string.Join("|", condition.DepartmentIdList)   // 部門ID
                 };

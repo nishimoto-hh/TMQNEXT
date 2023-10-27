@@ -28,7 +28,7 @@ namespace BusinessLogic_HM0002
     {
         #region 定数
         /// <summary>
-        /// 自分の件名のみ表示
+        /// 自分の申請のみ表示
         /// </summary>
         private const int IsDispOnlyMySubject = 1;
         #endregion
@@ -40,13 +40,13 @@ namespace BusinessLogic_HM0002
         /// <returns>エラーの場合False</returns>
         private bool searchList(bool isInit)
         {
-            // 初期検索時は「自分の件名のみ表示」をチェック状態にする
+            // 初期検索時は「自分の申請のみ表示」をチェック状態にする
             if (!getSearchCondition(isInit, out int dispOnlyMySubject))
             {
                 return false;
             }
 
-            // 「自分の件名のみ表示」がチェックされていたらSQLの該当箇所をアンコメント
+            // 「自分の申請のみ表示」がチェックされていたらSQLの該当箇所をアンコメント
             List<string> listUnComment = new();
             if (dispOnlyMySubject == IsDispOnlyMySubject)
             {
@@ -137,7 +137,7 @@ namespace BusinessLogic_HM0002
         }
 
         /// <summary>
-        /// 検索条件を取得(初期検索時は「自分の件名のみ表示」をチェック状態にする)
+        /// 検索条件を取得(初期検索時は「自分の申請のみ表示」をチェック状態にする)
         /// </summary>
         /// <param name="isInit">初期表示の場合はTrue</param>
         /// <param name="outDispOnlyMySubject">チェック状態</param>
@@ -159,13 +159,8 @@ namespace BusinessLogic_HM0002
             if (isInit)
             {
                 // 初期値を設定
-                searchCondition.DispOnlyMySubject = IsDispOnlyMySubject; // 自分の件名のみ表示
+                searchCondition.DispOnlyMySubject = IsDispOnlyMySubject; // 自分の申請のみ表示
                 outDispOnlyMySubject = IsDispOnlyMySubject;
-
-                if (!SetSearchResultsByDataClass<Dao.searchCondition>(pageInfo, new List<Dao.searchCondition> { searchCondition }, 1))
-                {
-                    return false;
-                }
             }
             else
             {
@@ -180,7 +175,17 @@ namespace BusinessLogic_HM0002
                 }
 
                 // 取得した値を検索条件に設定
-                outDispOnlyMySubject = dispOnlyMySubject; // 自分の件名のみ表示
+                searchCondition.DispOnlyMySubject = dispOnlyMySubject; // 自分の申請のみ表示
+                outDispOnlyMySubject = dispOnlyMySubject;
+            }
+
+            //承認系ボタン表示制御
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0002);
+            searchCondition.IsApprovalUser = historyManagement.IsApprovalUser();
+
+            if (!SetSearchResultsByDataClass<Dao.searchCondition>(pageInfo, new List<Dao.searchCondition> { searchCondition }, 1))
+            {
+                return false;
             }
 
             return true;
@@ -240,15 +245,22 @@ namespace BusinessLogic_HM0002
                 return false;
             }
 
-            foreach (var condition in conditionList)
+            foreach (ComDao.HmHistoryManagementEntity condition in conditionList)
             {
-                // 登録処理
+                // 変更管理テーブルの申請状況更新処理
                 if (!historyManagement.UpdateApplicationStatus(condition, applicationStatus))
                 {
                     return false;
                 }
 
-                //TODO:トランザクションへの反映
+                if (this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll)
+                {
+                    //一括承認の場合、変更管理の内容をトランザクションテーブルへ反映
+                    if (!approvalHistory(condition))
+                    {
+                        return false;
+                    }
+                }
             }
 
             // 一覧の再検索
@@ -258,6 +270,132 @@ namespace BusinessLogic_HM0002
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 承認時、変更管理の内容をトランザクションテーブルへ反映
+        /// </summary>
+        /// <param name="condition">選択行の情報</param>
+        /// <returns>エラーの場合False</returns>
+        private bool approvalHistory(ComDao.HmHistoryManagementEntity condition)
+        {
+            //変更管理詳細の情報を取得
+            List<ComDao.HmMcManagementStandardsContentEntity> list = TMQUtil.SqlExecuteClass.SelectList<ComDao.HmMcManagementStandardsContentEntity>(SqlName.List.GetHistoryManagementDetail, SqlName.List.SubDir, condition, this.db);
+            if (list == null || list.Count == 0)
+            {
+                return false;
+            }
+            // 登録更新ユーザ
+            int userId = int.Parse(this.UserId);
+            // システム日時
+            DateTime now = DateTime.Now;
+            // トランザクションテーブルへ反映
+            foreach (ComDao.HmMcManagementStandardsContentEntity detail in list)
+            {
+                switch (detail.ExecutionDivision)
+                {
+                    case ExecutionDivision.NewLongPlan: //長期計画の新規登録（複写）
+                        //長計件名変更管理の内容を長計件名(トランザクションテーブル)に反映
+                        if (!registLongPlan(detail, SqlName.List.InsertLongPlan, SqlName.List.SubDir))
+                        {
+                            return false;
+                        }
+                        break;
+                    case ExecutionDivision.UpdateLongPlan: //長期計画の修正
+                        //長計件名変更管理の内容を長計件名(トランザクションテーブル)に反映
+                        if (!registLongPlan(detail, SqlName.Common.UpdateLongPlan, SqlName.SubDirLongPlan))
+                        {
+                            return false;
+                        }
+
+                        break;
+                    case ExecutionDivision.DeleteLongPlan: //長期計画の削除
+                        //長計件名と紐づく情報の更新
+                        if (!deleteLongPlan(detail))
+                        {
+                            return false;
+                        }
+                        break;
+                    case ExecutionDivision.AddContent: //保全情報一覧の追加
+                        // 機器別管理基準内容更新
+                        ComDao.McManagementStandardsContentEntity content = new();
+                        content.ManagementStandardsContentId = detail.ManagementStandardsContentId;
+                        content.LongPlanId = detail.LongPlanId;
+                        setExecuteConditionByDataClassCommon<ComDao.McManagementStandardsContentEntity>(ref content, now, userId, userId);
+                        bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.SelectStandards.UpdateContent, SqlName.SelectStandards.SubDirLongPlan, content, this.db);
+                        if (!result)
+                        {
+                            return false;
+                        }
+                        break;
+                    case ExecutionDivision.DeleteContent: //保全情報一覧の削除
+                        // 機器別管理基準内容更新(長計件名IDをNULLに更新)
+                        ComDao.McManagementStandardsContentEntity update = new();
+                        update.ManagementStandardsContentId = detail.ManagementStandardsContentId;
+                        setExecuteConditionByDataClassCommon<ComDao.McManagementStandardsContentEntity>(ref update, now, userId, userId);
+                        if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteRow, SqlName.Detail.SubDirLongPlan, update, this.db))
+                        {
+                            return false;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return true;
+
+            //長計件名変更管理の内容を長計件名(トランザクションテーブル)に反映
+            bool registLongPlan(ComDao.HmMcManagementStandardsContentEntity detail, string sqlName, string subDir)
+            {
+                // 長計件名変更管理を取得
+                ComDao.HmLnLongPlanEntity longPlan = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.HmLnLongPlanEntity>(SqlName.List.GetHmLongPlan, SqlName.List.SubDir, detail, this.db);
+                setExecuteConditionByDataClassCommon(ref longPlan, now, userId, userId);
+                // 長計件名変更管理の内容を長計件名(トランザクションテーブル)に反映
+                bool result = TMQUtil.SqlExecuteClass.Regist(sqlName, subDir, longPlan, this.db);
+                return result;
+            }
+
+            //長計件名と紐づく情報の更新
+            bool deleteLongPlan(ComDao.HmMcManagementStandardsContentEntity detail)
+            {
+                // 長計件名の削除
+                if (!new ComDao.LnLongPlanEntity().DeleteByPrimaryKey(detail.LongPlanId ?? -1, this.db))
+                {
+                    return false;
+                }
+
+                // 機器別管理基準内容更新
+                // 更新条件をヘッダの隠し項目の長計件名IDより取得
+                var headerDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.Hide);
+                ComDao.LnLongPlanEntity update = new();
+                SetExecuteConditionByDataClass<ComDao.LnLongPlanEntity>(headerDic, ConductInfo.FormDetail.ControlId.Hide, update, now, this.UserId);
+                // 更新処理(更新レコードが無い場合も処理継続)
+                TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteAll, SqlName.Detail.SubDirLongPlan, update, this.db);
+
+                // 長期計画が紐づいた保全活動件名を更新（長計件名IDをNULLに更新）
+                TMQUtil.SqlExecuteClass.Regist(SqlName.List.UpdateSummary, SqlName.List.SubDir, update, this.db);
+
+                // 添付情報削除
+                // 削除対象の添付情報のキーIDを取得
+                List<ComDao.AttachmentEntity> attachmentList = TMQUtil.SqlExecuteClass.SelectList<ComDao.AttachmentEntity>(SqlName.Detail.GetAttachmentByLongPlanId, SqlName.Detail.SubDirLongPlan, detail, this.db);
+                if (attachmentList == null || attachmentList.Count == 0)
+                {
+                    // 添付情報が存在しない場合は処理を行わない
+                    return true;
+                }
+                // キーIDのみのリストにして重複を排除
+                var keyIdList = attachmentList.Select(x => x.KeyId).Distinct().ToList();
+                foreach (var keyId in keyIdList)
+                {
+                    // キーIDで繰り返し削除
+                    if (!new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, keyId, this.db))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
     }
 }

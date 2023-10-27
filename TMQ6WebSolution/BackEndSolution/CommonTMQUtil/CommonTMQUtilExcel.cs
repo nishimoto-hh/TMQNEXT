@@ -100,6 +100,9 @@ namespace CommonTMQUtil
             /// <summary>SQL名：最大列取得用SQL</summary>
             public const string GetMaxColumnNo = "GetMaxColumnNo";
 
+            /// <summary>SQL名：ExcelPortバージョン取得用SQL</summary>
+            public const string GetExcelPortVersion = "GetExcelPortVersion";
+
             /// <summary>SQL名：オプション用SQL</summary>
             public const string Option = "_Option";
 
@@ -117,37 +120,60 @@ namespace CommonTMQUtil
             /// <summary>SQL名：ファイル取込項目定義情報取得用SQL</summary>
             public const string GetInputControlDefine = "GetInputControlDefine";
             #endregion
-        }
+
+       }
 
         /// <summary>
         /// カラム名
         /// </summary>
         public class ColumnName
         {
-            /// <summary>職種</summary>
+            /// <summary>職種機種ID</summary>
             public const string JobStructureId = "job_structure_id";
+            /// <summary>職種ID</summary>
+            public const string JobId = "job_id";
             /// <summary>職種名称</summary>
             public const string JobName = "job_name";
+            /// <summary>機種大分類ID</summary>
+            public const string LargeClassficationId = "large_classfication_id";
             /// <summary>機種大分類名称</summary>
             public const string LargeClassficationName = "large_classfication_name";
+            /// <summary>機種中分類ID</summary>
+            public const string MiddleClassficationId = "middle_classfication_id";
             /// <summary>機種中分類名称</summary>
             public const string MiddleClassficationName = "middle_classfication_name";
+            /// <summary>機種小分類ID</summary>
+            public const string SmallClassficationId = "small_classfication_id";
             /// <summary>機種小分類名称</summary>
             public const string SmallClassficationName = "small_classfication_name";
 
             /// <summary>機種名称</summary>
             public const string ModelName = "model_name";
 
+            /// <summary>場所階層ID</summary>
+            public const string LocationStructureId = "location_structure_id";
+            /// <summary>地区ID</summary>
+            public const string DistrictId = "district_id";
             /// <summary>地区名称</summary>
             public const string DistrictName = "district_name";
+            /// <summary>工場ID</summary>
+            public const string FactoryId = "factory_id";
             /// <summary>工場名称</summary>
             public const string FactoryName = "factory_name";
+            /// <summary>プラントID</summary>
+            public const string PlantId = "plant_id";
             /// <summary>プラント名称</summary>
             public const string PlantName = "plant_name";
+            /// <summary>系列ID</summary>
+            public const string SeriesId = "series_id";
             /// <summary>系列名称</summary>
             public const string SeriesName = "series_name";
+            /// <summary>工程ID</summary>
+            public const string StrokeId = "stroke_id";
             /// <summary>工程名称</summary>
             public const string StrokeName = "stroke_name";
+            /// <summary>設備ID</summary>
+            public const string FacilityId = "facility_id";
             /// <summary>設備名称</summary>
             public const string FacilityName = "facility_name";
 
@@ -159,6 +185,17 @@ namespace CommonTMQUtil
             /// <summary>共通用時刻</summary>
             public const string ComTime = "com_time";
 
+            /// <summary>共通用シートタイトル</summary>
+            public const string ComSheetTitle = "com_sheet_title";
+            /// <summary>共通用バージョン</summary>
+            public const string ComVersion = "com_version";
+            /// <summary>共通用日時</summary>
+            public const string ComDateTime = "com_datetime";
+            /// <summary>共通用機能ID</summary>
+            public const string ComConductId = "com_conduct_id";
+            /// <summary>共通用シート番号</summary>
+            public const string ComSheetNo = "com_sheet_no";
+
             /// <summary>スケジュール</summary>
             public const string Schedule = "schedule";
             /// <summary>予算実績</summary>
@@ -166,6 +203,19 @@ namespace CommonTMQUtil
 
             /// <summary>キー項</summary>
             public const string KeyId = "key_id";
+
+            /// <summary>
+            /// 共通用カラムかどうか
+            /// </summary>
+            /// <param name="colName">カラム名</param>
+            /// <returns>true：共通用カラム/false：その他のカラム</returns>
+            public static bool IsCommonColumn(string colName)
+            {
+                string[] comNames = new string[] { 
+                    ComTitle, ComDate, ComTitle, ComSheetTitle, ComVersion, ComDateTime, ComConductId, ComSheetNo 
+                };
+                return comNames.Contains(colName);
+            }
         }
 
         /// <summary>
@@ -283,6 +333,12 @@ namespace CommonTMQUtil
             public DateTime? BudgetStartDate { get; set; }
             /// <summary>予算終了日</summary>
             public DateTime? BudgetEndDate { get; set; }
+            /// <summary>バージョン</summary>
+            public decimal Version { get; set; }
+            /// <summary>対象機能ID</summary>
+            public string TargetConductId { get; set; }
+            /// <summary>対象シート番号</summary>
+            public int TargetSheetNo { get; set; }
         }
 
         /// <summary>
@@ -426,18 +482,20 @@ namespace CommonTMQUtil
         }
         #endregion エクセル入出力共通処理
 
-        #region RP0310棚卸準備リスト用クラス
+        #region RP0410棚卸準備リスト用クラス
         /// <summary>
-        /// RP0310棚卸準備リスト用クラス
+        /// RP0410棚卸準備リスト用クラス
         /// </summary>
-        public class ReportRP0310
+        public class ReportRP0410
         {
             /// <summary>帳票ID</summary>
-            public const string ReportId = "RP0310";
+            public const string ReportId = "RP0410";
             /// <summary>帳票ID</summary>
             public const string password = "";
         }
-        #endregion エクセル入出力共通処理
+        #endregion
+
+        #region エクセル入出力共通処理
 
         /// <summary>
         /// エクセル出力共通処理
@@ -978,8 +1036,8 @@ namespace CommonTMQUtil
                             case "RP0190": // 予備品管理-予備品情報
                                 RP0190JoinStrAndRound(dataList, sheetDefine.SheetNo, languageId, db);
                                 break;
-                            case ReportRP0310.ReportId: // 棚卸-棚卸準備表
-                                RP0310JoinStrAndRound(dataList, sheetDefine.SheetNo, languageId, db, dicFixedValueForOutput);
+                            case ReportRP0410.ReportId: // 棚卸-棚卸準備表
+                                RP0410JoinStrAndRound(dataList, sheetDefine.SheetNo, languageId, db, dicFixedValueForOutput);
                                 break;
                             default:
                                 break;
@@ -1267,8 +1325,8 @@ namespace CommonTMQUtil
 
                 }
 
-                // 個別処理（RP0310：棚卸準備リスト）
-                if (reportId.Equals(ReportRP0310.ReportId))
+                // 個別処理（RP0410：棚卸準備リスト）
+                if (reportId.Equals(ReportRP0410.ReportId))
                 {
                     CommonExcelCmdInfo cmdInfo1;
                     // コマンドパラメータ
@@ -1276,7 +1334,7 @@ namespace CommonTMQUtil
                     cmdInfo1 = new CommonExcelCmdInfo();
                     param1 = new string[2];
                     param1[0] = string.Empty;
-                    param1[1] = ReportRP0310.password;
+                    param1[1] = ReportRP0410.password;
                     cmdInfo1.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdLockSheet, param1);
                     cmdInfoList.Add(cmdInfo1);
                 }
@@ -1612,12 +1670,23 @@ namespace CommonTMQUtil
             int factoryId = FactoryIdList[FactoryIdList.Count - 1];
 
             // 選択データ分ループ
-            foreach (var selectKey in selectKeyDataList)
+            if (selectKeyDataList.Count > 0)
+            {
+                foreach (var selectKey in selectKeyDataList)
+                {
+                    // テンポラリデータ作成
+                    TMQUtil.SqlExecuteClass.Regist(ComReport.InsertTemp,
+                                                   ExcelPath,
+                                                   new { Key1 = selectKey.Key1, Key2 = selectKey.Key2, Key3 = selectKey.Key3, LanguageId = languageId, FactoryId = factoryId },
+                                                   db);
+                }
+            }
+            else
             {
                 // テンポラリデータ作成
                 TMQUtil.SqlExecuteClass.Regist(ComReport.InsertTemp,
                                                ExcelPath,
-                                               new { Key1 = selectKey.Key1, Key2 = selectKey.Key2, Key3 = selectKey.Key3, LanguageId = languageId, FactoryId = factoryId },
+                                               new { Key1 = -1, Key2 = -1, Key3 = -1, LanguageId = languageId, FactoryId = factoryId },
                                                db);
             }
             // 対象SQLファイルからSQL文を取得
@@ -1636,7 +1705,9 @@ namespace CommonTMQUtil
             var dataList = db.GetList(selectSql);
             return dataList;
         }
+        #endregion
 
+        #region 会計帳票データ関連処理
         /// <summary>
         /// 会計帳票データ取得
         /// </summary>
@@ -1750,138 +1821,6 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
-        /// 予備品管理－予備品情報(RP0190)の出力データ取得後の個別処理
-        /// </summary>
-        /// <param name="results">取得結果</param>
-        /// <param name="sheetNo">シートNo</param>
-        /// <param name="languageId">言語ID</param>
-        /// <param name="db">DB情報</param>
-        public static void RP0190JoinStrAndRound(IList<dynamic> results, int sheetNo, string languageId, ComDB db)
-        {
-            // 予備品一覧のデータを表示するシート
-            if (sheetNo == 1)
-            {
-                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
-                Dictionary<int, string> factoryJoinDic = new();
-                string joinStr = string.Empty;
-                foreach (dynamic result in results)
-                {
-                    // 棚番と枝番を結合する
-                    if (!string.IsNullOrEmpty((result.rack_name).ToString()) && !string.IsNullOrEmpty((result.parts_location_detail_no).ToString()))
-                    {
-                        // 結合文字列を取得
-                        joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate((int)result.factory_id, languageId, db, ref factoryJoinDic);
-                        // 棚番 + 枝番
-                        result.rack_name = TMQUtil.GetDisplayPartsLocation(result.rack_name, result.parts_location_detail_no, joinStr);
-                    }
-
-                    // 文字列に変換
-                    string strLeadTime = (result.lead_time).ToString();           // 発注点
-                    string strOrderQuantity = (result.order_quantity).ToString(); // 発注量
-                    string strUnitPrice = (result.unit_price).ToString();         // 標準単価
-                    string strStockQuantity = (result.stock_quantity).ToString(); // 最新在庫数
-
-                    result.lead_time = TMQUtil.roundDigit(strLeadTime, result.unit_digit, result.unit_round_division);           // 発注点    
-                    result.order_quantity = TMQUtil.roundDigit(strOrderQuantity, result.unit_digit, result.unit_round_division); // 発注量
-                    result.unit_price = TMQUtil.roundDigit(strUnitPrice, result.unit_digit, result.unit_round_division);         // 標準単価
-                    result.stock_quantity = TMQUtil.roundDigit(strStockQuantity, result.unit_digit, result.unit_round_division); // 最新在庫数
-
-                    result.lead_time = TMQUtil.CombineNumberAndUnit(result.lead_time, result.unit_name, true);           // 発注点
-                    result.order_quantity = TMQUtil.CombineNumberAndUnit(result.order_quantity, result.unit_name, true); // 発注量
-                    result.unit_price = TMQUtil.CombineNumberAndUnit(result.unit_price, result.currency_name, true);     // 標準単価
-                    result.stock_quantity = TMQUtil.CombineNumberAndUnit(result.stock_quantity, result.unit_name, true); // 最新在庫数
-
-                }
-            }
-        }
-
-        /// <summary>
-        /// 棚卸－棚卸準備表(RP0310)の出力データ取得後の個別処理
-        /// </summary>
-        /// <param name="results">取得結果</param>
-        /// <param name="sheetNo">シートNo</param>
-        /// <param name="languageId">言語ID</param>
-        /// <param name="db">DB情報</param>
-        /// <param name="dicFixedValueForOutput">固定出力データ</param>
-        public static void RP0310JoinStrAndRound(IList<dynamic> results, int sheetNo, string languageId, ComDB db, Dictionary<string, string> dicFixedValueForOutput = null)
-        {
-            // 棚卸準備表のデータを表示するシート
-            if (sheetNo == 1)
-            {
-                if (results == null)
-                {
-                    return;
-                }
-                //棚IDより翻訳をまとめて取得しておく
-                List<dynamic> partsLocationIdList = results.Select(x => x.parts_location_id.ToString()).Distinct().ToList();
-                List<STDDao.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, languageId, db);
-
-                //工場ID棚番結合文字列を保持するDictionary
-                Dictionary<int, string> factoryJoinDic = new();
-
-                string joinStr = string.Empty;
-                foreach (dynamic result in results)
-                {
-                    // 文字列に変換
-                    string strStockAmount = (result.stock_amount).ToString();       // 在庫金額
-                    string strStockQuantity = (result.stock_quantity).ToString(); 　// 在庫数
-
-                    result.stock_Amount = TMQUtil.roundDigit(strStockAmount, result.unit_digit, result.unit_round_division);        // 在庫金額
-                    result.stock_quantity = TMQUtil.roundDigit(strStockQuantity, result.unit_digit, result.unit_round_division);    // 在庫数
-
-                    //棚番
-                    long partsLocationId = long.Parse(result.parts_location_id.ToString());
-                    string partsLocationDetailNo = string.Empty;
-                    if (result.parts_location_detail_no != null)
-                    {
-                        partsLocationDetailNo = (result.parts_location_detail_no).ToString();
-                    }
-                    int factoryId = int.Parse(result.factory_id.ToString());
-
-                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db, ref factoryJoinDic, partsLocationList);
-
-                    // 固定出力データの埋め込み
-                    if (dicFixedValueForOutput != null && dicFixedValueForOutput.Count > 0)
-                    {
-                        foreach (KeyValuePair<string, string> fixedValue in dicFixedValueForOutput)
-                        {
-                            // 項目名が一致した場合、固定値を結果に埋め込む
-                            if (result.storage_location_id != null && nameof(result.storage_location_id) == fixedValue.Key)
-                            {
-                                result.storage_location_id = fixedValue.Value;
-                            }
-                            if (result.department_id_list != null && nameof(result.department_id_list) == fixedValue.Key)
-                            {
-                                result.department_id_list = fixedValue.Value;
-                            }
-                            if (result.factory_name != null && nameof(result.factory_name) == fixedValue.Key)
-                            {
-                                result.factory_name = fixedValue.Value;
-                            }
-                            if (result.warehouse_name != null && nameof(result.warehouse_name) == fixedValue.Key)
-                            {
-                                result.warehouse_name = fixedValue.Value;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 棚卸準備表をCSV出力する際のヘッダー翻訳取得用
-        /// </summary>
-        private class RP0310TransDataClass
-        {
-            /// <summary>Gets or sets 翻訳ID</summary>
-            /// <value>翻訳ID</value>
-            public long TranslationId { get; set; }
-            /// <summary>Gets or sets 翻訳名称</summary>
-            /// <value>翻訳名称</value>
-            public string TranslationText { get; set; }
-        }
-
-        /// <summary>
         /// 会計帳票の出力データ取得後の個別処理
         /// </summary>
         /// <param name="results">取得結果</param>
@@ -1954,6 +1893,129 @@ namespace CommonTMQUtil
                 //}
             }
         }
+        #endregion
+
+        #region　予備品関連処理
+        /// <summary>
+        /// 予備品管理－予備品情報(RP0190)の出力データ取得後の個別処理
+        /// </summary>
+        /// <param name="results">取得結果</param>
+        /// <param name="sheetNo">シートNo</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB情報</param>
+        public static void RP0190JoinStrAndRound(IList<dynamic> results, int sheetNo, string languageId, ComDB db)
+        {
+            // 予備品一覧のデータを表示するシート
+            if (sheetNo == 1)
+            {
+                // 工場IDと結合文字列のディクショナリ、同じ工場で重複取得しないようにする
+                Dictionary<int, string> factoryJoinDic = new();
+                string joinStr = string.Empty;
+                foreach (dynamic result in results)
+                {
+                    // 棚番と枝番を結合する
+                    if (!string.IsNullOrEmpty((result.rack_name).ToString()) && !string.IsNullOrEmpty((result.parts_location_detail_no).ToString()))
+                    {
+                        // 結合文字列を取得
+                        joinStr = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate((int)result.factory_id, languageId, db, ref factoryJoinDic);
+                        // 棚番 + 枝番
+                        result.rack_name = TMQUtil.GetDisplayPartsLocation(result.rack_name, result.parts_location_detail_no, joinStr);
+                    }
+
+                    // 文字列に変換
+                    string strLeadTime = (result.lead_time).ToString();           // 発注点
+                    string strOrderQuantity = (result.order_quantity).ToString(); // 発注量
+                    string strUnitPrice = (result.unit_price).ToString();         // 標準単価
+                    string strStockQuantity = (result.stock_quantity).ToString(); // 最新在庫数
+
+                    result.lead_time = TMQUtil.roundDigit(strLeadTime, result.unit_digit, result.unit_round_division);           // 発注点    
+                    result.order_quantity = TMQUtil.roundDigit(strOrderQuantity, result.unit_digit, result.unit_round_division); // 発注量
+                    result.unit_price = TMQUtil.roundDigit(strUnitPrice, result.unit_digit, result.unit_round_division);         // 標準単価
+                    result.stock_quantity = TMQUtil.roundDigit(strStockQuantity, result.unit_digit, result.unit_round_division); // 最新在庫数
+
+                    result.lead_time = TMQUtil.CombineNumberAndUnit(result.lead_time, result.unit_name, true);           // 発注点
+                    result.order_quantity = TMQUtil.CombineNumberAndUnit(result.order_quantity, result.unit_name, true); // 発注量
+                    result.unit_price = TMQUtil.CombineNumberAndUnit(result.unit_price, result.currency_name, true);     // 標準単価
+                    result.stock_quantity = TMQUtil.CombineNumberAndUnit(result.stock_quantity, result.unit_name, true); // 最新在庫数
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// 棚卸－棚卸準備表(RP0410)の出力データ取得後の個別処理
+        /// </summary>
+        /// <param name="results">取得結果</param>
+        /// <param name="sheetNo">シートNo</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB情報</param>
+        /// <param name="dicFixedValueForOutput">固定出力データ</param>
+        public static void RP0410JoinStrAndRound(IList<dynamic> results, int sheetNo, string languageId, ComDB db, Dictionary<string, string> dicFixedValueForOutput = null)
+        {
+            // 棚卸準備表のデータを表示するシート
+            if (sheetNo == 1)
+            {
+                if (results == null)
+                {
+                    return;
+                }
+                //棚IDより翻訳をまとめて取得しておく
+                List<dynamic> partsLocationIdList = results.Select(x => x.parts_location_id.ToString()).Distinct().ToList();
+                List<STDDao.VStructureItemEntity> partsLocationList = TMQUtil.GetpartsLocationList(partsLocationIdList, languageId, db);
+
+                //工場ID棚番結合文字列を保持するDictionary
+                Dictionary<int, string> factoryJoinDic = new();
+
+                string joinStr = string.Empty;
+                foreach (dynamic result in results)
+                {
+                    // 文字列に変換
+                    string strStockAmount = (result.stock_amount).ToString();       // 在庫金額
+                    string strStockQuantity = (result.stock_quantity).ToString(); 　// 在庫数
+
+                    result.stock_Amount = TMQUtil.roundDigit(strStockAmount, result.unit_digit, result.unit_round_division);        // 在庫金額
+                    result.stock_quantity = TMQUtil.roundDigit(strStockQuantity, result.unit_digit, result.unit_round_division);    // 在庫数
+
+                    //棚番
+                    long partsLocationId = long.Parse(result.parts_location_id.ToString());
+                    string partsLocationDetailNo = string.Empty;
+                    if (result.parts_location_detail_no != null)
+                    {
+                        partsLocationDetailNo = (result.parts_location_detail_no).ToString();
+                    }
+                    int factoryId = int.Parse(result.factory_id.ToString());
+
+                    result.parts_location_name = TMQUtil.GetDisplayPartsLocation(partsLocationId, partsLocationDetailNo, factoryId, languageId, db, ref factoryJoinDic, partsLocationList);
+
+                    // 固定出力データの埋め込み
+                    if (dicFixedValueForOutput != null && dicFixedValueForOutput.Count > 0)
+                    {
+                        foreach (KeyValuePair<string, string> fixedValue in dicFixedValueForOutput)
+                        {
+                            // 項目名が一致した場合、固定値を結果に埋め込む
+                            if (result.storage_location_id != null && nameof(result.storage_location_id) == fixedValue.Key)
+                            {
+                                result.storage_location_id = fixedValue.Value;
+                            }
+                            if (result.department_id_list != null && nameof(result.department_id_list) == fixedValue.Key)
+                            {
+                                result.department_id_list = fixedValue.Value;
+                            }
+                            if (result.factory_name != null && nameof(result.factory_name) == fixedValue.Key)
+                            {
+                                result.factory_name = fixedValue.Value;
+                            }
+                            if (result.warehouse_name != null && nameof(result.warehouse_name) == fixedValue.Key)
+                            {
+                                result.warehouse_name = fixedValue.Value;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// 個別工場ID設定の帳票定義が存在するかを確認
@@ -2085,7 +2147,7 @@ namespace CommonTMQUtil
             // 項目定義を取得
             IList<Dao.InoutDefine> reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
                 baseSql,
-                new { FactoryId = factoryId, ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
+                new { FactoryId = factoryId, LanguageId = languageId,  ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
             if (reportId == ReportRP0270.ReportId)
             {
                 // 会計提出表の場合、帳票定義１つの為、シートNoは固定で取得
@@ -2122,7 +2184,8 @@ namespace CommonTMQUtil
                     continue;
                 }
                 // カラム名が共通用タイトル、共通用日付、共通用時刻以外の場合、スキップ
-                if (reportInfo.ColumnName != ColumnName.ComTitle && reportInfo.ColumnName != ColumnName.ComDate && reportInfo.ColumnName != ColumnName.ComTime)
+                //if (reportInfo.ColumnName != ColumnName.ComTitle && reportInfo.ColumnName != ColumnName.ComDate && reportInfo.ColumnName != ColumnName.ComTime)
+                if (!ColumnName.IsCommonColumn(reportInfo.ColumnName))
                 {
                     continue;
                 }
@@ -2131,6 +2194,7 @@ namespace CommonTMQUtil
                 var info = new CommonExcelPrtInfo();
                 info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
                 info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+                bool setTitle = false;
                 // マッピングセルを設定
                 string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
                 // フォーマット設定
@@ -2153,6 +2217,32 @@ namespace CommonTMQUtil
                     case (ColumnName.ComTime):
                         val = DateTime.Now.ToString("HH:mm:ss");
                         break;
+
+                    // 共通シートタイトルの場合
+                    case (ColumnName.ComSheetTitle):
+                        // シート名を設定
+                        val = GetTranslationText(sheetDefine.SheetNameTranslationId, languageId, db);
+                        break;
+                    // 共通バージョンの場合
+                    case ColumnName.ComVersion:
+                        val = option.Version.ToString(reportInfo.FormatText);
+                        setTitle = true;
+                        break;
+                    // 共通日時の場合
+                    case ColumnName.ComDateTime:
+                        val = DateTime.Now.ToString(reportInfo.FormatText);
+                        setTitle = true;
+                        break;
+                    // 共通対象機能IDの場合
+                    case ColumnName.ComConductId:
+                        val = option.TargetConductId;
+                        setTitle = true;
+                        break;
+                    // 共通対象シート番号の場合
+                    case ColumnName.ComSheetNo:
+                        val = option.TargetSheetNo;
+                        setTitle = true;
+                        break;
                     default:
                         continue;
                 }
@@ -2161,8 +2251,21 @@ namespace CommonTMQUtil
                 info.SetExlSetValueByAddress(address, val, format);
                 // マッピングリストに追加
                 mappingList.Add(info);
-            }
+                if (setTitle)
+                {
+                    // タイトル列に項目名をセット
+                    address = ToAlphabet((int)reportInfo.StartColNo - 1) + reportInfo.StartRowNo;
+                    val = reportInfo.ItemName;
 
+                    // マッピング情報設定
+                    info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null); 
+                    info.SetSheetNo(sheetNo);
+                    info.SetExlSetValueByAddress(address, val, format);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+                }
+            }
 
             // 出力項目種別が3:出力項目固定（出力パターン指定あり※ベタ票）の場合、ヘッダをマッピング
             if (reportDefine.OutputItemType == ComReport.OutputItemType3)
@@ -2451,7 +2554,8 @@ namespace CommonTMQUtil
                     continue;
                 }
                 // カラム名が共通用タイトル、共通用日付、共通用時刻の場合、スキップ
-                if (reportInfo.ColumnName == ColumnName.ComTitle || reportInfo.ColumnName == ColumnName.ComDate || reportInfo.ColumnName == ColumnName.ComTime)
+                //if (reportInfo.ColumnName == ColumnName.ComTitle || reportInfo.ColumnName == ColumnName.ComDate || reportInfo.ColumnName == ColumnName.ComTime)
+                if (ColumnName.IsCommonColumn(reportInfo.ColumnName))
                 {
                     continue;
                 }
@@ -2556,7 +2660,7 @@ namespace CommonTMQUtil
             }
 
             // オプション指定のある場合
-            if (option != null)
+            if (option != null && optionDataList != null)
             {
                 // スケジュールを作成
                 // 項目定義
@@ -3316,13 +3420,18 @@ namespace CommonTMQUtil
         /// <param name="translationId">翻訳ID</param>
         /// <param name="languageId">言語ID</param>
         /// <param name="db">DB操作クラス</param>
-        /// <returns>シート名</returns>
-        public static string GetTranslationText(int translationId, string languageId, ComDB db)
+        /// <returns>翻訳文字列</returns>
+        public static string GetTranslationText(int translationId, string languageId, ComDB db, int factoryId = -1)
         {
-            // シート定義のシート名翻訳ID からシート名を取得
+            // 翻訳ID から翻訳文字列を取得
             string[] messageIdList = new string[1];
             messageIdList[0] = translationId.ToString();
-            ComUtil.MessageResources message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList);
+            List<int> factoryIdList = null;
+            if(factoryId >= 0)
+            {
+                factoryIdList = new List<int>() { factoryId };
+            }
+            ComUtil.MessageResources message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList, factoryIdList);
 
             // 該当のレコードが存在しない場合、nullを戻す
             if (message == null)
@@ -3345,22 +3454,25 @@ namespace CommonTMQUtil
         /// <returns>シート名</returns>
         public static string GetSheetName(int factoryId, string reportId, int sheetNo, string languageId, ComDB db)
         {
-            // 出力帳票シート定義
+            // 出力帳票シート定義を取得
             ReportDao.MsOutputReportSheetDefineEntity sheetDefine = new ReportDao.MsOutputReportSheetDefineEntity();
             sheetDefine = sheetDefine.GetEntity(factoryId, reportId, sheetNo, db);
+
+            return GetSheetName(sheetDefine, factoryId, languageId, db);
+        }
+
+        /// <summary>
+        /// シート名取得処理
+        /// </summary>
+        /// <param name="reportId">出力帳票シート定義</param>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <returns>シート名</returns>
+        public static string GetSheetName(ReportDao.MsOutputReportSheetDefineEntity sheetDefine, int factoryId, string languageId, ComDB db)
+        {
             // シート定義のシート名翻訳ID からシート名を取得
-            string[] messageIdList = new string[1];
-            messageIdList[0] = sheetDefine.SheetNameTranslationId.ToString();
-            ComUtil.MessageResources message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList, new List<int> { factoryId });
-
-            // 該当のレコードが存在しない場合、nullを戻す
-            if (message == null)
-            {
-                return null;
-            }
-
-            return message.GetMessage(sheetDefine.SheetNameTranslationId.ToString(), languageId);
-
+            return GetTranslationText(sheetDefine.SheetNameTranslationId, languageId, db, factoryId);
         }
 
         /// <summary>

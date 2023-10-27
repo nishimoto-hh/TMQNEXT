@@ -173,6 +173,9 @@ namespace BusinessLogic_PT0007
             // 移庫先情報を取得
             Dao.locationInfoTo locationInfo = getLocationInfo();
 
+            // 棚枝番に入力がない場合はnullではなく空文字にする
+            locationInfo.PartsLocationDetailNo = ConvertNullToStringEmpty(locationInfo.PartsLocationDetailNo);
+
             // 登録条件の作成
             TMQUtil.PartsInventory.MoveLocation moveLocation = new(this.db, this.UserId, this.LanguageId);
             TMQDao.PartsInventory.MoveLocation condition = setNewCondition();

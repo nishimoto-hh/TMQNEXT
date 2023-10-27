@@ -396,7 +396,11 @@
                     /// <summary>
                     /// 承認済
                     /// </summary>
-                    Approved = 40
+                    Approved = 40,
+                    /// <summary>
+                    /// 申請なし
+                    /// </summary>
+                    None = 90
                 }
 
                 /// <summary>
@@ -423,6 +427,10 @@
                 /// </summary>
                 public enum ApplicationConduct
                 {
+                    /// <summary>
+                    /// 未設定
+                    /// </summary>
+                    None = 0,
                     /// <summary>
                     /// 機器台帳
                     /// </summary>

@@ -1544,6 +1544,23 @@ namespace CommonTMQUtil
                 }
                 return db.GetEntityByDataClass<McMachineEntity>(getEntitySql);
             }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pMachineId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pMachineId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
         }
         /// <summary>
         /// 機器情報
@@ -1641,6 +1658,23 @@ namespace CommonTMQUtil
                     return null;
                 }
                 return db.GetEntityByDataClass<McEquipmentEntity>(getEntitySql);
+            }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pMachineId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pMachineId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
             }
         }
 
@@ -4554,91 +4588,6 @@ namespace CommonTMQUtil
         }
 
         /// <summary>
-        /// 変更管理詳細
-        /// </summary>
-        public class HmHistoryManagementDetailEntity : CommonTableItem
-        {
-            /// <summary>
-            /// コンストラクタ
-            /// </summary>
-            public HmHistoryManagementDetailEntity()
-            {
-                TableName = "hm_history_management_detail";
-            }
-            /// <summary>Gets テーブル名</summary>
-            /// <value>テーブル名</value>
-            public string TableName { get; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
-            /// <summary>Gets or sets 変更管理ID</summary>
-            /// <value>変更管理ID</value>
-            public long HistoryManagementId { get; set; }
-            /// <summary>Gets or sets 実行処理区分</summary>
-            /// <value>実行処理区分</value>
-            public int ExecutionDivision { get; set; }
-
-            /// <summary>
-            /// プライマリーキー
-            /// </summary>
-            public class PrimaryKey
-            {
-                /// <summary>Gets or sets 変更管理詳細ID</summary>
-                /// <value>変更管理詳細ID</value>
-                public long HistoryManagementDetailId { get; set; }
-                /// <summary>
-                /// コンストラクタ
-                /// </summary>
-                public PrimaryKey(long pHistoryManagementDetailId)
-                {
-                    HistoryManagementDetailId = pHistoryManagementDetailId;
-                }
-            }
-
-            /// <summary>
-            /// プライマリーキー情報
-            /// </summary>
-            /// <returns>プライマリーキー情報</returns>
-            public PrimaryKey PK()
-            {
-                PrimaryKey pk = new PrimaryKey(this.HistoryManagementDetailId);
-                return pk;
-            }
-
-            /// <summary>
-            /// エンティティ
-            /// </summary>
-            /// <returns>該当のデータを返す</returns>
-            public HmHistoryManagementDetailEntity GetEntity(long pHistoryManagementDetailId, ComDB db)
-            {
-                PrimaryKey condition = new PrimaryKey(pHistoryManagementDetailId);
-                // SQL文生成
-                string getEntitySql = getEntity(this.TableName, condition, db);
-                if (string.IsNullOrEmpty(getEntitySql))
-                {
-                    return null;
-                }
-                return db.GetEntityByDataClass<HmHistoryManagementDetailEntity>(getEntitySql);
-            }
-            /// <summary>
-            /// 主キーを指定してDELETE実行
-            /// </summary>
-            /// <returns>エラーの場合False</returns>
-            public bool DeleteByPrimaryKey(long pHistoryManagementDetailId, ComDB db)
-            {
-                PrimaryKey condition = new PrimaryKey(pHistoryManagementDetailId);
-                // SQL文生成
-                string deleteSql = getDeleteSql(this.TableName, condition, db);
-                if (string.IsNullOrEmpty(deleteSql))
-                {
-                    return false;
-                }
-                int result = db.Regist(deleteSql);
-                return result > 0;
-            }
-        }
-
-        /// <summary>
         /// 機番情報変更管理
         /// </summary>
         public class HmMcMachineEntity : CommonTableItem
@@ -4656,9 +4605,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機番情報変更管理ID</summary>
             /// <value>機番情報変更管理ID</value>
             public long HmMachineId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 処理区分</summary>
+            /// <value>処理区分</value>
+            public int ExecutionDivision { get; set; }
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long MachineId { get; set; }
@@ -4738,6 +4690,23 @@ namespace CommonTMQUtil
                 }
                 return db.GetEntityByDataClass<HmMcMachineEntity>(getEntitySql);
             }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmMachineId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmMachineId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
         }
 
         /// <summary>
@@ -4759,9 +4728,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器情報変更管理ID</summary>
             /// <value>機器情報変更管理ID</value>
             public long HmEquipmentId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             /// <summary>Gets or sets 機器ID</summary>
             /// <value>機器ID</value>
             public long EquipmentId { get; set; }
@@ -4845,6 +4814,22 @@ namespace CommonTMQUtil
                 return db.GetEntityByDataClass<HmMcEquipmentEntity>(getEntitySql);
             }
 
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmEquipmentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmEquipmentId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
         }
 
         /// <summary>
@@ -4865,12 +4850,15 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 長計件名変更管理ID</summary>
             /// <value>長計件名変更管理ID</value>
             public long HmLongPlanId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             /// <summary>Gets or sets 長期計画件名ID</summary>
             /// <value>長期計画件名ID</value>
             public long LongPlanId { get; set; }
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
             /// <summary>Gets or sets 件名</summary>
             /// <value>件名</value>
             public string Subject { get; set; }
@@ -4912,7 +4900,7 @@ namespace CommonTMQUtil
             public int? TreatmentStructureId { get; set; }
             /// <summary>Gets or sets 設備区分</summary>
             /// <value>設備区分</value>
-            public int FacilityStructureId { get; set; }
+            public int? FacilityStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -4992,9 +4980,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 適用法規変更管理ID</summary>
             /// <value>適用法規変更管理ID</value>
             public long HmApplicableLawsId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             /// <summary>Gets or sets 適用法規ID</summary>
             /// <value>適用法規ID</value>
             public long ApplicableLawsId { get; set; }
@@ -5048,6 +5036,7 @@ namespace CommonTMQUtil
                 }
                 return db.GetEntityByDataClass<HmMcApplicableLawsEntity>(getEntitySql);
             }
+
             /// <summary>
             /// 主キーを指定してDELETE実行
             /// </summary>
@@ -5084,9 +5073,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器別管理基準部位変更管理ID</summary>
             /// <value>機器別管理基準部位変更管理ID</value>
             public long HmManagementStandardsComponentId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             // <summary>Gets or sets 機器別管理基準部位ID</summary>
             /// <value>機器別管理基準部位ID</value>
             public long ManagementStandardsComponentId { get; set; }
@@ -5142,6 +5131,23 @@ namespace CommonTMQUtil
                 }
                 return db.GetEntityByDataClass<HmMcManagementStandardsComponentEntity>(getEntitySql);
             }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pHmManagementStandardsComponentId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pHmManagementStandardsComponentId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
         }
 
         /// <summary>
@@ -5162,15 +5168,18 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器別管理基準内容変更管理ID</summary>
             /// <value>機器別管理基準内容変更管理ID</value>
             public long HmManagementStandardsContentId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             /// <summary>Gets or sets 機器別管理基準内容ID</summary>
             /// <value>機器別管理基準内容ID</value>
             public long ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 処理区分</summary>
+            /// <value>処理区分</value>
+            public int ExecutionDivision { get; set; }
             /// <summary>Gets or sets 機器別管理基準部位ID</summary>
             /// <value>機器別管理基準部位ID</value>
-            public long ManagementStandardsComponentId { get; set; }
+            public long? ManagementStandardsComponentId { get; set; }
             /// <summary>Gets or sets 点検内容ID</summary>
             /// <value>点検内容ID</value>
             public int? InspectionContentStructureId { get; set; }
@@ -5280,9 +5289,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
             /// <value>保全スケジュール変更管理ID</value>
             public long HmMaintainanceScheduleId { get; set; }
-            /// <summary>Gets or sets 変更管理詳細ID</summary>
-            /// <value>変更管理詳細ID</value>
-            public long HistoryManagementDetailId { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
             /// <summary>Gets or sets 保全スケジュールID</summary>
             /// <value>保全スケジュールID</value>
             public long MaintainanceScheduleId { get; set; }

@@ -86,6 +86,37 @@ factory_order AS(
     AND factory.factory_id IN /*FactoryIdList*/(0, 5)
     /*END*/
 )
+/*IF NarrowHistoryFactory>0 */
+-- 変更履歴管理の工場を取得(対象の工場を取得する場合、対象外の工場を取得する場合がある)
+,history_factory AS(
+    SELECT
+        vs.structure_id
+    FROM
+        v_structure AS vs
+    WHERE
+/*IF NarrowHistoryFactory==1001 */
+-- 対象外の工場を取得する場合はNOT EXISTS
+        NOT
+/*END*/
+        EXISTS(
+            SELECT
+                *
+            FROM
+                ms_item_extension AS ex
+            WHERE
+                ex.item_id = vs.structure_item_id
+            -- 拡張項目4の値がNullでなければ承認者が設定されていて、変更履歴管理を行う工場となる。
+            AND ex.sequence_no = 4
+            AND coalesce(ex.extension_data, '') != ''
+        )
+    AND vs.structure_group_id = 1000
+    AND vs.structure_layer_no = 1
+-- 地区の取得用に共通工場が必要
+    UNION
+    SELECT
+        0
+)
+/*END*/
 SELECT
      vs.structure_id AS structureId
     --,vs.factory_id AS factoryId
@@ -125,8 +156,23 @@ FROM
         ms_item_extension ie
     ON vs.structure_item_id = ie.item_id
     AND ie.sequence_no = 3
-WHERE ie.extension_data IS NULL OR ie.extension_data != '1'
 /*END*/
+
+WHERE 1 = 1
+/*IF ExceptCommonFactory*/
+AND (ie.extension_data IS NULL OR ie.extension_data != '1')
+/*END*/
+/*IF NarrowHistoryFactory>0 */
+AND EXISTS(
+        SELECT
+            *
+        FROM
+            history_factory AS h_factory
+        WHERE
+            vs.factory_id = h_factory.structure_id
+    )
+/*END*/
+
 --ルート要素の名称を構成グループマスタから取得
 UNION ALL
 SELECT

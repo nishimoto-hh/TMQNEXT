@@ -66,6 +66,9 @@ const ConductId_HM0001 = "HM0001";
 // 変更管理長期計画 機能ID
 const ConductId_HM0002 = "HM0002";
 
+// 申請状況変更 機能ID
+const ConductId_HM0003 = "HM0003";
+
 // 一覧フィルタ(付加情報の遷移先に設定)
 const ListFilter_TransTarget = 'FILTER';
 
@@ -84,6 +87,8 @@ const PT0007_DepartmentList_CtrlId = "BODY_090_00_LST_0";
 const HM0001_List_CtrlId = "BODY_040_00_LST_0";
 // 長期計画変更管理一覧
 const HM0002_List_CtrlId = "BODY_040_00_LST_0";
+// 申請状況変更
+const HM0003_List_CtrlId = "CBODY_000_00_LST_0";
 /**
  * スケジュール表示の表示単位
  */
@@ -836,6 +841,30 @@ function changeRowControl(ctrlId, isDisplay) {
 }
 
 /*
+* 一覧の行追加などと選択列の表示/非表示切替を行う
+* @param ctrlId 一覧のコントロールID
+* @param isDisplay 表示する場合True
+*/
+function changeRowControlAndDispRowNo(ctrlId, isDisplay) {
+    // 行追加など
+    var items = [actionkbn.AddNewRow, actionkbn.DeleteRow, actionkbn.SelectAll, actionkbn.CancelAll];
+    $.each(items, function (i, item) {
+        var target = $("#" + ctrlId + getAddFormNo() + "_div").find('[data-actionkbn=' + item + ']');
+        setHide(target, !isDisplay);
+    });
+
+    // 選択列の表示制御
+    var table = P_listData['#' + ctrlId + getAddFormNo()];
+    if (isDisplay) {
+        table.showColumn("ROWNO");
+    } else {
+        table.hideColumn("ROWNO");
+    }
+    table.redraw();
+    table = null;
+}
+
+/*
  * 列の表示/非表示 切替処理
  * @param　ctrlId　一覧のコントロールID
  * @param　valNo　VALの値
@@ -904,6 +933,30 @@ function setFocusButton(name) {
 function setFocusButtonAvailable(priBtn, secBtn) {
     var isPri = !isUnAvailableButton(priBtn);
     setFocusButton(isPri ? priBtn : secBtn);
+}
+
+/*
+* ボタン名を指定して、フォーカスをセットする(変更管理の詳細画面用)
+* @param processMode 処理モード
+*/
+function setFocusButtonHistory(processMode) {
+    //フォーカス設定するボタン
+    var focusBtn = HistoryFormDetailCommonButton.CopyRequest; //複写申請
+    if (ProcessMode.History == processMode) {
+        //変更管理モード
+
+        //ボタン押下可能なボタンを設定（承認依頼、承認依頼引戻、承認）
+        var btnList = [HistoryFormDetailCommonButton.ChangeApplicationRequest, HistoryFormDetailCommonButton.PullBackRequest, HistoryFormDetailCommonButton.ChangeApplicationApproval];
+        $.each(btnList, function (i, btn) {
+            if (!isUnAvailableButton(btn)) {
+                //押下可能であれば設定
+                focusBtn = btn;
+                return false;
+            }
+        });
+    }
+    // 押下可能なボタンにフォーカスをセット
+    setFocusButton(focusBtn);
 }
 
 /**
@@ -1457,8 +1510,8 @@ function getParamToHM0001FormDetail(MachineId) {
     var conditionData = {};
     conditionData['CTRLID'] = HM0001_List_CtrlId;
     conditionData['FORMNO'] = 0;
-    conditionData['VAL39'] = 0;         // 変更管理ID
-    conditionData['VAL41'] = MachineId; // 機番ID
+    conditionData['VAL40'] = 0;         // 変更管理ID
+    conditionData['VAL42'] = MachineId; // 機番ID
     return conditionData;
 }
 
@@ -1471,8 +1524,24 @@ function getParamToHM0002FormDetail(LongPlanId) {
     conditionData['CTRLID'] = HM0002_List_CtrlId;
     conditionData['FORMNO'] = 0;
     conditionData['VAL53'] = 0;         // 変更管理ID
-    conditionData['VAL51'] = LongPlanId; // 機番ID
+    conditionData['VAL51'] = LongPlanId; // 長期計画ID
     return conditionData;
+}
+
+/**
+ * 申請状況変更画面への遷移パラメータを作成する
+ * @param {any} flg 承認依頼の場合true、否認の場合false
+ * @param {any} HistoryManagementId 変更管理ID
+ */
+function getParamToHM0003(flg, HistoryManagementId) {
+    var conditionDataList = [];
+    var conditionData = {};
+    conditionData['CTRLID'] = HM0003_List_CtrlId;
+    conditionData['FORMNO'] = 0;
+    conditionData['VAL3'] = flg; // 承認依頼の場合true、否認の場合false
+    conditionData['VAL4'] = HistoryManagementId; // 変更管理ID
+    conditionDataList.push(conditionData);
+    return conditionDataList;
 }
 
 /**
@@ -1543,7 +1612,7 @@ function InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, 
         return;
     }
     // 対象の共通画面リスト
-    var listCommonConductId = [DM0002_ConductId, PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId];
+    var listCommonConductId = [DM0002_ConductId, PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId, ConductId_HM0003];
     if (listCommonConductId.indexOf(backFrom) > -1 && btnCtrlId == BtnCtrlId_Back) {
         // 対象の共通画面から戻るボタンが押下された場合、再検索
         initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);
@@ -2393,11 +2462,12 @@ function getParamToPT0001(partsId) {
  * @returns {any} conditionDataListに隠し項目の値をセットした内容、これをPrevInitFormDataで返す
  */
 function setComboExValueOnPrevInitFormData(conditionDataList, formNo, listCtrlId, comboVal, extVal, extCtrlFlag) {
-    // 計画内容コンボの変更時イベントを発生させる
+    // 連動元コンボの変更時イベントを発生させる
     var combo = getCtrl(listCtrlId, comboVal, 0, CtrlFlag.Combo);
     changeNoEdit(combo);
     // コンボの変更イベントによって取得した拡張項目の値
     var optValue = getValue(listCtrlId, extVal, 0, extCtrlFlag);
+    // 検索条件に設定
     conditionDataList = setValueToConditionDataList(conditionDataList, formNo, listCtrlId, extVal, optValue);
     return conditionDataList;
 }
@@ -3617,9 +3687,9 @@ function commonChangeBackGroundColorHistory(tbl, applicationDivisionCodeVal, val
 
         // 背景色を変更
         if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) {
-
+            // 申請区分が「10：新規登録申請」、「30：削除申請」
             setTimeout(function () {
-                // 申請区分が「10：新規登録申請」、「30：削除申請」
+                // 背景色変更処理
                 changeBackGroundColorTabulatorHistory(row, applicationDivisionCode);
             }, 0);
 
@@ -3718,86 +3788,56 @@ const HistoryFormDetailCommonButton =
  */
 function commonButtonHideHistory(isTransactionMode, applicationStatusCode, applicationDivisionCode, isCertified, isCertifiedFactory) {
 
-    // 全てのボタンを表示状態にする
+    // 全てのボタンを非表示状態にする
     Object.keys(HistoryFormDetailCommonButton).forEach(function (button, idx) {
-        dispNoneElementHistory(getButtonCtrl(button), false);
+        setHideButton(button, true);
     });
 
 
-    // ボタン毎に各パターンのどれかに該当する場合は非表示にする
+    // 条件によりボタンを表示する
 
-    // 複写申請
-    // ①変更管理モードの場合
-    if (!isTransactionMode) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.CopyRequest), true);
-    }
-
-    // 変更申請・削除申請
-    // ①変更管理モードの場合
-    // ②仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
-    if (!isTransactionMode || (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeRequest), true);
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.DeleteRequest), true);
-    }
-
-    // 承認依頼
+    // 複写申請、変更申請・削除申請
     // ①トランザクションモードの場合
-    // ②申請状況が「20：承認依頼中」の場合
-    // ③申請状況が「10：申請データ作成中」かつ、申請の申請者でない場合
-    // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
-    // ⑤仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
-    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Request ||
-        (applicationStatusCode == ApplicationStatus.Making && !isCertified) || (applicationStatusCode == ApplicationStatus.Return && !isCertified) ||
-        (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationRequest), true);
+    if (isTransactionMode) {
+        setHideButton(HistoryFormDetailCommonButton.CopyRequest, false);
+        setHideButton(HistoryFormDetailCommonButton.ChangeRequest, false);
+        setHideButton(HistoryFormDetailCommonButton.DeleteRequest, false);
     }
 
-    // 修正
-    // ①トランザクションモードの場合
-    // ②申請状況が「10：申請データ作成中」かつ、申請区分が「30：削除申請」の場合
-    // ③申請状況が「20：承認依頼中」の場合
-    // ④申請状況が「30：差戻中」かつ、申請区分が「30：削除申請」の場合
-    // ⑤仕掛中(申請状況が「20：承認依頼中」または「30：差戻中」の場合)
-    if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && applicationDivisionCode == ApplicationDivision.Delete) || applicationStatusCode == ApplicationStatus.Request ||
-        (applicationStatusCode == ApplicationStatus.Return && applicationDivisionCode == ApplicationDivision.Delete) ||
-        (applicationStatusCode == ApplicationStatus.Request || applicationStatusCode == ApplicationStatus.Return)) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.EditRequest), true);
+    // 承認依頼、申請内容取消
+    // ①申請状況が「10：申請データ作成中」かつ、申請の申請者(システム管理者含む)である場合
+    // ②申請状況が「30：差戻中」かつ、申請の申請者(システム管理者含む)である場合
+    if (!isTransactionMode && ((applicationStatusCode == ApplicationStatus.Making && isCertified) || (applicationStatusCode == ApplicationStatus.Return && isCertified))) {
+        setHideButton(HistoryFormDetailCommonButton.ChangeApplicationRequest, false);
+        setHideButton(HistoryFormDetailCommonButton.CancelRequest, false);
     }
 
-    // 取消
-    // ①トランザクションモードの場合
-    // ②申請状況が「10：申請データ作成中」かつ、申請の申請者でない場合
-    // ③申請状況が「20：承認依頼中」の場合
-    // ④申請状況が「30：差戻中」かつ、申請の申請者でない場合
-    if (isTransactionMode || (applicationStatusCode == ApplicationStatus.Making && !isCertified) || applicationStatusCode == ApplicationStatus.Request ||
-        (applicationStatusCode == ApplicationStatus.Return && !isCertified)) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.CancelRequest), true);
+    // 申請内容修正
+    // ①申請状況が「10：申請データ作成中」かつ、申請の申請者(システム管理者含む)であるかつ、申請区分が「30：削除申請」以外の場合
+    // ②申請状況が「30：差戻中」かつ、申請の申請者(システム管理者含む)であるかつ、申請区分が「30：削除申請」以外の場合
+    if (!isTransactionMode &&
+        ((applicationStatusCode == ApplicationStatus.Making && isCertified && applicationDivisionCode != ApplicationDivision.Delete)
+        || (applicationStatusCode == ApplicationStatus.Return && isCertified && applicationDivisionCode != ApplicationDivision.Delete))) {
+        setHideButton(HistoryFormDetailCommonButton.EditRequest, false);
     }
 
-    // 引戻
-    // ①トランザクションモードの場合
-    // ②申請状況が「10：申請データ作成中」の場合
-    // ③申請状況が「20：承認依頼中」かつ、申請の申請者でない場合
-    // ④申請状況が「30：差戻中」の場合
-    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || (applicationStatusCode == ApplicationStatus.Request && !isCertified) ||
-        applicationStatusCode == ApplicationStatus.Return) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.PullBackRequest), true);
+    // 承認依頼引戻
+    // ①申請状況が「20：承認依頼中」かつ、申請の申請者(システム管理者含む)である場合
+    if (!isTransactionMode && applicationStatusCode == ApplicationStatus.Request && isCertified) {
+        setHideButton(HistoryFormDetailCommonButton.PullBackRequest, false);
     }
 
     // 承認・否認
-    // ①トランザクションモードの場合
-    // ②申請状況が「10：申請データ作成中」の場合
-    // ③工場の承認ユーザでない場合
-    // ④申請状況が「30：差戻中」の場合
-    if (isTransactionMode || applicationStatusCode == ApplicationStatus.Making || !isCertifiedFactory || applicationStatusCode == ApplicationStatus.Return) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationApproval), true);
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.ChangeApplicationDenial), true);
+    // ①申請状況が「20：承認依頼中」かつ、工場の承認ユーザである場合
+    if (!isTransactionMode && applicationStatusCode == ApplicationStatus.Request && isCertifiedFactory) {
+        setHideButton(HistoryFormDetailCommonButton.ChangeApplicationApproval, false);
+        setHideButton(HistoryFormDetailCommonButton.ChangeApplicationDenial, false);
     }
 
     // 変更前
-    // ①トランザクションモードの場合
-    if (isTransactionMode) {
-        dispNoneElementHistory(getButtonCtrl(HistoryFormDetailCommonButton.BeforeChange), true);
+    // ①変更管理モード(新規登録申請以外)の場合
+    if (!isTransactionMode && applicationDivisionCode != ApplicationDivision.New) {
+        setHideButton(HistoryFormDetailCommonButton.BeforeChange, false);
     }
 }
 
@@ -3826,9 +3866,9 @@ function dispNoneElementHistory(button, isHide) {
  * @param {any} isHistoryManagement 変更管理の場合はTrue
  * @param {any} historyManagementBtnName 変更管理ボタンの名前
  * @param {any} hideBtns 変更管理の時に非表示にするボタンの名前のリスト
- * @param {any} hideBtns 変更管理の時に入力コントロールを非表示にする一覧のIDのリスト
+ * @param {any} hideLists 変更管理の時に入力コントロールを非表示にする一覧のIDのリスト
  */
-function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns,hideLists) {
+function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementBtnName, hideBtns, hideLists) {
     var historyManagementBtn = getButtonCtrl(historyManagementBtnName);
     dispNoneElementHistory(historyManagementBtn, !isHistoryManagement);
 
@@ -3840,4 +3880,101 @@ function setHistoryManagementCtrlDisplay(isHistoryManagement, historyManagementB
     $.each(hideLists, function (i, listId) {
         changeRowControl(listId, !isHistoryManagement)
     });
+}
+
+/**
+ * 画面遷移前のチェック
+ * @param {any} appPath アプリケーションルートパス
+ * @param {any} formNo 画面No
+ * @param {any} conductId 機能ID
+ * @param {any} processName 処理のコントロールID(ExecuteImplで分岐する処理名)
+ * @param {any} val VAL値
+ */
+function checkTransition(appPath, formNo, conductId, processName, val, message) {
+    var flg = false;
+    var eventFunc = function (status, data) {
+        if (!data || data.length <= 0) {
+            // 処理終了
+            return;
+        }
+
+        // データ
+        var data = data.slice(1);//先頭行削除
+        if (!data || data.length <= 0) {
+            // 処理終了
+            return;
+        }
+        //チェック結果を取得
+        var value = data[0]["VAL" + val];
+        flg = convertStrToBool(value);
+
+        if (!flg) {
+            setMessage(message, procStatus.Error);
+        }
+    }
+    //Ajaxでチェックを行い、チェック結果（真偽値）を取得する
+    ajaxCommon(processName, appPath, formNo, conductId, false, null, eventFunc);
+    return flg;
+}
+
+
+/**
+ * 変更管理詳細画面 背景色変更
+ * @param {any} applicationDivisionCode 申請区分
+ * @param {any} columnList 背景色を変更するセルのリスト
+ * @param {any} ctrlId 変更のあった項目が設定されている一覧のID
+ * @param {any} val 変更のあった項目が設定されている項目番号
+ */
+function changeBackGroundColorHistoryDetail(applicationDivisionCode, columnList, ctrlId, val) {
+
+    var valueChanged = ""; // 変更のあった項目名
+
+    // 取得した申請区分を判定
+    if (applicationDivisionCode == ApplicationDivision.New || applicationDivisionCode == ApplicationDivision.Delete) { // 新規登録申請・削除申請
+
+        // 変更管理対象項目の全セルの背景色を変更
+        valueChanged = getValueChangedAllItemForHistory(applicationDivisionCode, columnList);
+    }
+    else { // 変更申請
+
+        // 変更のあった項目名を取得(「|」区切りになっているので分割)
+        valueChanged = getValue(ctrlId, val, 1, CtrlFlag.Label, false, false).split("|");
+    }
+
+    // 変更対象項目より背景色を変更
+    valueChanged.forEach(function (columnDetail, colIdx) {
+
+        // 変更のあった項目の列名が存在する場合
+        if ((columnDetail.trim()).length) {
+
+            // 列名と申請区分に分割
+            colName = columnDetail.split("_");
+
+            //列名が一致するものを取得
+            var column = $.grep(columnList, function (item, idx) {
+                return item.Key == colName[0];
+            });
+            if (column.length == 0) {
+                return false;
+            }
+
+            // 背景色変更処理
+            changeBackGroundColorHistory(column[0].CtrlId, column[0].Val, colName[1]);
+        }
+    });
+}
+
+/**
+ * 変更管理詳細画面 背景色変更時の「変更対象項目」を作成(新規登録申請・削除申請の場合)
+ * @param {any} applicationDivisionCode 申請区分
+ * @param {any} columnList 背景色を変更するセルのリスト
+ */
+function getValueChangedAllItemForHistory(applicationDivisionCode, columnList) {
+    // 「項目名_背景色設定値」のリストを作成
+    var valueChanged = [];
+    $.each(columnList, function (i, col) {
+        valueChanged.push(col.Key + "_" + applicationDivisionCode);
+    });
+
+    return valueChanged;
 }

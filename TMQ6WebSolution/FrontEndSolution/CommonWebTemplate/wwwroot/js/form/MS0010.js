@@ -229,19 +229,19 @@ function masterChangeDisabled(exData) {
             //var grpId = getSiblingsValue(ele, MS0010_FormList.Auth.ConductGrpId, CtrlFlag.Label);
             var grpId = getValue(MS0010_FormList.Auth.Id, MS0010_FormList.Auth.ConductGrpId, i, CtrlFlag.Label, false, false);
 
-            // 機能グループIDがMS0001かつ特権ユーザーまたはシステム管理者の場合
+            // 機能グループIDがMS0001かつシステム管理者の場合、選択行活性
             if (grpId == Master.ConductGrpId) {
-                if (exData == Auth.Privilege || exData == Auth.Admin) {
+                if (exData == Auth.Admin) {
                     // 選択行活性
                     changeInputControl(select, true);
                 }
                 else {
+                    // システム管理者でない場合
                     // 既に選択済みの場合はチェックを外す
                     setValue(MS0010_FormList.Auth.Id, MS0010_FormList.Auth.Select, i, CtrlFlag.ChkBox, 0);
                     // 選択行非活性
                     changeInputControl(select, false);
                 }
-
             }
         });
     }

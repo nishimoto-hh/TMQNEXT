@@ -2,7 +2,7 @@
 --予備品　部門の初期表示値を取得する
 --オートコンプリート(A0007)の先頭データを取得
 --******************************************************************
-
+-- A0007
 WITH
 factory AS(
     SELECT
@@ -66,23 +66,22 @@ main AS(
             FROM
                 dbo.get_splitText(@FactoryIdList, default, default)
         )
-    -- 工場別未使用標準アイテムに工場が含まれていないものを表示
-    AND
-        NOT EXISTS(
-                SELECT
-                *
-            FROM
-                ms_structure_unused AS unused
-            WHERE
-                unused.factory_id = ft.factory_id
-            AND unused.structure_id = st.structure_id
-        )
+        -- 工場別未使用標準アイテムに工場が含まれていないものを表示
+        AND
+            NOT EXISTS(
+                 SELECT
+                    *
+                FROM
+                    ms_structure_unused AS unused
+                WHERE
+                    unused.factory_id = ft.factory_id
+                AND unused.structure_id = st.structure_id
+            )
 )
 
-SELECT
+SELECT TOP 1
     id AS department_cd,
     structureId AS department_structure_id
 FROM
     main
-WHERE
-    row_num = 1
+order by row_num,orderFactoryId desc

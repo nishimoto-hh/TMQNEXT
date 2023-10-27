@@ -21,3 +21,8 @@
     /*検索結果一覧の「選択」列のボタン幅を変更*/
     min-width: 50px !important;
 }
+
+/*データのNo.リンクを無効にする*/
+.linkDisable {
+    pointer-events: none;
+}

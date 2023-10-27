@@ -1,0 +1,1 @@
+SELECT NEXT VALUE FOR seq_mc_machine_machine_id AS machine_id

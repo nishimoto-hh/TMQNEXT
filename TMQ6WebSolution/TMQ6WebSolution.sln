@@ -239,6 +239,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogic_EP0001", "Bac
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogic_EP0002", "BackEndSolution\BusinessLogic_EP0002\BusinessLogic_EP0002.csproj", "{FE7A6F33-4FDF-42F1-A903-8DFC04A09F90}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessLogic_HM0004", "BackEndSolution\BusinessLogic_HM0004\BusinessLogic_HM0004.csproj", "{4BD513D3-CD08-46A7-9D8D-13E72F0393A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -705,6 +707,10 @@ Global
 		{FE7A6F33-4FDF-42F1-A903-8DFC04A09F90}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE7A6F33-4FDF-42F1-A903-8DFC04A09F90}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE7A6F33-4FDF-42F1-A903-8DFC04A09F90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BD513D3-CD08-46A7-9D8D-13E72F0393A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BD513D3-CD08-46A7-9D8D-13E72F0393A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BD513D3-CD08-46A7-9D8D-13E72F0393A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BD513D3-CD08-46A7-9D8D-13E72F0393A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -825,6 +831,7 @@ Global
 		{8BC4E5E4-66B6-406A-AE3A-3B21B04E1393} = {C303BE3B-583A-4AED-AE8D-7FC7BD4A67E5}
 		{DE92A334-D680-4703-B514-864DFB33FB74} = {C303BE3B-583A-4AED-AE8D-7FC7BD4A67E5}
 		{FE7A6F33-4FDF-42F1-A903-8DFC04A09F90} = {C303BE3B-583A-4AED-AE8D-7FC7BD4A67E5}
+		{4BD513D3-CD08-46A7-9D8D-13E72F0393A3} = {C303BE3B-583A-4AED-AE8D-7FC7BD4A67E5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C0F04723-B55D-4D6A-8BC3-84D9E398E227}

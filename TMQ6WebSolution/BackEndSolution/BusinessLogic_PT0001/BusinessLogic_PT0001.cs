@@ -16,6 +16,7 @@ using Dao = BusinessLogic_PT0001.BusinessLogicDataClass_PT0001;
 using DbTransaction = System.Data.IDbTransaction;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 
 namespace BusinessLogic_PT0001
 {
@@ -107,6 +108,12 @@ namespace BusinessLogic_PT0001
                 public const string GetLabelData = "GetLabelData";
                 /// <summary>SQL名：一時テーブルに構成ID(共通工場ID)を追加するSQL/summary>
                 public const string InsertCommonFactoryIdToTemp = "InsertCommonFactoryIdToTemp";
+            }
+
+            public static class ExcelPort
+            {
+                /// <summary>SQL名：ExcelPort予備品仕様取得</summary>
+                public const string GetExcelPortPartsList = "GetExcelPortPartsList";
             }
         }
 
@@ -512,5 +519,93 @@ namespace BusinessLogic_PT0001
             return ComConsts.RETURN_RESULT.OK;
         }
 
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected override int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        {
+            // ExcelPortクラスの生成
+            var excelPort = new TMQUtil.ComExcelPort(
+                this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
+
+            // ExcelPortテンプレートファイル情報初期化
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            else if (!string.IsNullOrEmpty(resultMsg))
+            {
+                // 正常終了時、詳細メッセージがセットされている場合、警告メッセージ
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+            }
+
+            //TODO: 個別データ検索処理
+            IList<Dictionary<string, object>> dataList = null;
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.ExcelPort.GetExcelPortPartsList, out string baseSql);
+            // WITH句は別に取得
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.ExcelPort.GetExcelPortPartsList, out string withSql);
+
+            // 場所分類＆職種機種＆詳細検索条件取得
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, true))
+            {
+                // 「ダウンロード処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // SQLパラメータに言語ID設定
+            whereParam.LanguageId = this.LanguageId;
+            // 一覧検索SQL文の取得
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+            var selectSql = new StringBuilder(executeSql);
+            selectSql.AppendLine("ORDER BY");    // 並び順を指定
+            selectSql.AppendLine("parts_no");    // 予備品No. 昇順
+            selectSql.AppendLine(",parts_name"); // 予備品名  昇順
+
+            // 一覧検索実行
+            IList<Dao.excelPortPartsList> results = db.GetListByDataClass<Dao.excelPortPartsList>(selectSql.ToString(), whereParam);
+            if (results == null || results.Count == 0)
+            {
+                // 「ダウンロード処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.excelPortPartsList>(ref results, new List<StructureType> { StructureType.Job, StructureType.SpareLocation }, this.db, this.LanguageId);
+
+            // Dicitionalyに変換
+            dataList = ComUtil.ConvertClassToDictionary<Dao.excelPortPartsList>(results);
+
+            if (dataList == null || dataList.Count == 0)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Warning;
+                // 「該当データがありません。」
+                resultMsg = GetResMessage(ComRes.ID.ID941060001);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 個別シート出力処理
+            if (!excelPort.OutputExcelPortTemplateFile(dataList, out fileType, out fileName, out ms, out detailMsg))
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            return ComConsts.RETURN_RESULT.OK;
+        }
     }
 }

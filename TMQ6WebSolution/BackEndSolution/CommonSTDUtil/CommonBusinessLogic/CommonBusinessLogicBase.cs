@@ -1,33 +1,26 @@
-﻿using CommonWebTemplate;
+﻿using CommonSTDUtil.CommonSTDUtil;
+using CommonWebTemplate.CommonDefinitions;
+using CommonWebTemplate.Models.Common;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using CommonSTDUtil.CommonLogger;
-using System.Diagnostics;
-
-using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using ComOpt = CommonSTDUtil.CommonSTDUtil.OptimisticExclusive;
-using CommonSTDUtil.CommonSTDUtil;
-using CommonSTDUtil;
-using System.Collections;
-using Dao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http;
 using System.Text.Encodings.Web;
-using System.Text.Unicode;
-using CommonWebTemplate.Models.Common;
-using CommonWebTemplate.CommonDefinitions;
-using UpdTag = CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS.UPDTAG;
-using RowStatus = CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS.ROWSTATUS;
-using ComRes = CommonSTDUtil.CommonResources;
-using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text.Unicode;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using ComConsts = CommonSTDUtil.CommonConstants;
+using ComOpt = CommonSTDUtil.CommonSTDUtil.OptimisticExclusive;
+using ComRes = CommonSTDUtil.CommonResources;
+using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using Dao = CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
+using UpdTag = CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS.UPDTAG;
 
 namespace CommonSTDUtil.CommonBusinessLogic
 {
@@ -415,6 +408,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         case LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComUpload:
                             result = Upload();
                             break;
+                        // ExcelPort(ダウンロード)
+                        case LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortDownload:
+                            result = ExcelPortDownload();
+                            break;
+                        // ExcelPort(アップロード)
+                        case LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload:
+                            result = ExcelPortUpload();
+                            break;
                         // 共通処理
                         case LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.None:
                             if (this.CtrlId.Equals("CheckAuthority"))
@@ -635,7 +636,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 {
                     // 対象キーが設定済で数値変換可能かをチェックして登録する
                     int wkInt;
-                    if(rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true) 
+                    if (rowDic[mapInfo.ValName] != null && int.TryParse(rowDic[mapInfo.ValName].ToString(), out wkInt) == true)
                     {
                         selectKeyData.Key1 = rowDic[mapInfo.ValName];
                     }
@@ -666,8 +667,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 }
 
                 // キーが取得できた場合のみ
-                if(selectKeyData.Key1 != null || selectKeyData.Key2 != null || selectKeyData.Key3 != null)
-                { 
+                if (selectKeyData.Key1 != null || selectKeyData.Key2 != null || selectKeyData.Key3 != null)
+                {
                     // 選択キーデータリストに追加
                     selectKeyDataList.Add(selectKeyData);
                 }
@@ -1169,6 +1170,180 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// </summary>
         /// <returns>実行結果(0:OK/0未満:NG)</returns>
         protected virtual int UploadImpl() { return 0; }
+
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected virtual int ExcelPortDownload()
+        {
+            this.LogNo = string.Empty;
+            try
+            {
+                string fileType = string.Empty;
+                string fileName = string.Empty;
+                MemoryStream ms = null;
+                string resultMsg = string.Empty;
+                string detailMsg = string.Empty;
+
+                // 一時テーブル生成のためトランザクション開始
+                this.db.BeginTransaction();
+
+                // ExcelPortダウンロード個別処理
+                var result = ExcelPortDownloadImpl(ref fileType, ref fileName, ref ms, ref resultMsg, ref detailMsg);
+                if (result == ComConsts.RETURN_RESULT.OK)
+                {
+                    if (string.IsNullOrEmpty(resultMsg))
+                    {
+                        // 結果メッセージがセットされていない場合
+                        //「ダウンロード処理が完了しました。」
+                        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911160003 });
+                    }
+                    else
+                    {
+                        this.MsgId = resultMsg;
+                    }
+
+                    // OUTPUTパラメータに設定
+                    this.OutputFileType = fileType;
+                    this.OutputFileName = fileName;
+                    this.OutputStream = ms;
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(resultMsg))
+                    {
+                        // エラーメッセージがセットされていない場合、エラーログ出力
+                        // 「ダウンロード処理に失敗しました。」
+                        string errMsg = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                        // エラーログ出力
+                        writeErrorLog(errMsg);
+                        this.MsgId = errMsg;
+                    }
+                    else
+                    {
+                        this.MsgId = resultMsg;
+                    }
+                    if (!string.IsNullOrEmpty(detailMsg))
+                    {
+                        // 詳細メッセージがセットされている場合、ログ出力
+                        writeErrorLog(detailMsg);
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                // 「ダウンロード処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911160003 });
+                writeErrorLog(this.MsgId, ex);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            finally
+            {
+                // 一時テーブル削除のためロールバック
+                this.db.RollBack();
+                this.db.EndTransaction();
+            }
+        }
+
+        /// <summary>
+        /// ExcelPortダウンロード処理
+        /// </summary>
+        /// <param name="fileType">ファイル種類</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="ms">メモリストリーム</param>
+        /// <param name="resultMsg">結果メッセージ</param>
+        /// <param name="detailMsg">詳細メッセージ</param>
+        /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
+        protected virtual int ExcelPortDownloadImpl(ref string fileType, ref string fileName, ref MemoryStream ms, ref string resultMsg, ref string detailMsg)
+        { return ComConsts.RETURN_RESULT.OK; }
+
+        /// <summary>
+        /// ExcelPortアップロード処理
+        /// </summary>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected virtual int ExcelPortUpload()
+        {
+            int result = 0;
+            this.LogNo = string.Empty;
+
+            // ファイル読み込み&入力チェック
+            if (this.InputStream == null)
+            {
+                // 「アップロード可能なファイルがありません。」
+                this.MsgId = GetResMessage(ComRes.ID.ID941010006);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            //ファイル情報
+            var file = this.InputStream[0];
+            // ファイル拡張子チェック
+            string extension = Path.GetExtension(file.FileName);
+            if (extension != ComUtil.FileExtension.Excel || extension != ComUtil.FileExtension.ExcelMacro)
+            {
+                // 「ファイル形式が有効ではありません。」
+                this.MsgId = GetResMessage(ComRes.ID.ID941280004);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // トランザクション開始
+            this.db.BeginTransaction();
+            try
+            {
+                // ExcelPortアップロード個別処理実行
+                result = ExcelPortUploadImpl();
+
+                if (result > 0)
+                {
+                    // コミット
+                    this.db.Commit();
+                }
+                else
+                {
+                    // ロールバック
+                    this.db.RollBack();
+                }
+            }
+            catch (Exception ex)
+            {
+                // ロールバック
+                this.db.RollBack();
+
+                this.Status = CommonProcReturn.ProcStatus.Error;
+                // 「アップロード処理に失敗しました。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911010007 });
+
+                writeErrorLog(this.MsgId, ex);
+                return ComConsts.RETURN_RESULT.NG;
+            }
+            finally
+            {
+                // トランザクション終了
+                this.db.EndTransaction();
+            }
+
+            // 正常終了
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            //「ExcelPortアップロード処理に成功しました。」
+            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911100002 });
+            return ComConsts.RETURN_RESULT.OK;
+        }
+
+        /// <summary>
+        /// ExcelPortアップロード個別処理
+        /// </summary>
+        /// <returns>実行結果(0:OK/0未満:NG)</returns>
+        protected virtual int ExcelPortUploadImpl()
+        {
+
+            //TODO: ファイル読み込み＆入力内容チェック処理
+
+            //TODO: 登録処理
+
+            return 0;
+        }
 
         /// <summary>
         /// 個別処理
@@ -2303,261 +2478,263 @@ namespace CommonSTDUtil.CommonBusinessLogic
             return true;
         }
 
-        /// <summary>
-        /// 条件の設定
-        /// </summary>
-        /// <param name="ctrlId">コントロールID</param>
-        /// <param name="dic">変換対象辞書</param>
-        /// <param name="mappingList">マッピング情報リスト</param>
-        /// <param name="condition">条件オブジェクト</param>
-        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
-        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
-        private bool setConditionByDataClass(string ctrlId, dynamic condition, Dictionary<string, object> dic, ComUtil.ConvertType convType, List<string> paramList = null)
-        {
-            List<ComUtil.DBMappingInfo> mappingList;
-            if (paramList == null || paramList.Count == 0)
-            {
-                mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(ctrlId)).ToList();
-            }
-            else
-            {
-                mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(ctrlId) && paramList.Contains(x.ParamName)).ToList();
-            }
+        // ↓↓↓2022/12/13 CommonSTDUtilへ移植↓↓↓
+        ///// <summary>
+        ///// 条件の設定
+        ///// </summary>
+        ///// <param name="ctrlId">コントロールID</param>
+        ///// <param name="dic">変換対象辞書</param>
+        ///// <param name="mappingList">マッピング情報リスト</param>
+        ///// <param name="condition">条件オブジェクト</param>
+        ///// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        ///// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        //private bool setConditionByDataClass(string ctrlId, dynamic condition, Dictionary<string, object> dic, ComUtil.ConvertType convType, List<string> paramList = null)
+        //{
+        //    List<ComUtil.DBMappingInfo> mappingList;
+        //    if (paramList == null || paramList.Count == 0)
+        //    {
+        //        mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(ctrlId)).ToList();
+        //    }
+        //    else
+        //    {
+        //        mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(ctrlId) && paramList.Contains(x.ParamName)).ToList();
+        //    }
 
-            return setConditionByDataClass(mappingList, condition, dic, convType, paramList);
-        }
+        //    return setConditionByDataClass(mappingList, condition, dic, convType, paramList);
+        //}
 
-        /// <summary>
-        /// 条件の設定
-        /// </summary>
-        /// <param name="mappingList">マッピング情報リスト</param>
-        /// <param name="dic">変換対象辞書</param>
-        /// <param name="mappingList">マッピング情報リスト</param>
-        /// <param name="condition">条件オブジェクト</param>
-        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
-        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
-        private bool setConditionByDataClass(List<ComUtil.DBMappingInfo> mappingList, dynamic condition, Dictionary<string, object> dic, ComUtil.ConvertType convType, List<string> paramList = null)
-        {
-            foreach (var mapInfo in mappingList)
-            {
-                // VAL名またはカラム名が未設定の場合はスキップ
-                if (string.IsNullOrEmpty(mapInfo.ValName) || string.IsNullOrEmpty(mapInfo.ColName)) { continue; }
-                if (dic.ContainsKey(mapInfo.ValName))
-                {
-                    // 指定した条件名が条件辞書に存在する場合、条件オブジェクトへ追加
-                    var key = mapInfo.ParamName;
-                    var val = dic[mapInfo.ValName];
+        ///// <summary>
+        ///// 条件の設定
+        ///// </summary>
+        ///// <param name="mappingList">マッピング情報リスト</param>
+        ///// <param name="dic">変換対象辞書</param>
+        ///// <param name="mappingList">マッピング情報リスト</param>
+        ///// <param name="condition">条件オブジェクト</param>
+        ///// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        ///// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        //private bool setConditionByDataClass(List<ComUtil.DBMappingInfo> mappingList, dynamic condition, Dictionary<string, object> dic, ComUtil.ConvertType convType, List<string> paramList = null)
+        //{
+        //    foreach (var mapInfo in mappingList)
+        //    {
+        //        // VAL名またはカラム名が未設定の場合はスキップ
+        //        if (string.IsNullOrEmpty(mapInfo.ValName) || string.IsNullOrEmpty(mapInfo.ColName)) { continue; }
+        //        if (dic.ContainsKey(mapInfo.ValName))
+        //        {
+        //            // 指定した条件名が条件辞書に存在する場合、条件オブジェクトへ追加
+        //            var key = mapInfo.ParamName;
+        //            var val = dic[mapInfo.ValName];
 
-                    if (CommonUtil.IsNullOrEmpty(val))
-                    {
-                        if (mapInfo.IsInClause)
-                        {
-                            // IN句の場合、Listに初期値を設定
-                            PropertyInfo prop = condition.GetType().GetProperty(key + "List");
-                            if (prop == null) { continue; }
-                            if (prop.PropertyType == typeof(List<decimal>))
-                            {
-                                List<decimal> list = new List<decimal>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                            else if (prop.PropertyType == typeof(List<int>))
-                            {
-                                List<int> list = new List<int>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                            else if (prop.PropertyType == typeof(List<long>))
-                            {
-                                List<long> list = new List<long>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                            else if (prop.PropertyType == typeof(List<string>))
-                            {
-                                List<string> list = new List<string>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                            else if (prop.PropertyType == typeof(List<DateTime>))
-                            {
-                                List<DateTime> list = new List<DateTime>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                            else
-                            {
-                                List<object> list = new List<object>();
-                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                                continue;
-                            }
-                        }
-                        continue;
-                    }
+        //            if (CommonUtil.IsNullOrEmpty(val))
+        //            {
+        //                if (mapInfo.IsInClause)
+        //                {
+        //                    // IN句の場合、Listに初期値を設定
+        //                    PropertyInfo prop = condition.GetType().GetProperty(key + "List");
+        //                    if (prop == null) { continue; }
+        //                    if (prop.PropertyType == typeof(List<decimal>))
+        //                    {
+        //                        List<decimal> list = new List<decimal>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                    else if (prop.PropertyType == typeof(List<int>))
+        //                    {
+        //                        List<int> list = new List<int>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                    else if (prop.PropertyType == typeof(List<long>))
+        //                    {
+        //                        List<long> list = new List<long>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                    else if (prop.PropertyType == typeof(List<string>))
+        //                    {
+        //                        List<string> list = new List<string>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                    else if (prop.PropertyType == typeof(List<DateTime>))
+        //                    {
+        //                        List<DateTime> list = new List<DateTime>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                    else
+        //                    {
+        //                        List<object> list = new List<object>();
+        //                        setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                        continue;
+        //                    }
+        //                }
+        //                continue;
+        //            }
 
-                    string value = val.ToString();
-                    // FromTo分割の場合、分割後の値で設定を行う
-                    if (mapInfo.IsFromTo)
-                    {
-                        // デリミタ文字が含まれていない場合、そのまま設定する
-                        if (!value.Contains(ComUtil.FromToDelimiter.ToString()))
-                        {
-                            setValueToClassCon(mapInfo, key, value, condition, convType);
-                            continue;
-                        }
+        //            string value = val.ToString();
+        //            // FromTo分割の場合、分割後の値で設定を行う
+        //            if (mapInfo.IsFromTo)
+        //            {
+        //                // デリミタ文字が含まれていない場合、そのまま設定する
+        //                if (!value.Contains(ComUtil.FromToDelimiter.ToString()))
+        //                {
+        //                    setValueToClassCon(mapInfo, key, value, condition, convType);
+        //                    continue;
+        //                }
 
-                        var values = value.Split(ComUtil.FromToDelimiter);
-                        int count = 0;
-                        foreach (var data in values)
-                        {
-                            var setValue = data;
-                            if (data.Contains(ComUtil.NumberUnitDelimiter))
-                            {
-                                setValue = data.Split(ComUtil.NumberUnitDelimiter)[0];
-                            }
-                            var tmpKey = key;
-                            if (count == 0) { tmpKey += "From"; } else { tmpKey += "To"; }
-                            setValueToClassCon(mapInfo, tmpKey, setValue, condition, convType);
-                            count++;
-                        }
-                        continue;
-                    }
+        //                var values = value.Split(ComUtil.FromToDelimiter);
+        //                int count = 0;
+        //                foreach (var data in values)
+        //                {
+        //                    var setValue = data;
+        //                    if (data.Contains(ComUtil.NumberUnitDelimiter))
+        //                    {
+        //                        setValue = data.Split(ComUtil.NumberUnitDelimiter)[0];
+        //                    }
+        //                    var tmpKey = key;
+        //                    if (count == 0) { tmpKey += "From"; } else { tmpKey += "To"; }
+        //                    setValueToClassCon(mapInfo, tmpKey, setValue, condition, convType);
+        //                    count++;
+        //                }
+        //                continue;
+        //            }
 
-                    // IN句パラメータの場合、配列に格納しなおし、設定を行う
-                    if (mapInfo.IsInClause)
-                    {
-                        PropertyInfo prop = condition.GetType().GetProperty(key + "List");
-                        if (prop == null) { continue; }
+        //            // IN句パラメータの場合、配列に格納しなおし、設定を行う
+        //            if (mapInfo.IsInClause)
+        //            {
+        //                PropertyInfo prop = condition.GetType().GetProperty(key + "List");
+        //                if (prop == null) { continue; }
 
-                        if (prop.PropertyType == typeof(List<decimal>))
-                        {
-                            List<decimal> list = new List<decimal>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(decimal.Parse(data[i]));
-                                }
-                            }
-                            else
-                            {
-                                list.Add(decimal.Parse(value));
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                        else if (prop.PropertyType == typeof(List<int>))
-                        {
-                            List<int> list = new List<int>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(int.Parse(data[i]));
-                                }
-                            }
-                            else
-                            {
-                                list.Add(int.Parse(value));
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                        else if (prop.PropertyType == typeof(List<long>))
-                        {
-                            List<long> list = new List<long>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(long.Parse(data[i]));
-                                }
-                            }
-                            else
-                            {
-                                list.Add(long.Parse(value));
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                        else if (prop.PropertyType == typeof(List<string>))
-                        {
-                            List<string> list = new List<string>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(data[i]);
-                                }
-                            }
-                            else
-                            {
-                                list.Add(value);
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                        else if (prop.PropertyType == typeof(List<DateTime>))
-                        {
-                            List<DateTime> list = new List<DateTime>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(DateTime.Parse(data[i]));
-                                }
-                            }
-                            else
-                            {
-                                list.Add(DateTime.Parse(value));
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                        else
-                        {
-                            List<object> list = new List<object>();
-                            if (value.Contains(ComUtil.FromToDelimiter))
-                            {
-                                var data = value.Split(ComUtil.FromToDelimiter);
-                                for (int i = 0; i < data.Count(); i++)
-                                {
-                                    list.Add(data[i]);
-                                }
-                            }
-                            else
-                            {
-                                list.Add(value);
-                            }
-                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
-                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
-                            continue;
-                        }
-                    }
+        //                if (prop.PropertyType == typeof(List<decimal>))
+        //                {
+        //                    List<decimal> list = new List<decimal>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(decimal.Parse(data[i]));
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(decimal.Parse(value));
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //                else if (prop.PropertyType == typeof(List<int>))
+        //                {
+        //                    List<int> list = new List<int>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(int.Parse(data[i]));
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(int.Parse(value));
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //                else if (prop.PropertyType == typeof(List<long>))
+        //                {
+        //                    List<long> list = new List<long>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(long.Parse(data[i]));
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(long.Parse(value));
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //                else if (prop.PropertyType == typeof(List<string>))
+        //                {
+        //                    List<string> list = new List<string>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(data[i]);
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(value);
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //                else if (prop.PropertyType == typeof(List<DateTime>))
+        //                {
+        //                    List<DateTime> list = new List<DateTime>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(DateTime.Parse(data[i]));
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(DateTime.Parse(value));
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //                else
+        //                {
+        //                    List<object> list = new List<object>();
+        //                    if (value.Contains(ComUtil.FromToDelimiter))
+        //                    {
+        //                        var data = value.Split(ComUtil.FromToDelimiter);
+        //                        for (int i = 0; i < data.Count(); i++)
+        //                        {
+        //                            list.Add(data[i]);
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        list.Add(value);
+        //                    }
+        //                    setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+        //                    setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+        //                    continue;
+        //                }
+        //            }
 
-                    // セルタイプが数値で 数値+単位分割文字が設定されている場合
-                    if (mapInfo.CtrlType == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number && value.Contains(ComUtil.NumberUnitDelimiter))
-                    {
-                        var values = value.Split(ComUtil.NumberUnitDelimiter);
-                        setValueToClassCon(mapInfo, key, values[0], condition, convType);
-                        continue;
-                    }
+        //            // セルタイプが数値で 数値+単位分割文字が設定されている場合
+        //            if (mapInfo.CtrlType == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number && value.Contains(ComUtil.NumberUnitDelimiter))
+        //            {
+        //                var values = value.Split(ComUtil.NumberUnitDelimiter);
+        //                setValueToClassCon(mapInfo, key, values[0], condition, convType);
+        //                continue;
+        //            }
 
-                    setValueToClassCon(mapInfo, key, val, condition, convType);
-                }
-            }
-            return true;
-        }
+        //            setValueToClassCon(mapInfo, key, val, condition, convType);
+        //        }
+        //    }
+        //    return true;
+        //}
+        // ↑↑↑2022/12/13 CommonSTDUtilへ移植↑↑↑
 
         /// <summary>
         /// ページ情報を一時テーブルに保存する
@@ -2859,28 +3036,30 @@ namespace CommonSTDUtil.CommonBusinessLogic
         //    return list;
         //}
 
-        /// <summary>
-        /// 条件の設定
-        /// </summary>
-        /// <param name="list">変換対象辞書リスト</param>
-        /// <param name="mappingList">マッピング情報リスト</param>
-        /// <param name="condition">条件オブジェクト</param>
-        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
-        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
-        private bool setConditionByDataClass(string ctrlId, List<Dictionary<string, object>> list, dynamic condition, ComUtil.ConvertType convType, List<string> paramList = null)
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list.Count > i)
-                {
-                    setConditionByDataClass(ctrlId, condition, list[i], convType, paramList);
-                }
-            }
-            // 言語ID
-            condition.LanguageId = this.LanguageId;
+        // ↓↓↓2022/12/13 CommonSTDUtilへ移植↓↓↓
+        ///// <summary>
+        ///// 条件の設定
+        ///// </summary>
+        ///// <param name="list">変換対象辞書リスト</param>
+        ///// <param name="mappingList">マッピング情報リスト</param>
+        ///// <param name="condition">条件オブジェクト</param>
+        ///// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        ///// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        //private bool setConditionByDataClass(string ctrlId, List<Dictionary<string, object>> list, dynamic condition, ComUtil.ConvertType convType, List<string> paramList = null)
+        //{
+        //    for (int i = 0; i < list.Count; i++)
+        //    {
+        //        if (list.Count > i)
+        //        {
+        //            setConditionByDataClass(ctrlId, condition, list[i], convType, paramList);
+        //        }
+        //    }
+        //    // 言語ID
+        //    condition.LanguageId = this.LanguageId;
 
-            return true;
-        }
+        //    return true;
+        //}
+        // ↑↑↑2022/12/13 CommonSTDUtilへ移植↑↑↑
 
         /// <summary>
         /// 条件を個別に設定
@@ -2933,7 +3112,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
         protected bool SetSearchConditionByDataClass(List<Dictionary<string, object>> list, string ctrlId, dynamic condition, PageInfo pageInfo, List<string> paramList = null)
         {
-            setConditionByDataClass(ctrlId, list, condition, ComUtil.ConvertType.Search, paramList);
+            ComUtil.SetConditionByDataClass(ctrlId, this.mapInfoList, list, condition, ComUtil.ConvertType.Search, this.LanguageId, paramList);
 
             if (IsRequiredPageInfoSetting(pageInfo))
             {
@@ -2994,7 +3173,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             bool chkInp = int.TryParse(inputorCd, out int inputorCdNum);
             // いずれかが変換エラーの場合、エラーを返す
             if (!chkUpd || !chkInp) { return false; }
-            setConditionByDataClass(ctrlId, condition, dic, ComUtil.ConvertType.Execute, paramList);
+            ComUtil.SetConditionByDataClass(ctrlId, this.mapInfoList, condition, dic, ComUtil.ConvertType.Execute, paramList);
             // 共通の更新日時などを設定
             setExecuteConditionByDataClassCommon<T>(ref condition, date, updatorCdNum, inputorCdNum);
 
@@ -3044,7 +3223,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             bool chkInp = int.TryParse(inputorCd, out int inputorCdNum);
             // いずれかが変換エラーの場合、エラーを返す
             if (!chkUpd || !chkInp) { return false; }
-            setConditionByDataClass(mappingList, condition, dic, ComUtil.ConvertType.Execute, paramList);
+            ComUtil.SetConditionByDataClass(mappingList, condition, dic, ComUtil.ConvertType.Execute, paramList);
             // 共通の更新日時などを設定
             setExecuteConditionByDataClassCommon<T>(ref condition, date, updatorCdNum, inputorCdNum);
 
@@ -3074,7 +3253,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
         protected bool SetDeleteConditionByDataClass(Dictionary<string, object> dic, string ctrlId, dynamic condition, List<string> paramList = null)
         {
-            setConditionByDataClass(ctrlId, condition, dic, ComUtil.ConvertType.Execute, paramList);
+            ComUtil.SetConditionByDataClass(ctrlId, this.mapInfoList, condition, dic, ComUtil.ConvertType.Execute, paramList);
 
             return true;
         }
@@ -3088,7 +3267,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
         protected bool SetDataClassFromDictionary(Dictionary<string, object> dic, string ctrlId, dynamic target, List<string> paramList = null)
         {
-            setConditionByDataClass(ctrlId, target, dic, ComUtil.ConvertType.Result, paramList);
+            ComUtil.SetConditionByDataClass(ctrlId, this.mapInfoList, target, dic, ComUtil.ConvertType.Result, paramList);
 
             return true;
         }
@@ -4495,6 +4674,105 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             return true;
         }
+
+        /// <summary>
+        /// 排他チェック(単項目、チェック対象テーブル指定)
+        /// </summary>
+        /// <param name="ctrlId">一覧のコントロールID</param>
+        /// <param name="targetList">排他チェックを行う一覧</param>
+        /// <param name="target">対象のディクショナリ</param>
+        /// <returns>エラーの場合False</returns>
+        protected bool checkExclusiveSingleForTable(string ctrlId, List<string> tableList, Dictionary<string, object> target = null)
+        {
+            // 排他ロック用マッピング情報取得
+            var lockValMaps = GetLockValMaps(ctrlId);
+            var lockKeyMaps = GetLockKeyMaps(ctrlId);
+            var targetDic = target != null ? target : ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ctrlId);
+
+            List<ComUtil.DBMappingInfo> lockValMapsForTarget = new();
+            List<ComUtil.DBMappingInfo> lockKeyMapsForTarget = new();
+
+            // チェック対象のテーブル名で絞り込む
+            if (tableList.Count > 0)
+            {
+                // 指定テーブル以外の排他チェックは除く(ロック値)
+                foreach (ComUtil.DBMappingInfo mapInfo in lockValMaps)
+                {
+                    if (tableList.Contains(mapInfo.LockTblName))
+                    {
+                        lockValMapsForTarget.Add(mapInfo);
+                    }
+                }
+
+                // 指定テーブル以外の排他チェックは除く(ロックキー)
+                foreach (ComUtil.DBMappingInfo mapInfo in lockKeyMaps)
+                {
+                    if (tableList.Contains(mapInfo.LockTblName))
+                    {
+                        lockKeyMapsForTarget.Add(mapInfo);
+                    }
+                }
+            }
+
+            // 排他チェック
+            if (!CheckExclusiveStatus(targetDic, lockValMapsForTarget, lockKeyMapsForTarget))
+            {
+                // 排他エラー
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 排他チェック(チェック対象テーブル指定)
+        /// </summary>
+        /// <param name="ctrlId">一覧のコントロールID</param>
+        /// <param name="targetList">排他チェックを行う一覧</param>
+        /// <returns>エラーの場合False</returns>
+        protected bool checkExclusiveListForTable(string ctrlId, List<Dictionary<string, object>> targetList, List<string> tableList)
+        {
+            // 排他ロック用マッピング情報取得
+            var lockValMaps = GetLockValMaps(ctrlId);
+            var lockKeyMaps = GetLockKeyMaps(ctrlId);
+
+            List<ComUtil.DBMappingInfo> lockValMapsForTarget = new();
+            List<ComUtil.DBMappingInfo> lockKeyMapsForTarget = new();
+
+            // チェック対象のテーブル名で絞り込む
+            if (tableList.Count > 0)
+            {
+                // 指定テーブル以外の排他チェックは除く(ロック値)
+                foreach (ComUtil.DBMappingInfo mapInfo in lockValMaps)
+                {
+                    if (tableList.Contains(mapInfo.LockTblName))
+                    {
+                        lockValMapsForTarget.Add(mapInfo);
+                    }
+                }
+
+                // 指定テーブル以外の排他チェックは除く(ロックキー)
+                foreach (ComUtil.DBMappingInfo mapInfo in lockKeyMaps)
+                {
+                    if (tableList.Contains(mapInfo.LockTblName))
+                    {
+                        lockKeyMapsForTarget.Add(mapInfo);
+                    }
+                }
+            }
+
+            // 排他チェック
+            foreach (var targetDic in targetList)
+            {
+                if (!CheckExclusiveStatus(targetDic, lockValMapsForTarget, lockKeyMapsForTarget))
+                {
+                    // 排他エラー
+                    return false;
+                }
+            }
+
+            return true;
+        }
         #endregion
 
         /// <summary>
@@ -5524,7 +5802,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             bool isResult0 = this.ResultList.Count() == 1 && this.ResultList[0].ContainsKey("VAL1") && this.ResultList[0]["VAL1"].ToString() == "0"; // 検索結果の総件数が0件である
             /*if (!this.MsgId.StartsWith(GetResMessage("941190001")) && (this.ResultList == null ||
                 this.ResultList.Count() == 1 && this.ResultList[0]["VAL1"].ToString() == "0"))*/
-            if (isNotConfirmMsg && (isNullResultList||isResult0))
+            if (isNotConfirmMsg && (isNullResultList || isResult0))
             {
                 // 警告メッセージで終了
                 this.Status = CommonProcReturn.ProcStatus.Warning;
@@ -5783,7 +6061,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 {
                     //配下の構成IDを取得
                     locationIdList = GetLowerStructureIdList(locationIdList);
-                    if(!useBelongingInfo && this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0)
+                    if (!useBelongingInfo && this.BelongingInfo.LocationInfoList != null && this.BelongingInfo.LocationInfoList.Count > 0)
                     {
                         //場所階層の指定ありの場合
 
@@ -5792,7 +6070,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         //所属場所階層と一致するもののみ抽出
                         locationIdList = locationIdList.Where(x => belongLocationIdList.Contains(x)).ToList();
                     }
-                    if(locationIdList.Count == 0)
+                    if (locationIdList.Count == 0)
                     {
                         //所属に無いもののみが指定されていた場合、データを表示しない
                         locationIdList.Add(-1);
@@ -5857,7 +6135,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 bool useBelongingInfo = false;
                 List<int> jobIdList = getIdListBySearchCond(STRUCTURE_CONSTANTS.CONDITION_KEY.Job);
 
-                if ((jobIdList == null || jobIdList.Count == 0) && 
+                if ((jobIdList == null || jobIdList.Count == 0) &&
                     (this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0))
                 {
                     // 職種機種の指定なしの場合、所属職種機種を渡す
@@ -6386,47 +6664,49 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             return checkFlg;
         }
+		
+		//↓↓↓2022/12/14 CommonSTDUtilへ移植↓↓↓
+        ///// <summary>
+        ///// 固定SQL文の取得
+        ///// </summary>
+        ///// <param name="subDir">Resources\sql配下のサブディレクトリパス(サブディレクトリが複数階層の場合、パス区切り文字は"\"ではなく".")</param>
+        ///// <param name="fileName">SQLテキストファイル名</param>
+        ///// <param name="sql">out 取得したSQL文</param>
+        ///// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+        ///// <returns>取得結果(true:取得OK/false:取得NG )</returns>
+        //private static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnComment = null)
+        //{
+        //    sql = string.Empty;
+        //    string assemblyName = CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementAssemblyName;
 
-        /// <summary>
-        /// 固定SQL文の取得
-        /// </summary>
-        /// <param name="subDir">Resources\sql配下のサブディレクトリパス(サブディレクトリが複数階層の場合、パス区切り文字は"\"ではなく".")</param>
-        /// <param name="fileName">SQLテキストファイル名</param>
-        /// <param name="sql">out 取得したSQL文</param>
-        /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
-        /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
-        private static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnComment = null)
-        {
-            sql = string.Empty;
-            string assemblyName = CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementAssemblyName;
+        //    // リソース名を生成
+        //    StringBuilder resourceName = new StringBuilder();
+        //    resourceName.Append(assemblyName).Append(".").Append(CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementDir).Append(".");
+        //    if (!string.IsNullOrEmpty(subDir))
+        //    {
+        //        // サブディレクトリパスの追加(念のためパス区切り文字を"."に変換しておく)
+        //        resourceName.Append(subDir.Replace(@"\", ".")).Append(".");
+        //    }
+        //    resourceName.Append(fileName).Append(".sql");
 
-            // リソース名を生成
-            StringBuilder resourceName = new StringBuilder();
-            resourceName.Append(assemblyName).Append(".").Append(CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementDir).Append(".");
-            if (!string.IsNullOrEmpty(subDir))
-            {
-                // サブディレクトリパスの追加(念のためパス区切り文字を"."に変換しておく)
-                resourceName.Append(subDir.Replace(@"\", ".")).Append(".");
-            }
-            resourceName.Append(fileName).Append(".sql");
+        //    // 埋め込みリソースからSQL文を取得
+        //    bool result = ComUtil.GetEmbeddedResourceStr(assemblyName, resourceName.ToString(), out sql);
 
-            // 埋め込みリソースからSQL文を取得
-            bool result = ComUtil.GetEmbeddedResourceStr(assemblyName, resourceName.ToString(), out sql);
+        //    // SQLの動的制御　コメントアウトを解除
+        //    if (listUnComment != null && listUnComment.Count > 0)
+        //    {
+        //        foreach (string wordUnComment in listUnComment)
+        //        {
+        //            // @+指定された文字列がコメントアウトの前後に付いているので除去
+        //            // /*@Hoge と @Hoge*/ を除去すれば、囲われたSQLが有効になる
+        //            Regex startReplace = new Regex("\\/\\*@" + wordUnComment + "[^a-zA-Z\\d_]");
+        //            sql = startReplace.Replace(sql, string.Empty).Replace("@" + wordUnComment + "*/", string.Empty);
+        //        }
+        //    }
 
-            // SQLの動的制御　コメントアウトを解除
-            if (listUnComment != null && listUnComment.Count > 0)
-            {
-                foreach (string wordUnComment in listUnComment)
-                {
-                    // @+指定された文字列がコメントアウトの前後に付いているので除去
-                    // /*@Hoge と @Hoge*/ を除去すれば、囲われたSQLが有効になる
-                    Regex startReplace = new Regex("\\/\\*@" + wordUnComment + "[^a-zA-Z\\d_]");
-                    sql = startReplace.Replace(sql, string.Empty).Replace("@" + wordUnComment + "*/", string.Empty);
-                }
-            }
-
-            return result;
-        }
+        //    return result;
+        //}
+		//↑↑↑2022/12/14 CommonSTDUtilへ移植↑↑↑
     }
 
     /// <summary>

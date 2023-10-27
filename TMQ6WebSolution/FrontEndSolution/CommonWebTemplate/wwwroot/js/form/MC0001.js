@@ -1,6 +1,8 @@
 ﻿/* ========================================================================
  *  機能名　    ：   【MC0001】機器台帳
  * ======================================================================== */
+// 納品用 - 変更管理処理実施フラグ
+const isExecuteHistory = false;
 
 /**
  * 自身の相対パスを取得
@@ -32,9 +34,16 @@ const SearchList = {
     List: {
         Id: "BODY_020_00_LST_0",
     },
+    HiddenList: {
+        Id: "BODY_030_00_LST_0",
+        ColumnNo: {
+            HiddenFlg: 1
+        }
+    },
     ButtonId: {
         New: "New",
-        Output: "Output"
+        Output: "Output",
+        HistoryManagementList: "HistoryManagementList"
     },
     // フォーカスを設定するコントロールID
     ForcusId: "New",
@@ -46,6 +55,12 @@ const SearchList = {
 const MachineDatail = {
     // 画面No
     No: 1,
+    HiddenList: {
+        Id: "BODY_007_00_LST_1",
+        ColumnNo: {
+            HiddenFlg: 1
+        },
+    },
     MachineDatail10: {
         Id: "BODY_010_00_LST_1",
     },
@@ -156,6 +171,8 @@ const DatailManagementStandard = {
             MainteScheduleId: 21,
             MachineId: 23,
         },
+        LinkNone: "linkDisable",         // データのNo.リンクを無効にするCSSクラス
+        ValueCssStyle: "black"           // データのNo.リンクの文字色スタイル
     },
     Format1List: {
         Id: "BODY_120_00_LST_1",
@@ -499,6 +516,18 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             setFocusButton(SearchList.ForcusId);
         }
 
+        // 変更管理ボタンの表示制御
+        if (isExecuteHistory) {
+            var hideBtns = [SearchList.ButtonId.New]; //新規ボタンを非表示にする
+            var flagValue = getHistoryManagementFlgValue(true); // フラグの値
+            if (flagValue == HistoryManagementDisplayFlag.Dual) {
+                // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
+                hideBtns = [];
+            }
+            setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), SearchList.ButtonId.HistoryManagementList, hideBtns);
+        }
+
+
     } else if (formNo == MachineDatail.No) {
         //詳細画面
 
@@ -553,7 +582,12 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
                 break;
         }
 
-
+        // 変更管理ボタンの表示制御
+        var hideBtns = [MachineDatail.ButtonId.Copy, MachineDatail.ButtonId.Update, MachineDatail.ButtonId.Delete];
+        var hideLists = [DatailManagementStandard.ManagementStandardList.Id];
+        if (isExecuteHistory) {
+            setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), MachineDatail.ButtonId.HistoryManagementDetail, hideBtns, hideLists);
+        }
 
     } else if (formNo == MachineEditDetail.No) {
         //詳細画面
@@ -621,6 +655,40 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
     }
 }
+
+// 変更管理のコントロールの表示フラグ
+const HistoryManagementDisplayFlag = {
+    // 変更管理の表示をしない
+    NoHisotry: "0",
+    // 変更管理の表示のみ行う
+    History: "1",
+    // 両方表示する(一覧のみ)
+    Dual: "2"
+};
+
+/**
+ * 変更管理の要素の表示フラグの値を取得
+ * @param {any} isList 一覧画面ならTrue、参照画面ならFalse
+ */
+function getHistoryManagementFlgValue(isList) {
+    var flagValue;
+    if (isList) {
+        flagValue = getValue(SearchList.HiddenList.Id, SearchList.HiddenList.ColumnNo.HiddenFlg, 0, CtrlFlag.Label);
+    } else {
+        flagValue = getValue(MachineDatail.HiddenList.Id, MachineDatail.HiddenList.ColumnNo.HiddenFlg, 0, CtrlFlag.Label);
+    }
+    return flagValue;
+}
+/**
+ * 変更管理の要素を表示するか判定
+ * @param {any} isList 一覧画面ならTrue、参照画面ならFalse
+ * @returns  {bool} 変更管理を表示するならTrue
+ */
+function getIsHisotyManagement(isList) {
+    var flagValue = getHistoryManagementFlgValue(isList);
+    return flagValue == HistoryManagementDisplayFlag.History || flagValue == HistoryManagementDisplayFlag.Dual;
+}
+
 
 /**
  *【オーバーライド用関数】
@@ -1216,6 +1284,16 @@ function prevCreateTabulator(appPath, id, options, header, dispData) {
         rowNoLinkChangeMa();
 
 
+    } else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + "_1") {
+
+        //変更管理対象ならNoリンク非活性制御
+        if (isExecuteHistory && getIsHisotyManagement(false)) {
+            //ブラウザに処理が戻った際に実行
+            setTimeout(function () {
+                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+            }, 0);
+        }
+
     }
 
 
@@ -1325,12 +1403,20 @@ function initTabOriginal(tabNo, tableId) {
             }
             //}
         }
+        //変更管理対象ならNoリンク非活性制御
+        if (isExecuteHistory && getIsHisotyManagement(false)) {
+            //ブラウザに処理が戻った際に実行
+            setTimeout(function () {
+                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+            }, 0);
+        }
+
     } else if (tabNo == 4) { // タブ// 長期計画一覧
         rowNoLinkChangeLongPlan();
     } else if (tabNo == 5) { // タブ// 保全活動
         rowNoLinkChangeMa();
     }
-    
+
 
     //// 点検種別毎フラグを取得
     //var flg = getValue(MachineDatail.MachineDatail50.Id, 10, 1, CtrlFlag.ChkBox, false, false);
@@ -1569,10 +1655,89 @@ function postBuiltTabulator(tbl, id) {
         rowNoLinkChangeLongPlan();
     } else if (id == '#' + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
         rowNoLinkChangeMa();
+    } else if (id == '#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
+
+        //変更管理対象ならNoリンク非活性制御
+        if (isExecuteHistory && getIsHisotyManagement(false)) {
+            //ブラウザに処理が戻った際に実行
+            setTimeout(function () {
+                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+            }, 0);
+        }
     }
 }
 
+/**
+ * 保全項目のNoリンク非活性制御
+ * @param {any} tbl 一覧
+ * @param {any} rows 行
+ */
+function setDisabledLink(tbl) {
+    // 対象コントール内の全行取得
+    var trs = tbl.getRows("display");
+    $(trs).each(function (i, tr) {
+        ////ブラウザに処理が戻った際に実行
+        //setTimeout(function () {
+        // データのリンクを無効にする
+        noneLinkData(tr.getData()["ROWNO"]);
+        //}, 0);
+    });
 
+
+    //// 一覧データ取得
+    //var tbl = $(P_Article).find('#' + DatailLongPlan.LongPlanList.Id + getAddFormNo()).find("div[class='tabulator-table']").children();
+    //if ($(tbl).length) {
+    //    $.each($(tbl), function (idx, row) {
+    //        var target = getCtrl(DatailLongPlan.LongPlanList.Id, 1, idx, CtrlFlag.Link, false, false);
+    //        target.innerHTML = '<span class="glyphicon glyphicon-file"></span>';
+    //    });
+    //}
+
+}
+
+/**
+ * データのリンクを無効にする
+ * */
+function noneLinkData(rowNo) {
+
+    // コントロールID
+    var ctrlId;
+
+    ctrlId = DatailManagementStandard.ManagementStandardList.Id;
+
+    //  一覧情報取得
+    var rows = P_listData["#" + ctrlId + getAddFormNo()].searchRows("ROWNO", "=", rowNo);
+    var rowEle = rows[0].getElement();
+    rows = null;
+    if (rowEle && $(rowEle).length > 0) {
+        // レコードのNo.リンクを無効化する
+        var link = $(rowEle).find("div[tabulator-field='ROWNO']");
+        $(link).addClass("linkDisable");
+        // 文字色を黒に変更
+        var value = $(link).find("a");
+        if (value && value.length > 0) {
+            $(value)[0].style.color = "black";
+        }
+
+    }
+    //else {
+    //    // 入出庫履歴一覧の要素取得
+    //    ctrlId = InoutList.EnterIssueHistory.Id;
+
+    //    // 入出庫一覧の要素取得
+    //    var tbl = $("#" + ctrlId + getAddFormNo() + "_div").find("div .tabulator-row");
+    //    if (tbl.length > 0) {
+
+    //        // 繰越のデータのレコードのNo.リンクを無効化する
+    //        var link = $("#" + ctrlId + getAddFormNo() + "_div").find("div .tabulator-row").find("div[tabulator-field='ROWNO']")[0];
+    //        $(link).addClass("linkDisable");
+    //        // 文字色を黒に変更
+    //        var value = $(link).find("a");
+    //        $(value)[0].style.color = "black";
+
+    //    }
+    //}
+}
 /**
  *【オーバーライド用関数】
  *  画面再表示ﾃﾞｰﾀ取得関数呼出前
@@ -1660,7 +1825,7 @@ function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) 
 
     if (formNo == MachineDatail.No) {
         // 検索条件用の値を取得
-        if ( $(btn).attr("name") == DatailManagementStandard.ButtonId.RegistSchedule || $(btn).attr("name") == DetailUseParts.ButtonId.DeleteUseParts || $(btn).attr("name") == DatailManagementStandard.ButtonId.DeleteManagementStandard
+        if ($(btn).attr("name") == DatailManagementStandard.ButtonId.RegistSchedule || $(btn).attr("name") == DetailUseParts.ButtonId.DeleteUseParts || $(btn).attr("name") == DatailManagementStandard.ButtonId.DeleteManagementStandard
             || $(btn).attr("name") == DatailConstitution.ButtonId.DeleteParent || $(btn).attr("name") == DatailConstitution.ButtonId.DeleteLoop || $(btn).attr("name") == DetailMpInfo.ButtonId.DeleteMpInfo
             || $(btn).attr("name") == DatailManagementStandard.ButtonId.RegistOrder || $(btn).attr("name") == DatailManagementStandard.ButtonId.RegistLankSchedule) {
             var unit = getValueByOtherForm(MachineDatail.No, DatailManagementStandard.ScheduleCondList.Id, DatailManagementStandard.ScheduleCondList.ColumnNo.DispType, 1, CtrlFlag.Combo);
@@ -1763,7 +1928,7 @@ function getRowNoByList(ctrlId) {
             });
         }
     }
-    return rowNo-0;
+    return rowNo - 0;
 }
 
 /** 
@@ -2255,7 +2420,7 @@ function setMaintKindListGroupingMachine() {
         // 保全部位重要度を調整
         var [newPrevContent2Id, isTopContent2, isBottomContent2] = getGroupSetInfo(DatailManagementStandard.ScheduleLankList.ColumnNo.PostImp, prevContent2Id, index, list);
         prevContent2Id = newPrevContent2Id;
-        changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.PostImp,DatailManagementStandard.ScheduleLankList.ColumnNo.Method];
+        changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.PostImp, DatailManagementStandard.ScheduleLankList.ColumnNo.Method];
         setGroupToCols(index, changeCols, isTopMachine || isTopContent2, isBottomMachine || isBottomContent2);
     });
 }
@@ -2358,6 +2523,15 @@ function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
         // 
         rowNoLinkChangeMa();
     }
+    else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
+        //変更管理対象ならNoリンク非活性制御
+        if (isExecuteHistory && getIsHisotyManagement(false)) {
+            //ブラウザに処理が戻った際に実行
+            setTimeout(function () {
+                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+            }, 0);
+        }
+    }
 }
 
 
@@ -2383,6 +2557,15 @@ function postTabulatorRenderCompleted(tbl, id) {
     else if (id == "#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo()) {
         // 
         rowNoLinkChangeMa();
+    }
+    else if (id == "#" + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()) {
+        //変更管理対象ならNoリンク非活性制御
+        if (isExecuteHistory && getIsHisotyManagement(false)) {
+            //ブラウザに処理が戻った際に実行
+            setTimeout(function () {
+                setDisabledLink(P_listData['#' + DatailManagementStandard.ManagementStandardList.Id + getAddFormNo()]);
+            }, 0);
+        }
     }
 }
 

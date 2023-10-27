@@ -78,13 +78,12 @@ user_factory AS(
                 ub.location_structure_id = st.structure_id
             )
 )
--- ユーザ権限を取得、特権か管理者なら「all_flg」が1
+-- ユーザ権限を取得、管理者なら「all_flg」が1
 ,
 user_auth AS(
     SELECT
         us.user_id,
         CASE au.extension_data
-            WHEN '30' THEN 1
             WHEN '99' THEN 1
             ELSE 0
         END AS all_flg
@@ -96,10 +95,10 @@ user_auth AS(
                 us.authority_level_id = au.structure_id
             )
 )
--- 表示する工場の一覧を取得 特権・システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
+-- 表示する工場の一覧を取得 システム管理者の場合とそうでない場合をそれぞれ取得しUNION(実際はどちらかしか取得できない)
 ,
 temp AS(
-    -- 特権・システム管理者の場合
+    -- システム管理者の場合
     SELECT
         factoryId
     FROM
@@ -114,7 +113,7 @@ temp AS(
                 au.all_flg = 1
         )
     UNION
-    -- 一般ユーザの場合
+    -- 特権・一般ユーザの場合
     SELECT
         fc.factoryId
     FROM

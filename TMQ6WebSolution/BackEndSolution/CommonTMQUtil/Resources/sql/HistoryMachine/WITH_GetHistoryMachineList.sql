@@ -1,4 +1,5 @@
-WITH structure_factory AS( -- –|–ó‚Ìæ“¾‚Ég—p
+WITH structure_factory AS(
+    -- ç¿»è¨³ã®å–å¾—ã«ä½¿ç”¨
     SELECT
         structure_id,
         location_structure_id AS factory_id
@@ -8,7 +9,8 @@ WITH structure_factory AS( -- –|–ó‚Ìæ“¾‚Ég—p
         structure_group_id IN(1030, 1150, 1160, 1170, 1200, 1210, 2090, 2100)
     AND language_id = @LanguageId
 ),
-law AS -- ‹@”ÔID‚É•R•t‚­“K—p–@‹K(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ƒe[ƒuƒ‹)
+law AS
+-- æ©Ÿç•ªIDã«ç´ä»˜ãé©ç”¨æ³•è¦(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³ãƒ†ãƒ¼ãƒ–ãƒ«)
 (
     SELECT
         tbl.machine_id,
@@ -37,15 +39,16 @@ law AS -- ‹@”ÔID‚É•R•t‚­“K—p–@‹K(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ƒe[ƒuƒ‹)
     WHERE
         tbl.applicable_laws_structure_id IS NOT NULL
 ),
-hm_law AS -- •ÏXŠÇ—ID‚É•R•t‚­“K—p–@‹K(•ÏXŠÇ—ƒe[ƒuƒ‹)
+hm_law AS
+-- å¤‰æ›´ç®¡ç†è©³ç´°IDã«ç´ä»˜ãé©ç”¨æ³•è¦(å¤‰æ›´ç®¡ç†ãƒ†ãƒ¼ãƒ–ãƒ«)
 (
     SELECT
-        tbl.history_management_detail_id,
+        tbl.history_management_id,
         tbl.applicable_laws_structure_id
     FROM
         (
             SELECT
-                detail.history_management_detail_id,
+                history.history_management_id,
                 trim(
                     '|'
                     FROM
@@ -55,52 +58,69 @@ hm_law AS -- •ÏXŠÇ—ID‚É•R•t‚­“K—p–@‹K(•ÏXŠÇ—ƒe[ƒuƒ‹)
                             FROM
                                 hm_mc_applicable_laws laws
                             WHERE
-                                detail.history_management_detail_id = laws.history_management_detail_id FOR XML PATH('')
+                                history.history_management_id = laws.history_management_id FOR XML PATH('')
                         )
-                 ) AS applicable_laws_structure_id
+                ) AS applicable_laws_structure_id
             FROM
-                hm_history_management_detail detail
+                hm_history_management history
             GROUP BY
-                detail.history_management_detail_id
+                history.history_management_id
         ) AS tbl
     WHERE
         tbl.applicable_laws_structure_id IS NOT NULL
 ),
+factory_approval_user AS(
+    -- å·¥å ´ã®æ‰¿èªãƒ¦ãƒ¼ã‚¶ID    
+    SELECT
+        ms.structure_id,
+        ex.extension_data AS ex_data
+    FROM
+        ms_structure ms
+        LEFT JOIN
+            ms_item_extension ex
+        ON  ms.structure_item_id = ex.item_id
+        AND ex.sequence_no = 4
+    WHERE
+        ms.structure_group_id = 1000
+    AND ms.structure_layer_no = 1
+),
 target AS(
     SELECT
-        COALESCE(hmachine.machine_id, cmachine.machine_id) AS machine_id,
-        COALESCE(hequipment.equipment_id, cequipment.equipment_id) AS equipment_id,
-        COALESCE(hmachine.machine_no, cmachine.machine_no) AS machine_no,
-        COALESCE(hmachine.machine_name, cmachine.machine_name) AS machine_name,
-        COALESCE(hmachine.equipment_level_structure_id, cmachine.equipment_level_structure_id) AS equipment_level_structure_id,
-        COALESCE(hmachine.location_structure_id, cmachine.location_structure_id) AS location_structure_id,
-        COALESCE(hmachine.importance_structure_id, cmachine.importance_structure_id) AS importance_structure_id,
-        COALESCE(hmachine.conservation_structure_id, cmachine.conservation_structure_id) AS conservation_structure_id,
-        COALESCE(hmachine.installation_location, cmachine.installation_location) AS installation_location,
-        COALESCE(hmachine.number_of_installation, cmachine.number_of_installation) AS number_of_installation,
-        COALESCE(hmachine.date_of_installation, cmachine.date_of_installation) AS date_of_installation,
-        COALESCE(hmachine.machine_note, cmachine.machine_note) AS machine_note,
-        COALESCE(hm_law.applicable_laws_structure_id, claw.applicable_laws_structure_id) AS applicable_laws_structure_id,
-        COALESCE(hmachine.job_structure_id, cmachine.job_structure_id) AS job_structure_id,
-        COALESCE(hequipment.manufacturer_structure_id, cequipment.manufacturer_structure_id) AS manufacturer_structure_id,
-        COALESCE(hequipment.manufacturer_type, cequipment.manufacturer_type) AS manufacturer_type,
-        COALESCE(hequipment.model_no, cequipment.model_no) AS model_no,
-        COALESCE(hequipment.serial_no, cequipment.serial_no) AS serial_no,
-        COALESCE(hequipment.date_of_manufacture, cequipment.date_of_manufacture) AS date_of_manufacture,
-        COALESCE(hequipment.delivery_date, cequipment.delivery_date) AS delivery_date,
-        COALESCE(hequipment.use_segment_structure_id, cequipment.use_segment_structure_id) AS use_segment_structure_id,
-        COALESCE(dbo.get_file_download_info(1610, hequipment.equipment_id), dbo.get_file_download_info(1610, cequipment.equipment_id)) AS file_link_equipment,
-        COALESCE(dbo.get_file_download_info(1600, hmachine.machine_id), dbo.get_file_download_info(1600, cmachine.machine_id)) AS file_link_machine,
-        COALESCE(hequipment.fixed_asset_no, cequipment.fixed_asset_no) AS fixed_asset_no,
-        COALESCE(hequipment.equipment_note, cequipment.equipment_note) AS equipment_note,
-        COALESCE(hequipment.circulation_target_flg, cequipment.circulation_target_flg) AS circulation_target_flg,
-        COALESCE(hequipment.maintainance_kind_manage, cequipment.maintainance_kind_manage) AS maintainance_kind_manage,
-        COALESCE(machine.location_structure_id, cmachine.location_structure_id) AS old_location_structure_id,
-        COALESCE(machine.job_structure_id, cmachine.job_structure_id) AS old_job_structure_id,
-        COALESCE(hmachine.update_serialid, cmachine.update_serialid) AS mc_update_serial_id,
-        COALESCE(hequipment.update_serialid, cequipment.update_serialid) AS eq_update_serial_id,
+        history.key_id AS machine_id,
+        COALESCE(hequipment.equipment_id, tequipment.equipment_id) AS equipment_id,
+        COALESCE(hmachine.machine_no, tmachine.machine_no) AS machine_no,
+        COALESCE(hmachine.machine_name, tmachine.machine_name) AS machine_name,
+        COALESCE(hmachine.equipment_level_structure_id, tmachine.equipment_level_structure_id) AS equipment_level_structure_id,
+        COALESCE(hmachine.location_structure_id, tmachine.location_structure_id) AS location_structure_id,
+        COALESCE(hmachine.importance_structure_id, tmachine.importance_structure_id) AS importance_structure_id,
+        COALESCE(hmachine.conservation_structure_id, tmachine.conservation_structure_id) AS conservation_structure_id,
+        COALESCE(hmachine.installation_location, tmachine.installation_location) AS installation_location,
+        COALESCE(hmachine.number_of_installation, tmachine.number_of_installation) AS number_of_installation,
+        COALESCE(hmachine.date_of_installation, tmachine.date_of_installation) AS date_of_installation,
+        COALESCE(hmachine.machine_note, tmachine.machine_note) AS machine_note,
+        COALESCE(hm_law.applicable_laws_structure_id, law.applicable_laws_structure_id) AS applicable_laws_structure_id,
+        COALESCE(hmachine.job_structure_id, tmachine.job_structure_id) AS job_structure_id,
+        COALESCE(hequipment.manufacturer_structure_id, tequipment.manufacturer_structure_id) AS manufacturer_structure_id,
+        COALESCE(hequipment.manufacturer_type, tequipment.manufacturer_type) AS manufacturer_type,
+        COALESCE(hequipment.model_no, tequipment.model_no) AS model_no,
+        COALESCE(hequipment.serial_no, tequipment.serial_no) AS serial_no,
+        COALESCE(hequipment.date_of_manufacture, tequipment.date_of_manufacture) AS date_of_manufacture,
+        COALESCE(hequipment.delivery_date, tequipment.delivery_date) AS delivery_date,
+        COALESCE(hequipment.use_segment_structure_id, tequipment.use_segment_structure_id) AS use_segment_structure_id,
+        COALESCE(dbo.get_file_download_info(1610, hequipment.equipment_id), dbo.get_file_download_info(1610, tequipment.equipment_id)) AS file_link_equipment,
+        COALESCE(dbo.get_file_download_info(1600, hmachine.machine_id), dbo.get_file_download_info(1600, tmachine.machine_id)) AS file_link_machine,
+        COALESCE(hequipment.fixed_asset_no, tequipment.fixed_asset_no) AS fixed_asset_no,
+        COALESCE(hequipment.equipment_note, tequipment.equipment_note) AS equipment_note,
+        COALESCE(hequipment.circulation_target_flg, tequipment.circulation_target_flg) AS circulation_target_flg,
+        COALESCE(hequipment.maintainance_kind_manage, tequipment.maintainance_kind_manage) AS maintainance_kind_manage,
+        tmachine.location_structure_id AS old_location_structure_id,
+        tmachine.job_structure_id AS old_job_structure_id,
+        COALESCE(hmachine.update_serialid, tmachine.update_serialid) AS mc_update_serial_id,
+        COALESCE(hequipment.update_serialid, tequipment.update_serialid) AS eq_update_serial_id,
+        hmachine.hm_machine_id,
+        hequipment.hm_equipment_id,
         CASE
-            WHEN hcomponent.history_management_detail_id IS NOT NULL THEN 1
+            WHEN hcomponent.cnt > 0 THEN 1
             ELSE 0
         END AS is_changed_component,
         CASE
@@ -111,121 +131,132 @@ target AS(
         history.application_division_id,
         history.application_conduct_id,
         history.application_user_name,
-        history.approval_user_name,
+        approval_user.display_name AS approval_user_name,
         history.application_date,
         history.approval_date,
         history.history_management_id,
         history.update_serialid,
         history.application_reason,
         history.rejection_reason,
-        detail.history_management_detail_id,
         dbo.get_target_layer_id(hmachine.location_structure_id, 1) AS factory_id,
         division_ex.extension_data AS application_division_code,
         status_ex.extension_data AS application_status_code,
-        ---------- ˆÈ‰º‚Í’l‚Ì•ÏX‚ª‚ ‚Á‚½€–Ú(\¿‹æ•ª‚ªu•ÏX\¿F20v‚Ìƒf[ƒ^)‚ğæ“¾ ----------
+        ---------- ä»¥ä¸‹ã¯å€¤ã®å¤‰æ›´ãŒã‚ã£ãŸé …ç›®(ç”³è«‹åŒºåˆ†ãŒã€Œå¤‰æ›´ç”³è«‹ï¼š20ã€ã®ãƒ‡ãƒ¼ã‚¿)ã‚’å–å¾— ----------
         CASE
-            WHEN hmachine.history_management_detail_id IS NULL THEN 'Component_20' -- ‹@Ší•ÊŠÇ—Šî€•ÏX—L–³
-            WHEN division_ex.extension_data = '20' THEN trim(
+            WHEN hcomponent.cnt > 0 THEN 'Component_20|'
+            ELSE ''
+        END +
+        -- æ©Ÿå™¨åˆ¥ç®¡ç†åŸºæº–å¤‰æ›´æœ‰ç„¡
+        CASE
+            WHEN hmachine.hm_machine_id IS NOT NULL
+        AND division_ex.extension_data = '20' THEN trim(
                 '|'
                 FROM
-                    (
-                       -- ‡@ƒtƒ@ƒ“ƒNƒVƒ‡ƒ“‚ğg—p‚µA•ÏX‘OŒã‚Ì’l‚ğ”äŠr‚·‚é
-                       -- ‡A•ÏX‘OŒã‚Ì’l‚É·ˆÙ‚ª‚ ‚éê‡‚Íˆø”‚É“n‚µ‚½[€–Ú–¼ + ”wŒiFİ’è’l]‚ğ•Ô‚·(•ÏX‚ª–³‚¢ê‡‚Í‹ó•¶š‚ª•Ô‚Á‚Ä‚­‚é)
-                       -- ‡B•ÏX‚Ì‚ ‚Á‚½€–Ú‚ğƒpƒCƒv[|]‹æØ‚è‚Å˜AŒ‹‚³‚¹‚ÄA•ÏX‚Ì‚ ‚Á‚½€–Ú ‚Æ‚·‚é
-                       -- ¦€–Ú–¼(MachineNo‚âMachineName)‚ÍJavaScript‚Ì”wŒiFİ’èˆ—‚Åg—p‚·‚é‚Ì‚Å“ˆê‚³‚¹‚é
-                       dbo.compare_newVal_with_oldVal(hmachine.machine_no, machine.machine_no, 'MachineNo') +                                              -- ‹@Ší”Ô†
-                       dbo.compare_newVal_with_oldVal(hmachine.machine_name, machine.machine_name, 'MachineName') +                                        -- ‹@Ší–¼Ì
-                       dbo.compare_newId_with_oldId(hmachine.equipment_level_structure_id, machine.equipment_level_structure_id, 'EquipmentLevel') +       -- ‹@ŠíƒŒƒxƒ‹
-                       dbo.compare_newId_with_oldId(hmachine.importance_structure_id, machine.importance_structure_id, 'Importance') +                     -- d—v“x
-                       dbo.compare_newId_with_oldId(hmachine.conservation_structure_id, machine.conservation_structure_id, 'Conservation') +               -- •Û‘S•û®
-                       dbo.compare_newVal_with_oldVal(hmachine.installation_location, machine.installation_location, 'InstallationLocation') +             -- İ’uêŠ
-                       dbo.compare_newId_with_oldId(hmachine.number_of_installation, machine.number_of_installation, 'NumberOfInstallation') +             -- İ’u‘ä”
-                       dbo.compare_newVal_with_oldVal(hmachine.date_of_installation, machine.date_of_installation, 'DateOfInstallation') +                 -- İ’u“ú
-                       dbo.compare_newVal_with_oldVal(hm_law.applicable_laws_structure_id, law.applicable_laws_structure_id, 'ApplicableLaws') +           -- “K—p–@‹K
-                       dbo.compare_newVal_with_oldVal(hmachine.machine_note, machine.machine_note, 'MachineNote') +                                        -- ‹@”Ôƒƒ‚
-                       dbo.compare_newId_with_oldId(hequipment.manufacturer_structure_id, equipment.manufacturer_structure_id, 'Manufacturer') +           -- ƒ[ƒJ[
-                       dbo.compare_newVal_with_oldVal(hequipment.manufacturer_type, equipment.manufacturer_type, 'ManufacturerType') +                     -- ƒ[ƒJ[Œ^®
-                       dbo.compare_newVal_with_oldVal(hequipment.model_no, equipment.model_no, 'ModelNo') +                                                -- Œ^®ƒR[ƒh
-                       dbo.compare_newVal_with_oldVal(hequipment.serial_no, equipment.serial_no, 'SerialNo') +                                             -- »‘¢”Ô†
-                       dbo.compare_newVal_with_oldVal(hequipment.date_of_manufacture, equipment.date_of_manufacture, 'DateOfManufacture') +                -- »‘¢“ú
-                       dbo.compare_newVal_with_oldVal(hequipment.delivery_date, equipment.delivery_date, 'DeliveryDate') +                                 -- ”[Šú
-                       dbo.compare_newId_with_oldId(hequipment.use_segment_structure_id, equipment.use_segment_structure_id, 'UseSegment') +               -- g—p‹æ•ª
-                       dbo.compare_newVal_with_oldVal(hequipment.fixed_asset_no, equipment.fixed_asset_no, 'FixedAssetNo') +                               -- ŒÅ’è‘Y”Ô†
-                       dbo.compare_newVal_with_oldVal(hequipment.equipment_note, equipment.equipment_note, 'EquipmentNote') +                              -- ‹@Šíƒƒ‚
-                       dbo.compare_newId_with_oldId(hequipment.circulation_target_flg, equipment.circulation_target_flg, 'CirculationTargetFlg') +         -- zŠÂ‘ÎÛ
-                       dbo.compare_newId_with_oldId(hequipment.maintainance_kind_manage, equipment.maintainance_kind_manage, 'MaintainanceKindManage_20')  -- “_ŒŸí•Ê–ˆŠÇ—
+                    (-- â‘ ãƒ•ã‚¡ãƒ³ã‚¯ã‚·ãƒ§ãƒ³ã‚’ä½¿ç”¨ã—ã€å¤‰æ›´å‰å¾Œã®å€¤ã‚’æ¯”è¼ƒã™ã‚‹
+                        -- â‘¡å¤‰æ›´å‰å¾Œã®å€¤ã«å·®ç•°ãŒã‚ã‚‹å ´åˆã¯å¼•æ•°ã«æ¸¡ã—ãŸ[é …ç›®å + èƒŒæ™¯è‰²è¨­å®šå€¤]ã‚’è¿”ã™(å¤‰æ›´ãŒç„¡ã„å ´åˆã¯ç©ºæ–‡å­—ãŒè¿”ã£ã¦ãã‚‹)
+                        -- â‘¢å¤‰æ›´ã®ã‚ã£ãŸé …ç›®ã‚’ãƒ‘ã‚¤ãƒ—[|]åŒºåˆ‡ã‚Šã§é€£çµã•ã›ã¦ã€å¤‰æ›´ã®ã‚ã£ãŸé …ç›® ã¨ã™ã‚‹
+                        -- â€»é …ç›®å(MachineNoã‚„MachineName)ã¯JavaScriptã®èƒŒæ™¯è‰²è¨­å®šå‡¦ç†ã§ä½¿ç”¨ã™ã‚‹ã®ã§çµ±ä¸€ã•ã›ã‚‹
+                        dbo.compare_newVal_with_oldVal(hmachine.machine_no, tmachine.machine_no, 'MachineNo') + -- æ©Ÿå™¨ç•ªå·
+                        dbo.compare_newVal_with_oldVal(hmachine.machine_name, tmachine.machine_name, 'MachineName') + -- æ©Ÿå™¨åç§°
+                        dbo.compare_newId_with_oldId(hmachine.equipment_level_structure_id, tmachine.equipment_level_structure_id, 'EquipmentLevel') + -- æ©Ÿå™¨ãƒ¬ãƒ™ãƒ«
+                        dbo.compare_newId_with_oldId(hmachine.importance_structure_id, tmachine.importance_structure_id, 'Importance') + -- é‡è¦åº¦
+                        dbo.compare_newId_with_oldId(hmachine.conservation_structure_id, tmachine.conservation_structure_id, 'Conservation') + -- ä¿å…¨æ–¹å¼
+                        dbo.compare_newVal_with_oldVal(hmachine.installation_location, tmachine.installation_location, 'InstallationLocation') + -- è¨­ç½®å ´æ‰€
+                        dbo.compare_newId_with_oldId(hmachine.number_of_installation, tmachine.number_of_installation, 'NumberOfInstallation') + -- è¨­ç½®å°æ•°
+                        dbo.compare_newVal_with_oldVal(hmachine.date_of_installation, tmachine.date_of_installation, 'DateOfInstallation') + -- è¨­ç½®æ—¥
+                        dbo.compare_newVal_with_oldVal(hm_law.applicable_laws_structure_id, law.applicable_laws_structure_id, 'ApplicableLaws') + -- é©ç”¨æ³•è¦
+                        dbo.compare_newVal_with_oldVal(hmachine.machine_note, tmachine.machine_note, 'MachineNote') + -- æ©Ÿç•ªãƒ¡ãƒ¢
+                        dbo.compare_newId_with_oldId(hequipment.manufacturer_structure_id, tequipment.manufacturer_structure_id, 'Manufacturer') + -- ãƒ¡ãƒ¼ã‚«ãƒ¼
+                        dbo.compare_newVal_with_oldVal(hequipment.manufacturer_type, tequipment.manufacturer_type, 'ManufacturerType') + -- ãƒ¡ãƒ¼ã‚«ãƒ¼å‹å¼
+                        dbo.compare_newVal_with_oldVal(hequipment.model_no, tequipment.model_no, 'ModelNo') + -- å‹å¼ã‚³ãƒ¼ãƒ‰
+                        dbo.compare_newVal_with_oldVal(hequipment.serial_no, tequipment.serial_no, 'SerialNo') + -- è£½é€ ç•ªå·
+                        dbo.compare_newVal_with_oldVal(hequipment.date_of_manufacture, tequipment.date_of_manufacture, 'DateOfManufacture') + -- è£½é€ æ—¥
+                        dbo.compare_newVal_with_oldVal(hequipment.delivery_date, tequipment.delivery_date, 'DeliveryDate') + -- ç´æœŸ
+                        dbo.compare_newId_with_oldId(hequipment.use_segment_structure_id, tequipment.use_segment_structure_id, 'UseSegment') + -- ä½¿ç”¨åŒºåˆ†
+                        dbo.compare_newVal_with_oldVal(hequipment.fixed_asset_no, tequipment.fixed_asset_no, 'FixedAssetNo') + -- å›ºå®šè³‡ç”£ç•ªå·
+                        dbo.compare_newVal_with_oldVal(hequipment.equipment_note, tequipment.equipment_note, 'EquipmentNote') + -- æ©Ÿå™¨ãƒ¡ãƒ¢
+                        dbo.compare_newId_with_oldId(hequipment.circulation_target_flg, tequipment.circulation_target_flg, 'CirculationTargetFlg') + -- å¾ªç’°å¯¾è±¡
+                        dbo.compare_newId_with_oldId(hequipment.maintainance_kind_manage, tequipment.maintainance_kind_manage, 'MaintainanceKindManage_20') -- ç‚¹æ¤œç¨®åˆ¥æ¯ç®¡ç†
                     )
             )
             ELSE ''
         END AS value_changed
     FROM
-        hm_history_management history -- •ÏXŠÇ—
+        hm_history_management history
+        -- å¤‰æ›´ç®¡ç†
         LEFT JOIN
-            hm_history_management_detail detail -- •ÏXŠÇ—Ú×
-        ON  history.history_management_id = detail.history_management_id
-        LEFT JOIN
-            hm_mc_machine hmachine -- ‹@”Ôî•ñ•ÏXŠÇ—
-        ON  detail.history_management_detail_id = hmachine.history_management_detail_id
-        LEFT JOIN
-            hm_mc_equipment hequipment -- ‹@Šíî•ñ•ÏXŠÇ—
-        ON  detail.history_management_detail_id = hequipment.history_management_detail_id
-        LEFT JOIN
-            hm_law -- “K—p–@‹K•ÏXŠÇ—
-        ON  detail.history_management_detail_id = hm_law.history_management_detail_id
-        LEFT JOIN
-            (
-             SELECT DISTINCT
-                 history_management_detail_id,
-                 machine_id
-             FROM
-                 hm_mc_management_standards_component
-            ) AS hcomponent -- ‹@Ší•ÊŠÇ—Šî€•”ˆÊ•ÏXŠÇ—(•¡”•R•t‚­‚Ì‚Åd•¡‚ğ–³‚­‚µ‚ÄŒ‹‡)
-        ON  detail.history_management_detail_id = hcomponent.history_management_detail_id
-        LEFT JOIN
-            mc_machine machine -- ‹@”Ôî•ñ(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  hmachine.machine_id = machine.machine_id
-        LEFT JOIN
-            mc_equipment equipment -- ‹@Šíî•ñ(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  machine.machine_id = equipment.machine_id
-        LEFT JOIN
-            law -- “K—p–@‹K(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  machine.machine_id = law.machine_id
-        LEFT JOIN
-            mc_machine cmachine -- ‹@”Ôî•ñ(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  hcomponent.machine_id = cmachine.machine_id
-        LEFT JOIN
-            mc_equipment cequipment -- ‹@Šíî•ñ(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  cmachine.machine_id = cequipment.machine_id
-        LEFT JOIN
-            law AS claw -- “K—p–@‹K(ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“)
-        ON  cmachine.machine_id = claw.machine_id
-        LEFT JOIN
-            ms_structure status_ms -- \¬ƒ}ƒXƒ^(\¿ó‹µ)
-        ON  history.application_status_id = status_ms.structure_id
-        LEFT JOIN
-            ms_item_extension status_ex -- ƒAƒCƒeƒ€ƒ}ƒXƒ^Šg’£(\¿ó‹µ)
-        ON  status_ms.structure_item_id = status_ex.item_id
-        AND status_ex.sequence_no = 1
-        LEFT JOIN
-            ms_structure division_ms --\¬ƒ}ƒXƒ^(\¿‹æ•ª)
-        ON  history.application_division_id = division_ms.structure_id
-        LEFT JOIN
-            ms_item_extension division_ex -- ƒAƒCƒeƒ€ƒ}ƒXƒ^Šg’£(\¿‹æ•ª)
-        ON  division_ms.structure_item_id = division_ex.item_id
-        AND division_ex.sequence_no = 1
+            mc_machine tmachine
+        -- æ©Ÿç•ªæƒ…å ±(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³)
+    ON  history.key_id = tmachine.machine_id
+    LEFT JOIN
+        mc_equipment tequipment
+    -- æ©Ÿå™¨æƒ…å ±(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³)
+ON  tmachine.machine_id = tequipment.machine_id
+LEFT JOIN
+    law
+-- é©ç”¨æ³•è¦(ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³)
+ON  tmachine.machine_id = law.machine_id
+LEFT JOIN
+    hm_mc_machine hmachine
+-- æ©Ÿç•ªæƒ…å ±å¤‰æ›´ç®¡ç†
+ON  history.history_management_id = hmachine.history_management_id
+LEFT JOIN
+    hm_mc_equipment hequipment
+-- æ©Ÿå™¨æƒ…å ±å¤‰æ›´ç®¡ç†
+ON  history.history_management_id = hequipment.history_management_id
+LEFT JOIN
+    hm_law
+-- é©ç”¨æ³•è¦å¤‰æ›´ç®¡ç†
+ON  history.history_management_id = hm_law.history_management_id
+LEFT JOIN
+    (
+        SELECT
+            component.history_management_id,
+            COUNT(component.history_management_id) AS cnt
+        FROM
+            hm_mc_management_standards_component component
+        GROUP BY
+            component.history_management_id
+    ) hcomponent
+ON  history.history_management_id = hcomponent.history_management_id
+LEFT JOIN
+    ms_structure status_ms
+-- æ§‹æˆãƒã‚¹ã‚¿(ç”³è«‹çŠ¶æ³)
+ON  history.application_status_id = status_ms.structure_id
+LEFT JOIN
+    ms_item_extension status_ex
+-- ã‚¢ã‚¤ãƒ†ãƒ ãƒã‚¹ã‚¿æ‹¡å¼µ(ç”³è«‹çŠ¶æ³)
+ON  status_ms.structure_item_id = status_ex.item_id
+AND status_ex.sequence_no = 1
+LEFT JOIN
+    ms_structure division_ms
+--æ§‹æˆãƒã‚¹ã‚¿(ç”³è«‹åŒºåˆ†)
+ON  history.application_division_id = division_ms.structure_id
+LEFT JOIN
+    ms_item_extension division_ex
+-- ã‚¢ã‚¤ãƒ†ãƒ ãƒã‚¹ã‚¿æ‹¡å¼µ(ç”³è«‹åŒºåˆ†)
+ON  division_ms.structure_item_id = division_ex.item_id
+AND division_ex.sequence_no = 1
+LEFT JOIN
+    factory_approval_user fau
+-- å·¥å ´ã®æ‰¿èªãƒ¦ãƒ¼ã‚¶ãƒ¼
+ON  history.factory_id = fau.structure_id
+LEFT JOIN
+    ms_user approval_user
+ON  fau.ex_data = CAST(approval_user.user_id AS nvarchar)
     WHERE
-        -- u\¿ƒf[ƒ^ì¬’†vu³”FˆË—Š’†vu·–ß’†v‚Ìƒf[ƒ^‚Ì‚İ
+        -- ã€Œç”³è«‹ãƒ‡ãƒ¼ã‚¿ä½œæˆä¸­ã€ã€Œæ‰¿èªä¾é ¼ä¸­ã€ã€Œå·®æˆ»ä¸­ã€ã®ãƒ‡ãƒ¼ã‚¿ã®ã¿
         status_ex.extension_data IN('10', '20', '30')
-        -- u1F‹@Ší‘ä’ v‚Ìƒf[ƒ^‚Ì‚İ
-        AND history.application_conduct_id = 1
+    -- ã€Œ1ï¼šæ©Ÿå™¨å°å¸³ã€ã®ãƒ‡ãƒ¼ã‚¿ã®ã¿
+AND history.application_conduct_id = 1
 
-        /*@DispOnlyMySubject
-        -- ©•ª‚ÌŒ–¼‚Ì‚İ•\¦
-        AND history.application_user_id = @UserId
-        @DispOnlyMySubject*/
+    /*@DispOnlyMySubject
+       -- è‡ªåˆ†ã®ä»¶åã®ã¿è¡¨ç¤º
+       AND history.application_user_id = @UserId
+    @DispOnlyMySubject*/
 
-        /*@IsDetail
-        -- Ú×‰æ–Ê ‚Ü‚½‚Í \¿“à—eC³‚Ìê‡A•ÏXŠÇ—ID‚ğw’è
-        AND history.history_management_id = @HistoryManagementId
-        @IsDetail*/
+    /*@IsDetail
+       -- è©³ç´°ç”»é¢ ã¾ãŸã¯ ç”³è«‹å†…å®¹ä¿®æ­£ã®å ´åˆã€å¤‰æ›´ç®¡ç†IDã‚’æŒ‡å®š
+       AND history.history_management_id = @HistoryManagementId
+    @IsDetail*/
 )

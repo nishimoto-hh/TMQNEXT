@@ -721,6 +721,11 @@ namespace CommonWebTemplate.Models.Common
             public const short Report = 311;
             /// <summary>Excel出力(非同期)</summary>
             public const short ReportHidoki = 312;
+            /// <summary>ExcelPort(ダウンロード)</summary>
+            public const short ExcelPortDownload = 313;
+            /// <summary>ExcelPort(アップロード)</summary>
+            public const short ExcelPortUpload = 314;
+
             /// <summary>クリア</summary>
             public const short Clear = 401;
             /// <summary>個別実装</summary>
@@ -1250,6 +1255,17 @@ namespace CommonWebTemplate.Models.Common
             /// <summary>工場と場所</summary>
             /// <remarks>この構成グループIDは存在しない、ツリー表示用</remarks>
             public const short FactoryAndJob = 1005;
+
+            /// <summary>変更履歴管理を行わない工場のみを表示</summary>
+            /// <remarks>この構成グループIDは存在しない、ツリー表示用</remarks>
+            public const short LocationNoHistory = 1001;
+
+            /// <summary>変更履歴管理を行う工場のみを表示</summary>
+            /// <remarks>この構成グループIDは存在しない、ツリー表示用</remarks>
+            public const short LocationHistory = 1002;
+
+            /// <summary>工場取得のための場所階層として扱う構成グループIDのリスト</summary>
+            public static int[] Locations = { Location, LocationForUserMst, LocationNoHistory, LocationHistory };
         }
 
         /// <summary>

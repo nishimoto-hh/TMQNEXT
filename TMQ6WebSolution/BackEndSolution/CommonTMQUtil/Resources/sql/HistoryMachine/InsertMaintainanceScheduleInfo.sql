@@ -1,7 +1,7 @@
 INSERT 
 INTO hm_mc_maintainance_schedule( 
     [hm_maintainance_schedule_id]         -- 保全スケジュール変更管理ID
-    , [history_management_detail_id]      -- 変更管理詳細ID
+    , [history_management_id]             -- 変更管理ID
     , [maintainance_schedule_id]          -- 保全スケジュールID
     , [management_standards_content_id]   -- 機器別管理基準内容ID
     , [is_cyclic]                         -- 周期ありフラグ
@@ -16,10 +16,21 @@ INTO hm_mc_maintainance_schedule(
     , [update_datetime]                   -- 更新日時
     , [update_user_id]                    -- 更新ユーザー
 ) 
+OUTPUT inserted.maintainance_schedule_id
 VALUES ( 
     NEXT VALUE FOR seq_hm_mc_maintainance_schedule_hm_maintainance_schedule_id -- 保全スケジュール変更管理ID
-    , @HistoryManagementDetailId          -- 変更管理詳細ID
-    , @MaintainanceScheduleId             -- 保全スケジュールID
+    , @HistoryManagementId                -- 変更管理ID
+
+      /*@NewSchedule
+      -- 新規採番
+    , NEXT VALUE FOR seq_mc_maintainance_schedule_maintainance_schedule_id
+      @NewSchedule*/
+
+      /*@DefaultSchedule
+      -- 既存の保全スケジュールID
+    , @MaintainanceScheduleId           -- 保全スケジュールID
+      @DefaultSchedule*/
+
     , @ManagementStandardsContentId       -- 機器別管理基準内容ID
     , @IsCyclic                           -- 周期ありフラグ
     , @CycleYear                          -- 周期(年)

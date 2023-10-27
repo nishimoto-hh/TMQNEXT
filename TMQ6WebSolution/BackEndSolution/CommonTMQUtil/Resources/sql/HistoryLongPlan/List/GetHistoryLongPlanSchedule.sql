@@ -47,11 +47,9 @@ WHERE
         SELECT
             * 
         FROM
-            hm_history_management_detail hmd 
-            LEFT JOIN hm_mc_management_standards_content hmsc 
-                ON hmd.history_management_detail_id = hmsc.history_management_detail_id 
+            hm_mc_management_standards_content hmsc
         WHERE
-            hmd.execution_division = 5          --保全情報一覧の削除
+            hmsc.execution_division = 5          --保全情報一覧の削除
             AND hmsc.management_standards_content_id = mscn.management_standards_content_id
     )                                           --削除した保全情報一覧の情報は除外する
     
@@ -77,16 +75,14 @@ SELECT
     , msd.maintainance_schedule_detail_id AS new_maintainance_key 
 FROM
     hm_history_management hm 
-    LEFT JOIN hm_history_management_detail hmd 
-        ON hm.history_management_id = hmd.history_management_id 
     LEFT JOIN hm_ln_long_plan hmlp              -- 長計件名変更管理
         ON hm.key_id = hmlp.long_plan_id 
-        AND hmd.history_management_detail_id = hmlp.history_management_detail_id 
+        AND hm.history_management_id = hmlp.history_management_id 
     LEFT JOIN ln_long_plan lp                   -- 長計件名
         ON hm.key_id = lp.long_plan_id 
     LEFT JOIN hm_mc_management_standards_content hmmsc -- 機器別管理基準内容変更管理
         ON hm.key_id = hmmsc.long_plan_id 
-        AND hmd.history_management_detail_id = hmmsc.history_management_detail_id 
+        AND hm.history_management_id = hmmsc.history_management_id 
     LEFT OUTER JOIN mc_maintainance_schedule AS msh 
         ON ( 
             msh.management_standards_content_id = hmmsc.management_standards_content_id
@@ -109,4 +105,4 @@ FROM
 WHERE
     msd.schedule_date IS NOT NULL 
     AND msd.schedule_date BETWEEN @ScheduleStart AND @ScheduleEnd 
-    AND hmd.execution_division != 5             --削除した保全情報一覧の情報は除外する
+    AND hmmsc.execution_division != 5             --削除した保全情報一覧の情報は除外する

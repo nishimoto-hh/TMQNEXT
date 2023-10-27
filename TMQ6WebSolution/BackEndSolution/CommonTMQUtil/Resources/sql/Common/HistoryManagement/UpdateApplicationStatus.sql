@@ -5,6 +5,22 @@ SET
     [application_status_id] = @ApplicationStatusId,-- 申請状況ID
     @ApplicationStatusId*/
 
+    /*@FactoryId
+    [factory_id] = @FactoryId,                     -- 申請データ工場ID
+    @FactoryId*/
+    
+    /*@ApplicationUserId
+    [application_user_id] = @ApplicationUserId,    -- 申請者ID
+    [application_user_name] = (
+        SELECT
+            display_name
+        FROM
+            ms_user
+        WHERE
+            user_id = @ApplicationUserId
+    ),                                             -- 申請名称
+    @ApplicationUserId*/
+
     /*@ApprovalUserId
     [approval_user_id] = @ApprovalUserId,          -- 承認者ID
     [approval_user_name] = (

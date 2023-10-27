@@ -22,6 +22,9 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 自分の件名のみ表示</summary>
             /// <value>自分の件名のみ表示</value>
             public int DispOnlyMySubject { get; set; }
+            /// <summary>Gets or sets 承認権限有無</summary>
+            /// <value>承認権限有無</value>
+            public bool IsApprovalUser { get; set; }
         }
 
         /// <summary>
@@ -120,9 +123,15 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 否認理由</summary>
             /// <value>否認理由</value>
             public string RejectionReason { get; set; }
+            /// <summary>Gets or sets 申請区分</summary>
+            /// <value>申請区分</value>
+            public int ApplicationDivisionId { get; set; }
             /// <summary>Gets or sets 申請区分(拡張項目)</summary>
             /// <value>申請区分(拡張項目)</value>
             public string ApplicationDivisionCode { get; set; }
+            /// <summary>Gets or sets 申請状況</summary>
+            /// <value>申請状況</value>
+            public int ApplicationStatusId { get; set; }
             /// <summary>Gets or sets 申請状況(拡張項目)</summary>
             /// <value>申請状況(拡張項目)</value>
             public string ApplicationStatusCode { get; set; }
@@ -156,6 +165,15 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 更新シリアルID(機器情報)</summary>
             /// <value>更新シリアルID(機器情報)</value>
             public int EqUpdateSerialId { get; set; }
+            /// <summary>Gets or sets 画面表示タイプ(詳細編集画面で使用)</summary>
+            /// <value>画面表示タイプ(詳細編集画面で使用)</value>
+            public int DispType { get; set; }
+            /// <summary>Gets or sets 機器情報変更管理ID</summary>
+            /// <value>機器情報変更管理ID</value>
+            public long HmEquipmentId { get; set; }
+            /// <summary>Gets or sets キーIDに紐付く「承認済」以外のデータ有無</summary>
+            /// <value>キーIDに紐付く「承認済」以外のデータ有無</value>
+            public bool StatusCntExceptApproved { get; set; }
 
             #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
@@ -412,12 +430,86 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 機能タイプID</summary>
             /// <value>機能タイプID</value>
             public int? FunctionTypeId { get; set; }
-            /// <summary>Gets or sets 申請状況(拡張項目)</summary>
-            /// <value>申請状況(拡張項目)</value>
-            public string ApplicationStatusCode { get; set; }
+            /// <summary>Gets or sets 申請区分(拡張項目)</summary>
+            /// <value>申請区分(拡張項目)</value>
+            public string ApplicationDivisionCode { get; set; }
             /// <summary>Gets or sets 変更のあった項目</summary>
             /// <value>変更のあった項目</value>
             public string ValueChanged { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位変更管理ID</summary>
+            /// <value>機器別管理基準部位変更管理ID</value>
+            public long HmManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容変更管理ID</summary>
+            /// <value>機器別管理基準内容変更管理ID</value>
+            public long HmManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
+            /// <summary>Gets or sets 変更管理ID</summary>
+            /// <value>変更管理ID</value>
+            public long HistoryManagementId { get; set; }
+            /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
+            /// <value>保全スケジュール変更管理ID</value>
+            public long HmMaintainanceScheduleId { get; set; }
+        }
+
+        /// <summary>
+        /// 変更管理詳細情報
+        /// </summary>
+        public class historyManagmentDetail : TmqDao.HmHistoryManagementEntity
+        {
+            /// <summary>Gets or sets 実行処理区分</summary>
+            /// <value>実行処理区分</value>
+            public int ExecutionDivision { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long MachineId { get; set; }
+            /// <summary>Gets or sets 機番情報変更管理ID</summary>
+            /// <value>機番情報変更管理ID</value>
+            public long HmMachineId { get; set; }
+            /// <summary>Gets or sets 機器ID</summary>
+            /// <value>機器ID</value>
+            public long EquipmentId { get; set; }
+            /// <summary>Gets or sets 機器情報変更管理ID</summary>
+            /// <value>機器情報変更管理ID</value>
+            public long HmEquipmentId { get; set; }
+            /// <summary>Gets or sets 適用法規</summary>
+            /// <value>適用法規</value>
+            public string ApplicableLawsStructureId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位変更管理ID</summary>
+            /// <value>機器別管理基準部位変更管理ID</value>
+            public long HmManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long ManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容変更管理ID</summary>
+            /// <value>機器別管理基準内容変更管理ID</value>
+            public long HmManagementStandardsContentId { get; set; }
+            /// <summary>Gets or sets 保全スケジュールID</summary>
+            /// <value>保全スケジュールID</value>
+            public long MaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
+            /// <value>保全スケジュール変更管理ID</value>
+            public long HmMaintainanceScheduleId { get; set; }
+        }
+
+        /// <summary>
+        /// 保全項目一覧の登録・削除処理で使用する条件
+        /// </summary>
+        public class managementStandardsCondition
+        {
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long MachineId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準部位ID</summary>
+            /// <value>機器別管理基準部位ID</value>
+            public long ManagementStandardsComponentId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準内容ID</summary>
+            /// <value>機器別管理基準内容ID</value>
+            public long ManagementStandardsContentId { get; set; }
         }
     }
 }

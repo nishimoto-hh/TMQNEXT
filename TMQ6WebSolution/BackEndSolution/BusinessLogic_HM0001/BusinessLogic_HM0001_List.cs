@@ -82,12 +82,6 @@ namespace BusinessLogic_HM0001
             if (!CheckSearchTotalCount(cnt, pageInfo))
             {
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
-
-                // 警告メッセージで終了
-                this.Status = CommonProcReturn.ProcStatus.Warning;
-                // 「該当データがありません。」
-                this.MsgId = GetResMessage("941060001");
-
                 return false;
             }
 
@@ -148,11 +142,6 @@ namespace BusinessLogic_HM0001
                 // 初期値を設定
                 searchCondition.DispOnlyMySubject = IsDispOnlyMySubject; // 自分の件名のみ表示
                 outDispOnlyMySubject = IsDispOnlyMySubject;
-
-                if (!SetSearchResultsByDataClass<Dao.searchCondition>(pageInfo, new List<Dao.searchCondition> { searchCondition }, 1))
-                {
-                    return false;
-                }
             }
             else
             {
@@ -170,17 +159,26 @@ namespace BusinessLogic_HM0001
                 outDispOnlyMySubject = dispOnlyMySubject; // 自分の件名のみ表示
             }
 
+            // 承認系ボタン表示制御
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            searchCondition.IsApprovalUser = historyManagement.IsApprovalUser();
+
+            // 画面項目に設定
+            if (!SetSearchResultsByDataClass<Dao.searchCondition>(pageInfo, new List<Dao.searchCondition> { searchCondition }, 1))
+            {
+                return false;
+            }
+
             return true;
 
         }
         #endregion
         #region 登録
-
         /// <summary>
         /// 一括承認・一括否認
         /// </summary>
         /// <returns>エラーの場合False</returns>
-        private bool registFormList()
+        public int registFormList()
         {
             // 選択行取得
             var selectedList = getSelectedRowsByList(this.resultInfoDictionary, ConductInfo.FormList.ControlId.List);
@@ -188,7 +186,7 @@ namespace BusinessLogic_HM0001
             // 排他チェック
             if (!checkExclusiveList(ConductInfo.FormList.ControlId.List, selectedList))
             {
-                return false;
+                return ComConsts.RETURN_RESULT.NG;
             }
 
             // ボタンコントロールに応じて登録する申請状況(拡張項目)を設定
@@ -202,43 +200,52 @@ namespace BusinessLogic_HM0001
                     applicationStatus = TMQConst.MsStructure.StructureId.ApplicationStatus.Return; // 差戻中
                     break;
                 default:
-                    return false;
+                    return ComConsts.RETURN_RESULT.NG;
             }
 
+            DateTime now = DateTime.Now;
             List<ComDao.HmHistoryManagementEntity> conditionList = new();
             foreach (var selectedRow in selectedList)
             {
                 // 登録情報を作成
                 ComDao.HmHistoryManagementEntity condition = new();
-                SetExecuteConditionByDataClass(selectedRow, ConductInfo.FormList.ControlId.List, condition, DateTime.Now, this.UserId, this.UserId, new List<string> { "HistoryManagementId" });
+                SetExecuteConditionByDataClass(selectedRow, ConductInfo.FormList.ControlId.List, condition, now, this.UserId, this.UserId, new List<string> { "HistoryManagementId" });
                 conditionList.Add(condition);
             }
 
-            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, DateTime.Now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
+            TMQUtil.HistoryManagement historyManagement = new(this.db, this.UserId, this.LanguageId, now, TMQConst.MsStructure.StructureId.ApplicationConduct.HM0001);
             // 入力チェック
             if (historyManagement.isErrorBeforeUpdateApplicationStatus(conditionList, this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll, out string[] errMsg))
             {
                 // エラーメッセージを設定
                 this.MsgId = GetResMessage(errMsg);
                 this.Status = CommonProcReturn.ProcStatus.Error;
-                return false;
+                return ComConsts.RETURN_RESULT.NG;
+
             }
             foreach (var condition in conditionList)
             {
-                // 登録処理
+                // 申請状況更新処理
                 if (!historyManagement.UpdateApplicationStatus(condition, applicationStatus))
                 {
-                    return false;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 一括承認の場合はトランザクションテーブルに反映する
+                if (this.CtrlId == ConductInfo.FormList.ButtonId.ApprovalAll)
+                {
+                    // 承認処理
+                    if (!approval(condition, now, int.Parse(this.UserId)))
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
                 }
             }
 
             // 一覧の再検索
-            if (!searchList(false))
-            {
-                return false;
-            }
+            searchList(false);
 
-            return true;
+            return ComConsts.RETURN_RESULT.OK;
         }
         #endregion
     }

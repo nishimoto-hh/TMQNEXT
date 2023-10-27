@@ -495,6 +495,68 @@ namespace CommonWebTemplate.Controllers.Common
         }
 
         /// <summary>
+        /// GET/POST:ExcelPortアップロード
+        /// </summary>
+        /// <param name="procData"></param>
+        /// <returns>
+        /// CommonConductMst(ﾘｽﾄ)
+        ///  - 機能ﾏｽﾀ
+        ///  - 画面定義
+        ///    - 一覧項目定義
+        ///    - 条件用中間ﾃﾞｰﾀ
+        ///  - ﾒﾆｭｰ情報
+        ///  </returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ExcelPortUpload(CommonProcData procData)
+        {
+            //代表ﾒｯｾｰｼﾞを初期化
+            ViewBag.ErrorMessage = new List<string>();
+            ViewBag.Message = string.Empty;
+
+            try
+            {
+                ActionResult actionResult = null;
+                BusinessLogicUtil blogic = new BusinessLogicUtil();
+
+                //=== ｱｸｾｽ許可ﾁｪｯｸ ===
+                //アップロードファイルデータはリクエスト情報から取得する
+                actionResult = accessCheck(ref blogic, procData);
+                if (actionResult != null)
+                {
+                    //ｱｸｾｽｴﾗｰ画面に遷移
+                    return actionResult;
+                }
+
+                //【ExcelPortアップロード】アップロードボタン押下時処理
+                procData.ActionKbn = LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload;
+
+                //ファイル取り込み
+                object results = null;
+                CommonProcReturn returnInfo = blogic.ComUploadProcess(procData, out results);
+                if (returnInfo.IsProcEnd())
+                {
+                    //=== 処理結果を返す ===
+                    IList<object> retObj_err = new List<object>();
+                    retObj_err.Add(returnInfo);                     //[0]:処理ステータス
+                    retObj_err.Add(results);                        //[1]:結果データ
+                    return Json(retObj_err);
+                }
+
+                //=== 処理結果を返す ===
+                IList<object> retObj = new List<object>();
+                retObj.Add(returnInfo);     //[0]:処理ステータス
+                retObj.Add(results);        //[1]:結果データ
+                return Json(retObj);
+            }
+            catch (Exception ex)
+            {
+                //例外ｴﾗｰ画面に遷移
+                return returnActionResult(ex);
+            }
+        }
+
+        /// <summary>
         /// GET:URL直接入力-画面遷移
         /// </summary>
         /// <param name="key">遷移先キー(JSON文字列)</param>

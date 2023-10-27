@@ -545,7 +545,8 @@ namespace CommonWebTemplate.CommonUtil
             switch (procData.ActionKbn)
             {
                 case (short)LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComUpload:
-                    //※取込の場合(【共通 - 取込結果表示機能】取込データ取得)
+                case (short)LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload:
+                    //※取込(【共通 - 取込結果表示機能】取込データ取得)、ExcelPortアップロードの場合
 
                     //ファイル情報（Stream）
                     // Stream[]：ファイルリスト
@@ -1721,7 +1722,9 @@ namespace CommonWebTemplate.CommonUtil
 
                     Dictionary<string, object> retResultW = new Dictionary<string, object>();  // 戻り値セット用
 
-                    if (kbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Report)
+                    if (kbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Report || 
+                        kbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortDownload || 
+                        kbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortUpload)
                     {
                         // -作成ファイル（Stream）
                         //if (((IDictionary<string, object>)this.outParam).ContainsKey("OutputStream"))

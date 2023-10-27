@@ -782,5 +782,114 @@ namespace BusinessLogic_PT0001
             /// <value>階層番号</value>
             public int StructureLayerNo { get; set; }
         }
+
+        /// <summary>
+        /// ExcelPort 予備品仕様のデータクラス
+        /// </summary>
+        public class excelPortPartsList : ComDao.PtPartsEntity
+        {
+            /// <summary>Gets or sets 管理工場ID</summary>
+            /// <value>管理工場ID</value>
+            public long PartsFactoryId { get; set; }
+
+            #region 以下は翻訳
+            /// <summary>Gets or sets 管理工場</summary>
+            /// <value>管理工場</value>
+            public string PartsFactoryName { get; set; }
+            /// <summary>Gets or sets メーカー</summary>
+            /// <value>メーカー</value>
+            public string ManufactureName { get; set; }
+            /// <summary>Gets or sets 数量管理単位</summary>
+            /// <value>数量管理単位</value>
+            public string UnitName { get; set; }
+            /// <summary>Gets or sets 金額管理単位</summary>
+            /// <value>金額管理単位</value>
+            public string CurrencyName { get; set; }
+            /// <summary>Gets or sets 標準仕入先</summary>
+            /// <value>標準仕入先</value>
+            public string VenderName { get; set; }
+            /// <summary>Gets or sets 使用区分</summary>
+            /// <value>使用区分</value>
+            public string UseSegmentName { get; set; }
+
+            #region 共通　地区・職種設定用
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int? DistrictId { get; set; }
+            /// <summary>Gets or sets 地区名称</summary>
+            /// <value>地区名称</value>
+            public string DistrictName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            //public int? FactoryId { get; set; }
+            /// <summary>Gets or sets 工場名称</summary>
+            /// <value>工場名称</value>
+            public string FactoryName { get; set; }
+            /// <summary>Gets or sets プラントID</summary>
+            /// <value>プラントID</value>
+            public int? PlantId { get; set; }
+            /// <summary>Gets or sets プラント名称</summary>
+            /// <value>プラント名称</value>
+            public string PlantName { get; set; }
+            /// <summary>Gets or sets 系列ID</summary>
+            /// <value>系列ID</value>
+            public int? SeriesId { get; set; }
+            /// <summary>Gets or sets 系列名称</summary>
+            /// <value>系列名称</value>
+            public string SeriesName { get; set; }
+            /// <summary>Gets or sets 工程ID</summary>
+            /// <value>工程ID</value>
+            public int? StrokeId { get; set; }
+            /// <summary>Gets or sets 工程名称</summary>
+            /// <value>工程名称</value>
+            public string StrokeName { get; set; }
+            /// <summary>Gets or sets 設備ID</summary>
+            /// <value>設備ID</value>
+            public int? FacilityId { get; set; }
+            /// <summary>Gets or sets 設備名称</summary>
+            /// <value>設備名称</value>
+            public string FacilityName { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int JobId { get; set; }
+            /// <summary>Gets or sets 職種名称</summary>
+            /// <value>職種名称</value>
+            public string JobName { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? LargeClassficationId { get; set; }
+            /// <summary>Gets or sets 機種大分類名称</summary>
+            /// <value>機種大分類名称</value>
+            public string LargeClassficationName { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? MiddleClassficationId { get; set; }
+            /// <summary>Gets or sets 機種中分類名称</summary>
+            /// <value>機種中分類名称</value>
+            public string MiddleClassficationName { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? SmallClassficationId { get; set; }
+            /// <summary>Gets or sets 機種小分類名称</summary>
+            /// <value>機種小分類名称</value>
+            public string SmallClassficationName { get; set; }
+            /// <summary>Gets or sets 倉庫ID</summary>
+            /// <value>倉庫ID</value>
+            public int? WarehouseId { get; set; }
+            /// <summary>Gets or sets 倉庫名称</summary>
+            /// <value>倉庫名称</value>
+            public string WarehouseName { get; set; }
+            /// <summary>Gets or sets 棚番ID</summary>
+            /// <value>棚番ID</value>
+            public int? RackId { get; set; }
+            /// <summary>Gets or sets 棚番名称</summary>
+            /// <value>棚番名称</value>
+            public string RackName { get; set; }
+            #endregion
+            #endregion
+        }
     }
 }

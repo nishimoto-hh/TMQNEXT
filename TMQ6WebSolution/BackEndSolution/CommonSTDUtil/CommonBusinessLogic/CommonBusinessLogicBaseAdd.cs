@@ -294,5 +294,20 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 rowDic[colVal] = value + "n";
             }
         }
+
+        /// <summary>
+        /// 文字列をNullの場合は空文字にする処理
+        /// </summary>
+        /// <param name="target"></param>
+        protected string ConvertNullToStringEmpty(string target)
+        {
+            // 対象文字列がNullでない かつ、空文字を除いた長さが0の場合は空文字とする
+            if (target == null || target.Trim().Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return target;
+        }
     }
 }

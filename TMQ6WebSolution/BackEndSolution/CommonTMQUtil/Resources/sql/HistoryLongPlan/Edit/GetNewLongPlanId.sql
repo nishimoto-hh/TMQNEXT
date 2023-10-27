@@ -1,0 +1,1 @@
+SELECT NEXT VALUE FOR seq_ln_long_plan_long_plan_id AS long_plan_id

@@ -134,6 +134,8 @@ namespace CommonSTDUtil.CommonSTDUtil
         {
             /// <summary>Excel</summary>
             public const string Excel = ".xlsx";
+            /// <summary>Excelマクロ</summary>
+            public const string ExcelMacro = ".xlsm";
             /// <summary>CSV</summary>
             public const string CSV = ".csv";
             /// <summary>TSV</summary>
@@ -1955,8 +1957,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     // ユーザーマスタの場所階層の場合、予備品共通工場を表示する
                     exceptCommonFactory = false;
-                    structureGroupIdList[structureGroupIdList.IndexOf(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst)] 
-                        = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location;
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
                 }
 
                 // 工場と職種の場合、実行するSQLが違う
@@ -1965,9 +1966,39 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     sqlName = SqlName.GetFactoryAndJob;
                 }
+
+                // 変更管理工場の考慮
+                // 変更管理する工場、しない工場どちらかのみを表示する場合
+                int narrowHistoryFactory = 0; // SQLパラメータ初期値
+                bool isHistory = false; // 変更管理の考慮をする場合FALSE
+                if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationHistory))
+                {
+                    // 変更管理する工場のみを表示する場合
+                    isHistory = true;
+                    narrowHistoryFactory = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationHistory;
+                    // 構成グループIDの置換
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationHistory, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
+                }
+                if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationNoHistory))
+                {
+                    // 変更管理しない工場のみを表示する場合
+                    isHistory = true;
+                    narrowHistoryFactory = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationNoHistory;
+                    // 構成グループIDの置換
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationNoHistory, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
+                }
+
                 // 構成リストを取得
                 var structureList = db.GetListByOutsideSql<Dao.VStructureItemEntity>(sqlName, SqlName.SubDir,
-                      new { LanguageId = languageId, FactoryIdList = factoryIdList, StructureIdList = structureIdList, StructureGroupIdList = structureGroupIdList, ExceptCommonFactory = exceptCommonFactory }).ToList();
+                      new
+                      {
+                          LanguageId = languageId,
+                          FactoryIdList = factoryIdList,
+                          StructureIdList = structureIdList,
+                          StructureGroupIdList = structureGroupIdList,
+                          ExceptCommonFactory = exceptCommonFactory,
+                          NarrowHistoryFactory = narrowHistoryFactory
+                      }).ToList();
 
                 if (isLocationForUserUst)
                 {
@@ -1976,9 +2007,18 @@ namespace CommonSTDUtil.CommonSTDUtil
 
                     // ユーザマスタの場所階層の場合、構成グループIDを設定し直す
                     structureList = structureList.Select(x => { x.StructureGroupId = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst; return x; }).ToList();
-                    structureGroupIdList[structureGroupIdList.IndexOf(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location)]
-                       = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst;
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForUserMst);
                 }
+
+                if (isHistory)
+                {
+                    // 現状のデータだと予備品の共通工場だけでなく倉庫まで取得できるので、構成グループIDが1040のものは除く
+                    structureList = structureList.Where(x => x.StructureGroupId != STRUCTURE_CONSTANTS.STRUCTURE_GROUP.SpareLocation).ToList();
+                    // 変更履歴を行う工場の場合、構成グループIDを設定し直す
+                    structureList = structureList.Select(x => { x.StructureGroupId = narrowHistoryFactory; return x; }).ToList();
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location, narrowHistoryFactory);
+                }
+
                 dicList.Add("structureList", structureList);
 
                 dicList["result"] = "1";    // 取得結果(正常終了)
@@ -1999,6 +2039,11 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     db.Close();
                 }
+            }
+            // ツリーに異なる構成IDを指定してツリーの内容を制御する場合、この処理のより構成グループIDを置換しないと、表示されない
+            void changeTreeStructureGroupId(List<int> structureGroupIdList, int target, int setValue)
+            {
+                structureGroupIdList[structureGroupIdList.IndexOf(target)] = setValue;
             }
         }
 
@@ -3149,7 +3194,7 @@ namespace CommonSTDUtil.CommonSTDUtil
             // 下期のフラグ
             bool secondHalfFlag = false;
             // 対象の月 から 年度開始月 を引いて上期か下期を判定
-            int monthDiff = target.Month - monthStartNendo ;
+            int monthDiff = target.Month - monthStartNendo;
             if (monthDiff < 0)
             {
                 monthDiff = monthDiff + 12;
@@ -3268,7 +3313,7 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
 
             // 埋め込みリソースを読込
-            var namaes = asm.GetManifestResourceNames();
+            var names = asm.GetManifestResourceNames();
             using (var stream = asm.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
@@ -3889,6 +3934,35 @@ namespace CommonSTDUtil.CommonSTDUtil
                     break;
             }
             return result;
+        }
+
+        /// <summary>
+        /// クラスのリストをディクショナリのリストに変換
+        /// </summary>
+        /// <typeparam name="T">データクラスの型</typeparam>
+        /// <param name="pList">クラスのリスト</param>
+        /// <returns>ディクショナリのリスト</returns>
+        public static IList<Dictionary<string, object>> ConvertClassToDictionary<T>(IList<T> pList)
+        {
+            // 戻り値
+            List<Dictionary<string, object>> rList = new();
+            // クラスのプロパティを列挙
+            var props = typeof(T).GetProperties();
+            // クラスのリストで繰り返し(行単位)
+            foreach (T row in pList)
+            {
+                // 行の値をセットするディクショナリ
+                Dictionary<string, object> rDic = new();
+                // クラスのプロパティで繰り返し(列単位)
+                foreach (var prop in props)
+                {
+                    var value = prop.GetValue(row); // 値
+                    rDic.Add(prop.Name, value); // 行のディクショナリに追加
+                }
+                rList.Add(rDic); // 戻り値に行を追加
+            }
+
+            return rList;
         }
         #endregion
 
@@ -5143,7 +5217,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                 //例：structure_id = 123
                 paramWhere.Append(colum).Append(" = ").AppendLine(param.ToString());
             }
-            if(paramWhere.Length > 0)
+            if (paramWhere.Length > 0)
             {
                 //括弧で囲む
                 paramWhere.Insert(0, "(");
@@ -5151,6 +5225,365 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
             //例：structure_id = 123 or structure_id = 456...
             return paramWhere.ToString();
+        }
+
+        /// <summary>
+        /// 条件の設定
+        /// </summary>
+        /// <param name="list">変換対象辞書リスト</param>
+        /// <param name="mappingList">マッピング情報リスト</param>
+        /// <param name="condition">条件オブジェクト</param>
+        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        public static bool SetConditionByDataClass(string ctrlId, IList<DBMappingInfo> mapInfoList, List<Dictionary<string, object>> list, dynamic condition, ComUtil.ConvertType convType, string languageId, List<string> paramList = null)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list.Count > i)
+                {
+                    SetConditionByDataClass(ctrlId, mapInfoList, condition, list[i], convType, paramList);
+                }
+            }
+            // 言語ID
+            condition.LanguageId = languageId;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 条件の設定
+        /// </summary>
+        /// <param name="ctrlId">コントロールID</param>
+        /// <param name="mapInfoList">マッピング情報リスト</param>
+        /// <param name="condition">条件オブジェクト</param>
+        /// <param name="dic">変換対象辞書</param>
+        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        public static bool SetConditionByDataClass(string ctrlId, IList<DBMappingInfo> mapInfoList, dynamic condition, Dictionary<string, object> dic, ConvertType convType, List<string> paramList = null)
+        {
+            List<DBMappingInfo> mappingList;
+            if (paramList == null || paramList.Count == 0)
+            {
+                mappingList = mapInfoList.Where(x => x.CtrlId.Equals(ctrlId)).ToList();
+            }
+            else
+            {
+                mappingList = mapInfoList.Where(x => x.CtrlId.Equals(ctrlId) && paramList.Contains(x.ParamName)).ToList();
+            }
+
+            return SetConditionByDataClass(mappingList, condition, dic, convType, paramList);
+        }
+
+        /// <summary>
+        /// 条件の設定
+        /// </summary>
+        /// <param name="mappingList">マッピング情報リスト</param>
+        /// <param name="condition">条件オブジェクト</param>
+        /// <param name="dic">変換対象辞書</param>
+        /// <param name="convType">変換対象条件種類(検索/実行/検索結果)</param>
+        /// <param name="paramList">パラメータ名リスト(パラメータ名による対象条件の絞り込みが必要な場合のみ指定)</param>
+        public static bool SetConditionByDataClass(List<DBMappingInfo> mappingList, dynamic condition, Dictionary<string, object> dic, ConvertType convType, List<string> paramList = null)
+        {
+            foreach (var mapInfo in mappingList)
+            {
+                // VAL名またはカラム名が未設定の場合はスキップ
+                if (string.IsNullOrEmpty(mapInfo.ValName) || string.IsNullOrEmpty(mapInfo.ColName)) { continue; }
+                if (dic.ContainsKey(mapInfo.ValName))
+                {
+                    // 指定した条件名が条件辞書に存在する場合、条件オブジェクトへ追加
+                    var key = mapInfo.ParamName;
+                    var val = dic[mapInfo.ValName];
+
+                    if (CommonUtil.IsNullOrEmpty(val))
+                    {
+                        if (mapInfo.IsInClause)
+                        {
+                            // IN句の場合、Listに初期値を設定
+                            PropertyInfo prop = condition.GetType().GetProperty(key + "List");
+                            if (prop == null) { continue; }
+                            if (prop.PropertyType == typeof(List<decimal>))
+                            {
+                                List<decimal> list = new List<decimal>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                            else if (prop.PropertyType == typeof(List<int>))
+                            {
+                                List<int> list = new List<int>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                            else if (prop.PropertyType == typeof(List<long>))
+                            {
+                                List<long> list = new List<long>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                            else if (prop.PropertyType == typeof(List<string>))
+                            {
+                                List<string> list = new List<string>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                            else if (prop.PropertyType == typeof(List<DateTime>))
+                            {
+                                List<DateTime> list = new List<DateTime>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                            else
+                            {
+                                List<object> list = new List<object>();
+                                setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                                continue;
+                            }
+                        }
+                        continue;
+                    }
+
+                    string value = val.ToString();
+                    // FromTo分割の場合、分割後の値で設定を行う
+                    if (mapInfo.IsFromTo)
+                    {
+                        // デリミタ文字が含まれていない場合、そのまま設定する
+                        if (!value.Contains(FromToDelimiter.ToString()))
+                        {
+                            setValueToClassCon(mapInfo, key, value, condition, convType);
+                            continue;
+                        }
+
+                        var values = value.Split(FromToDelimiter);
+                        int count = 0;
+                        foreach (var data in values)
+                        {
+                            var setValue = data;
+                            if (data.Contains(NumberUnitDelimiter))
+                            {
+                                setValue = data.Split(NumberUnitDelimiter)[0];
+                            }
+                            var tmpKey = key;
+                            if (count == 0) { tmpKey += "From"; } else { tmpKey += "To"; }
+                            setValueToClassCon(mapInfo, tmpKey, setValue, condition, convType);
+                            count++;
+                        }
+                        continue;
+                    }
+
+                    // IN句パラメータの場合、配列に格納しなおし、設定を行う
+                    if (mapInfo.IsInClause)
+                    {
+                        PropertyInfo prop = condition.GetType().GetProperty(key + "List");
+                        if (prop == null) { continue; }
+
+                        if (prop.PropertyType == typeof(List<decimal>))
+                        {
+                            List<decimal> list = new List<decimal>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(decimal.Parse(data[i]));
+                                }
+                            }
+                            else
+                            {
+                                list.Add(decimal.Parse(value));
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                        else if (prop.PropertyType == typeof(List<int>))
+                        {
+                            List<int> list = new List<int>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(int.Parse(data[i]));
+                                }
+                            }
+                            else
+                            {
+                                list.Add(int.Parse(value));
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                        else if (prop.PropertyType == typeof(List<long>))
+                        {
+                            List<long> list = new List<long>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(long.Parse(data[i]));
+                                }
+                            }
+                            else
+                            {
+                                list.Add(long.Parse(value));
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                        else if (prop.PropertyType == typeof(List<string>))
+                        {
+                            List<string> list = new List<string>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(data[i]);
+                                }
+                            }
+                            else
+                            {
+                                list.Add(value);
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                        else if (prop.PropertyType == typeof(List<DateTime>))
+                        {
+                            List<DateTime> list = new List<DateTime>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(DateTime.Parse(data[i]));
+                                }
+                            }
+                            else
+                            {
+                                list.Add(DateTime.Parse(value));
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                        else
+                        {
+                            List<object> list = new List<object>();
+                            if (value.Contains(FromToDelimiter))
+                            {
+                                var data = value.Split(FromToDelimiter);
+                                for (int i = 0; i < data.Count(); i++)
+                                {
+                                    list.Add(data[i]);
+                                }
+                            }
+                            else
+                            {
+                                list.Add(value);
+                            }
+                            setValueToClassCon(mapInfo, key + "List", list, condition, convType);
+                            setValueToClassCon(mapInfo, key, list.ToArray(), condition, convType);
+                            continue;
+                        }
+                    }
+
+                    // セルタイプが数値で 数値+単位分割文字が設定されている場合
+                    if (mapInfo.CtrlType == LISTITEM_DEFINE_CONSTANTS.CELLTYPE.Number && value.Contains(NumberUnitDelimiter))
+                    {
+                        var values = value.Split(NumberUnitDelimiter);
+                        setValueToClassCon(mapInfo, key, values[0], condition, convType);
+                        continue;
+                    }
+
+                    setValueToClassCon(mapInfo, key, val, condition, convType);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// データクラスに値を設定する
+        /// </summary>
+        /// <param name="mappingInfo">マッピング情報</param>
+        /// <param name="key">キー情報</param>
+        /// <param name="val">設定値</param>
+        /// <param name="condition">条件データ</param>
+        /// <param name="convType">検索条件</param>
+        public static void setValueToClassCon(DBMappingInfo mappingInfo, string key, object val, dynamic condition, ConvertType convType)
+        {
+            // プロパティを取得
+            PropertyInfo property = condition.GetType().GetProperty(key);
+            if (property == null) { return; }
+
+            // 文字型で検索条件の場合、マッチパターン指定
+            if (!CommonUtil.IsNullOrEmpty(val) && property.PropertyType == typeof(string) && convType == ConvertType.Search)
+            {
+                switch (mappingInfo.LikePatternEnum)
+                {
+                    case MatchPattern.ForwardMatch:
+                        val = val + "%";
+                        break;
+                    case MatchPattern.BackwardMatch:
+                        val = "%" + val;
+                        break;
+                    case MatchPattern.PartialMatch:
+                        val = "%" + val + "%";
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (property != null)
+            {
+                SetPropertyValue(property, condition, val);
+            }
+            return;
+        }
+
+        /// <summary>
+        /// 固定SQL文の取得
+        /// </summary>
+        /// <param name="subDir">Resources\sql配下のサブディレクトリパス(サブディレクトリが複数階層の場合、パス区切り文字は"\"ではなく".")</param>
+        /// <param name="fileName">SQLテキストファイル名</param>
+        /// <param name="sql">out 取得したSQL文</param>
+        /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+        /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
+        public static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnComment = null)
+        {
+            sql = string.Empty;
+            string assemblyName = CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementAssemblyName;
+
+            // リソース名を生成
+            StringBuilder resourceName = new StringBuilder();
+            resourceName.Append(assemblyName).Append(".").Append(CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementDir).Append(".");
+            if (!string.IsNullOrEmpty(subDir))
+            {
+                // サブディレクトリパスの追加(念のためパス区切り文字を"."に変換しておく)
+                resourceName.Append(subDir.Replace(@"\", ".")).Append(".");
+            }
+            resourceName.Append(fileName).Append(".sql");
+
+            // 埋め込みリソースからSQL文を取得
+            bool result = ComUtil.GetEmbeddedResourceStr(assemblyName, resourceName.ToString(), out sql);
+
+            // SQLの動的制御　コメントアウトを解除
+            if (listUnComment != null && listUnComment.Count > 0)
+            {
+                foreach (string wordUnComment in listUnComment)
+                {
+                    // @+指定された文字列がコメントアウトの前後に付いているので除去
+                    // /*@Hoge と @Hoge*/ を除去すれば、囲われたSQLが有効になる
+                    Regex startReplace = new Regex("\\/\\*@" + wordUnComment + "[^a-zA-Z\\d_]");
+                    sql = startReplace.Replace(sql, string.Empty).Replace("@" + wordUnComment + "*/", string.Empty);
+                }
+            }
+
+            return result;
         }
     }
 }

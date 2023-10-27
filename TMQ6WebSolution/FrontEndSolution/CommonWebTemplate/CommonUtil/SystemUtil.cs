@@ -24,7 +24,7 @@ namespace CommonWebTemplate.CommonUtil
         public static class ContentType
         {
             public const string ExcelFile = @"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            public const string ExcelonMacro = @"application/vnd.ms-excel.sheet.macroEnabled.12";
+            public const string ExcelMacro = @"application/vnd.ms-excel.sheet.macroEnabled.12";
             public const string CsvFile = @"text/csv";
             public const string PdfFile = @"application/pdf";
             public const string ZipFile = @"application/zip";
@@ -51,10 +51,10 @@ namespace CommonWebTemplate.CommonUtil
                 //Excelﾌﾞｯｸ(.xlsx)の場合
                 return ContentType.ExcelFile;
             }
-            else if (FileUtil.GetExtensionStr(FileUtil.Extension.ExcelonMacro).ToUpper().Equals(fileExt))
+            else if (FileUtil.GetExtensionStr(FileUtil.Extension.ExcelMacro).ToUpper().Equals(fileExt))
             {
                 //Excelﾏｸﾛ有効ﾌﾞｯｸ(.xlsm)の場合
-                return ContentType.ExcelonMacro;
+                return ContentType.ExcelMacro;
             }
             else if (FileUtil.GetExtensionStr(FileUtil.Extension.Csv).ToUpper().Equals(fileExt))
             {

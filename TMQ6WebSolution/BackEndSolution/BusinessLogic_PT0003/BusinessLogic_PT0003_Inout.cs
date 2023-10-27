@@ -73,7 +73,10 @@ namespace BusinessLogic_PT0003
             // 言語ID設定
             info.LanguageId = this.LanguageId;
 
-             // 予備品情報一覧検索
+            // 棚枝番はnullではなく空文字にする
+            info.PartsLocationDetailNo = ConvertNullToStringEmpty(info.PartsLocationDetailNo);
+
+            // 予備品情報一覧検索
             if (!InventryInfoList(status, info))
             {
                 return false; // 検索失敗

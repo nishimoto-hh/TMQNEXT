@@ -130,11 +130,16 @@
             //実行ボタン
             @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-afterexeckbn="@Model.BTN_AFTEREXECKBN" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />
         }
-        @*else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Select)
+        else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ExcelPortDownload)
         {
-            //選択ボタン ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
-            <input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-dismiss="modal" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style"/>
-        }*@
+            //ExcelPortダウンロードボタン
+            @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-afterexeckbn="@Model.BTN_AFTEREXECKBN" data-relationid="@Model.RELATIONID" data-relationparam="@Model.RELATIONPARAM" data-optioninfo="@Model.OPTIONINFO" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />
+        }
+        @*else if (Model.BTN_ACTIONKBN == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Select)
+            {
+                //選択ボタン ﾀﾞｲｱﾛｸﾞを閉じる機能を付与
+                <input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-dismiss="modal" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style"/>
+            }*@
         else
         {
             @:<input type="button" name="@Model.BTN_CTRLID" class="@cssClass" value="@btnText" data-actionkbn="@Model.BTN_ACTIONKBN" data-authkbn="@authKbn" data-relationparam="@Model.RELATIONPARAM" data-message="@Model.BTN_MESSAGE" title="@Model.TOOLTIP" style="@style" @disabled />

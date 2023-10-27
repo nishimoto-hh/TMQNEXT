@@ -22,9 +22,3 @@ AND ex.extension_data = @AppliCationStatus
 -- された申請状況以外のデータ
 AND ex.extension_data != @AppliCationStatus
 @Except*/
-
-
-
-
-
-

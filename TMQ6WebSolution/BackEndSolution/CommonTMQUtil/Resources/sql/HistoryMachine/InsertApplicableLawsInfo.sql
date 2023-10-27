@@ -1,7 +1,7 @@
 INSERT 
 INTO hm_mc_applicable_laws( 
     [hm_applicable_laws_id]               -- 適用法規変更管理ID
-    , [history_management_detail_id]      -- 変更管理詳細ID
+    , [history_management_id]             -- 変更管理ID
     , [applicable_laws_id]                -- 適用法規ID
     , [applicable_laws_structure_id]      -- 適用法規アイテムID
     , [machine_id]                        -- 機番ID
@@ -13,8 +13,18 @@ INTO hm_mc_applicable_laws(
 ) 
 VALUES ( 
     NEXT VALUE FOR seq_hm_mc_applicable_laws_hm_applicable_laws_id -- 適用法規変更管理ID
-    , @HistoryManagementDetailId                                   -- 変更管理詳細ID
+    , @HistoryManagementId                                         -- 変更管理詳細ID
+
+      /*@NewApplicableLawsId
+      -- 新規採番
+    , NEXT VALUE FOR seq_mc_applicable_laws_applicable_laws_id     -- 適用法規ID
+      @NewApplicableLawsId*/
+
+      /*@DefaultApplicableLawsId
+      -- 既存の適用法規ID
     , @ApplicableLawsId                                            -- 適用法規ID
+      @DefaultApplicableLawsId*/
+
     , @ApplicableLawsStructureId                                   -- 適用法規アイテムID
     , @MachineId                                                   -- 機番ID
     , 0                                                            -- 更新シリアルID

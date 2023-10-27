@@ -156,6 +156,15 @@ FormMakeMaintainance.List.Id, FormMakeMaintainance.ListMaintKind.Id,
 FormPostpone.List.Id, FormPostpone.ListMaintKind.Id
 ];
 
+// 変更管理のコントロールの表示フラグ
+const HistoryManagementDisplayFlag = {
+    // 変更管理の表示をしない
+    NoHisotry: "0",
+    // 変更管理の表示のみ行う
+    History: "1",
+    // 両方表示する(一覧のみ)
+    Dual: "2"
+};
 
 /**
  * フォーム番号より一致するフォームの情報を取得する
@@ -217,8 +226,13 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         controlVisibleScheduleCond(FormList);
 
         // 変更管理ボタンの表示制御
-        var hideBtns = [FormList.Button.Insert];
         if (isExecuteHistory) {
+            var hideBtns = [FormList.Button.Insert]; //新規ボタンを非表示にする
+            var flagValue = getHistoryManagementFlgValue(true); // フラグの値
+            if (flagValue == HistoryManagementDisplayFlag.Dual) {
+                // 変更管理する工場としない工場が混在するなら、新規ボタンは非表示にしない
+                hideBtns = [];
+            }
             setHistoryManagementCtrlDisplay(getIsHisotyManagement(true), FormList.Button.HistoryManagement, hideBtns);
         }
 
@@ -230,11 +244,13 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     } else if (formNo == FormDetail.No) {
         // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormDetail);
+        // 保全内容コンボのみ設定時の初期値設定処理
+        setPlanContentInitValueForUnSet();
 
         // 変更管理ボタンの表示制御
-        var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
-        var hideLists = [];
         if (isExecuteHistory) {
+            var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
+            var hideLists = [];
             setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), FormDetail.Button.HistoryManagement, hideBtns, hideLists);
         }
 
@@ -249,18 +265,42 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 }
 
 /**
- * 変更管理の要素を表示するか判定
+ * 変更管理の要素の表示フラグの値を取得
  * @param {any} isList 一覧画面ならTrue、参照画面ならFalse
- * @returns  {bool} 変更管理を表示するならTrue
  */
-function getIsHisotyManagement(isList) {
-    var flgValue;
+function getHistoryManagementFlgValue(isList) {
+    var flagValue;
     if (isList) {
         flagValue = getValue(FormList.Hidden.Id, FormList.Hidden.IsHistoryManagementFlg, 0, CtrlFlag.Label);
     } else {
         flagValue = getValue(FormDetail.Info.Id, FormDetail.Info.IsHistoryManagementFlg, 0, CtrlFlag.Label);
     }
-    return flagValue == '1';
+    return flagValue;
+}
+
+/**
+ * 変更管理の要素を表示するか判定
+ * @param {any} isList 一覧画面ならTrue、参照画面ならFalse
+ * @returns  {bool} 変更管理を表示するならTrue
+ */
+function getIsHisotyManagement(isList) {
+    var flagValue = getHistoryManagementFlgValue(isList);
+    return flagValue == HistoryManagementDisplayFlag.History || flagValue == HistoryManagementDisplayFlag.Dual;
+}
+
+/**
+ * 計画内容コンボの値が未設定の際に設定する処理
+ * */
+function setPlanContentInitValueForUnSet() {
+    // 計画内容コンボ拡張項目の値を取得
+    var content = getValue(FormDetail.Condition.Id, FormDetail.Condition.PlanContentExt, 0, CtrlFlag.Label);
+    if (content == null || content == undefined || content == '') {
+        // 計画内容コンボの初期値を設定する(拡張項目1の値が保全項目)
+        selectComboByExparam(FormDetail.Condition.Id, FormDetail.Condition.PlanContent, 1, FormDetail.Condition.PlanComboOptValue.Maintainance);
+        // 変更時イベントを発生させて拡張項目の値を設定
+        var combo = getCtrl(FormDetail.Condition.Id, FormDetail.Condition.PlanContent, 0, CtrlFlag.Combo);
+        changeNoEdit(combo);
+    }
 }
 
 /**
@@ -324,8 +364,9 @@ function prevInitFormData(appPath, formNo, btnCtrlId, conditionDataList, listDef
         }
     } else if (formNo == FormDetail.No) {
         // 参照画面
-        // 計画内容コンボの初期値を設定する(拡張項目1の値が保全項目)
-        selectComboByExparam(FormDetail.Condition.Id, FormDetail.Condition.PlanContent, 1, FormDetail.Condition.PlanComboOptValue.Maintainance);
+        // 計画内容コンボが未設定の際に再設定を行う
+        setPlanContentInitValueForUnSet();
+
         // 変更した値を取得して検索条件にセット(使用しないけど、変更値をセットしないと年度設定の際に上書きされてしまう)
         var selectedValue = getValue(FormDetail.Condition.Id, FormDetail.Condition.PlanContent, 0, CtrlFlag.Combo);
         setValueToConditionDataList(conditionDataList, FormDetail.No, FormDetail.Condition.Id, FormDetail.Condition.PlanContent, selectedValue);

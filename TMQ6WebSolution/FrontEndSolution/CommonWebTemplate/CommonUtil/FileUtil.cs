@@ -23,11 +23,11 @@ namespace CommonWebTemplate.CommonUtil
             /// <summary>Excelﾌﾞｯｸ(.xlsx)</summary>
             ExcelFile = 0,
             /// <summary>Excelﾏｸﾛ有効ﾌﾞｯｸ(.xlsm)</summary>
-            ExcelonMacro,
+            ExcelMacro,
             /// <summary>Excelﾃﾝﾌﾟﾚｰﾄ(.xltx)</summary>
             ExcelTemplate,
             /// <summary>Excelﾏｸﾛ有効ﾃﾝﾌﾟﾚｰﾄ(.xltm)</summary>
-            ExcelTemplateonMacro,
+            ExcelTemplateMacro,
             /// <summary>Excelｱﾄﾞｲﾝ(.xlam)</summary>
             ExcelAddin,
             /// <summary>ﾃｷｽﾄ(.txt)</summary>
@@ -66,11 +66,15 @@ namespace CommonWebTemplate.CommonUtil
         ///<summary>FileType(ファイルダウンロード)</summary>
         public static class FileType
         {
+            public const string UnDefined = "0";
             public const string Excel = "1";
-            public const string Csv = "2";
-            public const string Pdf = "3";
-            public const string Zip = "4";
-            public const string UnDefined = "5";
+            public const string ExcelMacro = "2";
+            public const string ExcelTemplate = "3";
+            public const string ExcelTemplateMacro = "4";
+            public const string ExcelAddin = "5";
+            public const string Csv = "6";
+            public const string Pdf = "7";
+            public const string Zip = "8";
         }
         #endregion
 
@@ -143,6 +147,15 @@ namespace CommonWebTemplate.CommonUtil
             {
                 case FileType.Excel:
                     ext = Extension.ExcelFile;      //.xlsx
+                    break;
+                case FileType.ExcelMacro:
+                    ext = Extension.ExcelMacro;      //.xlsx
+                    break;
+                case FileType.ExcelTemplate:
+                    ext = Extension.ExcelTemplate;      //.xltx
+                    break;
+                case FileType.ExcelTemplateMacro:
+                    ext = Extension.ExcelTemplateMacro;      //.xltm
                     break;
                 case FileType.Csv:
                     ext = Extension.Csv;      //.csv

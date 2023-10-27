@@ -124,6 +124,8 @@ namespace BusinessLogic_PT0005
             public const string GetLotInfoByInoutHistoryId = "GetLotInfoByInoutHistoryId";
             /// <summary>SQL名：受払日時以降の受払件数を取得するSQL/summary>
             public const string SelectPreIssueDayCount = "Select_preIssueDayCount";
+            /// <summary>SQL名：倉庫IDより、工場IDを取得するSQL/summary>
+            public const string GetFactoryIdByWarehouseId = "GetFactoryIdByWarehouseId";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDirIssue = @"IssueInput";
@@ -501,7 +503,27 @@ namespace BusinessLogic_PT0005
                 }
 
                 // 部門の初期表示値取得
-                var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitDepartmentStructureId, SqlName.SubDirInventry, conditionObj, this.db);
+                List<string> conditionListForDepartment = new() { getFactoryIdByWarehouseId(result.PartsStorageLocationId) + "," + Consts.CommonFactoryId.ToString() };
+                // 条件を取得(倉庫IDから取得した工場ID、共通工場ID「0」)
+                string getFactoryIdByWarehouseId(long warehouseId)
+                {
+                    // SQLを取得
+                    TMQUtil.GetFixedSqlStatement(SqlName.SubDirInventry, SqlName.GetFactoryIdByWarehouseId, out string sql);
+                    // SQL実行
+                    IList<ComDao.MsStructureEntity> results = this.db.GetListByDataClass<ComDao.MsStructureEntity>(sql, new { WarehouseId = warehouseId });
+                    if (results == null || results.Count == 0)
+                    {
+                        // 取得できない場合は共通工場ID「0」
+                        return Consts.CommonFactoryId.ToString();
+                    }
+
+                    // 取得した工場ID
+                    return results[0].FactoryId.ToString();
+                }
+                var initDepartmentInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.searchResultStorageInfo>(SqlName.GetInitDepartmentStructureId,
+                                                                                                           SqlName.SubDirInventry,
+                                                                                                           new { FactoryIdList = conditionListForDepartment, LanguageId = this.LanguageId },
+                                                                                                           this.db);
                 if (initDepartmentInfo != null)
                 {
                     // 部門(工場表示順の最上位)
@@ -1066,6 +1088,9 @@ namespace BusinessLogic_PT0005
             // 対応する引数
             TMQDao.PartsInventory.Input condInp = getRegistInfo<TMQDao.PartsInventory.Input>(TargetCtrlId.GroupNo, DateTime.Now);
             setRegistInfo(storageInfo, ref condInp);
+
+            // 棚枝番に入力がない場合はnullではなく空文字にする
+            condInp.PartsLocationDetailNo = ConvertNullToStringEmpty(condInp.PartsLocationDetailNo);
 
             // DB登録
             if (isRegist)
