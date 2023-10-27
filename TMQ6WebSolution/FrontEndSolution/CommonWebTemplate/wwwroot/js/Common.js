@@ -755,6 +755,16 @@ const promise = {
     add_key2: $.Deferred().resolve("Finished").promise()
 };
 
+/** 定義 フィルター使用区分 */
+const FilterUseKbnDef = {
+    /** 設定なし */
+    None: 0,
+    /** フィルター使用(部分一致) */
+    PartialMatch: 1,
+    /** フィルター使用(完全一致) */
+    ExactMatch: 2
+}
+
 //jquery-ui-datepickerとの競合防止
 //var bootstrapDatepicker = $.fn.datepicker.noConflict();
 //var bootstrapDatepicker = $.fn.datepicker();
@@ -6899,7 +6909,9 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
     dispLoading();
 
     // 詳細検索条件データ取得
-    var detailConditionDataList = getDetailConditionData(conductId, formNo, null, true);
+    // 戻るボタン時は詳細条件を画面上から取得する
+    //var detailConditionDataList = getDetailConditionData(conductId, formNo, null, true);
+    var detailConditionDataList = getDetailConditionData(conductId, formNo, null, !isBackBtn);
     //【オーバーライド用関数】詳細検索条件取得後処理
     afterInitGetDetailConditionData(appPath, conductId, formNo, conditionDataList, detailConditionDataList);
     if (detailConditionDataList != null && detailConditionDataList.length > 0) {
@@ -7619,6 +7631,11 @@ function initSearchBtn(appPath, btn) {
             btn = $('input:button[data-actionkbn="' + actionkbn.Search + '"]');
 
             try {
+                //【オーバーライド用関数】検索前の個別実装(選択チェックボックスがチェックされているかチェック)
+                if (!checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW)) {
+                    return;
+                }
+
                 //【オーバーライド用関数】検索前の個別実装
                 beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW);
 
@@ -17479,6 +17496,11 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
         }
     });
 
+
+    //指定階層を展開した状態で表示するツリーの場合true、選択階層までを展開する場合はfalse
+    var openNodeGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.Job];
+    const isOpenNode = openNodeGrpIds.includes(grpId);
+
     var selector = '#' + getTreeViewId(grpId, treeViewType.Val);
     $(selector).jstree({
         plugins: ["checkbox"],
@@ -17494,7 +17516,9 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
             themes: { icons: false },
             //複数選択
             multiple: treeViewType.Multiple,
-            animation: 0
+            animation: 0,
+            //選択ノードの展開有無(true:選択ノード展開、false：未展開)
+            expand_selected_onload: !isOpenNode
         }
     }).on('loaded.jstree', function (e, data) {
         if (isTreeMenu) {
@@ -17509,7 +17533,9 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                 isMerged = true;
             }
             // sessionStorate/localStorage保存の選択値の反映
-            setStorageTreeData(grpId, code, selector, isMerged);
+            setStorageTreeData(grpId, code, selector, isMerged, isOpenNode);
+            //場所階層ツリーの場合、工場階層まで展開する
+            openFactoryNode(grpId, selector);
 
             $(selector).on('changed.jstree', function (e, data) {
                 // 選択状態変更時、選択状態をセッションストレージに保存する
@@ -17604,7 +17630,9 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                     selectedIdList.push(initStructureId);
                 }
             }
-            setSelectedDataToTreeView(selector, selectedIdList, false);
+            setSelectedDataToTreeView(selector, selectedIdList, false, isOpenNode);
+            //場所階層ツリーの場合、工場階層まで展開する
+            openFactoryNode(grpId, selector);
         }
 
         if (modal != null && treeViewType.Val == treeViewDef.ModalForm.Val) {
@@ -17612,11 +17640,11 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
             showModalForm(modal);
         }
         //【オーバーライド用関数】ツリービュー読込後処理
-        afterLoadedTreeView(selector, isTreeMenu, grpId);
+        afterLoadedTreeView(selector, isTreeMenu, grpId, isOpenNode);
 
     }).on('refresh.jstree', function (e, data) {
         //【オーバーライド用関数】ツリービューリフレッシュ後処理
-        afterRefreshTreeView(selector, isTreeMenu, grpId);
+        afterRefreshTreeView(selector, isTreeMenu, grpId, isOpenNode);
     });
 }
 
@@ -17841,11 +17869,28 @@ function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList, isFilterTran
             });
         } else {
             // 翻訳を行う場合
+
+            if (factoryIdList.length > 1) {
+                // 複数選択されている場合
+                if (factoryIdList.indexOf(P_DutyFactoryId) >= 0) {
+                    // 本務工場が含まれている場合、本務工場を選択
+                    factoryIdList = [P_DutyFactoryId];
+                } else {
+                    // 本務工場が含まれていない場合、先頭工場を選択
+                    factoryIdList = [factoryIdList[0]];
+                }
+            }
             $.each(resultList, function (idx, data) {
                 var factoryId = getTreeViewFacrotyId(data);
                 if (data.parent == '#') {
                     // ルート要素の場合、結果リストに追加
                     resultList2.push(data);
+                } else if (factoryIdList[0] == 0 && factoryId == 0) {
+                    // 共通工場が本務かつ共通工場の要素の場合
+                    if (getTreeViewTranslationFactoryId(data) == 0) {
+                        // 共通翻訳のデータを結果リストに追加
+                        resultList2.push(data);
+                    }
                 } else if (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0) {
                     // 工場指定の場合(ツリーで翻訳工場指定の場合、全工場分のデータを保持)
                     var structureId = getTreeViewStructureId(data);
@@ -17864,7 +17909,12 @@ function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList, isFilterTran
                         // 無い場合、共通工場の翻訳を追加する
                         targetFactoryId = 0;
                     }
-                    if (getTreeViewTranslationFactoryId(data) == targetFactoryId) {
+                    //既に追加済みか確認
+                    var count = $.grep(resultList2, function (x, i) {
+                        //構成IDが一致するもの
+                        return (structureId == getTreeViewStructureId(x));
+                    }).length;
+                    if (getTreeViewTranslationFactoryId(data) == targetFactoryId && count == 0) {
                         // 要素の翻訳IDと対象の工場IDが同じ場合、追加
                         resultList2.push(data);
                     }
@@ -17983,7 +18033,11 @@ function getGroupedObjectList(list, keyName) {
  * @return {number} 階層番号
  */
 function getTreeViewLayerNo(data) {
-    return parseInt(data.li_attr['data-structureno'], 10);
+    if (data.li_attr) {
+        return parseInt(data.li_attr['data-structureno'], 10);
+    } else {
+        return -1;
+    }
 }
 
 /**
@@ -18337,8 +18391,9 @@ function initTreeViewModalForm(appPath, modal, structureGrpId, treeValues, isMul
  * @param {any} tree                        :ツリービュー要素またはセレクタ
  * @param {Array.<number>} structureIdList  :選択中の構成IDリスト
  * @param {boolean} isMerged                : マージ表示かどうか
+ * @param {boolean} isOpenNode              : 指定階層を展開した状態で表示するかどうか
  */
-function setSelectedDataToTreeView(tree, structureIdList, isMerged) {
+function setSelectedDataToTreeView(tree, structureIdList, isMerged, isOpenNode) {
     var nodeIdList = [];
     if (!isMerged) {
         nodeIdList = getTreeViewNodeByStructureId(tree, structureIdList);
@@ -18347,12 +18402,14 @@ function setSelectedDataToTreeView(tree, structureIdList, isMerged) {
     }
     if (nodeIdList.length > 0) {
         // 指定されたノードをチェック＆展開
-        $(tree).jstree(true).select_node(nodeIdList);
-        $(tree).jstree(true).open_node(nodeIdList);
+        $(tree).jstree(true).select_node(nodeIdList, false, true);
+        //$(tree).jstree(true).open_node(nodeIdList);
     } else {
         // ノードのチェックをすべて解除して展開
         $(tree).jstree(true).uncheck_all();
-        $(tree).jstree(true).open_all();
+        if (!isOpenNode) {
+            $(tree).jstree(true).open_all();
+        }
     }
 }
 
@@ -18405,6 +18462,33 @@ function getTreeViewNodeByStructureIdForMerge(tree, structureIdList) {
 }
 
 /**
+ * 場所階層ツリーの工場階層までを展開した状態で表示
+ * @param {any} grpId 構成グループID
+ * @param {any} selector ツリーのID
+ */
+function openFactoryNode(grpId, selector) {
+    var grpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+    if (grpIds.includes(grpId)) {
+        //場所階層ツリーの場合、工場階層まで展開する
+
+        var nodeIdList = [];
+        var datas = $(selector).jstree(true)._model.data;
+        //地区階層の構成IDリストを取得
+        $.each(datas, function (key, data) {
+            if (getTreeViewLayerNo(data) != 0) {
+                return true;
+            }
+            if (nodeIdList.indexOf(data.id) < 0) {
+                //ノードのIDを取得
+                nodeIdList.push(data.id);
+            }
+        });
+        //地区階層を展開し、工場階層が表示された状態にする
+        $(selector).jstree(true).open_node(nodeIdList);
+    }
+}
+
+/**
  * ストレージに保存したツリービューの選択値を取得
  * @param {number} grpId        : 構成グループID
  * @param {string} code         : ローカルストレージデータ種類
@@ -18425,11 +18509,12 @@ function getStorageTreeData(grpId, code) {
  * @param {string} code         : ローカルストレージデータ種類
  * @param {string} selector     : ツリービューのID
  * @param {boolean} isMerged    : マージ表示かどうか
+ * @param {boolean} isOpenNode  : 指定階層を展開した状態で表示するかどうか
  */
-function setStorageTreeData(grpId, code, selector, isMerged) {
+function setStorageTreeData(grpId, code, selector, isMerged, isOpenNode) {
     // ストレージから選択値を取得
     var selectedIdList = getStorageTreeData(grpId, code);
-    setSelectedDataToTreeView(selector, selectedIdList, isMerged);
+    setSelectedDataToTreeView(selector, selectedIdList, isMerged, isOpenNode);
 }
 
 /**
@@ -19253,7 +19338,6 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
                 ////return cell.getValue();
                 return $(cell.getElement()).text();
             },
-            headerFilterFunc: headerFilter, // Tabulatorのフィルタ処理のカスタマイズ
         },
         ////デフォルトの文言を設定（ページングのボタン等）
         //langs: {
@@ -19442,6 +19526,21 @@ function setHeader(head, id, editptn, referenceMode, appPath) {
 
             return value;
         }
+    }
+
+    if (head.headerFilterFunc && typeof head.headerFilterFunc != 'function' && head.headerFilterFunc != FilterUseKbnDef.None) {
+        //列フィルターのマッチタイプ（部分一致or完全一致）
+        var isEqual = false;
+        if (head.headerFilterFunc == FilterUseKbnDef.ExactMatch) {
+            //列フィルターが完全一致の場合
+            isEqual = true;
+        }
+        // 照合順序の仕様確認に合わせ、Tabulatorのフィルタ処理を調整する。
+        var headerFilter = function (headerValue, rowValue, rowData, filterParams) {
+            var result = isMatchCharacterNoDiff(rowValue, headerValue, isEqual);
+            return result;
+        }
+        head.headerFilterFunc = headerFilter;
     }
 
     if (head.formatter && head.formatter == "link") {

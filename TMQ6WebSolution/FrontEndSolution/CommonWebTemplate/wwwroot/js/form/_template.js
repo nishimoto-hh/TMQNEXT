@@ -390,6 +390,23 @@ function beforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductP
 
 /**
  *【オーバーライド用関数】
+ *  検索処理前(一覧の選択チェックボックスが選択されているかチェック)
+ *
+ *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @btn {string} 　　　：対象ボタン
+ *  @conductId {string} ：機能ID
+ *  @pgmId {string} 　　：プログラムID
+ *  @formNo {number} 　 ：画面番号
+ *  @conductPtn {number}：処理ﾊﾟﾀｰﾝ
+ */
+function checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPtn) {
+
+
+    return true;
+}
+
+/**
+ *【オーバーライド用関数】
  *  検索処理後
  *
  *  @appPath {string} 　：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
@@ -838,8 +855,9 @@ function afterInitGetDetailConditionData(appPath, conductId, formNo, conditionDa
  * @param {any} selector ツリービューのセレクタ
  * @param {any} isTreeMenu 左側メニューの場合true
  * @param {any} grpId 構成グループID
+ * @param {any} isTreeMenu 指定階層を展開した状態で表示するツリーの場合true、選択階層までを展開する場合はfalse
  */
-function afterLoadedTreeView(selector, isTreeMenu, grpId) {
+function afterLoadedTreeView(selector, isTreeMenu, grpId, isOpenNode) {
 
 }
 
@@ -848,8 +866,9 @@ function afterLoadedTreeView(selector, isTreeMenu, grpId) {
  * @param {any} selector ツリービューのセレクタ
  * @param {any} isTreeMenu 左側メニューの場合true
  * @param {any} grpId 構成グループID
+ * @param {any} isTreeMenu 指定階層を展開した状態で表示するツリーの場合true、選択階層までを展開する場合はfalse
  */
-function afterRefreshTreeView(selector, isTreeMenu, grpId) {
+function afterRefreshTreeView(selector, isTreeMenu, grpId, isOpenNode) {
     //職種ツリーのマージ処理後に職種ツリーがリフレッシュされる際の処理
 }
 

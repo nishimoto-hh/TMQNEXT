@@ -470,8 +470,6 @@ namespace BusinessLogic_MC0001
             param.StructureGroupId = (int)TMQConsts.MsStructure.GroupId.ScheduleDisp;
             //連番
             param.Seq = ScheduleDispCondMonth.Seq;
-            //データタイプ
-            param.DataType = ScheduleDispCondMonth.DataType;
             //拡張データ
             param.ExData = ScheduleDispCondMonth.ExData;
 
@@ -2810,8 +2808,6 @@ namespace BusinessLogic_MC0001
             param.StructureGroupId = structureGroupId;
             //連番
             param.Seq = seq;
-            //データタイプ
-            //param.DataType = dataType;
             //構成アイテム、アイテム拡張マスタ情報取得
             List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
             if (list != null)

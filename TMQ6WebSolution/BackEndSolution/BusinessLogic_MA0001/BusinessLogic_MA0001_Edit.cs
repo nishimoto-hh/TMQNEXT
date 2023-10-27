@@ -121,8 +121,6 @@ namespace BusinessLogic_MA0001
             param.StructureGroupId = (int)Const.MsStructure.GroupId.StopSystem;
             //連番
             param.Seq = StopSystemDivision.Seq;
-            //データタイプ
-            param.DataType = StopSystemDivision.DataType;
             //拡張データ
             param.ExData = StopSystemDivision.ExData;
 
@@ -199,8 +197,6 @@ namespace BusinessLogic_MA0001
             param.StructureGroupId = (int)Const.MsStructure.GroupId.MqClass;
             //連番
             param.Seq = MqClassDivision.Seq;
-            //データタイプ
-            param.DataType = MqClassDivision.DataType;
             //拡張データ
             param.ExData = MqClassDivision.ExData;
             //MQ分類：設備工事、撤去工事の構成ID
@@ -1342,8 +1338,6 @@ namespace BusinessLogic_MA0001
                 param.StructureGroupId = (int)Const.MsStructure.GroupId.Call;
                 //連番
                 param.Seq = CallDivision.Seq;
-                //データタイプ
-                param.DataType = CallDivision.DataType;
                 //呼出の構成IDから拡張データを取得
                 List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
                 string callCountStr = list.Where(x => x.StructureId == (registHistoryInfo.CallCount ?? 0)).Select(x => x.ExData).FirstOrDefault();

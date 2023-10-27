@@ -548,8 +548,6 @@ namespace BusinessLogic_MA0001
             param.StructureGroupId = (int)Const.MsStructure.GroupId.Location;
             //連番
             param.Seq = seq;
-            //データタイプ
-            param.DataType = dataType;
             //構成アイテム、アイテム拡張マスタ情報取得
             List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
             if (list != null)

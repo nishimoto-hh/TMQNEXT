@@ -1171,9 +1171,6 @@ namespace CommonTMQUtil
                 /// <summary>Gets or sets 連番</summary>
                 /// <value>連番</value>
                 public int? Seq { get; set; }
-                /// <summary>Gets or sets データタイプ</summary>
-                /// <value>データタイプ</value>
-                public int? DataType { get; set; }
                 /// <summary>Gets or sets 拡張データ</summary>
                 /// <value>拡張データ</value>
                 public string ExData { get; set; }

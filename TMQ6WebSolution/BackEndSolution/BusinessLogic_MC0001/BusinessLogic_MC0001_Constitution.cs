@@ -199,8 +199,6 @@ namespace BusinessLogic_MC0001
                 param.StructureGroupId = condEquipmentLevel.StructureGroupId;
                 //連番
                 param.Seq = condEquipmentLevel.Seq;
-                //データタイプ
-                param.DataType = condEquipmentLevel.DataType;
 
                 // 機能レベル取得
                 List<TMQUtil.StructureItemEx.StructureItemExInfo> equipmentLevelList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);

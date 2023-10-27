@@ -2,7 +2,9 @@
 --指定画面の翻訳情報を取得
 --******************************************************************
 -- 翻訳を個別工場を考慮して取得
-WITH user_auth AS ( 
+WITH 
+-- ユーザの権限に関わらず、本務工場より共通工場を優先する
+/*user_auth AS ( 
   -- ユーザの権限、システム管理者の場合は本務工場より共通工場を優先
   SELECT
     vs.structure_id
@@ -17,17 +19,20 @@ WITH user_auth AS (
   WHERE
     vs.structure_group_id = 9040
 ) 
-,factory_priority AS(
+,*/
+factory_priority AS(
     -- 工場毎の優先度を設定
-    -- 優先度1(最低)：共通工場の翻訳
+    -- 優先度1：共通工場の翻訳
     SELECT
         1 AS priority
         ,0 AS factory_id
-    -- 優先度10:ユーザの本務工場の翻訳
+    -- 優先度0(最低):ユーザの本務工場の翻訳
     UNION
     SELECT
-        -- システム管理者(99)の場合は本務工場より共通を優先するため優先度を0にする
-        CASE ua.auth_code WHEN '99' THEN 0 ELSE 10 END AS priority
+        ---- システム管理者(99)の場合は本務工場より共通を優先するため優先度を0にする
+        --CASE ua.auth_code WHEN '99' THEN 0 ELSE 10 END AS priority
+        -- 本務工場より共通を優先するため優先度を0にする
+        0 AS priority
         ,ub.location_structure_id AS factory_id
     FROM
         ms_user_belong AS ub
@@ -36,11 +41,12 @@ WITH user_auth AS (
         ON  (
                 ub.user_id = us.user_id
             )
-        LEFT OUTER JOIN
-            user_auth AS ua
-        ON  (
-                us.authority_level_id = ua.structure_id
-            )
+        -- ユーザの権限に関わらず、本務工場より共通工場を優先する
+        --LEFT OUTER JOIN
+        --    user_auth AS ua
+        --ON  (
+        --        us.authority_level_id = ua.structure_id
+        --    )
     WHERE
         ub.duty_flg = 1
     AND ub.user_id = @UserId
