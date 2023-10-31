@@ -37,7 +37,7 @@ select item.factory_id as factoryId,
   from v_structure_item_all as item
        left outer join ms_item_extension as item_ex on (item.structure_item_id=item_ex.item_id and item_ex.sequence_no=/*param3*/0) 
        left outer join v_structure_item_all as  ex_item_1 on (item_ex.extension_data = CAST(ex_item_1.structure_item_id AS varchar) and item.language_id = ex_item_1.language_id)
-       left outer join ms_item_extension as item_ex2 on (item.structure_item_id=item_ex2.item_id and item_ex2.sequence_no=/*param4*/0) 
+       left outer join ms_item_extension as item_ex2 on (item.structure_item_id=item_ex2.item_id and item_ex2.sequence_no=/*param4*/0) -- ボタン関係なくMQ分類を表示する時にコメントアウト aec shiraishi 20230913
        /*IF factoryIdList != null && factoryIdList.Count > 0*/
        -- 工場ごとに工場別表示順を取得する
        CROSS JOIN factory AS ft
@@ -61,7 +61,7 @@ select item.factory_id as factoryId,
 /*END*/
 
 /*IF param5 != null && param5 != '' */
-   and item_ex2.extension_data = /*param5*/0
+--   and item_ex2.extension_data = /*param5*/0 -- ボタン関係なくMQ分類を表示する時にコメントアウト aec shiraishi 20230913
 /*END*/
 
 /*IF factoryIdList != null && factoryIdList.Count > 0*/

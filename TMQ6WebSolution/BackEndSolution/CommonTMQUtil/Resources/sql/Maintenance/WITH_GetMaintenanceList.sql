@@ -213,6 +213,7 @@ narrow_summary AS(
         END AS progress_no
         --保全活動件名ID(非表示)
         ,su.summary_id
+        ,re.issue_date
     FROM
         narrow_summary su
         LEFT JOIN

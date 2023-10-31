@@ -1348,7 +1348,8 @@ namespace BusinessLogic_MP0001
             workPlanList2Results[RowNo.Three].Item = GetResMessage(new string[] { ComRes.ID.ID111380037 });      //予防保全作業率
             workPlanList2Results[RowNo.Six].Item = GetResMessage(new string[] { ComRes.ID.ID111200014 });        //突発作業率
             workPlanList2Results[RowNo.Zero].Cause = GetResMessage(new string[] { ComRes.ID.ID111040015 });      //[= f / i × 100]
-            workPlanList2Results[RowNo.Three].Cause = "[= e' / I × 100]";                                       //固定文字列
+            //workPlanList2Results[RowNo.Three].Cause = "[= e' / I × 100]";                                       //固定文字列 20231014 mod
+            workPlanList2Results[RowNo.Three].Cause = "[= e' / i × 100]";                                       //固定文字列
             workPlanList2Results[RowNo.Six].Cause = GetResMessage(new string[] { ComRes.ID.ID111120113 });       //[= g / I × 100]
 
             //期 行分ループ

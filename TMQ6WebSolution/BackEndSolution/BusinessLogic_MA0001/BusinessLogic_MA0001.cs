@@ -771,6 +771,8 @@ namespace BusinessLogic_MA0001
             public const string Pattern3 = "3";
             /// <summary>採番パターン4</summary>
             public const string Pattern4 = "4";
+            /// <summary>採番パターン5</summary>
+            public const string Pattern5 = "5";
         }
 
         /// <summary>
@@ -1197,16 +1199,22 @@ namespace BusinessLogic_MA0001
                         {
                             continue;
                         }
-                        Key keyInfo = getKeyInfoByTargetSqlParams(sheetDefine.TargetSqlParams);
+                        //Key keyInfo = getKeyInfoByTargetSqlParams(sheetDefine.TargetSqlParams);
 
                         // 帳票用選択キーデータ取得
                         // 一覧のコントールIDに持つキー項目の値を画面データと紐づけを行い取得する
-                        List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport(
-                            ConductInfo.FormDetail.ControlId.RequestInfoIds[0],     // 依頼情報のコントールID
-                            keyInfo,                     // 設定したキー情報
-                            this.resultInfoDictionary,
-                            false);  // 画面データ
-
+                        //AEC shiraishi mod start 2023/09/03
+                        List<SelectKeyData> selectKeyDataList = new List<SelectKeyData>();
+                        SelectKeyData selectKeyData = new SelectKeyData();
+                        selectKeyData.Key1 = param.SummaryId;
+                        selectKeyDataList.Add(selectKeyData);
+                        /*                        List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport(
+                                                ConductInfo.FormDetail.ControlId.RequestInfoIds[0],     // 依頼情報のコントールID
+                                                keyInfo,                     // 設定したキー情報
+                                                this.resultInfoDictionary,
+                                                false);  // 画面データ
+                        */
+                        //AEC shiraishi mod end 2023/09/03
                         // シートNoをキーとして帳票用選択キーデータを保存する
                         dicSelectKeyDataList.Add(sheetDefine.SheetNo, selectKeyDataList);
                     }
@@ -1957,7 +1965,7 @@ namespace BusinessLogic_MA0001
                         errFlg = false;
                     }
                     //保全計画情報に対する入力が行われている場合、「実施件名」「着工予定日」「完了予定日」は必須
-                    if (role.Maintenance && Convert.ToBoolean(result.PlanInputFlg))
+/*                    if (role.Maintenance && Convert.ToBoolean(result.PlanInputFlg))
                     {
                         if (result.PlanSubject == null)
                         {
@@ -1978,7 +1986,7 @@ namespace BusinessLogic_MA0001
                             errFlg = false;
                         }
                     }
-
+*/
                     //MQ分類が「設備工事」「撤去工事」以外の場合、「突発区分」は必須
                     if (result.MqClassStructureId != null)
                     {
@@ -2445,6 +2453,7 @@ namespace BusinessLogic_MA0001
                 history.WorkingTimeRepair = result.WorkingTimeRepair;
                 history.WorkingTimeTest = result.WorkingTimeTest;
                 history.WorkingTimeCompany = result.WorkingTimeCompanyIndividual;
+                history.RankStructureId = null;//将来復活
                 //予備品有無がNULLの場合、FALSEを設定
                 history.PartsExistenceFlg = result.PartsExistenceFlg == 1;
             }

@@ -4,6 +4,7 @@ SET
     --, inspection_site_importance_structure_id = @InspectionSiteImportanceStructureId
     --, inspection_site_conservation_structure_id = @InspectionSiteConservationStructureId
     , is_management_standard_conponent = @IsManagementStandardConponent
+	, remarks = @Remarks
     , update_serialid = update_serialid+1
     , update_datetime = @UpdateDatetime
     , update_user_id = @UpdateUserId

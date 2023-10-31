@@ -399,6 +399,10 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機能タイプID</summary>
             /// <value>機能タイプID</value>
             public int? FunctionTypeId { get; set; }
+            /// <summary>Gets or sets 備考</summary>
+            /// <value>備考</value>
+            public string Remarks { get; set; }
+
         }
 
         /// <summary>
@@ -1596,6 +1600,12 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機種小分類ID</summary>
             /// <value>機種小分類ID</value>
             public int? JobSmallClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 予算管理部門</summary>
+            /// <value>予算管理部門</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 図面保管場所</summary>
+            /// <value>図面保管場所</value>
+            public int? DiagramStorageLocationStructureId { get; set; }
         }
 
         /// <summary>
@@ -1795,7 +1805,10 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機種小分類名称</summary>
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }
- 
+            /// <summary>Gets or sets 備考</summary>
+            /// <value>備考</value>
+            public string Remarks { get; set; }
+
 
         }
     }

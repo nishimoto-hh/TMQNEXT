@@ -29,6 +29,9 @@ SELECT
     , hi.update_serialid                        --更新シリアルID
     , hi.failure_time                           --故障時間20230426AEC shiraishi
     , hi.failure_equipment_model_structure_id   --故障機器20230426AEC shiraishi
+    , hi.history_importance_structure_id        --故障時間20231026AEC shiraishi
+    , hi.history_conservation_structure_id      --故障機器20231026AEC shiraishi
+    
 FROM
     ma_summary su 
     LEFT JOIN ma_plan pl 

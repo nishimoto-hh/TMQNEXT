@@ -104,7 +104,7 @@ SELECT
 ) AS use_segment_name,
     machine.date_of_installation,                                                     -- 設置年月
     parent.parent_id,                                                                 -- 親子構成ID
-    parent.update_serialid AS parent_update_serialid                                  -- 更新シリアルID
+   ISNULL( parent.update_serialid , 0) AS parent_update_serialid                                  -- 更新シリアルID--20231004 isnull追加
 FROM
     (SELECT mc.*,dbo.get_target_layer_id(mc.location_structure_id, 1)as factoryId FROM mc_machine mc) machine
     LEFT JOIN
@@ -113,7 +113,8 @@ FROM
     LEFT JOIN 
         item 
     ON CAST(equipment.circulation_target_flg AS varchar) = item.extension_data 
-    RIGHT JOIN
+--    RIGHT JOIN
+    LEFT JOIN
         mc_machine_parent_info parent
     ON  machine.machine_id = parent.machine_id
 WHERE parent.parent_moto_id IS NULL

@@ -91,6 +91,7 @@ SELECT mcp.management_standards_component_id,        -- 機器別管理基準部
 			AND tra.structure_id = msc.inspection_site_conservation_structure_id
 		) AS inspection_site_conservation_n, -- 部位保全方式
 	   mcp.is_management_standard_conponent,         -- 機器別管理基準フラグ
+	   mcp.remarks,                                  -- 備考
 	   msc.management_standards_content_id,          -- 機器別管理基準内容ID
 	   msc.inspection_content_structure_id,          -- 点検内容ID
 		( 

@@ -60,6 +60,8 @@ SET
     , [rank_structure_id] = @RankStructureId
     , [failure_equipment_model_structure_id] = @FailureEquipmentModelStructureId
     , [failure_time] = @FailureTime
+    , history_importance_structure_id = @HistoryImportanceStructureId        --ŒÌáŠÔ20231026AEC shiraishi
+    , history_conservation_structure_id = @HistoryConservationStructureId      --ŒÌá‹@Ší20231026AEC shiraishi
     , [update_serialid] = update_serialid + 1
     , [update_datetime] = @UpdateDatetime
     , [update_user_id] = @UpdateUserId 

@@ -412,10 +412,10 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                 FROM
                     #temp_structure_factory AS st_f 
                 WHERE
-                    st_f.structure_id = budget_management_structure_id
+                    st_f.structure_id = sm.budget_management_structure_id
                     AND st_f.factory_id IN (0, @w_key3)
             )
-            AND tra.structure_id = budget_management_structure_id
+            AND tra.structure_id = sm.budget_management_structure_id
         ) AS budget_management_name,                        -- 予算管理区分
         (
         SELECT
@@ -1268,10 +1268,10 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                      FROM
                          #temp_structure_factory AS st_f 
                      WHERE
-                         st_f.structure_id = budget_management_structure_id
+                         st_f.structure_id = sm.budget_management_structure_id
                          AND st_f.factory_id IN (0, @w_key3)
                  )
-                 AND tra.structure_id = budget_management_structure_id
+                 AND tra.structure_id = sm.budget_management_structure_id
             ) AS budget_management_name,                        -- 予算管理区分
             (
              SELECT

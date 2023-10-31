@@ -739,7 +739,11 @@ namespace BusinessLogic_MA0001
             condition.NumberingPattern = Convert.ToInt32(pattern);
             condition.Year = Convert.ToInt32(now.ToString("yyyy"));
             //パターン1の場合は画面で選択されている場所階層ID、左記以外は0
-            condition.LocationStructureId = pattern == RequestNumberingPattern.Pattern1 ? (registSummaryInfo.LocationStructureId ?? 0) : 0;
+            if (pattern == RequestNumberingPattern.Pattern5)
+            {
+                factoryId = Convert.ToInt32(registSummaryInfo.DistrictId); //新規追加パターン
+            }
+            condition.LocationStructureId = factoryId; //pattern == RequestNumberingPattern.Pattern1 ? (registSummaryInfo.LocationStructureId ?? 0) : 0;
 
             //採番テーブルを検索
             ComDao.MaRequestNumberingEntity result = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.MaRequestNumberingEntity>(SqlName.Regist.GetRequestNumbering, SqlName.SubDir, condition, this.db);
@@ -802,6 +806,14 @@ namespace BusinessLogic_MA0001
         private string getNumberingPattern(string pattern, int seqNo, int locationStructureId, DateTime now)
         {
             string requestNo = "";
+            string strLocationStructureId = ""; //aec shiraishi add 20230913
+            strLocationStructureId = locationStructureId.ToString(); //aec shiraishi add 20230913
+
+            if (strLocationStructureId.Length > 2)
+            {
+                strLocationStructureId = strLocationStructureId.Substring(strLocationStructureId.Length -2 , 2);
+            }
+
             switch (pattern)
             {
                 case RequestNumberingPattern.Pattern1:
@@ -819,6 +831,10 @@ namespace BusinessLogic_MA0001
                 case RequestNumberingPattern.Pattern4:
                     //R+連番7桁
                     requestNo = "R" + seqNo.ToString("D7");
+                    break;
+                case RequestNumberingPattern.Pattern5:
+                    //最小桁数
+                    requestNo = seqNo.ToString();
                     break;
             }
             return requestNo;

@@ -120,7 +120,8 @@ FROM
     ON  hf.history_id = hi.history_id
     INNER JOIN ma_summary sm
     ON  hi.summary_id = sm.summary_id
-    INNER JOIN mc_machine mc
+    LEFT JOIN mc_machine mc
+--    INNER JOIN mc_machine mc
     ON  mc.machine_id = hf.machine_id
     INNER JOIN ma_request rq
     ON rq.summary_id = sm.summary_id

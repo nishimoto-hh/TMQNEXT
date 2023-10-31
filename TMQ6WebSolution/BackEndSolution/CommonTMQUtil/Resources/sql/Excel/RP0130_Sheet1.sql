@@ -9,14 +9,14 @@ WITH DateFormat AS (--「yyyy年MM月dd日」の翻訳を取得
     AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
 )
 SELECT
-    manager.family_name AS manager                                                                  -- 課長
-    , chief.family_name AS chief                                                                    -- 係長
-    , personnel.family_name AS person                                                               -- 担当
-    , foreman.family_name AS foreman                                                                -- 職長
+    isnull(manager.family_name,ma_request.request_department_manager_name) AS manager               -- 課長
+    , isnull(chief.family_name,request_department_chief_name) AS chief                              -- 係長
+    , isnull(personnel.family_name,request_personnel_name) AS person                                -- 担当
+    , isnull(foreman.family_name,request_department_foreman_name) AS foreman                        -- 職長
     , FORMAT(ma_request.issue_date, DateFormat.translation_text) AS drafting                                   -- 起票（マスタのデータタイプが文字列なのでそのまま）
     , '''' + FORMAT(ma_request.desired_start_date, DateFormat.translation_text) AS construction                -- 着工
     , ma_summary.location_structure_id                                                              -- 機能場所階層id(工程取得用)
-    , '' AS stroke_name                                                                             -- 工程
+    , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS stroke_name  -- 工程
     , ma_summary.subject AS subject                                                                 -- 件名
     , SUBSTRING(ma_request.request_content,  1, 50) AS request_content_1                            -- 依頼内容１
     , SUBSTRING(ma_request.request_content, 51,50) AS request_content_2                            -- 依頼内容２
@@ -44,17 +44,20 @@ SELECT
     , [dbo].[get_v_structure_item](ma_request.discovery_methods_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS discovery_methods_name               -- 発見方法(翻訳はデータの工場)
     , [dbo].[get_v_structure_item](ma_request.request_department_clerk_id, ma_summary.location_factory_structure_id, temp.languageId) AS request_department_clerk_name           -- 依頼部課係(翻訳はデータの工場)
     , [dbo].[get_v_structure_item](ma_request.maintenance_department_clerk_id, ma_summary.location_factory_structure_id, temp.languageId) AS maintenance_department_clerk_name   -- 保全部課係(翻訳はデータの工場)
-    , '' AS factory_name    -- 工場
-    , '' AS plant_name      -- プラント
-    , '' AS series_name     -- 系列
-    , '' AS facility_name   -- 設備
-
+    , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS factory_name                          -- 工場
+    , [dbo].[get_v_structure_item](ma_summary.location_plant_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS plant_name                              -- プラント
+    , [dbo].[get_v_structure_item](ma_summary.location_series_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS series_name                            -- 系列
+    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS facility_name                         -- 設備
+    , ma_request.request_no AS request_no                                                 -- 依頼内容
+    , ma_request.request_personnel_tel AS request_personnel_tel --PHS
+    , ma_request.desired_start_date AS desired_start_date --希望日
+    , ma_request.issue_date AS issue_date --発行日
 FROM
-    ma_request                                                          -- 保全依頼
-    INNER JOIN #temp temp
-         ON ma_request.request_id = temp.Key1                           -- 依頼NO
-    LEFT JOIN ma_summary                                                -- 保全活動件名
+    ma_summary                                                          -- 保全依頼
+    LEFT JOIN ma_request                                                -- 保全活動件名
         ON ma_request.summary_id = ma_summary.summary_id                -- 保全活動件名id
+    INNER JOIN #temp temp
+         ON ma_summary.summary_id = temp.Key1                           -- summary_id
     LEFT JOIN ma_plan                                                   -- 保全計画
         ON ma_request.summary_id = ma_plan.summary_id                   -- 保全活動件名id
     LEFT JOIN ma_history                                                -- 保全履歴

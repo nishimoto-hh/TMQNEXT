@@ -9,20 +9,24 @@ WITH DateFormat AS (--「yyyy年MM月dd日」の翻訳を取得
     AND tra.language_id = (SELECT DISTINCT languageId FROM #temp)
 )
 SELECT
-    manager.family_name AS manager                                                              -- 課長
-    , chief.family_name AS chief                                                                -- 係長
-    , foreman.family_name AS foreman                                                                -- 職長
-    , personnel.family_name AS person                                                           -- 担当
+    isnull(manager.family_name,ma_request.request_department_manager_name) AS manager               -- 課長
+    , isnull(chief.family_name,request_department_chief_name) AS chief                              -- 係長
+    , isnull(personnel.family_name,request_personnel_name) AS person                                -- 担当
+    , isnull(foreman.family_name,request_department_foreman_name) AS foreman                        -- 職長
     , '''' + FORMAT(ma_request.issue_date, DateFormat.translation_text) AS drafting                        -- 起票
     , '''' + FORMAT(ma_request.desired_start_date, DateFormat.translation_text) AS construction            -- 着工
     , ma_summary.location_structure_id                                                          -- 機能場所階層id(工程取得用)
-    , '' AS stroke_name                                                                         -- 工程
+    , [dbo].[get_v_structure_item](ma_summary.location_stroke_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS stroke_name                            -- 工場
+    , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS factory_name                          -- 工場
+    , [dbo].[get_v_structure_item](ma_summary.location_plant_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS plant_name                              -- プラント
+    , [dbo].[get_v_structure_item](ma_summary.location_series_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS series_name                            -- 系列
+    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS facility_name                         -- 設備
     , ma_summary.subject AS subject                                                             -- 件名
 FROM
-    ma_request                                                          -- 保全依頼
+    ma_summary                                                          -- 保全依頼
     INNER JOIN #temp temp
-         ON ma_request.request_id = temp.Key1                           -- 依頼no
-    LEFT JOIN ma_summary                                                -- 保全活動件名
+         ON ma_summary.summary_id = temp.Key1                           -- summary_id
+    LEFT JOIN ma_request                                                -- 保全活動件名
         ON ma_request.summary_id = ma_summary.summary_id                -- 保全活動件名id
     LEFT JOIN ma_plan                                                   -- 保全計画
         ON ma_request.summary_id = ma_plan.summary_id                   -- 保全活動件名id

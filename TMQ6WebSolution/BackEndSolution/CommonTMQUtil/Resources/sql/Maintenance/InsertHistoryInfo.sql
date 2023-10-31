@@ -33,6 +33,8 @@ INSERT INTO ma_history(
     ,[failure_equipment_model_structure_id]
     ,[failure_time]
     ,[rank_structure_id]
+    ,[history_importance_structure_id]
+    ,[history_conservation_structure_id]
     ,[update_serialid]
     ,[insert_datetime]
     ,[insert_user_id]

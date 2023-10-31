@@ -3018,6 +3018,17 @@ namespace BusinessLogic_MC0001
                     {
                         resultList[i].MaintainanceKindManage = 0;
                     }
+                    //予算管理区分
+//                    if (resultList[i].BudgetManagementStructureId != null)
+ //                   {
+                        resultList[i].BudgetManagementStructureId = null;
+                    //                   }
+                    //図面保管場所
+                    //if (resultList[i].DiagramStorageLocationStructureId != null)
+                    //{
+                    resultList[i].DiagramStorageLocationStructureId = null;//(int)resultList[i].DiagramStorageLocationStructureId;
+                    //}
+
 
                     // 更新
                     if (resultList[i].ProcessId == 2)

@@ -107,7 +107,7 @@ namespace BusinessLogic_MA0001
             string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");
-            selectSql.AppendLine("occurrence_date DESC");
+            selectSql.AppendLine("issue_date DESC");
             selectSql.AppendLine(",summary_id DESC");
 
             // 一覧検索実行

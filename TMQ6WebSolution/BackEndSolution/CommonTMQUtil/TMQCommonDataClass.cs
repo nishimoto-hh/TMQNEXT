@@ -811,6 +811,18 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets フォロー有無</summary>
             /// <value>フォロー有無</value>
             public bool? FollowFlg { get; set; }
+            /// <summary>Gets or sets 故障時間</summary>
+            /// <value>故障時間</value>
+            public decimal? FailureTime { get; set; }
+            /// <summary>Gets or sets 故障機器</summary>
+            /// <value>故障機器</value>
+            public int? FailureEquipmentModelStructureId { get; set; }
+            /// <summary>Gets or sets ランク</summary>
+            /// <value>ランク</value>
+            public int? RankStructureId { get; set; }
+
+
+
 
             /// <summary>
             /// プライマリーキー

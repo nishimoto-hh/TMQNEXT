@@ -6,6 +6,7 @@ INTO mc_management_standards_component(
      --,inspection_site_importance_structure_id  -- 部位重要度
      --,inspection_site_conservation_structure_id -- 部位保全方式
      ,is_management_standard_conponent         -- 機器別管理基準フラグ
+     ,remarks                                  -- 備考
      ,update_serialid                          -- 更新シリアルID
      ,insert_datetime                          -- 登録日時
      ,insert_user_id                           -- 登録ユーザー
@@ -20,6 +21,7 @@ VALUES (
 	--, @InspectionSiteImportanceStructureId      -- 部位重要度
 	--, @InspectionSiteConservationStructureId    -- 部位保全方式
 	, @IsManagementStandardConponent            -- 機器別管理基準フラグ
+    , @Remarks                                  -- 備考
     , 0                                         -- 更新シリアルID
     , @InsertDatetime                           -- 登録日時
     , @InsertUserId                             -- 登録ユーザー

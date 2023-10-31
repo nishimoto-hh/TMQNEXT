@@ -190,6 +190,9 @@ namespace BusinessLogic_MA0001
             public string ConstructionPlace { get; set; }
             /// <summary>Gets or sets 施工担当者</summary>
             /// <value>施工担当者</value>
+            public string FailureEquipmentModelStructureId { get; set; }
+            /// <summary>Gets or sets 施工担当者</summary>
+            /// <value>施工担当者</value>
             public string ConstructionPersonnelName { get; set; }
             /// <summary>Gets or sets 作業時間(Hr)</summary>
             /// <value>作業時間(Hr)</value>
@@ -332,6 +335,11 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全活動件名ID</summary>
             /// <value>保全活動件名ID</value>
             public long SummaryId { get; set; }
+            /// <summary>Gets or sets 発行日</summary>
+            /// <value>発行日</value>
+            public DateTime IssueDate { get; set; }
+
+
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -446,6 +454,7 @@ namespace BusinessLogic_MA0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.ConstructionPlace, nameof(this.ConstructionPlace), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IssueDate, nameof(this.IssueDate), mapDic);
 
 
 
@@ -675,12 +684,17 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets ランク</summary>
             /// <value>ランク</value>
             public int? RankStructureId { get; set; }
-            /// <summary>Gets or sets 故障時間</summary>
-            /// <value>故障時間</value>
-            public decimal? FailureTime { get; set; }
             /// <summary>Gets or sets 故障機器</summary>
             /// <value>故障機器</value>
             public int? FailureEquipmentModelStructureId { get; set; }
+            /// <summary>Gets or sets 履歴重要度</summary>
+            /// <value>履歴重要度</value>
+            public int? HistoryImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 履歴保全方式</summary>
+            /// <value>履歴保全方式</value>
+            public int? HistoryConservationStructureId { get; set; }
+
+
 
         }
 
@@ -1661,6 +1675,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全履歴情報入力有無フラグ</summary>
             /// <value>保全履歴情報入力有無フラグ</value>
             public int HistoryInputFlg { get; set; }
+            /// <summary>Gets or sets 場所</summary>
+            /// <value>場所</value>
+            public int ConstructionPlace { get; set; }
+            /// <summary>Gets or sets 故障機種</summary>
+            /// <value>故障機種</value>
+            public int FailureEquipmentModelStructureId { get; set; }
 
             #region 登録時に必要な項目定義
             /// <summary>Gets or sets 承認者１ID</summary>
