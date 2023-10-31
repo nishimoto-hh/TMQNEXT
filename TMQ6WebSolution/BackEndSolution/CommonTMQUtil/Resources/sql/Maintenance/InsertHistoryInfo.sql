@@ -31,10 +31,10 @@ INSERT INTO ma_history(
     ,[parts_existence_flg]
     ,[follow_flg]
     ,[failure_equipment_model_structure_id]
-    ,[failure_time]
-    ,[rank_structure_id]
-    ,[history_importance_structure_id]
-    ,[history_conservation_structure_id]
+    ,[failure_time]--AEC’Ç‰Á
+    ,[rank_structure_id]--AEC’Ç‰Á
+    ,[history_importance_structure_id]--AEC’Ç‰Á
+    ,[history_conservation_structure_id]--AEC’Ç‰Á
     ,[update_serialid]
     ,[insert_datetime]
     ,[insert_user_id]
@@ -88,8 +88,10 @@ VALUES(
     ,@PartsExistenceFlg
     ,@FollowFlg
     ,@FailureEquipmentModelStructureId
-    ,@FailureTime
-    ,@RankStructureId
+    ,@FailureTime--AEC’Ç‰Á
+    ,@RankStructureId--AEC’Ç‰Á
+    ,@HistoryImportanceStructureId--AEC’Ç‰Á20230126
+    ,@HistoryConservationStructureId--AEC’Ç‰Á20230126
     ,@UpdateSerialid
     ,@InsertDatetime
     ,@InsertUserId
