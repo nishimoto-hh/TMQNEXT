@@ -19,6 +19,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using static CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS;
 
 namespace BusinessLogic_MA0001
 {
@@ -858,6 +859,9 @@ namespace BusinessLogic_MA0001
                 return false;
             }
 
+            // 機器使用期間を機器ごとの先頭のレコードに入力された値にするためのディクショナリ
+            Dictionary<long, int?> machineIdDicForUseDays = new();
+
             //対象機器の情報取得
             var mappingInfo = getResultMappingInfo(ConductInfo.FormRegist.ControlId.MachineList);
             //削除行も併せて取得
@@ -872,6 +876,17 @@ namespace BusinessLogic_MA0001
                 }
                 //フォロー有無がNULLの場合、Falseを設定
                 machine.FollowFlg = machine.FollowFlg ?? false;
+
+                // 機番IDリストにレコードの機番IDが含まれていない場合は追加(削除行は対象外)
+                if (!ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.None) &&
+                    !machineIdDicForUseDays.ContainsKey(machine.MachineId))
+                {
+                    // 機番IDリストに含まれていない = 機器ごとの先頭のレコードなのでディクショナリに格納
+                    machineIdDicForUseDays.Add(machine.MachineId, machine.UsedDaysMachine);
+
+                    // 削除された行なども考慮して機器ごとの先頭レコードは必ず登録処理をさせるためUPDTAGを「1」にする
+                    machineDic["UPDTAG"] = "1";
+                }
 
                 // MaintainanceScheduleDetailIdがnullでないのは長期計画のリンクから遷移してきた場合の新規登録
                 if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New) || (registSummaryInfo.MaintainanceScheduleDetailId != null && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit)))
@@ -931,7 +946,7 @@ namespace BusinessLogic_MA0001
 
                     //保全履歴機器
                     //機器使用期間の設定
-                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId, machine.UsedDaysMachine);
                     if (days >= 0)
                     {
                         historyMachine.UsedDaysMachine = days;
@@ -969,8 +984,8 @@ namespace BusinessLogic_MA0001
                     //保全履歴機器は登録済み
 
                     //保全履歴機器
-                    //機器使用期間の設定
-                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
+                    //機器使用期間の設定(入力された値は機器ごとの先頭行で入力された値とする)
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId, machineIdDicForUseDays[machine.MachineId]);
                     if (days >= 0)
                     {
                         historyMachine.UsedDaysMachine = days;
@@ -1110,8 +1125,8 @@ namespace BusinessLogic_MA0001
                 //保全履歴機器
                 if (machine.HistoryMachineId != null)
                 {
-                    //機器使用期間の取得
-                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId);
+                    //機器使用期間の取得(入力された値は機器ごとの先頭行で入力された値とする)
+                    int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, machine.MachineId, machineIdDicForUseDays[machine.MachineId]);
                     if (days >= 0)
                     {
                         //保全履歴機器の設定
@@ -1195,7 +1210,7 @@ namespace BusinessLogic_MA0001
             registFailureInfo.EquipmentId = registMachine.EquipmentId;
 
             //機器使用期間の設定
-            int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, registMachine.MachineId);
+            int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, registMachine.MachineId, registMachine.UsedDaysMachine);
             if (days >= 0)
             {
                 registFailureInfo.UsedDaysMachine = days;
@@ -1296,10 +1311,11 @@ namespace BusinessLogic_MA0001
         /// </summary>
         /// <param name="completionDate">完了日</param>
         /// <param name="machineId">機番ID</param>
-        /// <returns>機器使用期間、取得できない場合-1</returns>
-        private int setUsedDaysMachine(DateTime? completionDate, long machineId)
+        /// <param name="usedDaysMachine">機器使用期間</param>
+        private int setUsedDaysMachine(DateTime? completionDate, long machineId, int? usedDaysMachine = null)
         {
             int val = -1;
+
             ComDao.McMachineEntity machineEntity = new ComDao.McMachineEntity().GetEntity(machineId, this.db);
             if (completionDate != null && machineEntity != null && machineEntity.DateOfInstallation != null)
             {
@@ -1307,6 +1323,14 @@ namespace BusinessLogic_MA0001
                 TimeSpan days = (TimeSpan)(completionDate - machineEntity.DateOfInstallation);
                 val = days.Days;
             }
+
+            // 機器使用期間がNULLではない(入力されている)
+            if (usedDaysMachine != null)
+            {
+                // 入力された値を優先する
+                val = (int)usedDaysMachine;
+            }
+
             return val;
         }
 

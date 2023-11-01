@@ -13,3 +13,8 @@
 .HistoryInfoTitle {
     display: none;
 }
+
+/*機器別管理基準 保全項目編集画面で スケジュールを更新 が入力エラーの際に付与されるクラス*/
+.updateScheduleError {
+    background-color: #ffb6c1 !important;
+}

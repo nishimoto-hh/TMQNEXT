@@ -8,7 +8,80 @@ WITH structure_factory AS (
         structure_group_id IN (1170,1180,1200,1030,1230,1220,1240,1890) 
         AND language_id = @LanguageId
 ) 
-
+, schedule_date_by_machine as ( 
+    -- 機IDに対するスケジュール情報を取得
+    select
+	    sch.maintainance_schedule_id
+        , cont.management_standards_content_id
+        , sch.start_date
+        , det.complition
+        , det.schedule_date 
+    from
+        mc_management_standards_component comp 
+        left join mc_management_standards_content cont 
+            on comp.management_standards_component_id = cont.management_standards_component_id 
+        left join mc_maintainance_schedule sch 
+            on cont.management_standards_content_id = sch.management_standards_content_id 
+        left join mc_maintainance_schedule_detail det 
+            on sch.maintainance_schedule_id = det.maintainance_schedule_id 
+    where
+        comp.machine_id = @MachineId
+) 
+, max_schedule_date_by_content as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日を取得
+    select
+	    maintainance_schedule_id
+        , management_standards_content_id
+        , max(schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+    where
+        complition = 1 
+    group by
+        maintainance_schedule_id, management_standards_content_id
+) 
+, next_date_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日の次のスケジュール日を取得
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date
+    from
+        schedule_date_by_machine 
+        inner join max_schedule_date_by_content 
+            on schedule_date_by_machine.maintainance_schedule_id = max_schedule_date_by_content.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_schedule_date_by_content.management_standards_content_id
+    where
+        schedule_date_by_machine.schedule_date > max_schedule_date_by_content.schedule_date
+	group by
+	    schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+) 
+, next_date_not_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの開始日より後のスケジュール日を取得(保全活動が完了していない)
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+        left join ( 
+            select
+			    maintainance_schedule_id
+                , management_standards_content_id
+                , max(start_date) start_date 
+            from
+                schedule_date_by_machine 
+            group by
+                maintainance_schedule_id, management_standards_content_id
+        ) max_start_date 
+            on schedule_date_by_machine.maintainance_schedule_id = max_start_date.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_start_date.management_standards_content_id
+    where
+        schedule_date_by_machine.start_date >= max_start_date.start_date 
+    group by
+        schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+)
+, main as(
 SELECT mcp.management_standards_component_id,        -- 機器別管理基準部位ID
        mcp.machine_id,                               -- 機番ID
 	   ma.equipment_level_structure_id,              -- 機器レベル
@@ -223,5 +296,29 @@ AND mcp.machine_id = ma.machine_id
 AND ma.machine_id = eq.machine_id
 AND mcp.is_management_standard_conponent = 1    -- 機器別管理基準フラグ
 AND mcp.machine_id = @MachineId
-ORDER BY mcp.inspection_site_structure_id,msc.inspection_content_structure_id -- 並び順
- 
+)
+
+select
+    main.*
+	-- 以下は次回実施予定日
+	-- ●(保全活動が完了したデータ)が存在する場合は、最新の●の次の○のデータの日付
+	-- ●が存在しない場合は開始日より後の○の日付
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date 
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date_before 
+from
+    main 
+    left join next_date_exists_comp 
+        on main.maintainance_schedule_id = next_date_exists_comp.maintainance_schedule_id
+		and main.management_standards_content_id = next_date_exists_comp.management_standards_content_id
+    left join next_date_not_exists_comp 
+        on main.maintainance_schedule_id = next_date_not_exists_comp.maintainance_schedule_id
+		and main.management_standards_content_id = next_date_not_exists_comp.management_standards_content_id 
+order by
+    inspection_site_structure_id
+    , inspection_content_structure_id-- 並び順

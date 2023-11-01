@@ -7,14 +7,15 @@
 .clickedButton {
     background-color: #b0e0e6;
 }
-.clickedButton:hover {
-    background-color: #1e90ff;
-}
+
+    .clickedButton:hover {
+        background-color: #1e90ff;
+    }
 
 /*帳票出力画面*/
 .RM0001_Hide {
     /*項目を非表示にする*/
-    display:none;
+    display: none;
 }
 /*担当者検索画面*/
 .SP0001_SelectParts {
@@ -25,4 +26,9 @@
 /*データのNo.リンクを無効にする*/
 .linkDisable {
     pointer-events: none;
+}
+
+/*機器別管理基準 保全項目編集画面で スケジュールを更新 が入力エラーの際に付与されるクラス*/
+.updateScheduleError {
+    background-color: #ffb6c1 !important;
 }

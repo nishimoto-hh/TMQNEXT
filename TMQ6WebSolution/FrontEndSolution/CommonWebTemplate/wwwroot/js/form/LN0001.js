@@ -1120,6 +1120,57 @@ function postBuiltTabulator(tbl, id) {
     DM0002_postBuitTabulator(tbl, id);
     // 保全一覧のスタイル設定処理
     callSetMaintListStyle(id);
+
+    // 表示する一覧のIDを判定
+    // 詳細画面の保全情報一覧・点検種別毎保全情報一覧の場合
+    if (id == "#" + FormDetail.List.Id + getAddFormNo() || id == "#" + FormDetail.ListMaintKind.Id + getAddFormNo()) {
+
+        // 変更管理かどうかを判定
+        if (getIsHisotyManagement(false)) {
+
+            // 変更管理の場合、次回実施予定日を入力不可にする(入力項目列を非表示にしてラベル列を表示する)
+            if (id == "#" + FormDetail.List.Id + getAddFormNo()) {
+                // 保全情報一覧の場合
+
+                // 入力列は表示されてしまうので非活性にする
+                var isScheduleList = $(P_Article).find(".IsScheduleEnable");
+                changeInputControl(isScheduleList, false);
+
+                tbl.hideColumn("VAL15"); // ラベル列を表示
+            }
+            else {
+                // 点検種別毎保全情報一覧の場合
+
+                // 入力列は表示されてしまうので非活性にする
+                var isScheduleList = $(P_Article).find(".IsScheduleEnable");
+                changeInputControl(isScheduleList, false);
+
+                tbl.hideColumn("VAL15"); // ラベル列を表示
+            }
+        } else {
+
+            var valuePlanContent = getFormNo() == FormDetail.No ?
+                getValue(FormDetail.Condition.Id, FormDetail.Condition.PlanContentExt, 0, CtrlFlag.Label) :
+                FormDetail.Condition.PlanComboOptValue.Maintainance;
+
+            // 変更管理ではない場合、次回実施予定日を入力可能にする(入力項目列を表示にしてラベル列を非表示する)
+            if (id == "#" + FormDetail.List.Id + getAddFormNo()) {
+                // 保全情報一覧の場合
+                if (valuePlanContent == 3) {
+                    tbl.showColumn("VAL13"); // 入力列を表示
+                }
+
+                tbl.hideColumn("VAL15"); // ラベル列を非表示
+            }
+            else {
+                // 点検種別毎保全情報一覧の場合
+                if (valuePlanContent == 3) {
+                    tbl.showColumn("VAL14"); // 入力列を表示
+                }
+                tbl.hideColumn("VAL15"); // ラベル列を非表示
+            }
+        }
+    }
 }
 
 /**

@@ -143,6 +143,7 @@ SELECT DISTINCT
     , su.plan_implementation_content
     , su.subject_note
     , ma.machine_id
+    , ma.machine_id AS machine_id_before
     , eq.equipment_id
     , ma.machine_no + ' ' + ma.machine_name AS machine
     , ma.location_structure_id AS machine_location_structure_id --機器の場所階層
@@ -454,7 +455,7 @@ SELECT DISTINCT
     , hic.follow_plan_date
     , hic.follow_content
     , hic.follow_completion_date
-    , hm.used_days_machine 
+    , hm.used_days_machine
 FROM
     ( 
         SELECT

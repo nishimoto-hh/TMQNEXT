@@ -470,8 +470,8 @@ function setSelectCntControlStatus(ctrlId, disabled) {
     var div = $(P_Article).find('div[data-relation-id="' + ctrlId + '"]');
     var select = $(div).find('select');
     $(select).prop("disabled", disabled);
-//    var btn = $(div).find('input[name="SearchDispCount"]');
-//    $(btn).prop("disabled", disabled);
+    //    var btn = $(div).find('input[name="SearchDispCount"]');
+    //    $(btn).prop("disabled", disabled);
 }
 
 /**
@@ -2304,8 +2304,9 @@ function setConditionAppliedStatus(selector, data) {
  * @param {any} table tabulator
  * @param {any} id 一覧のID
  * @param {any} formNo 画面NO
+ * @param {any} conductId 機能ID
  */
-function updateTabulatorDataForChangeVal(table, id, formNo) {
+function updateTabulatorDataForChangeVal(table, id, formNo, conductId) {
     //tabulator一覧のページ切り替えやソート等が行われた際に、変更された値を保持できるよう対象行のデータを更新する
 
     var data = table.getData("display");
@@ -2315,6 +2316,21 @@ function updateTabulatorDataForChangeVal(table, id, formNo) {
         var tmpData = getTempDataForTabulator(formNo, rowNo, id, 0, true);
         //編集行の場合、値を更新
         if (tmpData == null) { return true; }
+
+        // 機器台帳 スケジューリング一覧
+        // 機器台帳 点検種別毎スケジューリング一覧
+        // 件名別長期計画 詳細画面 保全情報一覧
+        // 件名別長期計画 詳細画面 点検種別毎保全情報一覧
+        // の場合はUPDTAGの状態によらず保存しない→ここで終了
+        if (conductId) {
+            if ((conductId == "MC0001" && id == "#BODY_160_00_LST_1_1") ||
+                (conductId == "MC0001" && id == "#BODY_170_00_LST_1_1") ||
+                (conductId == "LN0001" && id == "#BODY_070_00_LST_1_1") ||
+                (conductId == "LN0001" && id == "#BODY_080_00_LST_1_1")) {
+                return;
+            }
+        }
+
         if (tmpData.UPDTAG == updtag.Input) {
             var updateRow = table.searchRows("ROWNO", "=", rowNo);
             // 変更した値を保存する

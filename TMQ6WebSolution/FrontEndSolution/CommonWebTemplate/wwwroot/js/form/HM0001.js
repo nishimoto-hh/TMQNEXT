@@ -210,7 +210,11 @@ const FormDetail = {
             MachineId: 23,                      // 機番ID
             ApplicationDivisionCode: 27,        // 申請区分(拡張項目)
             ValueChanged: 28,                   // 変更のあった項目
-            EquipmentLevelLabel: 38              // 機器レベル(コンボ)
+            HmScheduleId: 32,                    // 保全スケジュール変更管理ID
+            EquipmentLevelLabel: 38,            // 機器レベル(コンボ)
+            Remarks: 39,                        // 機器別管理基準備考
+            IsUpdateSchedule: 40,               // スケジュールを更新
+            ScheduleDate: 41                    // 次回実施予定日
         }
     },
     Button: {                                                   // ボタンコントロールID
@@ -729,6 +733,13 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
             }
         }
 
+        // 表示するレコードの保全スケジュール変更管理IDを取得
+        var hmScheduleId = getValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.HmScheduleId, rowNo, CtrlFlag.Label, true, false);
+        if (!hmScheduleId || hmScheduleId == "0" || rowNo == -1) {
+            // レコードに対して変更申請が存在しない場合は「スケジュールを更新」を選択状態にする
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.IsUpdateSchedule, 1, CtrlFlag.ChkBox, 1, true, false);
+        }
+
         // 登録ボタンにフォーカス(描画に間に合わないので少し遅らせる)
         setTimeout(function () {
             setFocusButton(FormDetail.Button.ManagementStandardRegist);
@@ -778,6 +789,65 @@ function initTabOriginal(tabNo, tableId) {
 function preDeleteRow(appPath, btn, id, checkes) {
 
     return preDeleteRowCommon(id, [FormDetail.ManagementStandardsList.Id]);
+}
+
+/**
+ *【オーバーライド用関数】実行ﾁｪｯｸ処理 - 前処理
+ *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId   {string}   ：機能ID
+ *  @formNo      {number}   ：画面番号
+ *  @btn         {button}   ：押下されたボタン要素
+ */
+function registCheckPre(appPath, conductId, formNo, btn) {
+
+    // 画面番号を判定
+    if (formNo == FormDetail.No) {
+        // 詳細画面
+
+        // 機器別管理基準 保全項目編集で「スケジュールを更新」がエラーになっている場合、
+        // チェックボックスの親要素の背景色を元に戻す
+
+        // スケジュールを更新 の親要素を取得
+        var isUpdateSchedule = $(getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.IsUpdateSchedule, 0, CtrlFlag.ChkBox, true, false)).parent();
+
+        // 要素が取得できている場合
+        if (isUpdateSchedule && $(isUpdateSchedule).hasClass("updateScheduleError")) {
+
+            // チェックボックスの親要素からエラークラスを削除する
+            $(isUpdateSchedule).removeClass("updateScheduleError");
+        }
+    }
+
+    return true;
+}
+
+/**
+ * 【オーバーライド用関数】実行異常終了後処理
+ *  @param {string}                     appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string}                     conductId   ：機能ID
+ *  @param {string}                     pgmId       ：プログラムID
+ *  @param {number}                     formNo      ：画面NO
+ *  @param {html}                       btn         ：ボタン要素
+ *  @param {number}                     conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param {boolean}                    autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param {boolean}                    isEdit      ：単票表示フラグ
+ *  @param {List<Dictionary<string>>}   data        ：結果ﾃﾞｰﾀ
+ */
+function postRegistProcessFailure(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+
+    // 機器別管理基準 保全項目編集画面で「スケジュールを更新」がエラーになった場合、
+    // チェックボックスの背景色が変わらないため親要素の背景色を変更する
+
+    // スケジュールを更新 の要素を取得
+    var isUpdateSchedule = getCtrl(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.IsUpdateSchedule, 0, CtrlFlag.ChkBox, true, false);
+
+    // 要素が取得できている場合
+    if (isUpdateSchedule && $(isUpdateSchedule).hasClass("errorcom")) {
+
+        // チェックボックスの親要素にエラークラスを付与する
+        $(isUpdateSchedule).parent().addClass("updateScheduleError");
+    }
+
 }
 
 /**

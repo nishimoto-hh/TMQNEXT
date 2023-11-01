@@ -10,5 +10,8 @@ SET
     , update_serialid = update_serialid+1                           -- 更新シリアルID
     , update_datetime = @UpdateDatetime                             -- 登録日時
     , update_user_id = @UpdateUserId                                -- 登録ユーザー
+    , is_update_schedule = @IsUpdateSchedule                        -- スケジュール更新有無
+    , next_schedule_date = @ScheduleDate                            -- 次回実施予定日
+
 WHERE
     hm_maintainance_schedule_id = @HmMaintainanceScheduleId

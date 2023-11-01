@@ -296,6 +296,10 @@ const FormRegist = {
         FollowPlanDate: 13,
         //フォロー完了日
         FollowCompletionDate: 15,
+        // 機器使用期間
+        UseDays: 16,
+        // 機番ID
+        MachineId: 24,
         // ラベル化する列
         LabelCol: { FollowFlg: 12, FollowUpPlanDate: 13, FollowContent: 14, FollowComplitionDate: 15 },
     },
@@ -1425,6 +1429,16 @@ function preDeleteRow(appPath, btn, id, checkes) {
         return false;
     }
 
+    // 対象機器一覧の行削除時
+    if (id == FormRegist.MachineList.Id + getAddFormNo()) {
+        $.each(checkes, function (idx, check) {
+
+            // 削除された行の行ステータスを変更
+            check["ROWSTATUS"] = rowStatusDef.Delete;
+
+        });
+    }
+
     return true;
 }
 
@@ -1844,6 +1858,14 @@ function postDeleteRow(appPath, btn, id) {
         //行追加ボタンを表示する
         setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, false);
     }
+
+    // 対象機器一覧で行削除された場合
+    if (id == FormRegist.MachineList.Id + getAddFormNo()) {
+
+        // 機器使用期間の入力可能レコードを制限する
+        // 同一機器に対する先頭行のレコードのみ入力可能とする
+        unEnableUseDays(P_listData["#" + FormRegist.MachineList.Id + getAddFormNo()].getRows());
+    }
 }
 
 /**
@@ -1954,6 +1976,10 @@ function setSelectMachineDataForTargetList(appPath, machineData) {
             //行追加ボタンを非表示
             setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, true);
         }
+
+        // 機器使用期間の入力可能レコードを制限する
+        // 同一機器に対する先頭行のレコードのみ入力可能とする
+        unEnableUseDays(table.getRows());
 
         // 処理終了
         return;
@@ -2235,6 +2261,11 @@ function postBuiltTabulator(tbl, id) {
                     row.update(updateVal);
                 });
             }
+
+            // 機器使用期間の入力可能レコードを制限する
+            // 同一機器に対する先頭行のレコードのみ入力可能とする
+            unEnableUseDays(rows);
+
         } else if (divisionId == DivisionIdDefine.Failure) {
             //故障の場合
             setTimeout(function () { //ブラウザに処理が戻った際に実行
@@ -2302,6 +2333,10 @@ function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
     if (getFormNo() == FormRegist.No && id == '#' + FormRegist.MachineList.Id + getAddFormNo()) {
         //ユーザの役割に「製造権限」のみが含まれる場合、対象機器の入力項目はラベル化
         changeLabelForMachineList(rows);
+
+        // 機器使用期間の入力可能レコードを制限する
+        // 同一機器に対する先頭行のレコードのみ入力可能とする
+        unEnableUseDays(rows);
     }
 }
 
@@ -2310,6 +2345,7 @@ function postTabulatorChangePage(tbl, id, pageNo, pagesize) {
  * @param {any} rows 行
  */
 function changeLabelForMachineList(rows) {
+
     //保全権限フラグの値取得
     var maintenanceStr = getValue(FormRegist.HideInfo.Id, FormRegist.HideInfo.Maintenance, 1, CtrlFlag.Label);
     var maintenanceFlg = convertStrToBool(maintenanceStr);
@@ -2796,4 +2832,43 @@ function dispFormEditFromScheduleLink() {
 
     // ボタンをクリック
     $(button).click();
+}
+
+
+/**
+ * 対象機器一覧 機器使用期間の入力可能なレコードを制限する
+ * @param {any} rows
+ */
+function unEnableUseDays(rows) {
+    // 機器使用期間の入力可能レコードを制限する
+    // 同一機器に対する先頭行のレコードのみ入力可能とする
+    var machineIdList = []; // 機番IDリスト
+    var machineId;          // 機番ID
+    var useDaysEle;
+    $.each(rows, function (idx, row) {
+
+        // レコードの機番IDを取得
+        machineId = $(row._row.element).find("div[tabulator-field=VAL" + FormRegist.MachineList.MachineId + "]")[0].innerText;
+
+        // レコードの機器使用期間のテキストボックス要素
+        useDaysEle = $(row._row.element).find("div[tabulator-field=VAL" + FormRegist.MachineList.UseDays + "]").find("input")[0];
+
+        // レコードの機番IDが機番IDリストに格納されているか判定
+        if (machineIdList.indexOf(machineId) > -1) {
+            // 含まれている場合 = 機器どとの先頭レコードではない(自身のレコードより上に同一の機番IDのレコードが存在する)
+            // 自身のレコードの機器使用期間の値をクリアする
+            useDaysEle.value = "";
+
+            // 自身のレコードの機器使用期間を入力不可能(非活性)にする
+            changeInputControl(useDaysEle, false);
+        }
+        else {
+            // 含まれていない場合 = 機器ごとの先頭レコード
+            // 機番IDリストにレコードの機番IDを格納する
+            machineIdList.push(machineId);
+
+            // 自身のレコードの機器使用期間を入力可能(活性)にする
+            changeInputControl(useDaysEle, true);
+        }
+    });
 }

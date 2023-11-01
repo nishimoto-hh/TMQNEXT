@@ -20,6 +20,11 @@ using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureTy
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
 using ScheduleStatus = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.ScheduleStatus;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Vml;
+using Jint.Native;
+using DocumentFormat.OpenXml.Drawing;
 
 namespace BusinessLogic_MC0001
 {
@@ -111,7 +116,14 @@ namespace BusinessLogic_MC0001
             public const string GetMaxDateByKeyId = "GetMaxDateByKeyId";
             /// <summary>SQL名：保全スケジュール詳細 データ削除 文書を検索</summary>
             public const string GetAttachmentCount = "GetAttachmentCount";
-
+            /// <summary>SQL名：保全項目一覧 次回実施日以降の次回実施日(次の次の予定日)を取得</summary>
+            public const string GetNextScheduleDate = "GetNextScheduleDate";
+            /// <summary>SQL名：保全項目一覧 表示周期のみを更新</summary>
+            public const string UpdateDispCycleOfMaintainanceSchedule = "UpdateDispCycleOfMaintainanceSchedule";
+            /// <summary>SQL名：保全項目一覧 保全スケジュール詳細IDでスケジュール日を更新</summary>
+            public const string UpdateScheduleDateByDetailId = "UpdateScheduleDateByDetailId";
+            /// <summary>SQL名：保全項目一覧 保全スケジュール詳細IDでスケジュール日を更新</summary>
+            public const string UpdateScheduleDateByDetailIdAndSameKind = "UpdateScheduleDateByDetailIdAndSameKind";
         }
 
         /// <summary>
@@ -478,7 +490,7 @@ namespace BusinessLogic_MC0001
             DateTime nowNendo = DateTime.Now;
             int nowMonth = int.Parse(DateTime.Now.ToString("MM"));
             int year = int.Parse(DateTime.Now.ToString("yyyy"));
-            if(nowMonth < monthStartNendo)
+            if (nowMonth < monthStartNendo)
             {
                 year = int.Parse(DateTime.Now.AddYears(-1).ToString("yyyy"));
                 nowNendo = DateTime.Now.AddYears(-1);
@@ -585,7 +597,7 @@ namespace BusinessLogic_MC0001
             if (condInfo.ScheduleCondType == condInfo.ScheduleCondMonthStructureId)
             {
                 // 月度
-                if(condInfo.ScheduleCondYear == null || !int.TryParse(condInfo.ScheduleCondYear.ToString(), out int val))
+                if (condInfo.ScheduleCondYear == null || !int.TryParse(condInfo.ScheduleCondYear.ToString(), out int val))
                 {
                     errorReturnInfo();
                     error = true;
@@ -691,7 +703,7 @@ namespace BusinessLogic_MC0001
             if (!insertFlg)
             {
                 // 最新DBデータ取得
-                dynamic whereParam = whereParam = new {ManagementStandardsComponentId = registResult.ManagementStandardsComponentId, ManagementStandardsContentId = registResult.ManagementStandardsContentId };
+                dynamic whereParam = whereParam = new { ManagementStandardsComponentId = registResult.ManagementStandardsComponentId, ManagementStandardsContentId = registResult.ManagementStandardsContentId };
                 dbresult = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetManagementStandardDetail, whereParam);
                 // 排他チェック
                 if (dbresult == null || dbresult.Count == 0 || isErrorExclusiveManagementStandard(registResult, dbresult))
@@ -714,9 +726,29 @@ namespace BusinessLogic_MC0001
 
             // 入力チェック
             Dictionary<string, object> targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailManagementStandard90);
-            if (isErrorRegistManagementStandard(registResult, insertFlg, dbresult, TargetCtrlIdManagementStandard.DetailManagementStandard90, targetDic))
+            if (isErrorRegistManagementStandard(registResult, insertFlg, dbresult, TargetCtrlIdManagementStandard.DetailManagementStandard90, targetDic, true))
             {
                 return false;
+            }
+
+            // スケジュールを更新 が未選択でかつ、次回実施予定日が入力されている場合
+            // 確認メッセージを表示する(※メッセージを表示する必要がある時はTrueが返る)
+            if (confirmByIsUpdateAndScheduleDate(registResult))
+            {
+                return true;
+            }
+
+            // 新規登録かつ、次回実施予定日が設定されている場合
+            // 確認メッセージを表示する(※メッセージを表示する必要がある時はTrueが返る)
+            if (confirmByIsNewAndIsUpdate(insertFlg, registResult))
+            {
+                return true;
+            }
+
+            // 周期または開始日が変更されていて、スケジュールを更新 が未選択の場合
+            if (confirmByScheduleInfoChanged(registResult, dbresult))
+            {
+                return true;
             }
 
             // 周期変更有チェック
@@ -779,7 +811,7 @@ namespace BusinessLogic_MC0001
                     }
 
                     // 点検種別毎管理
-                    if(results[0].MaintainanceKindManage)
+                    if (results[0].MaintainanceKindManage)
                     {
                         // 確認チェック
                         if (isConfirmRegistCycleInsert(registResult))
@@ -874,6 +906,49 @@ namespace BusinessLogic_MC0001
                     return false;
                 }
 
+                // 自身のレコードの点検種別と同一の点検種別のデータを取得
+                // ※機器が点検種別毎管理でない場合または自身のレコードの点検種別と同一の点検種別のデータが存在しない場合 は取得されない
+                if (!getSameManageKindData(registResult, out IList<Dao.managementStandardResult> sameManageKindList))
+                {
+                    return false;
+                }
+
+                // 表示周期のみを更新する
+                if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateDispCycleOfMaintainanceSchedule))
+                {
+                    return false;
+                }
+
+                // 自身のレコードと同一の点検種別のデータの表示周期も更新する
+                if (!updateDispCycle(registResult, sameManageKindList))
+                {
+                    return false;
+                }
+
+                // 次回実施予定日が入力されていて値が変更されている場合
+                if (registResult.ScheduleDate != null && registResult.ScheduleDate != registResult.ScheduleDateBefore)
+                {
+                    // スケジュール日を入力された値に更新する
+                    if (!registUpdateDb<Dao.managementStandardResult>(registResult, SqlNameManagementStandard.UpdateScheduleDateByDetailId))
+                    {
+                        return false;
+                    }
+
+                    // 自身のレコードと同一の点検種別のデータの次回実施予定日も更新する
+                    if (!updateNextScheduleDate(registResult, sameManageKindList))
+                    {
+                        return false;
+                    }
+                }
+
+                // スケジュールを更新 が未選択または、次回実施予定日が入力されて変更されている場合
+                if (registResult.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF ||
+                    (registResult.ScheduleDate != null && registResult.ScheduleDate != registResult.ScheduleDateBefore))
+                {
+                    // 保全スケジュールの再作成処理は行わないのでここで終了
+                    return true;
+                }
+
                 // 周期・開始日変更有
                 if (cycleChangeFlg)
                 {
@@ -929,6 +1004,110 @@ namespace BusinessLogic_MC0001
                 }
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータを取得
+        /// </summary>
+        /// <param name="result">画面で入力された情報</param>
+        /// <param name="sameManageKindList">自身のレコードと同一の点検種別のデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getSameManageKindData(Dao.managementStandardResult result, out IList<Dao.managementStandardResult> sameManageKindList)
+        {
+            sameManageKindList = null;
+
+            // 検索条件取得
+            dynamic whereParam = null; // WHERE句パラメータ
+            string sql;
+            // 一覧検索SQL文の取得
+            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
+            whereParam = new { MachineId = result.MachineId };
+
+            // 一覧検索実行
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParam);
+            if (results == null || results.Count == 0)
+            {
+                return false;
+            }
+
+            // 点検種別毎管理か判定
+            if (!results[0].MaintainanceKindManage)
+            {
+                // 点検種別毎管理ではない場合は何もせずに終了
+                return true;
+            }
+
+            // 最新DBデータ取得
+            whereParam = null; // WHERE句パラメータ
+            whereParam = new
+            {
+                MachineId = result.MachineId,
+                MaintainanceKindStructureId = result.MaintainanceKindStructureId,
+                ManagementStandardsContentId = result.ManagementStandardsContentId
+            };
+            sameManageKindList = getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetMaintainanceKindManageDataUpdContent, whereParam);
+
+            return true;
+        }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータの表示周期を更新
+        /// </summary>
+        /// <param name="result">画面で入力されたデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool updateDispCycle(Dao.managementStandardResult result, IList<Dao.managementStandardResult> sameManageKindList)
+        {
+            // 自身のレコードと同一の点検種別のデータが存在しない場合は何もしない
+            if (sameManageKindList == null || sameManageKindList.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (Dao.managementStandardResult regRes in sameManageKindList)
+            {
+                // 更新情報を設定
+                regRes.DispCycle = result.DispCycle;                           // 表示周期
+                regRes.UpdateDatetime = result.UpdateDatetime;                 // 更新日時
+                regRes.UpdateUserId = result.UpdateUserId;                     // 更新ユーザー
+
+                // 表示周期のみを更新する
+                if (!registUpdateDb<Dao.managementStandardResult>(regRes, SqlNameManagementStandard.UpdateDispCycleOfMaintainanceSchedule))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータの次回実施予定日を更新
+        /// </summary>
+        /// <param name="result">画面で入力されたデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool updateNextScheduleDate(Dao.managementStandardResult result, IList<Dao.managementStandardResult> sameManageKindList)
+        {
+            // 自身のレコードと同一の点検種別のデータが存在しない場合は何もしない
+            if (sameManageKindList == null || sameManageKindList.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (Dao.managementStandardResult regRes in sameManageKindList)
+            {
+                // 更新情報を設定
+                regRes.ScheduleDate = result.ScheduleDate;                                 // スケジュール日
+                regRes.UpdateDatetime = result.UpdateDatetime;                             // 更新日時
+                regRes.UpdateUserId = result.UpdateUserId;                                 // 更新ユーザー
+
+                // 次回実施予定日を更新する
+                // 次回実施予定日をもう一度取得しなおして、取得した日付のデータを更新する
+                // ※自身のレコードの次回実施予定日と他のデータの次回実施予定日が同一とは限らないため
+                if (!registUpdateDb<Dao.managementStandardResult>(regRes, SqlNameManagementStandard.UpdateScheduleDateByDetailIdAndSameKind))
+                {
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -997,6 +1176,44 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            // -------------------- この部分はスケジュール表の更新時に使用するが、入力チェックで必要になるためここで取得 --------------------
+            // 更新対象の一覧の内容を取得
+            var rowDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailScheduleList160);
+            // 一覧のキー値のVAL値を取得(スケジュールとの紐付に使用)
+            var valKeyId = GetValKeyIdForSchedule(TargetCtrlIdManagementStandard.DetailScheduleList160);
+
+            // 入力された内容を取得
+            Dao.managementStandardResult machineInfo = getRegistManagementStandard<Dao.managementStandardResult>(result[0], TargetCtrlIdManagementStandard.DetailScheduleList160);
+            // 対象機器の工場ID取得
+            dynamic whereParamF = new { MachineId = machineInfo.MachineId };
+            string sql;
+            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParamF);
+            //if (results == null || results.Count == 0)
+            //{
+            //    return false;
+            //}
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId);
+            //int factoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+            int factoryId = (int)results[0].FactoryId;
+
+            // 年度開始月の取得
+            int monthStartNendo = getYearStartMonth(factoryId);
+            // 一覧より更新されたスケジュールの情報を取得
+            List<TMQDao.ScheduleList.Display> updatedScheduleList = TMQUtil.ScheduleListUtil.GetScheduleUpdatedData(rowDicList, valKeyId, monthStartNendo);
+
+            // 更新対象のキーIDの一覧を取得(画面のディクショナリとの紐づけに使用)
+            var updateKeyIdList = updatedScheduleList.Select(x => x.KeyId).ToList();
+            // -------------------- この部分はスケジュール表の更新時に使用するが、入力チェックで必要になるためここで取得 --------------------
+
+            // エラー情報セット用Dictionary
+            var errorInfoDictionary = new List<Dictionary<string, object>>();
+            var info = getResultMappingInfo(TargetCtrlIdManagementStandard.DetailScheduleList160);
+
             // 排他チェック、入力チェック
             foreach (var row in result)
             {// 変更フラグが立っているもの
@@ -1047,7 +1264,136 @@ namespace BusinessLogic_MC0001
                             }
                         }
                     }
+
+                    // 過去日のチェックは行わない
+                    //// 次回実施予定日に過去日が入力されている場合
+                    //if (updResult.NextScheduleDate != null && updResult.NextScheduleDate < DateTime.Now.Date)
+                    //{
+                    //    // エラー情報格納クラス
+                    //    ErrorInfo errorInfo = new ErrorInfo(row);
+                    //    // 過去日付は設定できません。
+                    //    string errMsg = GetResMessage("141060003");
+                    //    string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    //    errorInfo.setError(errMsg, val);
+                    //    errorInfoDictionary.Add(errorInfo.Result);
+                    //}
+
+                    // 次回実施予定日が入力されている場合
+                    if (updResult.NextScheduleDate != null)
+                    {
+                        // 次々回実施予定日を取得
+                        List<Dao.managementStandardResult> nextDate = (List<Dao.managementStandardResult>)getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetNextScheduleDate, new { ManagementStandardsContentId = updResult.ManagementStandardsContentId, ScheduleDateBefore = updResult.NextScheduleDateDisp, MaintainanceScheduleId = updResult.MaintainanceScheduleId });
+
+                        // 取得できた場合は範囲チェックをする
+                        if (nextDate != null && nextDate.Count > 0)
+                        {
+                            bool isDateErr = false;
+
+                            // 入力された次回実施予定日が次々回実施予定日以降の場合
+                            if (updResult.NextScheduleDate >= nextDate[0].ScheduleDate)
+                            {
+                                isDateErr = true;
+                            }
+
+                            // 前回実施予定日は存在しない可能性があることを考慮する
+                            if (nextDate.Count > 1)
+                            {
+                                // 入力された次回実施予定日が前回実施予定日の場合以前
+                                if (updResult.NextScheduleDate <= nextDate[1].ScheduleDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+                            else
+                            {
+                                // 前回実施予定日が存在しない場合は開始日と比較する
+                                if (updResult.NextScheduleDate < updResult.StartDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+
+                            // 日付の範囲エラーの場合はメッセージをセットする
+                            if (isDateErr)
+                            {
+                                // エラー情報格納クラス
+                                ErrorInfo errorInfo = new ErrorInfo(row);
+                                // 次回実施予定日は前回実施予定日～次々回実施予定日以内の日付を指定してください。
+                                string errMsg = GetResMessage("141120020");
+                                string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                                errorInfo.setError(errMsg, val);
+                                errorInfoDictionary.Add(errorInfo.Result);
+                            }
+                        }
+                    }
+
+                    // スケジュールを更新 が未選択でかつ、次回実施予定日が入力されている場合
+                    // 確認メッセージを表示する(※メッセージを表示する必要がある時はTrueが返る)
+                    if (confirmByIsUpdateAndScheduleDate(new Dao.managementStandardResult() { IsUpdateSchedule = updResult.IsUpdateSchedule, ScheduleDate = updResult.NextScheduleDate }))
+                    {
+                        return true;
+                    }
+
+                    // 周期または開始日が変更されていて、スケジュールを更新 が未選択の場合
+                    if (confirmByScheduleInfoChanged(new Dao.managementStandardResult()
+                    {
+                        CycleYear = updResult.CycleYear,
+                        CycleMonth = updResult.CycleMonth,
+                        CycleDay = updResult.CycleDay,
+                        StartDate = updResult.StartDate,
+                        IsUpdateSchedule = updResult.IsUpdateSchedule
+                    }, chkDbResult))
+                    {
+                        return true;
+                    }
+
+                    // 開始日または周期(年・月・日)が変更されているかどうか
+                    // いずれかが変更されている場合はフラグ = True
+                    bool cycleChangeFlg;
+                    if (updResult.CycleYear == dbresult[0].CycleYear &&
+                        updResult.CycleMonth == dbresult[0].CycleMonth &&
+                        updResult.CycleDay == dbresult[0].CycleDay &&
+                        updResult.StartDate == dbresult[0].StartDate)
+                    {
+                        cycleChangeFlg = false;
+                    }
+                    else
+                    {
+                        cycleChangeFlg = true;
+                    }
+
+                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (updResult.NextScheduleDate != null && cycleChangeFlg)
+                    {
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(row);
+                        // 周期または開始日が変更されていいます。　同時に次回実施予定日は更新できません。
+                        string errMsg = GetResMessage("141120019");
+                        string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                        errorInfo.setError(errMsg, val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+                    }
+
+                    // 次回実施予定日が変更されていて、スケジュールも変更されている場合
+                    // 同時には変更できないのでエラーとする
+                    if (updResult.NextScheduleDate != updResult.NextScheduleDateDisp && updateKeyIdList.Contains(updResult.KeyId))
+                    {
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(row);
+                        // 星取表と次回実施予定日を同時に変更することはできません。
+                        string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                        errorInfo.setError(GetResMessage("141300010"), val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+                    }
                 }
+            }
+
+            // 入力エラーがある場合はここで終了
+            if (errorInfoDictionary.Count > 0)
+            {
+                // エラー情報を画面に反映
+                SetJsonResult(errorInfoDictionary);
+                return false;
             }
 
             foreach (Dictionary<string, object> dicProc in result)
@@ -1105,6 +1451,47 @@ namespace BusinessLogic_MC0001
                     {
                         return false;
                     }
+
+                    Dao.schedeluListResult updResult = getRegistManagementStandard<Dao.schedeluListResult>(dicProc, TargetCtrlIdManagementStandard.DetailScheduleList160);
+
+                    // SQL文の取得
+                    if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.UpdateDispCycleOfMaintainanceSchedule, out string updateDispCycleSql))
+                    {
+                        return false;
+                    }
+
+                    // 表示周期のみを更新する
+                    if (db.Regist(updateDispCycleSql, registResult) < 0)
+                    {
+                        return false;
+                    }
+
+                    // 次回実施予定日が入力されていて値が変更されている場合
+                    if (updResult.NextScheduleDate != null && updResult.NextScheduleDate != updResult.NextScheduleDateDisp)
+                    {
+                        // SQL文の取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.UpdateScheduleDateByDetailId, out string updateScheduleSql))
+                        {
+                            return false;
+                        }
+
+                        // スケジュール日を入力された値に更新する
+                        registResult.ScheduleDate = updResult.NextScheduleDate;
+                        registResult.ScheduleDateBefore = updResult.NextScheduleDateDisp;
+                        if (db.Regist(updateScheduleSql, registResult) < 0)
+                        {
+                            return false;
+                        }
+                    }
+
+                    // スケジュールを更新 が未選択または、次回実施予定日が入力されて変更されている場合
+                    if (updResult.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF ||
+                         (updResult.NextScheduleDate != null && updResult.NextScheduleDate != updResult.NextScheduleDateDisp))
+                    {
+                        // 保全スケジュールの再作成処理は行わないのでここで終了
+                        continue;
+                    }
+
                     // 周期・開始日変更有
                     if (cycleChangeFlg)
                     {
@@ -1151,39 +1538,8 @@ namespace BusinessLogic_MC0001
             }
 
             // 移動されたスケジュールの更新
-            // 更新対象の一覧の内容を取得
-            var rowDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailScheduleList160);
-            // 一覧のキー値のVAL値を取得(スケジュールとの紐付に使用)
-            var valKeyId = GetValKeyIdForSchedule(TargetCtrlIdManagementStandard.DetailScheduleList160);
-
-            // 入力された内容を取得
-            Dao.managementStandardResult machineInfo = getRegistManagementStandard<Dao.managementStandardResult>(result[0], TargetCtrlIdManagementStandard.DetailScheduleList160);
-            // 対象機器の工場ID取得
-            dynamic whereParamF = new { MachineId = machineInfo.MachineId };
-            string sql;
-            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
-            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParamF);
-            //if (results == null || results.Count == 0)
-            //{
-            //    return false;
-            //}
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId);
-            //int factoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
-            int factoryId = (int)results[0].FactoryId;
-
-            // 年度開始月の取得
-            int monthStartNendo = getYearStartMonth(factoryId);
-            // 一覧より更新されたスケジュールの情報を取得
-            List<TMQDao.ScheduleList.Display> updatedScheduleList = TMQUtil.ScheduleListUtil.GetScheduleUpdatedData(rowDicList, valKeyId, monthStartNendo);
             if (updatedScheduleList.Count > 0)
             {
-                // 更新対象のキーIDの一覧を取得(画面のディクショナリとの紐づけに使用)
-                var updateKeyIdList = updatedScheduleList.Select(x => x.KeyId).ToList();
-
                 // 排他チェック
                 // 画面より取得した一覧の内容を使って排他チェックをするので、更新対象のキーIDの行だけを抽出
                 var updateTargetDics = rowDicList.Where(x => updateKeyIdList.IndexOf(getKeyIdByDic(x)) > -1).ToList();
@@ -1308,6 +1664,46 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            // エラー情報セット用Dictionary
+            var errorInfoDictionary = new List<Dictionary<string, object>>();
+            var info = getResultMappingInfo(TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+
+            // -------------------- この部分はスケジュール表の更新時に使用するが、入力チェックで必要になるためここで取得 --------------------
+            // 更新対象の一覧の内容を取得
+            var rowDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+            // 一覧のキー値のVAL値を取得(スケジュールとの紐付に使用)
+            var valKeyId = GetValKeyIdForSchedule(TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+            // 同一マークのキー値のVAL値を取得(スケジュールとの紐付に使用)
+            var valSameMarkKey = GetValSameMarkKeyForSchedule(TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+
+            // 入力された内容を取得
+            Dao.managementStandardResult machineInfo = getRegistManagementStandard<Dao.managementStandardResult>(result[0], TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+            // 対象機器の工場ID取得
+            dynamic whereParamF = new { MachineId = machineInfo.MachineId };
+            string sql;
+            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParamF);
+            //if (results == null || results.Count == 0)
+            //{
+            //    return false;
+            //}
+            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
+            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
+            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
+            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
+            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId);
+            //int factoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+            int factoryId = (int)results[0].FactoryId;
+
+            // 年度開始月の取得
+            int monthStartNendo = getYearStartMonth(factoryId);
+            // 一覧より更新されたスケジュールの情報を取得
+            List<TMQDao.ScheduleList.Display> updatedScheduleList = TMQUtil.ScheduleListUtil.GetScheduleUpdatedData(rowDicList, valKeyId, monthStartNendo);
+
+            // 更新対象のキーIDの一覧を取得(画面のディクショナリとの紐づけに使用)
+            var updateKeyIdList = updatedScheduleList.Select(x => x.KeyId).ToList();
+            // -------------------- この部分はスケジュール表の更新時に使用するが、入力チェックで必要になるためここで取得 --------------------
+
             // 排他チェック、入力チェック
             foreach (var row in result)
             {
@@ -1371,7 +1767,136 @@ namespace BusinessLogic_MC0001
                             }
                         }
                     }
+
+                    // 過去日のチェックは行わない
+                    //// 次回実施予定日に過去日が入力されている場合
+                    //if (updResult.NextScheduleDate != null && updResult.NextScheduleDate < DateTime.Now.Date)
+                    //{
+                    //    // エラー情報格納クラス
+                    //    ErrorInfo errorInfo = new ErrorInfo(row);
+                    //    // 過去日付は設定できません。
+                    //    string errMsg = GetResMessage("141060003");
+                    //    string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    //    errorInfo.setError(errMsg, val);
+                    //    errorInfoDictionary.Add(errorInfo.Result);
+                    //}
+
+                    // 次回実施予定日が入力されている場合
+                    if (updResult.NextScheduleDate != null)
+                    {
+                        // 次々回実施予定日を取得
+                        List<Dao.managementStandardResult> nextDate = (List<Dao.managementStandardResult>)getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetNextScheduleDate, new { ManagementStandardsContentId = updResult.ManagementStandardsContentId, ScheduleDateBefore = updResult.NextScheduleDateDisp, MaintainanceScheduleId = updResult.MaintainanceScheduleId });
+
+                        // 取得できた場合は範囲チェックをする
+                        if (nextDate != null && nextDate.Count > 0)
+                        {
+                            bool isDateErr = false;
+
+                            // 入力された次回実施予定日が次々回実施予定日以降の場合
+                            if (updResult.NextScheduleDate >= nextDate[0].ScheduleDate)
+                            {
+                                isDateErr = true;
+                            }
+
+                            // 前回実施予定日は存在しない可能性があることを考慮する
+                            if (nextDate.Count > 1)
+                            {
+                                // 入力された次回実施予定日が前回実施予定日の場合以前
+                                if (updResult.NextScheduleDate <= nextDate[1].ScheduleDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+                            else
+                            {
+                                // 前回実施予定日が存在しない場合は開始日と比較する
+                                if (updResult.NextScheduleDate < updResult.StartDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+
+                            // 日付の範囲エラーの場合はメッセージをセットする
+                            if (isDateErr)
+                            {
+                                // エラー情報格納クラス
+                                ErrorInfo errorInfo = new ErrorInfo(row);
+                                // 次回実施予定日は前回実施予定日～次々回実施予定日以内の日付を指定してください。
+                                string errMsg = GetResMessage("141120020");
+                                string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                                errorInfo.setError(errMsg, val);
+                                errorInfoDictionary.Add(errorInfo.Result);
+                            }
+                        }
+                    }
+
+                    // スケジュールを更新 が未選択でかつ、次回実施予定日が入力されている場合
+                    // 確認メッセージを表示する(※メッセージを表示する必要がある時はTrueが返る)
+                    if (confirmByIsUpdateAndScheduleDate(new Dao.managementStandardResult() { IsUpdateSchedule = updResult.IsUpdateSchedule, ScheduleDate = updResult.NextScheduleDate }))
+                    {
+                        return true;
+                    }
+
+                    // 周期または開始日が変更されていて、スケジュールを更新 が未選択の場合
+                    if (confirmByScheduleInfoChanged(new Dao.managementStandardResult()
+                    {
+                        CycleYear = updResult.CycleYear,
+                        CycleMonth = updResult.CycleMonth,
+                        CycleDay = updResult.CycleDay,
+                        StartDate = updResult.StartDate,
+                        IsUpdateSchedule = updResult.IsUpdateSchedule
+                    }, chkDbResult))
+                    {
+                        return true;
+                    }
+
+                    // 開始日または周期(年・月・日)が変更されているかどうか
+                    // いずれかが変更されている場合はフラグ = True
+                    bool cycleChangeFlg;
+                    if (updResult.CycleYear == dbresult[0].CycleYear &&
+                        updResult.CycleMonth == dbresult[0].CycleMonth &&
+                        updResult.CycleDay == dbresult[0].CycleDay &&
+                        updResult.StartDate == dbresult[0].StartDate)
+                    {
+                        cycleChangeFlg = false;
+                    }
+                    else
+                    {
+                        cycleChangeFlg = true;
+                    }
+
+                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (updResult.NextScheduleDate != null && cycleChangeFlg)
+                    {
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(row);
+                        // 周期または開始日が変更されていいます。　同時に次回実施予定日は更新できません。
+                        string errMsg = GetResMessage("141120019");
+                        string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                        errorInfo.setError(errMsg, val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+                    }
+
+                    // 次回実施予定日が変更されていて、スケジュールも変更されている場合
+                    // 同時には変更できないのでエラーとする
+                    if (updResult.NextScheduleDate != updResult.NextScheduleDateDisp && updateKeyIdList.Contains(updResult.KeyId))
+                    {
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(row);
+                        // 星取表と次回実施予定日を同時に変更することはできません。
+                        string val = info.getValName("next_schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                        errorInfo.setError(GetResMessage("141300010"), val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+                    }
                 }
+            }
+
+            // 入力エラーがある場合はここで終了
+            if (errorInfoDictionary.Count > 0)
+            {
+                // エラー情報を画面に反映
+                SetJsonResult(errorInfoDictionary);
+                return false;
             }
 
             foreach (Dictionary<string, object> dicProc in result)
@@ -1437,6 +1962,65 @@ namespace BusinessLogic_MC0001
                         return false;
                     }
 
+                    // 自身のレコードの点検種別と同一の点検種別のデータを取得
+                    // ※機器が点検種別毎管理でない場合または自身のレコードの点検種別と同一の点検種別のデータが存在しない場合 は取得されない
+                    if (!getSameManageKindData(registResult, out IList<Dao.managementStandardResult> sameManageKindList))
+                    {
+                        return false;
+                    }
+
+                    Dao.schedeluListResult updResult = getRegistManagementStandard<Dao.schedeluListResult>(dicProc, TargetCtrlIdManagementStandard.DetailLankScheduleList170);
+
+                    // SQL文の取得
+                    if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.UpdateDispCycleOfMaintainanceSchedule, out string updateDispCycleSql))
+                    {
+                        return false;
+                    }
+
+                    // 表示周期のみを更新する
+                    if (db.Regist(updateDispCycleSql, registResult) < 0)
+                    {
+                        return false;
+                    }
+
+                    // 自身のレコードと同一の点検種別のデータの表示周期も更新する
+                    if (!updateDispCycle(registResult, sameManageKindList))
+                    {
+                        return false;
+                    }
+
+                    // 次回実施予定日が入力されていて値が変更されている場合
+                    if (updResult.NextScheduleDate != null && updResult.NextScheduleDate != updResult.NextScheduleDateDisp)
+                    {
+                        // SQL文の取得
+                        if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlNameManagementStandard.UpdateScheduleDateByDetailId, out string updateScheduleSql))
+                        {
+                            return false;
+                        }
+
+                        // スケジュール日を入力された値に更新する
+                        registResult.ScheduleDate = updResult.NextScheduleDate;
+                        registResult.ScheduleDateBefore = updResult.NextScheduleDateDisp;
+                        if (db.Regist(updateScheduleSql, registResult) < 0)
+                        {
+                            return false;
+                        }
+
+                        // 自身のレコードと同一の点検種別のデータの次回実施予定日も更新する
+                        if (!updateNextScheduleDate(registResult, sameManageKindList))
+                        {
+                            return false;
+                        }
+                    }
+
+                    // スケジュールを更新 が未選択または、次回実施予定日が入力されて変更されている場合
+                    if (updResult.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF ||
+                        (updResult.NextScheduleDate != null && updResult.NextScheduleDate != updResult.NextScheduleDateDisp))
+                    {
+                        // 保全スケジュールの再作成処理は行わないのでここで終了
+                        continue;
+                    }
+
                     // 周期・開始日変更有
                     if (cycleChangeFlg)
                     {
@@ -1488,41 +2072,8 @@ namespace BusinessLogic_MC0001
             }
 
             // 移動されたスケジュールの更新
-            // 更新対象の一覧の内容を取得
-            var rowDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, TargetCtrlIdManagementStandard.DetailLankScheduleList170);
-            // 一覧のキー値のVAL値を取得(スケジュールとの紐付に使用)
-            var valKeyId = GetValKeyIdForSchedule(TargetCtrlIdManagementStandard.DetailLankScheduleList170);
-            // 同一マークのキー値のVAL値を取得(スケジュールとの紐付に使用)
-            var valSameMarkKey = GetValSameMarkKeyForSchedule(TargetCtrlIdManagementStandard.DetailLankScheduleList170);
-
-            // 入力された内容を取得
-            Dao.managementStandardResult machineInfo = getRegistManagementStandard<Dao.managementStandardResult>(result[0], TargetCtrlIdManagementStandard.DetailLankScheduleList170);
-            // 対象機器の工場ID取得
-            dynamic whereParamF = new { MachineId = machineInfo.MachineId };
-            string sql;
-            TMQUtil.GetFixedSqlStatementSearch(false, SqlName.SubDir, SqlName.GetMachineDetail, out sql);
-            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(sql, whereParamF);
-            //if (results == null || results.Count == 0)
-            //{
-            //    return false;
-            //}
-            // 機能場所階層IDと職種機種階層IDから上位の階層を設定
-            List<TMQUtil.StructureLayerInfo.StructureType> typeLst = new List<TMQUtil.StructureLayerInfo.StructureType>();
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Location);
-            typeLst.Add(TMQUtil.StructureLayerInfo.StructureType.Job);
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref results, typeLst, this.db, this.LanguageId);
-            //int factoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
-            int factoryId = (int)results[0].FactoryId;
-
-            // 年度開始月の取得
-            int monthStartNendo = getYearStartMonth(factoryId);
-            // 一覧より更新されたスケジュールの情報を取得
-            List<TMQDao.ScheduleList.Display> updatedScheduleList = TMQUtil.ScheduleListUtil.GetScheduleUpdatedData(rowDicList, valKeyId, monthStartNendo);
             if (updatedScheduleList.Count > 0)
             {
-                // 更新対象のキーIDの一覧を取得(画面のディクショナリとの紐づけに使用)
-                var updateKeyIdList = updatedScheduleList.Select(x => x.KeyId).ToList();
-
                 // 排他チェック
                 // 画面より取得した一覧の内容を使って排他チェックをするので、更新対象のキーIDの行だけを抽出
                 var updateTargetDics = rowDicList.Where(x => updateKeyIdList.IndexOf(getKeyIdByDic(x)) > -1).ToList();
@@ -1630,7 +2181,7 @@ namespace BusinessLogic_MC0001
                 if (isUpdatedTableRow(row))
                 {
                     // 周期(年)数値チェック
-                    if(getDictionaryKeyValue(row, "cycle_year").Length > 0 && !int.TryParse(getDictionaryKeyValue(row, "cycle_year"), out val))
+                    if (getDictionaryKeyValue(row, "cycle_year").Length > 0 && !int.TryParse(getDictionaryKeyValue(row, "cycle_year"), out val))
                     {
                         intChkCycleYear.Add(rowNo);
                     }
@@ -1672,7 +2223,7 @@ namespace BusinessLogic_MC0001
                     }
 
                     // 表示周期桁数チェック
-                    if(getDictionaryKeyValue(row, "disp_cycle").Length > 20)
+                    if (getDictionaryKeyValue(row, "disp_cycle").Length > 20)
                     {
                         lengthChkDispCycle.Add(rowNo);
                     }
@@ -1698,7 +2249,7 @@ namespace BusinessLogic_MC0001
             if (intChkCycleYear.Count > 0)
             {
                 string errRow = intChkCycleYear[0].ToString();
-                for(int i = 1; i < intChkCycleYear.Count; i++)
+                for (int i = 1; i < intChkCycleYear.Count; i++)
                 {
                     errRow = errRow + "," + intChkCycleYear[i].ToString();
                 }
@@ -1906,7 +2457,7 @@ namespace BusinessLogic_MC0001
         /// <returns>排他エラー:True エラーなし:False</returns>
         private bool isErrorExclusiveManagementStandard(Dao.managementStandardResult registResult, IList<Dao.managementStandardResult> dbresult)
         {
-            if(registResult.UpdateDatetime < dbresult[0].UpdateDatetime)
+            if (registResult.UpdateDatetime < dbresult[0].UpdateDatetime)
             {
                 setExclusiveError();
                 return true;
@@ -1955,7 +2506,7 @@ namespace BusinessLogic_MC0001
         /// 保全項目編集画面入力チェック
         /// </summary>
         /// <returns>エラーの場合True</returns>
-        private bool isErrorRegistManagementStandard(Dao.managementStandardResult res, bool insertFlg, IList<Dao.managementStandardResult> dbres, string ctrlId, Dictionary<string, object> targetDic)
+        private bool isErrorRegistManagementStandard(Dao.managementStandardResult res, bool insertFlg, IList<Dao.managementStandardResult> dbres, string ctrlId, Dictionary<string, object> targetDic, bool isManagementStandard = false)
         {
             // エラー情報セット用Dictionary
             var errorInfoDictionary = new List<Dictionary<string, object>>();
@@ -2015,10 +2566,10 @@ namespace BusinessLogic_MC0001
                 if (!insertFlg)
                 {
                     // 周期または開始日が変更されている
-                    if(res.CycleYear != dbres[0].CycleYear || res.CycleMonth != dbres[0].CycleMonth || res.CycleDay != dbres[0].CycleDay || res.StartDate != dbres[0].StartDate)
+                    if (res.CycleYear != dbres[0].CycleYear || res.CycleMonth != dbres[0].CycleMonth || res.CycleDay != dbres[0].CycleDay || res.StartDate != dbres[0].StartDate)
                     {
                         // 開始日が過去日だった際はエラー
-                        if(res.StartDate < DateTime.Now.Date)
+                        if (res.StartDate < DateTime.Now.Date)
                         {
                             // エラー情報格納クラス
                             ErrorInfo errorInfo = new ErrorInfo(targetDic);
@@ -2046,6 +2597,112 @@ namespace BusinessLogic_MC0001
                     }
                 }
 
+                // 過去日のチェックは行わない
+                //// 保全項目編集画面の登録で、次回実施予定日に初期表示した値より過去日が入力されている場合
+                //if (isManagementStandard && result.ScheduleDate != null && result.ScheduleDateBefore != null && result.ScheduleDate < result.ScheduleDateBefore)
+                //{
+                //    // エラー情報格納クラス
+                //    ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                //    isError = true;
+                //    // 過去日付は設定できません。
+                //    string errMsg = GetResMessage("141060003");
+                //    string val = info.getValName("schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                //    errorInfo.setError(errMsg, val);
+                //    errorInfoDictionary.Add(errorInfo.Result);
+                //}
+
+                // 保全項目編集画面の登録で、次回実施予定日が入力されている場合
+                if (isManagementStandard && result.ScheduleDate != null)
+                {
+                    // 次々回実施予定日を取得
+                    List<Dao.managementStandardResult> nextDate = (List<Dao.managementStandardResult>)getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetNextScheduleDate, new { ManagementStandardsContentId = result.ManagementStandardsContentId, ScheduleDateBefore = result.ScheduleDateBefore, MaintainanceScheduleId = result.MaintainanceScheduleId });
+
+                    // 取得できた場合は範囲チェックをする
+                    if (nextDate != null && nextDate.Count > 0)
+                    {
+                        bool isDateErr = false;
+
+                        // 入力された次回実施予定日が次々回実施予定日以降の場合
+                        if (result.ScheduleDate >= nextDate[0].ScheduleDate)
+                        {
+                            isDateErr = true;
+                        }
+
+                        // 前回実施予定日は存在しない可能性があることを考慮する
+                        if (nextDate.Count > 1)
+                        {
+                            // 入力された次回実施予定日が前回実施予定日の場合以前
+                            if (result.ScheduleDate <= nextDate[1].ScheduleDate)
+                            {
+                                isDateErr = true;
+                            }
+                        }
+                        else
+                        {
+                            // 前回実施予定日が存在しない場合は開始日と比較する
+                            if (result.ScheduleDate < result.StartDate)
+                            {
+                                isDateErr = true;
+                            }
+                        }
+
+                        // 日付の範囲エラーの場合はメッセージをセットする
+                        if (isDateErr)
+                        {
+                            // エラー情報格納クラス
+                            ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                            isError = true;
+                            // 次回実施予定日は前回実施予定日～次々回実施予定日以内の日付を指定してください。
+                            string errMsg = GetResMessage("141120020");
+                            string val = info.getValName("schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                            errorInfo.setError(errMsg, val);
+                            errorInfoDictionary.Add(errorInfo.Result);
+                        }
+                    }
+                }
+
+                // 保全項目編集画面の登録で、新規登録かつ、スケジュールを更新 が未選択の場合
+                if (isManagementStandard && insertFlg && result.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF)
+                {
+                    // エラー情報格納クラス
+                    ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                    isError = true;
+                    // 新規登録情報の為　「スケジュールを更新」にチェックを付与してください。
+                    string errMsg = GetResMessage("141120017");
+                    string val = info.getValName("is_update_schedule"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                    errorInfo.setError(errMsg, val);
+                    errorInfoDictionary.Add(errorInfo.Result);
+                }
+
+                // 保全項目編集画面の登録の場合
+                if (isManagementStandard && dbres != null)
+                {
+                    // 開始日または周期(年・月・日)が変更されているかどうか
+                    // いずれかが変更されている場合はフラグ = True
+                    bool cycleChangeFlg;
+                    if (result.CycleYear == dbres[0].CycleYear && result.CycleMonth == dbres[0].CycleMonth && result.CycleDay == dbres[0].CycleDay && result.StartDate == dbres[0].StartDate)
+                    {
+                        cycleChangeFlg = false;
+                    }
+                    else
+                    {
+                        cycleChangeFlg = true;
+                    }
+
+                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (result.ScheduleDate != null && cycleChangeFlg)
+                    {
+                        // エラー情報格納クラス
+                        ErrorInfo errorInfo = new ErrorInfo(targetDic);
+                        isError = true;
+                        // 周期または開始日が変更されていいます。　同時に次回実施予定日は更新できません。
+                        string errMsg = GetResMessage("141120019");
+                        string val = info.getValName("schedule_date"); // エラーをセットする項目のID　マッピング情報を定義されたkey_nameで絞り込み取得
+                        errorInfo.setError(errMsg, val);
+                        errorInfoDictionary.Add(errorInfo.Result);
+                    }
+                }
+
                 return isError;
 
                 // 同一機器、部位、保全項目重複チェック
@@ -2059,7 +2716,7 @@ namespace BusinessLogic_MC0001
                         this.Status = CommonProcReturn.ProcStatus.Error;
                         return false;
                     }
-                    whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId =  result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId  = result.ManagementStandardsContentId};
+                    whereParam = new { MachineId = result.MachineId, InspectionSiteStructureId = result.InspectionSiteStructureId, InspectionContentStructureId = result.InspectionContentStructureId, ManagementStandardsContentId = result.ManagementStandardsContentId };
                     // 総件数を取得
                     int cnt = db.GetCount(sql, whereParam);
                     if (cnt > 0)
@@ -2464,7 +3121,7 @@ namespace BusinessLogic_MC0001
                     // 工場毎の設定が取得できなければ工場共通
                     strstartMonth = getItemExData(1, 2, (int)TMQConsts.MsStructure.GroupId.BeginningMonth, 0);
                 }
-                if(int.Parse(strstartMonth) < 10)
+                if (int.Parse(strstartMonth) < 10)
                 {
                     strstartMonth = "0" + strstartMonth;
                 }
@@ -2527,7 +3184,7 @@ namespace BusinessLogic_MC0001
                     scheduleDetail.SequenceCount = scheduleDetail.SequenceCount + 1;
 
                     // スケジュール日設定
-                    if(res.CycleYear != null && res.CycleYear > 0)
+                    if (res.CycleYear != null && res.CycleYear > 0)
                     {
                         dt = dt.AddYears((int)res.CycleYear);
                     }
@@ -2671,7 +3328,7 @@ namespace BusinessLogic_MC0001
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     return false;
                 }
-                whereParam = whereParam = new {ManagementStandardsComponentId = deleteResult.ManagementStandardsComponentId };
+                whereParam = whereParam = new { ManagementStandardsComponentId = deleteResult.ManagementStandardsComponentId };
                 // 総件数を取得
                 int cnt = db.GetCount(sql, whereParam);
                 if (cnt > 0)
@@ -2815,7 +3472,7 @@ namespace BusinessLogic_MC0001
             {
                 //取得情報から拡張データを取得
                 var result = list.Exists(x => x.FactoryId == factoryId);
-                if(result)
+                if (result)
                 {
                     val = list.Where(x => x.FactoryId == factoryId).Select(x => x.ExData).First();
                 }
@@ -3054,6 +3711,62 @@ namespace BusinessLogic_MC0001
                         resultList[i].IsCyclic = true;
                     }
 
+                    // 過去日のチェックは行わない
+                    //// 次回実施予定日に過去日が入力されている場合
+                    //if (resultList[i].ScheduleDate != null && resultList[i].ScheduleDate < DateTime.Now)
+                    //{
+                    //    // 過去日付は設定できません。
+                    //    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.NextScheduleDate, null, GetResMessage("141060003"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                    //    errFlg = true;
+                    //    rowErrFlg = true;
+                    //}
+
+                    // 次回実施予定日が入力されている場合
+                    if (resultList[i].ScheduleDate != null)
+                    {
+                        // 次々回実施予定日を取得
+                        List<Dao.managementStandardResult> nextDate = (List<Dao.managementStandardResult>)getDbData<Dao.managementStandardResult>(SqlNameManagementStandard.GetNextScheduleDate, new { ManagementStandardsContentId = resultList[i].ManagementStandardsContentId, ScheduleDateBefore = resultList[i].ScheduleDateBefore, MaintainanceScheduleId = resultList[i].MaintainanceScheduleId });
+
+                        // 取得できた場合は範囲チェックをする
+                        if (nextDate != null && nextDate.Count > 0)
+                        {
+                            bool isDateErr = false;
+
+                            // 入力された次回実施予定日が次々回実施予定日以降の場合
+                            if (resultList[i].ScheduleDate >= nextDate[0].ScheduleDate)
+                            {
+                                isDateErr = true;
+                            }
+
+                            // 前回実施予定日は存在しない可能性があることを考慮する
+                            if (nextDate.Count > 1)
+                            {
+                                // 入力された次回実施予定日が前回実施予定日の場合以前
+                                if (resultList[i].ScheduleDate <= nextDate[1].ScheduleDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+                            else
+                            {
+                                // 前回実施予定日が存在しない場合は開始日と比較する
+                                if (resultList[i].ScheduleDate < resultList[i].StartDate)
+                                {
+                                    isDateErr = true;
+                                }
+                            }
+
+                            // 日付の範囲エラーの場合はメッセージをセットする
+                            if (isDateErr)
+                            {
+                                // 次回実施予定日は前回実施予定日～次々回実施予定日以内の日付を指定してください。
+                                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.NextScheduleDate, null, GetResMessage("141120020"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                                errFlg = true;
+                                rowErrFlg = true;
+                            }
+                        }
+                    }
+
                     // 新規登録
                     if (resultList[i].ProcessId == 1)
                     {
@@ -3062,6 +3775,15 @@ namespace BusinessLogic_MC0001
                         {
                             // 入力された部位、保全項目の組み合わせは既に登録されています。
                             errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.ProccesColumnNo, null, GetResMessage("141220002"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                            errFlg = true;
+                            rowErrFlg = true;
+                        }
+
+                        // 新規登録かつ、「スケジュールを更新」が未チェックの場合
+                        if (resultList[i].IsUpdateSchedule <= 0)
+                        {
+                            // 新規登録情報の為　「スケジュールを更新」に〇を設定してください。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.IsUpdateSchedule, null, GetResMessage("141120023"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
                             errFlg = true;
                             rowErrFlg = true;
                         }
@@ -3144,7 +3866,26 @@ namespace BusinessLogic_MC0001
                                     errFlg = true;
                                     rowErrFlg = true;
                                 }
+
+                                // 次回実施予定日が入力されている場合
+                                if (resultList[i].ScheduleDate != null)
+                                {
+                                    // 周期または開始日が変更されていいます。　同時に次回実施予定日は更新できません。
+                                    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.NextScheduleDate, null, GetResMessage("141120019"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                                    errFlg = true;
+                                    rowErrFlg = true;
+                                }
                             }
+                        }
+
+                        //「スケジュールを更新」が選択かつ、次回実施予定日が設定されている場合
+                        if (resultList[i].IsUpdateSchedule > 0 && resultList[i].ScheduleDate != null)
+
+                        {
+                            // 次回実施予定日を更新する場合は「スケジュールを更新」のチェックを外してください。
+                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.IsUpdateSchedule, null, GetResMessage("141120022"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));
+                            errFlg = true;
+                            rowErrFlg = true;
                         }
 
                         // エラー有りなら次へ
@@ -3166,6 +3907,30 @@ namespace BusinessLogic_MC0001
                         if (!registUpdateDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.UpdateManagementStandardsContent))
                         {
                             return false;
+                        }
+
+                        // 表示周期のみを更新する
+                        if (!registUpdateDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.UpdateDispCycleOfMaintainanceSchedule))
+                        {
+                            return false;
+                        }
+
+                        // 次回実施予定日が入力されていて値が変更されている場合
+                        if (resultList[i].ScheduleDate != null && resultList[i].ScheduleDate != resultList[i].ScheduleDateBefore)
+                        {
+                            // スケジュール日を入力された値に更新する
+                            if (!registUpdateDb<Dao.excelPortManagementStandardResult>(resultList[i], SqlNameManagementStandard.UpdateScheduleDateByDetailId))
+                            {
+                                return false;
+                            }
+                        }
+
+                        // スケジュールを更新 が未選択または、次回実施予定日が入力されて変更されている場合
+                        if (resultList[i].IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF ||
+                            (resultList[i].ScheduleDate != null && resultList[i].ScheduleDate != resultList[i].ScheduleDateBefore))
+                        {
+                            // 保全スケジュールの再作成処理は行わないのでここで終了
+                            continue;
                         }
 
                         IList<Dao.managementStandardResult> dbresult = null;
@@ -3516,5 +4281,96 @@ namespace BusinessLogic_MC0001
             return true;
         }
 
+        /// <summary>
+        /// 機器別管理基準 保全項目編集画面 入力チェック
+        /// </summary>
+        /// <param name="registResult">保全項目編集画面で入力された内容</param>
+        /// <returns>確認メッセージを表示する場合はTrue</returns>
+        private bool confirmByIsUpdateAndScheduleDate(Dao.managementStandardResult registResult)
+        {
+            // スケジュールを更新 と 次回実施予定日の入力状態を判定
+            if (this.Status < CommonProcReturn.ProcStatus.Confirm &&
+                registResult.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF &&
+                registResult.ScheduleDate != null)
+            {
+                // スケジュールを更新 が未選択かつ、次回実施予定日が入力されている場合
+                // 確認メッセージを表示
+                this.Status = CommonProcReturn.ProcStatus.Confirm;
+                // 次回実施予定日が設定されている為　直近のスケジュールを１件更新します。よろしいですか？
+                this.MsgId = GetResMessage("141120016");
+                this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 機器別管理基準 保全項目編集画面 入力チェック
+        /// </summary>
+        /// <param name="insertFlg">新規登録の場合True</param>
+        /// <param name="registResult">保全項目編集画面で入力された内容</param>
+        /// <returns>確認メッセージを表示する場合はTrue</returns>
+        private bool confirmByIsNewAndIsUpdate(bool insertFlg, Dao.managementStandardResult registResult)
+        {
+            // 新規or更新と次回実施予定日の入力状態を判定
+            if (this.Status < CommonProcReturn.ProcStatus.Confirm &&
+                insertFlg &&
+                registResult.ScheduleDate != null)
+            {
+                // 新規登録かつ、次回実施予定日が入力されている場合
+                // 確認メッセージを表示
+                this.Status = CommonProcReturn.ProcStatus.Confirm;
+                // 新規登録情報の為　次回実施予定日は考慮されません。処理を継続してもよろしいですか？
+                this.MsgId = GetResMessage("141120018");
+                this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 機器別管理基準 保全項目編集画面 入力チェック
+        /// </summary>
+        /// <param name="registResult">保全項目編集画面で入力された内容</param>
+        /// <param name="dbresult">変更前の情報(DBから取得した値)</param>
+        /// <returns>確認メッセージを表示する場合はTrue</returns>
+        private bool confirmByScheduleInfoChanged(Dao.managementStandardResult registResult, IList<Dao.managementStandardResult> dbresult)
+        {
+            if (this.Status >= CommonProcReturn.ProcStatus.Confirm)
+            {
+                return false;
+            }
+
+            // DB値がNULLの場合は終了
+            if (dbresult == null)
+            {
+                return false;
+            }
+
+            // 開始日、周期(年)、周期(月)、周期(日)がどれも変更されていない場合は終了
+            if (registResult.CycleYear == dbresult[0].CycleYear &&
+                registResult.CycleMonth == dbresult[0].CycleMonth &&
+                registResult.CycleDay == dbresult[0].CycleDay &&
+                registResult.StartDate == dbresult[0].StartDate)
+            {
+                return false;
+            }
+
+            // スケジュールを更新 が選択されている場合は終了
+            if (registResult.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.ON)
+            {
+                return false;
+            }
+
+            // ↓周期または開始日が変更されていて、スケジュールを更新 が選択されていない場合
+            // 確認メッセージを表示
+            this.Status = CommonProcReturn.ProcStatus.Confirm;
+            // 周期または開始日が変更されていますが、スケジュールを更新 がチェックされていないためスケジュールの再作成はされません。よろしいですか？
+            this.MsgId = GetResMessage("141120021");
+            this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+            return true;
+        }
     }
 }

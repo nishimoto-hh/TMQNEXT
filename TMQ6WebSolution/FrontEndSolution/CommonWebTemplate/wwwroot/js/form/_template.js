@@ -506,6 +506,22 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
 }
 
+/**
+ * 【オーバーライド用関数】実行異常終了後処理
+ *  @param {string}                     appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string}                     conductId   ：機能ID
+ *  @param {string}                     pgmId       ：プログラムID
+ *  @param {number}                     formNo      ：画面NO
+ *  @param {html}                       btn         ：ボタン要素
+ *  @param {number}                     conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param {boolean}                    autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param {boolean}                    isEdit      ：単票表示フラグ
+ *  @param {List<Dictionary<string>>}   data        ：結果ﾃﾞｰﾀ
+ */
+function postRegistProcessFailure(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+
+}
+
 /*==5:出力処理==*/
 
 /*==9:削除処理==*/

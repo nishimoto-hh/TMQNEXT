@@ -261,6 +261,7 @@
     <None Remove="Resources\sql\HistoryMachine\GetManagementStandardsContent.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetManagementStandardsContentByHistoryManagementId.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetNewMachineId.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetNextScheduleDate.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertApplicableLawsInfo.sql" />
@@ -277,12 +278,14 @@
     <None Remove="Resources\sql\HistoryMachine\InsertManagementStandardsComponentTransaction.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertManagementStandardsContentInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertManagementStandardsContentTransaction.sql" />
+    <None Remove="Resources\sql\HistoryMachine\UpdateDispCycleOfMaintainanceSchedule.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateHmMaintainanceSchedule.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateHmMcEquipment.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateHmMcMachine.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateHmMcManagementStandardsComponent.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateHmMcManagementStandardsContent.sql" />
     <None Remove="Resources\sql\HistoryMachine\UpdateManagementStandardsContentScheduleHistory.sql" />
+    <None Remove="Resources\sql\HistoryMachine\UpdateScheduleDateByDetailId.sql" />
     <None Remove="Resources\sql\HistoryMachine\WITH_GetHistoryMachineList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetCategoryList.sql" />
     <None Remove="Resources\sql\InventoryControl\GetEnterInfoList.sql" />
@@ -410,7 +413,9 @@
     <None Remove="Resources\sql\LongPlan\Detail\GetDetailList_InspectionSite.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetDetailList_Maintainance.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetDetailList_With.sql" />
+    <None Remove="Resources\sql\LongPlan\Detail\GetEquipInfoByMachineId.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetMaintainanceKindManageByLongPlanId.sql" />
+    <None Remove="Resources\sql\LongPlan\Detail\GetManagementStandardsContentIdByMyRecord.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetOutputFileInfo.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetScheduleList_Equipment.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\GetScheduleList_ExcelPort.sql" />
@@ -418,6 +423,8 @@
     <None Remove="Resources\sql\LongPlan\Detail\GetScheduleList_Maintainance.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\UpdataContentForDeleteAll.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\UpdateContentForDeleteRow.sql" />
+    <None Remove="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailId.sql" />
+    <None Remove="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailIdAndSameKind.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\UpdateScheduleDetail.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\UpdateScheduleDetailSequenceCount.sql" />
     <None Remove="Resources\sql\LongPlan\ExcelPort\DeleteAttachment.sql" />
@@ -431,6 +438,7 @@
     <None Remove="Resources\sql\LongPlan\InputCheck\GetLongPlanInfo.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetMachineIdFromLongPlanId.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetMaintainanceKindManageCount.sql" />
+    <None Remove="Resources\sql\LongPlan\InputCheck\GetNextScheduleDate.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetScheduleInfoFromContentId.sql" />
     <None Remove="Resources\sql\LongPlan\InsertLongPlan.sql" />
     <None Remove="Resources\sql\LongPlan\List\CreateTableTempGetLongPlanList.sql" />
@@ -541,6 +549,7 @@
     <None Remove="Resources\sql\Machine\GetMpInfoList.sql" />
     <None Remove="Resources\sql\Machine\GetMsSummary.sql" />
     <None Remove="Resources\sql\Machine\GetMsSummarySingle.sql" />
+    <None Remove="Resources\sql\Machine\GetNextScheduleDate.sql" />
     <None Remove="Resources\sql\Machine\GetParentInfo.sql" />
     <None Remove="Resources\sql\Machine\GetScheduleMsSummryCountAfterCheck.sql" />
     <None Remove="Resources\sql\Machine\GetScheduleMsSummryCountAfterMaintainanceKindManageCheck.sql" />
@@ -566,6 +575,7 @@
     <None Remove="Resources\sql\Machine\InsertSelectMachineLoop.sql" />
     <None Remove="Resources\sql\Machine\InsertUseParts.sql" />
     <None Remove="Resources\sql\Machine\SELECT_MachineDetail.sql" />
+    <None Remove="Resources\sql\Machine\UpdateDispCycleOfMaintainanceSchedule.sql" />
     <None Remove="Resources\sql\Machine\UpdateEquipmentInfo.sql" />
     <None Remove="Resources\sql\Machine\UpdateEquipmentSpec.sql" />
     <None Remove="Resources\sql\Machine\UpdateMachineInfo.sql" />
@@ -579,9 +589,12 @@
     <None Remove="Resources\sql\Machine\UpdateManagementStandardsContentOrderNo.sql" />
     <None Remove="Resources\sql\Machine\UpdateManagementStandardsContentSchedule.sql" />
     <None Remove="Resources\sql\Machine\UpdateMpInfo.sql" />
+    <None Remove="Resources\sql\Machine\UpdateScheduleDateByDetailId.sql" />
+    <None Remove="Resources\sql\Machine\UpdateScheduleDateByDetailIdAndSameKind.sql" />
     <None Remove="Resources\sql\Machine\UpdateSelectMachineLoop.sql" />
     <None Remove="Resources\sql\Machine\UpdateSelectMachineParent.sql" />
     <None Remove="Resources\sql\Machine\UpdateUseParts.sql" />
+    <None Remove="Resources\sql\Machine\WithGetExcelPortManagementStandard.sql" />
     <None Remove="Resources\sql\Machine\WITH_GetExcelPortManagementStandard.sql" />
     <None Remove="Resources\sql\Machine\WITH_GetMachineList.sql" />
     <None Remove="Resources\sql\Machine\WITH_GetExcelPortMachineList.sql" />
@@ -643,6 +656,7 @@
     <None Remove="Resources\sql\Maintenance\GetHistoryMachineInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetIndividualFlg.sql" />
     <None Remove="Resources\sql\Maintenance\GetInspectionMachineList.sql" />
+    <None Remove="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
     <None Remove="Resources\sql\Maintenance\GetLongPlanIdByScheduleDetailId.sql" />
     <None Remove="Resources\sql\Maintenance\GetMachineListFromLongPlan.sql" />
     <None Remove="Resources\sql\Maintenance\GetMaintainanceScheduleDetailIdList.sql" />
@@ -944,6 +958,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\UpdateScheduleDateByDetailId.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetNextScheduleDate.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\UpdateDispCycleOfMaintainanceSchedule.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\Detail\GetEquipInfoByMachineId.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\Detail\GetManagementStandardsContentIdByMyRecord.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailId.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailIdAndSameKind.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\InputCheck\GetNextScheduleDate.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\GetNextScheduleDate.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\UpdateDispCycleOfMaintainanceSchedule.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\UpdateScheduleDateByDetailId.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\UpdateScheduleDateByDetailIdAndSameKind.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\WITH_GetExcelPortManagementStandard.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>
 

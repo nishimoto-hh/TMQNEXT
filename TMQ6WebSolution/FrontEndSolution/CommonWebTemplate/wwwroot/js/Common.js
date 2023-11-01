@@ -8774,6 +8774,9 @@ function clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, bt
                 clickRegistBtnConfirmOK(appPath, transDiv, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, confirmNo);
             }
 
+            //【オーバーライド用関数】実行異常終了後処理
+            postRegistProcessFailure(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
             //処理結果ｽﾃｰﾀｽを画面状態に反映
             if (!setReturnStatus(appPath, status, eventFunc)) {
                 return false;

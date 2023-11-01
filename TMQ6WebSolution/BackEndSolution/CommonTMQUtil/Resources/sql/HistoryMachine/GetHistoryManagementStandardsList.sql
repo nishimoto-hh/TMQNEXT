@@ -1,4 +1,77 @@
-WITH management_standards_transaction AS(
+WITH schedule_date_by_machine as ( 
+    -- 機IDに対するスケジュール情報を取得
+    select
+	    sch.maintainance_schedule_id
+        , cont.management_standards_content_id
+        , sch.start_date
+        , det.complition
+        , det.schedule_date 
+    from
+        mc_management_standards_component comp 
+        left join mc_management_standards_content cont 
+            on comp.management_standards_component_id = cont.management_standards_component_id 
+        left join mc_maintainance_schedule sch 
+            on cont.management_standards_content_id = sch.management_standards_content_id 
+        left join mc_maintainance_schedule_detail det 
+            on sch.maintainance_schedule_id = det.maintainance_schedule_id 
+    where
+        comp.machine_id = @MachineId
+) 
+, max_schedule_date_by_content as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日を取得
+    select
+	    maintainance_schedule_id
+        , management_standards_content_id
+        , max(schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+    where
+        complition = 1 
+    group by
+        maintainance_schedule_id, management_standards_content_id
+) 
+, next_date_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日の次のスケジュール日を取得
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date
+    from
+        schedule_date_by_machine 
+        inner join max_schedule_date_by_content 
+            on schedule_date_by_machine.maintainance_schedule_id = max_schedule_date_by_content.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_schedule_date_by_content.management_standards_content_id
+    where
+        schedule_date_by_machine.schedule_date > max_schedule_date_by_content.schedule_date
+	group by
+	    schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+) 
+, next_date_not_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの開始日より後のスケジュール日を取得(保全活動が完了していない)
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+        left join ( 
+            select
+			    maintainance_schedule_id
+                , management_standards_content_id
+                , max(start_date) start_date 
+            from
+                schedule_date_by_machine 
+            group by
+                maintainance_schedule_id, management_standards_content_id
+        ) max_start_date 
+            on schedule_date_by_machine.maintainance_schedule_id = max_start_date.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_start_date.management_standards_content_id
+    where
+        schedule_date_by_machine.start_date >= max_start_date.start_date 
+    group by
+        schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+)
+, management_standards_transaction AS(
     SELECT
         mcp.management_standards_component_id,         -- 機器別管理基準部位ID
         ma.location_factory_structure_id as factory_id,-- 工場ID
@@ -56,6 +129,7 @@ WITH management_standards_transaction AS(
         ms.cycle_day,                                  -- 周期(日)
         ms.disp_cycle,                                 -- 表示周期
         ms.start_date,                                 -- 開始日
+        mcp.remarks,                                   -- 機器別管理基準備考
         -- 3テーブルのうち最大更新日付を取得
         CASE
             WHEN mcp.update_datetime > msc.update_datetime
@@ -127,9 +201,36 @@ WITH management_standards_transaction AS(
     AND mcp.machine_id = ma.machine_id
     AND ma.machine_id = eq.machine_id
     AND mcp.is_management_standard_conponent = 1 -- 機器別管理基準フラグ
-AND mcp.machine_id = @MachineId
+    AND mcp.machine_id = @MachineId
 ),
-management_standards_history AS(
+management_standards_transaction_main as(
+select
+    management_standards_transaction.*
+	-- 以下は次回実施予定日
+	-- ●(保全活動が完了したデータ)が存在する場合は、最新の●の次の○のデータの日付
+	-- ●が存在しない場合は開始日より後の○の日付
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date 
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date_before
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date_transaction 
+from
+    management_standards_transaction
+    left join next_date_exists_comp 
+        on management_standards_transaction.maintainance_schedule_id = next_date_exists_comp.maintainance_schedule_id
+		and management_standards_transaction.management_standards_content_id = next_date_exists_comp.management_standards_content_id
+    left join next_date_not_exists_comp 
+        on management_standards_transaction.maintainance_schedule_id = next_date_not_exists_comp.maintainance_schedule_id
+		and management_standards_transaction.management_standards_content_id = next_date_not_exists_comp.management_standards_content_id 
+)
+, management_standards_history AS(
     SELECT
         history.history_management_id,
         history.factory_id,
@@ -163,6 +264,11 @@ management_standards_history AS(
         schedule.cycle_day,
         schedule.disp_cycle,
         schedule.start_date,
+        hcomponent.remarks,
+        schedule.next_schedule_date AS schedule_date,
+        schedule.next_schedule_date AS schedule_date_before,
+        schedule.next_schedule_date AS schedule_date_transaction,
+        schedule.is_update_schedule,
         -- 3テーブルのうち最大更新日付を取得
         CASE
             WHEN hcomponent.update_datetime > hcontent.update_datetime
@@ -321,10 +427,26 @@ mamagement_data AS(
          ELSE COALESCE(msh.disp_cycle, mst.disp_cycle)
         END AS disp_cycle,                                                                                                                                   -- 表示周期
         COALESCE(msh.start_date, mst.start_date) AS start_date,                                                                                              -- 開始日
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.remarks
+         ELSE COALESCE(msh.remarks, mst.remarks)
+        END AS remarks,                                                                                                                                      -- 機器別管理基準備考        
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.schedule_date
+         ELSE COALESCE(msh.schedule_date, mst.schedule_date)
+        END AS schedule_date,                                                                                                                                -- 次回実施予定日
+        CASE
+         WHEN msh.execution_division = 5 AND msh.hm_maintainance_schedule_id IS NOT NULL
+         THEN msh.schedule_date_before
+         ELSE COALESCE(msh.schedule_date_before, mst.schedule_date_before)
+        END AS schedule_date_before,                                                                                                                         -- 次回実施予定日(非表示)
+        mst.schedule_date AS schedule_date_transaction,                                                                                                      -- 次回実施予定日(非表示)                                
         COALESCE(msh.execution_division, 0) AS execution_division,                                                                                           -- 実行処理区分
         mst.update_datetime,                                                                                                                                 -- 更新日付
         mst.attachment_file,                                                                                                                                 -- 添付ファイル
-        mst.max_update_datetime,                                                                                                                             --添付ファイルの最大更新日時
+        mst.max_update_datetime,                                                                                                                             -- 添付ファイルの最大更新日時
         CASE
             WHEN msh.execution_division = 5 THEN 
             dbo.compare_newId_with_oldId(msh.equipment_level_structure_id, machine_check.equipment_level_structure_id, 'EquipmentLevel') +                                        -- 機器レベル
@@ -343,7 +465,9 @@ mamagement_data AS(
             dbo.compare_newVal_with_oldVal(msh.cycle_month, mst.cycle_month, 'CycleMonth') +                                                                           -- 周期(月)
             dbo.compare_newVal_with_oldVal(msh.cycle_day, mst.cycle_day, 'CycleDay') +                                                                                 -- 周期(日)
             dbo.compare_newVal_with_oldVal(msh.disp_cycle, mst.disp_cycle, 'DispCycle') +                                                                              -- 表示周期
-            dbo.compare_newVal_with_oldVal(msh.start_date, mst.start_date, 'StartDate')                                                                                -- 開始日
+            dbo.compare_newVal_with_oldVal(msh.start_date, mst.start_date, 'StartDate') +                                                                              -- 開始日
+            dbo.compare_newVal_with_oldVal(msh.remarks, mst.remarks, 'Remarks') +                                                                                      -- 機器別管理基準備考
+            dbo.compare_newVal_with_oldVal(msh.schedule_date, mst.schedule_date, 'ScheduleDate')                                                                       -- 次回実施予定日
             WHEN msh.execution_division = 6 THEN
             ''
             ELSE
@@ -354,9 +478,10 @@ mamagement_data AS(
                  dbo.compare_newVal_with_oldVal(hmachine_check.machine_name, machine_check.machine_name, 'MachineName')                                                                -- 機器名称
              ELSE ''
             END
-        END AS value_changed
+        END AS value_changed,
+        msh.is_update_schedule                                                                                                                                         -- スケジュール更新有無
     FROM
-        management_standards_transaction mst
+        management_standards_transaction_main mst
         LEFT JOIN
             management_standards_history msh
         ON  mst.management_standards_component_id = msh.management_standards_component_id
@@ -403,11 +528,16 @@ mamagement_data AS(
         msh.cycle_day,                                 -- 周期(日)
         msh.disp_cycle,                                -- 表示周期
         msh.start_date,                                -- 開始日
+        msh.remarks,                                   -- 機器別管理基準備考
+        msh.schedule_date,                             -- 次回実施予定日
+        msh.schedule_date_before,                      -- 次回実施予定日(非表示)
+        msh.schedule_date AS schedule_date_transaction,-- 次回実施予定日(非表示)
         msh.execution_division,                        -- 実行処理区分
         msh.update_datetime,                           -- 更新日付
         msh.attachment_file,                           -- 添付ファイル
         msh.max_update_datetime,                       -- 添付ファイルの最大更新日時
-        '' AS value_changed                            -- 追加の場合は変更のあった項目なし
+        '' AS value_changed,                           -- 追加の場合は変更のあった項目なし
+        1 AS is_update_schedule                        -- スケジュール更新有無(新規の場合のため固定で「1」)
     FROM
         management_standards_history msh
     WHERE

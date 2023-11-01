@@ -15,6 +15,8 @@ INTO hm_mc_maintainance_schedule(
     , [insert_user_id]                    -- 登録ユーザー
     , [update_datetime]                   -- 更新日時
     , [update_user_id]                    -- 更新ユーザー
+    , [is_update_schedule]                -- スケジュール更新有無
+    , [next_schedule_date]                -- 次回実施予定日
 ) 
 OUTPUT inserted.maintainance_schedule_id
 VALUES ( 
@@ -43,4 +45,6 @@ VALUES (
     , @InsertUserId                       -- 登録ユーザー
     , @UpdateDatetime                     -- 更新日時
     , @UpdateUserId                       -- 更新ユーザー
+    , @IsUpdateSchedule                   -- スケジュール更新有無
+    , @ScheduleDate                       -- 次回実施予定日
 ); 

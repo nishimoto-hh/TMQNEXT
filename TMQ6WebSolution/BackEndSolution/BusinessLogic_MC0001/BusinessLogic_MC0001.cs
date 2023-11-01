@@ -76,6 +76,8 @@ namespace BusinessLogic_MC0001
             public const string GetExcelPortMachineList = "GetExcelPortMachineList";
             /// <summary>SQL名：ExcelPort機器別管理基準取得</summary>
             public const string GetExcelPortManagementStandard = "GetExcelPortManagementStandard";
+            /// <summary>SQL名：ExcelPort機器別管理基準取得</summary>
+            public const string WITH_GetExcelPortManagementStandard = "WITH_GetExcelPortManagementStandard";
             /// <summary>SQL名：一覧取得</summary>
             //public const string GetListCount = "Count_MachineList";
             /// <summary>SQL名：出力一覧取得</summary>
@@ -408,6 +410,10 @@ namespace BusinessLogic_MC0001
             public const int ProccesColumnNo = 5;
             // 開始日列番号
             public const int StratDateColumnNo = 39;
+            // スケジュールを更新
+            public const int IsUpdateSchedule = 42;
+            // 次回実施予定日
+            public const int NextScheduleDate = 43;
         }
         #endregion
 
@@ -1031,6 +1037,7 @@ namespace BusinessLogic_MC0001
 
                 // SQLを取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetExcelPortManagementStandard, out string baseSql);
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.WITH_GetExcelPortManagementStandard, out string baseWithSql);
 
                 ////// 場所分類＆職種機種＆詳細検索条件取得
                 //if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
@@ -1056,7 +1063,7 @@ namespace BusinessLogic_MC0001
                 whereParam.LanguageId = this.LanguageId;
 
                 // 一覧検索SQL文の取得
-                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, null, false, -1);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, baseWithSql, false, -1);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY");
                 selectSql.AppendLine("machine_no ");
@@ -3018,17 +3025,18 @@ namespace BusinessLogic_MC0001
                     {
                         resultList[i].MaintainanceKindManage = 0;
                     }
+
                     //予算管理区分
-//                    if (resultList[i].BudgetManagementStructureId != null)
- //                   {
-                        resultList[i].BudgetManagementStructureId = null;
+                    //                    if (resultList[i].BudgetManagementStructureId != null)
+                    //                   {
+                    resultList[i].BudgetManagementStructureId = null;
                     //                   }
                     //図面保管場所
                     //if (resultList[i].DiagramStorageLocationStructureId != null)
                     //{
-                    resultList[i].DiagramStorageLocationStructureId = null;//(int)resultList[i].DiagramStorageLocationStructureId;
+                    resultList[i].DiagramStorageLocationStructureId = null;
+                    //(int)resultList[i].DiagramStorageLocationStructureId;
                     //}
-
 
                     // 更新
                     if (resultList[i].ProcessId == 2)

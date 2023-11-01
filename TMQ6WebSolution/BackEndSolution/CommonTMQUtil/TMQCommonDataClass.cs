@@ -1960,6 +1960,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器別管理基準フラグ</summary>
             /// <value>機器別管理基準フラグ</value>
             public bool? IsManagementStandardConponent { get; set; }
+            /// <summary>Gets or sets 機器別管理基準備考</summary>
+            /// <value>機器別管理基準備考</value>
+            public string Remarks { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -5007,6 +5010,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 点検種別毎管理</summary>
             /// <value>点検種別毎管理</value>
             public bool MaintainanceKindManage { get; set; }
+            /// <summary>Gets or sets 予算管理部門</summary>
+            /// <value>予算管理部門</value>
+            public int? BudgetManagementStructureId { get; set; }
+            /// <summary>Gets or sets 図面保管場所</summary>
+            /// <value>図面保管場所</value>
+            public int? DiagramStorageLocationStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -5355,6 +5364,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器別管理基準フラグ</summary>
             /// <value>機器別管理基準フラグ</value>
             public bool? IsManagementStandardConponent { get; set; }
+            /// <summary>Gets or sets 機器別管理基準備考</summary>
+            /// <value>機器別管理基準備考</value>
+            public string Remarks { get; set; }
 
             /// <summary>
             /// プライマリーキー
@@ -5583,6 +5595,15 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 開始日</summary>
             /// <value>開始日</value>
             public DateTime? StartDate { get; set; }
+            /// <summary>Gets or sets スケジュール更新有無</summary>
+            /// <value>スケジュール更新有無</value>
+            public bool? IsUpdateSchedule { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? NextScheduleDate { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? ScheduleDate { get; set; }
 
             /// <summary>
             /// プライマリーキー

@@ -2264,6 +2264,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全履歴機器ID</summary>
             /// <value>保全履歴機器ID</value>
             public long? HistoryMachineId { get; set; }
+            /// <summary>Gets or sets 機番ID(変更前)</summary>
+            /// <value>機番ID(変更前)</value>
+            public long? MachineIdBefore { get; set; }
         }
     }
 }

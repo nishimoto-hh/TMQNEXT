@@ -8,6 +8,7 @@ INSERT INTO mc_management_standards_component(
     ,[insert_user_id]                   -- 登録ユーザー
     ,[update_datetime]                  -- 更新日時
     ,[update_user_id]                   -- 更新ユーザー
+    ,[remarks]                          -- 機器別管理基準備考
 )
 SELECT
      management_standards_component_id -- 機器別管理基準部位ID
@@ -19,6 +20,7 @@ SELECT
     ,@InsertUserId                     -- 登録ユーザー
     ,@UpdateDatetime                   -- 更新日時
     ,@UpdateUserId                     -- 更新ユーザー
+    ,remarks                           -- 機器別管理基準備考
 FROM
     hm_mc_management_standards_component component
 WHERE

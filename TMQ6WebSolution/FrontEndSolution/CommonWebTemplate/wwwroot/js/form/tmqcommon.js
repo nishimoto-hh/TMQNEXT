@@ -3010,7 +3010,7 @@ function setScheduleContextMenuEvent(contextMenu, formNo, id, rowNo) {
                     $(P_ScSrcCell).empty();
                     // 変更値を保存
                     var tbl = P_listData[id];
-                    updateTabulatorDataForChangeVal(tbl, id, formNo);
+                    updateTabulatorDataForChangeVal(tbl, id, formNo, getProgramIdByElement(this));
                     tbl = null;
                 }
                 P_ScSrcCell = null;
@@ -3041,7 +3041,7 @@ function setScheduleContextMenuEvent(contextMenu, formNo, id, rowNo) {
                     $(P_ScSrcCell).empty();
                     // 変更値を保存
                     var tbl = P_listData[id];
-                    updateTabulatorDataForChangeVal(tbl, id, formNo);
+                    updateTabulatorDataForChangeVal(tbl, id, formNo, getProgramIdByElement(this));
                     tbl = null;
                 }
                 // マウスストーカーを解除

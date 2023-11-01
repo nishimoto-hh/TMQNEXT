@@ -107,6 +107,8 @@ namespace BusinessLogic_LN0001
                 public const string GetScheduleInfo = "GetScheduleInfoFromContentId";
                 /// <summary>機器別管理基準内容IDに紐づくスケジュール詳細情報を取得</summary>
                 public const string GetScheduleDetailInfo = "GetScheduleDetailInfoFromContentId";
+                /// <summary>SQL名：次回実施日以降の次回実施日(次の次の予定日)を取得</summary>
+                public const string GetNextScheduleDate = "GetNextScheduleDate";
             }
 
             /// <summary>
@@ -174,6 +176,12 @@ namespace BusinessLogic_LN0001
                 /// <summary>スケジュール確定ボタン押下時の更新SQL</summary>
                 public const string UpdateSchedule = "UpdateScheduleDetail";
 
+                /// <summary>SQL名：スケジュール確定ボタン押下時の更新SQL(次回実施予定日のみを更新)</summary>
+                public const string UpdateScheduleDateByDetailId = "UpdateScheduleDateByDetailId";
+
+                /// <summary>SQL名：保全項目一覧 保全スケジュール詳細IDでスケジュール日を更新</summary>
+                public const string UpdateScheduleDateByDetailIdAndSameKind = "UpdateScheduleDateByDetailIdAndSameKind";
+
                 /// <summary>指示検収票ボタン押下時の出力ファイル情報の取得SQL</summary>
                 public const string GetOutputFileInfo = "GetOutputFileInfo";
 
@@ -183,6 +191,10 @@ namespace BusinessLogic_LN0001
                 /// <summary>長期計画IDより紐づく機器の点検種別管理を取得するSQL</summary>
                 public const string GetMaintKindManageByLongPlanId = "GetMaintainanceKindManageByLongPlanId";
 
+                /// <summary>SQL名：スケジュール確定ボタン押下時、更新対象の機器情報を取得</summary>
+                public const string GetEquipInfoByMachineId = "GetEquipInfoByMachineId";
+                /// <summary>SQL名：スケジュール確定ボタン押下時、自身のレコードと同じ長期計画件名ID、機番ID、点検種別のデータを取得</summary>
+                public const string GetManagementStandardsContentIdByMyRecord = "GetManagementStandardsContentIdByMyRecord";
             }
 
             /// <summary>

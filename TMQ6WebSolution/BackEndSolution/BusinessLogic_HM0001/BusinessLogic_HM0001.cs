@@ -147,6 +147,14 @@ namespace BusinessLogic_HM0001
                 public const string GetLongPlanSingleHistory = "GetLongPlanSingleHistory";
                 /// <summary>SQL名：機器レベル取得</summary>
                 public const string GetMachineLevel = "GetMachineLevel";
+                /// <summary>SQL名：保全項目一覧 次回実施日以降の次回実施日(次の次の予定日)を取得</summary>
+                public const string GetNextScheduleDate = "GetNextScheduleDate";
+                /// <summary>SQL名：保全項目一覧 表示周期のみを更新</summary>
+                public const string UpdateDispCycleOfMaintainanceSchedule = "UpdateDispCycleOfMaintainanceSchedule";
+                /// <summary>SQL名：保全項目一覧 保全スケジュール詳細IDでスケジュール日を更新</summary>
+                public const string UpdateScheduleDateByDetailId = "UpdateScheduleDateByDetailId";
+                /// <summary>SQL名：保全項目一覧 保全スケジュール詳細IDでスケジュール日を更新</summary>
+                public const string UpdateScheduleDateByDetailIdAndSameKind = "UpdateScheduleDateByDetailIdAndSameKind";
                 #region 機器台帳(MC0001)のSQLを使用
                 /// <summary>保全項目一覧取得(機器台帳：MC0001のSQLを使用)</summary>
                 public const string GetManagementStandard = "GetManagementStandard";
@@ -987,6 +995,7 @@ namespace BusinessLogic_HM0001
                 historyComponentEntity.MachineId = result.MachineId;                                             // 機番ID
                 historyComponentEntity.InspectionSiteStructureId = result.InspectionSiteStructureId;             // 部位ID
                 historyComponentEntity.IsManagementStandardConponent = result.IsManagementStandardConponent;     // 機器別管理基準フラグ
+                historyComponentEntity.Remarks = result.Remarks;                                                 // 機器別管理基準備考
 
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon(ref historyComponentEntity, now, int.Parse(this.UserId), int.Parse(this.UserId));
@@ -1106,6 +1115,12 @@ namespace BusinessLogic_HM0001
                     historyScheduleEntity.CycleDay = result.CycleDay;                                         // 周期(日)
                     historyScheduleEntity.DispCycle = result.DispCycle;                                       // 表示周期
                     historyScheduleEntity.StartDate = result.StartDate;                                       // 開始日
+
+                    //このメソッドは「削除申請」「保全情報一覧の行削除」でしか呼ばれず、
+                    //保全スケジュールテーブル(トランザクション)の値を登録するので、登録する値を考慮する必要はない
+                    historyScheduleEntity.IsUpdateSchedule = null;                                            // スケジュール更新有無
+                    historyScheduleEntity.NextScheduleDate = null;                                            // 次回実施予定日
+                    historyScheduleEntity.ScheduleDate = null;                                                // 次回実施予定日
 
                     // テーブル共通項目を設定
                     setExecuteConditionByDataClassCommon(ref historyScheduleEntity, now, int.Parse(this.UserId), int.Parse(this.UserId));
@@ -1603,6 +1618,49 @@ namespace BusinessLogic_HM0001
                     return false;
                 }
 
+                // 自身のレコードの点検種別と同一の点検種別のデータを取得
+                // ※機器が点検種別毎管理でない場合または自身のレコードの点検種別と同一の点検種別のデータが存在しない場合 は取得されない
+                if (!getSameManageKindData(maintainanceKindManage, managementStandardsInfo, out IList<Dao.managementStandardsResult> sameManageKindList))
+                {
+                    return false;
+                }
+
+                // 表示周期のみを更新する
+                if (!registUpdateDb<Dao.managementStandardsResult>(managementStandardsInfo, SqlName.Detail.UpdateDispCycleOfMaintainanceSchedule))
+                {
+                    return false;
+                }
+
+                // 自身のレコードと同一の点検種別のデータの表示周期も更新する
+                if (!updateDispCycle(managementStandardsInfo, sameManageKindList))
+                {
+                    return false;
+                }
+
+                // 次回実施予定日が入力されていて値が変更されている場合
+                if (managementStandardsInfo.ScheduleDate != null && managementStandardsInfo.ScheduleDate != managementStandardsInfo.ScheduleDateTransaction)
+                {
+                    // スケジュール日を入力された値に更新する
+                    if (!registUpdateDb<Dao.managementStandardsResult>(managementStandardsInfo, SqlName.Detail.UpdateScheduleDateByDetailId))
+                    {
+                        return false;
+                    }
+
+                    // 自身のレコードと同一の点検種別のデータの次回実施予定日も更新する
+                    if (!updateNextScheduleDate(managementStandardsInfo, sameManageKindList))
+                    {
+                        return false;
+                    }
+                }
+
+                // スケジュールを更新 が未選択または、次回実施予定日が入力されて変更されている場合
+                if (managementStandardsInfo.IsUpdateSchedule.ToString() == ComConsts.CHECK_FLG.OFF ||
+                    (managementStandardsInfo.ScheduleDate != null && managementStandardsInfo.ScheduleDate != managementStandardsInfo.ScheduleDateTransaction))
+                {
+                    // 保全スケジュールの再作成処理は行わないのでここで終了
+                    return true;
+                }
+
                 // 周期・開始日の変更がある場合
                 if (cycleChangeFlg)
                 {
@@ -2022,6 +2080,89 @@ namespace BusinessLogic_HM0001
 
             return results;
         }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータを取得
+        /// </summary>
+        /// <param name="result">画面で入力された情報</param>
+        /// <param name="sameManageKindList">自身のレコードと同一の点検種別のデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getSameManageKindData(bool maintainanceKindManage, Dao.managementStandardsResult managementStandardsInfo, out IList<Dao.managementStandardsResult> sameManageKindList)
+        {
+            sameManageKindList = null;
+
+            // 点検種別毎管理か判定
+            if (!maintainanceKindManage)
+            {
+                // 点検種別毎管理ではない場合は何もせずに終了
+                return true;
+            }
+
+            // 同一点検種別データ取得
+            sameManageKindList = getManagementStandardsData<Dao.managementStandardsResult>(SqlName.SubDirMachine, SqlName.Detail.GetMaintainanceKindManageDataUpdContent, managementStandardsInfo);
+
+            return true;
+        }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータの表示周期を更新
+        /// </summary>
+        /// <param name="result">画面で入力されたデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool updateDispCycle(Dao.managementStandardsResult result, IList<Dao.managementStandardsResult> sameManageKindList)
+        {
+            // 自身のレコードと同一の点検種別のデータが存在しない場合は何もしない
+            if (sameManageKindList == null || sameManageKindList.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (Dao.managementStandardsResult regRes in sameManageKindList)
+            {
+                // 更新情報を設定
+                regRes.DispCycle = result.DispCycle;                           // 表示周期
+                regRes.UpdateDatetime = result.UpdateDatetime;                 // 更新日時
+                regRes.UpdateUserId = result.UpdateUserId;                     // 更新ユーザー
+
+                // 表示周期のみを更新する
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateDispCycleOfMaintainanceSchedule, SqlName.SubDirMachine, regRes, this.db, string.Empty))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 自身のレコードと同一の点検種別のデータの次回実施予定日を更新
+        /// </summary>
+        /// <param name="result">画面で入力されたデータ</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool updateNextScheduleDate(Dao.managementStandardsResult result, IList<Dao.managementStandardsResult> sameManageKindList)
+        {
+            // 自身のレコードと同一の点検種別のデータが存在しない場合は何もしない
+            if (sameManageKindList == null || sameManageKindList.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (Dao.managementStandardsResult regRes in sameManageKindList)
+            {
+                // 更新情報を設定
+                regRes.ScheduleDate = result.ScheduleDate;                                 // スケジュール日
+                regRes.UpdateDatetime = result.UpdateDatetime;                             // 更新日時
+                regRes.UpdateUserId = result.UpdateUserId;                                 // 更新ユーザー
+
+                // 次回実施予定日を更新する
+                // 次回実施予定日をもう一度取得しなおして、取得した日付のデータを更新する
+                // ※自身のレコードの次回実施予定日と他のデータの次回実施予定日が同一とは限らないため
+                if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateScheduleDateByDetailIdAndSameKind, SqlName.SubDirMachine, regRes, this.db, string.Empty))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         #endregion
         #endregion
 
@@ -2160,6 +2301,39 @@ namespace BusinessLogic_HM0001
             listPf.GetCreateTranslation(); // テーブル作成
             listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
             listPf.RegistTempTable(); // 登録
+        }
+
+        /// <summary>
+        /// DBデータ取得
+        /// </summary>
+        /// <typeparam name="T">取得データクラス</typeparam>
+        /// <param name="whereParam">パラメータ</param>
+        /// <returns>正常終了:True 異常終了:False</returns>
+        private IList<T> getDbData<T>(string sqlFile, dynamic whereParam)
+        {
+            string sql;
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlFile, out sql);
+            IList<T> results = db.GetListByDataClass<T>(sql, whereParam);
+            return results;
+        }
+
+        /// <summary>
+        /// 登録処理
+        /// </summary>
+        /// <param name="registInfo">登録データ</param>
+        /// <param name="sqlName">SQLファイル名</param>
+        /// <returns>returnFlag:エラーの場合False、id:登録データのID</returns>
+        private bool registUpdateDb<T>(T registInfo, string sqlName)
+        {
+            string sql;
+            // SQL文の取得
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out sql))
+            {
+                return false;
+            }
+
+            int result = db.Regist(sql, registInfo);
+            return result >= 0;
         }
         #endregion
 

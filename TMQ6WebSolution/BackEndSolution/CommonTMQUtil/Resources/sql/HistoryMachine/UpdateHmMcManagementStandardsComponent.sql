@@ -6,5 +6,6 @@ SET
     , update_serialid = update_serialid+1                               -- 更新シリアルID
     , update_datetime = @UpdateDatetime                                 -- 登録日時
     , update_user_id = @UpdateUserId                                    -- 登録ユーザー
+    , remarks = @Remarks                                                -- 機器別管理基準備考
 WHERE
     hm_management_standards_component_id = @HmManagementStandardsComponentId

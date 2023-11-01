@@ -402,7 +402,15 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 備考</summary>
             /// <value>備考</value>
             public string Remarks { get; set; }
-
+            /// <summary>Gets or sets スケジュールを更新</summary>
+            /// <value>スケジュールを更新</value>
+            public int IsUpdateSchedule { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? ScheduleDate { get; set; }
+            /// <summary>Gets or sets 次回実施予定日(非表示で定義されている変更前の値)</summary>
+            /// <value>次回実施予定日(非表示で定義されている変更前の値)</value>
+            public DateTime? ScheduleDateBefore { get; set; }
         }
 
         /// <summary>
@@ -671,6 +679,18 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets スケジュール管理(翻訳)</summary>
             /// <value>スケジュール管理(翻訳)</value>
             public string ScheduleTypeName { get; set; }
+            /// <summary>Gets or sets スケジュールを更新</summary>
+            /// <value>スケジュールを更新</value>
+            public int IsUpdateSchedule { get; set; }
+            /// <summary>Gets or sets スケジュールを更新(ラベル用)</summary>
+            /// <value>スケジュールを更新(ラベル用)</value>
+            public int IsUpdateScheduleDisp { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? NextScheduleDate { get; set; }
+            /// <summary>Gets or sets 次回実施予定日(ラベル用)</summary>
+            /// <value>次回実施予定日(ラベル用)</value>
+            public DateTime? NextScheduleDateDisp { get; set; }
         }
 
         /// <summary>
@@ -1808,8 +1828,18 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 備考</summary>
             /// <value>備考</value>
             public string Remarks { get; set; }
-
-
+            /// <summary>Gets or sets スケジュールを更新</summary>
+            /// <value>スケジュールを更新</value>
+            public int IsUpdateSchedule { get; set; }
+            /// <summary>Gets or sets スケジュールを更新(ExcelPort用)</summary>
+            /// <value>スケジュールを更新(ExcelPort用)</value>
+            public string IsUpdateScheduleName { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? ScheduleDate { get; set; }
+            /// <summary>Gets or sets 次回実施予定日(非表示で定義されている変更前の値)</summary>
+            /// <value>次回実施予定日(非表示で定義されている変更前の値)</value>
+            public DateTime? ScheduleDateBefore { get; set; }
         }
     }
 }

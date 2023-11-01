@@ -179,7 +179,7 @@ namespace BusinessLogic_PT0001
             // 複写時の初期検索では予備品Noを表示する必要はないため空にする
             if (isInitCopy)
             {
-                //results[0].PartsNo = string.Empty;
+                results[0].PartsNo = string.Empty;
             }
 
             // 一覧に対して繰り返し値を設定する

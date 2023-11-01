@@ -22,6 +22,7 @@ using Const = CommonTMQUtil.CommonTMQConstants;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
+using System.Reflection.PortableExecutable;
 
 namespace BusinessLogic_MA0001
 {
@@ -68,6 +69,8 @@ namespace BusinessLogic_MA0001
                 public const string GetSummaryInfo = "GetSummaryInfo";
                 /// <summary>SQL名：点検：対象機器一覧取得</summary>
                 public const string GetInspectionMachineList = "GetInspectionMachineList";
+                /// <summary>SQL名：点検：対象機器一覧取得(ExcelPort点検情報-対象機器の入力チェックで使用するSQL)</summary>
+                public const string GetInspectionMachineListForExcelPort = "GetInspectionMachineListForExcelPort";
                 /// <summary>SQL名：故障：対象機器一覧取得</summary>
                 public const string GetFailureMachineList = "GetFailureMachineList";
                 /// <summary>SQL名：故障情報取得</summary>
@@ -443,7 +446,7 @@ namespace BusinessLogic_MA0001
                     /// <summary>
                     /// 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際に初期値を設定するコントロールID
                     /// </summary>
-                    public static ReadOnlyCollection<string> MakeMaintenanceFromLongPlan { get; } = new[] { "BODY_010_00_LST_2", "BODY_020_00_LST_2",  "BODY_110_00_LST_2", "BODY_170_00_LST_2", "BODY_190_00_LST_2", "BODY_240_00_LST_2" }.ToList().AsReadOnly();
+                    public static ReadOnlyCollection<string> MakeMaintenanceFromLongPlan { get; } = new[] { "BODY_010_00_LST_2", "BODY_020_00_LST_2", "BODY_110_00_LST_2", "BODY_170_00_LST_2", "BODY_190_00_LST_2", "BODY_240_00_LST_2" }.ToList().AsReadOnly();
                 }
                 /// <summary>
                 /// グループ番号
@@ -685,6 +688,8 @@ namespace BusinessLogic_MA0001
                         public const int FollowContent = 44;
                         /// <summary>フォロー完了日</summary>
                         public const int FollowCompletionDate = 45;
+                        /// <summary>機器使用期間</summary>
+                        public const int UseDays = 46;
                     }
                 }
             }
@@ -1209,10 +1214,10 @@ namespace BusinessLogic_MA0001
                         selectKeyData.Key1 = param.SummaryId;
                         selectKeyDataList.Add(selectKeyData);
                         /*                        List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport(
-                                                ConductInfo.FormDetail.ControlId.RequestInfoIds[0],     // 依頼情報のコントールID
-                                                keyInfo,                     // 設定したキー情報
-                                                this.resultInfoDictionary,
-                                                false);  // 画面データ
+                            ConductInfo.FormDetail.ControlId.RequestInfoIds[0],     // 依頼情報のコントールID
+                            keyInfo,                     // 設定したキー情報
+                            this.resultInfoDictionary,
+                            false);  // 画面データ
                         */
                         //AEC shiraishi mod end 2023/09/03
                         // シートNoをキーとして帳票用選択キーデータを保存する
@@ -1451,7 +1456,7 @@ namespace BusinessLogic_MA0001
                 //保全活動シート データ取得
                 dataList = getExcelPortMaintenanceData(excelPort);
             }
-            else if(excelPort.DownloadCondition.SheetNo == TMQUtil.ComExcelPort.SheetNo.HistoryFailure)
+            else if (excelPort.DownloadCondition.SheetNo == TMQUtil.ComExcelPort.SheetNo.HistoryFailure)
             {
                 //保全活動_故障情報シート データ取得
                 dataList = getExcelPortHistoryFailureData(excelPort, ref resultMsg);
@@ -1918,7 +1923,7 @@ namespace BusinessLogic_MA0001
         {
             // 入力チェック
             bool errFlg = true;
-            foreach(Dao.excelPortMaintenance result in resultList)
+            foreach (Dao.excelPortMaintenance result in resultList)
             {
                 // 送信時処理IDが設定されているもののみ
                 if (result.ProcessId == null)
@@ -2035,7 +2040,7 @@ namespace BusinessLogic_MA0001
 
                         //保全履歴の情報を取得
                         Dao.historyInfo historyInfo = TMQUtil.SqlExecuteClass.SelectEntity<Dao.historyInfo>(SqlName.Detail.GetHistoryInfo, SqlName.SubDir, result, this.db);
-                        if(historyInfo.CompletionDate != null || (historyInfo.CompletionDate == null && historyInfo.ConstructionPersonnelId != null))
+                        if (historyInfo.CompletionDate != null || (historyInfo.CompletionDate == null && historyInfo.ConstructionPersonnelId != null))
                         {
                             // 保全受付または完了済のため、削除できません。
                             errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.Process, GetResMessage("111150019"), GetResMessage(ComRes.ID.ID141300008), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
@@ -2118,6 +2123,7 @@ namespace BusinessLogic_MA0001
         {
             // 入力チェック
             bool errFlg = true;
+
             foreach (Dao.excelPortInspectionMachine result in resultList)
             {
                 // 送信時処理IDが設定されているもののみ
@@ -2156,6 +2162,12 @@ namespace BusinessLogic_MA0001
                             errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.InspectionMachine.FollowCompletionDate, GetResMessage("111280029"), GetResMessage(ComRes.ID.ID141090006), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
                             errFlg = false;
                         }
+                    }
+
+                    // 機器使用期間の入力チェック
+                    if (!checkUseDaysForExcelport(result, resultList, ref errorInfoList))
+                    {
+                        errFlg = false;
                     }
                 }
                 else if (result.ProcessId == Const.SendProcessId.Update)
@@ -2200,10 +2212,78 @@ namespace BusinessLogic_MA0001
                             errFlg = false;
                         }
                     }
+
+                    // 機器使用期間の入力チェック
+                    if (!checkUseDaysForExcelport(result, resultList, ref errorInfoList))
+                    {
+                        errFlg = false;
+                    }
                 }
             }
 
             return errFlg;
+        }
+
+        /// <summary>
+        /// ExcelPort点検情報(対象機器)のアップロード時に同一機器には同一の機器使用期間を入力させるための入力チェック
+        /// </summary>
+        /// <param name="result">チェック対象レコード</param>
+        /// <param name="resultList">送信時処理が設定されているレコード</param>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool checkUseDaysForExcelport(Dao.excelPortInspectionMachine result, List<Dao.excelPortInspectionMachine> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            // バックエンドに渡ってきたデータより
+            // 自身のレコードと保全活動件名ID、機番IDが同一で、異なる機器使用期間が入力されているデータの件数を取得(削除対象行は除く)
+            int differenceUseDaysCnt = resultList.Where(x => x.SummaryId == result.SummaryId &&
+                                                    x.MachineId == result.MachineId &&
+                                                    x.UsedDaysMachine != result.UsedDaysMachine &&
+                                                    x.ProcessId != Const.SendProcessId.Delete).ToList().Count();
+
+            // 件数が1件でもある場合は同一機器に対して全て同一の機器使用期間が入力されていないということなのでエラーとする
+            if (differenceUseDaysCnt > 0)
+            {
+                // 同一機器の機器使用期間にはすべて同じ値を入力して下さい。
+                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.InspectionMachine.UseDays, GetResMessage("111070031"), GetResMessage(ComRes.ID.ID141200010), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ExcelPort点検情報(対象機器)のアップロード時に同一機器には同一の機器使用期間を入力させるための入力チェック
+        /// ※DBに検索をかけるチェック
+        /// </summary>
+        /// <param name="result">チェック対象レコード</param>
+        /// <param name="resultList">送信時処理が設定されているレコード</param>
+        /// <param name="errorInfoList">エラー情報リスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool checkUseDaysForExcelportExistsDB(Dao.excelPortInspectionMachine result, List<Dao.excelPortInspectionMachine> resultList, ref List<ComDao.UploadErrorInfo> errorInfoList)
+        {
+            // 機器使用期間の入力チェックで使用するSQL
+            if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetInspectionMachineListForExcelPort, out string checkSqlForUseDays))
+            {
+                return false;
+            }
+
+            // ①自身のレコードと保全活動件名ID、機番IDが同一で、バックエンドに渡ってきた保全履歴点検内容IDリストを作成(削除対象行は除く)
+            List<long?> contentIdList = resultList.Where(x => x.SummaryId == result.SummaryId &&
+                                                        (x.MachineId == result.MachineId || x.MachineIdBefore == result.MachineId) &&
+                                                         x.ProcessId != Const.SendProcessId.Delete &&
+                                                         x.HistoryInspectionContentId != null)
+                                                         .Select(x => x.HistoryInspectionContentId).ToList();
+
+            // ② ①で作成した保全履歴点検内容ID以外のデータ(送信時処理が設定されていないデータ)をDBより取得する
+            IList<Dao.detailMachine> results = db.GetListByDataClass<Dao.detailMachine>(checkSqlForUseDays.ToString(), new { SummaryId = result.SummaryId, MachineId = result.MachineId, ContentIdList = contentIdList, UsedDaysMachine = result.UsedDaysMachine == null ? -1 : result.UsedDaysMachine });
+            if (results != null && results.Count > 0)
+            {
+                // 同一機器で異なる機器使用期間が設定されています。すべて同じ値を入力して下さい。
+                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.InspectionMachine.UseDays, GetResMessage("111280029"), GetResMessage(ComRes.ID.ID141200011), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -2642,7 +2722,7 @@ namespace BusinessLogic_MA0001
                 foreach (long id in historyMachineIdList)
                 {
                     //保全履歴機器削除
-                    returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteHistoryMachine, SqlName.SubDir, new { HistoryMachineId = id}, this.db);
+                    returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.DeleteHistoryMachine, SqlName.SubDir, new { HistoryMachineId = id }, this.db);
                     if (!returnFlag)
                     {
                         return false;
@@ -2781,7 +2861,7 @@ namespace BusinessLogic_MA0001
             ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(result.SummaryId, this.db);
 
             //機器使用期間の設定
-            int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+            int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
             if (days >= 0)
             {
                 result.UsedDaysMachine = days;
@@ -2890,6 +2970,12 @@ namespace BusinessLogic_MA0001
 
                 if (result.ProcessId == Const.SendProcessId.Regist)
                 {
+                    // 機器使用期間の入力チェック
+                    if (!checkUseDaysForExcelportExistsDB(result, resultList, ref errorInfoList))
+                    {
+                        continue;
+                    }
+
                     //登録
                     if (!registExcelPortInspectionMachine(result, ref errorInfoList, now))
                     {
@@ -2900,6 +2986,12 @@ namespace BusinessLogic_MA0001
                 {
                     //重複チェック
                     if (!checkDuplicationMachine(result, ref errorInfoList))
+                    {
+                        continue;
+                    }
+
+                    // 機器使用期間の入力チェック
+                    if (!checkUseDaysForExcelportExistsDB(result, resultList, ref errorInfoList))
                     {
                         continue;
                     }
@@ -2928,7 +3020,7 @@ namespace BusinessLogic_MA0001
 
             //保全活動件名IDを取得
             List<long> summaryIdList = resultList.Select(x => x.SummaryId).Distinct().ToList();
-            foreach(long summaryId in summaryIdList)
+            foreach (long summaryId in summaryIdList)
             {
                 //件名IDに紐づく対象機器を取得
                 List<Dao.excelPortInspectionMachine> machineList = TMQUtil.SqlExecuteClass.SelectList<Dao.excelPortInspectionMachine>(SqlName.Detail.GetInspectionMachineList, SqlName.SubDir, new { SummaryId = summaryId }, this.db);
@@ -2986,7 +3078,7 @@ namespace BusinessLogic_MA0001
 
                 //保全履歴機器
                 //機器使用期間の設定
-                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
                 if (days >= 0)
                 {
                     result.UsedDaysMachine = days;
@@ -3033,7 +3125,7 @@ namespace BusinessLogic_MA0001
                 //保全履歴機器
                 result.HistoryMachineId = resultHistoryMachine.HistoryMachineId;
                 //機器使用期間の設定
-                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
                 if (days >= 0)
                 {
                     result.UsedDaysMachine = days;
@@ -3196,7 +3288,7 @@ namespace BusinessLogic_MA0001
 
                     //保全履歴機器を更新
                     //機器使用期間の設定
-                    int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+                    int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
                     if (days >= 0)
                     {
                         result.UsedDaysMachine = days;
@@ -3266,7 +3358,7 @@ namespace BusinessLogic_MA0001
             {
                 //変更後の保全履歴機器を新規登録
                 //機器使用期間の設定
-                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+                int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
                 if (days >= 0)
                 {
                     result.UsedDaysMachine = days;
@@ -3352,7 +3444,7 @@ namespace BusinessLogic_MA0001
         private bool updateExcelPortNotChangeMachine(Dao.excelPortInspectionMachine result, ComDao.MaSummaryEntity summary)
         {
             //機器使用期間の設定
-            int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1);
+            int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
             if (days >= 0)
             {
                 result.UsedDaysMachine = days;

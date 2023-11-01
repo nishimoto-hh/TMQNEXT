@@ -557,6 +557,9 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets スケジュール日</summary>
                 /// <value>スケジュール日</value>
                 public DateTime? ScheduleDate { get; set; }
+                /// <summary>Gets or sets スケジュール日(変更前)</summary>
+                /// <value>スケジュール日(変更前)</value>
+                public DateTime? ScheduleDateBefore { get; set; }
 
                 // 添付情報(排他チェック)
                 /// <summary>Gets or sets 添付情報の最大の更新日時</summary>

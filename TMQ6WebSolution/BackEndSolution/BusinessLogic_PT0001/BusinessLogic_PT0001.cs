@@ -906,17 +906,17 @@ namespace BusinessLogic_PT0001
                     }
 
                     // 予備品No重複チェック(予備品Noは自動採番になったので重複チェックを行わない 手入力に変わったときのために処理を残しておく)
-                    if (result.PartsNo != result.PartsNoBefore)
-                    {
-                        TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.GetPartsNoCount, out string outSql);
-                        if (db.GetEntityByDataClass<int>(outSql, new { PartsNo = result.PartsNo }) > 0)
-                        {
-                            // 指定された予備品Noがすでに登録されています。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPortPartsListInfo.PartsNoColumnNo, GetResMessage(new string[] { ComRes.ID.ID111380022 }), GetResMessage(new string[] { ComRes.ID.ID141120003, ComRes.ID.ID111380022 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = true;
-                            rowErrFlg = true;
-                        }
-                    }
+                    //if (result.PartsNo != result.PartsNoBefore)
+                    //{
+                    //    TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Edit.GetPartsNoCount, out string outSql);
+                    //    if (db.GetEntityByDataClass<int>(outSql, new { PartsNo = result.PartsNo }) > 0)
+                    //    {
+                    //        // 指定された予備品Noがすでに登録されています。
+                    //        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPortPartsListInfo.PartsNoColumnNo, GetResMessage(new string[] { ComRes.ID.ID111380022 }), GetResMessage(new string[] { ComRes.ID.ID141120003, ComRes.ID.ID111380022 }), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    //        errFlg = true;
+                    //        rowErrFlg = true;
+                    //    }
+                    //}
 
                     // エラー有りなら次へ
                     if (rowErrFlg)
@@ -926,16 +926,16 @@ namespace BusinessLogic_PT0001
                 }
 
                 // 新規登録の場合、予備品Noを採番する
-                //if (result.ProcessId == TMQConst.SendProcessId.Regist)
-                //{
-                //    if (!getNewPartsNo(result.PartsFactoryId, now, out string newPartsNo))
-                //    {
-                //        return false;
-                //    }
+                if (result.ProcessId == TMQConst.SendProcessId.Regist)
+                {
+                    if (!getNewPartsNo(result.PartsFactoryId, now, out string newPartsNo))
+                    {
+                        return false;
+                    }
 
-                //    // 登録情報に採番した予備品No.を設定
-                //    result.PartsNo = newPartsNo;
-                //}
+                    // 登録情報に採番した予備品No.を設定
+                    result.PartsNo = newPartsNo;
+                }
 
                 // 登録用データクラスに格納
                 Dao.editResult registInfo = setRegistInfo(result);

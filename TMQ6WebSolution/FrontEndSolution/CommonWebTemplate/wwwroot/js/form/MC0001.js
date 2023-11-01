@@ -168,6 +168,7 @@ const DatailManagementStandard = {
             ManagementStandardContId: 20,
             MainteScheduleId: 21,
             MachineId: 23,
+            IsUpdateSchedule: 34
         },
         LinkNone: "linkDisable",         // データのNo.リンクを無効にするCSSクラス
         ValueCssStyle: "black"           // データのNo.リンクの文字色スタイル
@@ -211,7 +212,11 @@ const DatailManagementStandard = {
             CycleDayLabel: 19,
             CycleDispLabel: 20,
             StartDateLabel: 21,
-            ScheduleManteLabel: 22
+            ScheduleManteLabel: 22,
+            IsUpdateSchedule: 31,
+            NextScheduleDate: 32,
+            IsUpdateScheduleLabel: 33,
+            NextScheduleDateLabel: 34
         }
     },
     ScheduleLankList: {
@@ -246,7 +251,11 @@ const DatailManagementStandard = {
             MachineId: 27,
             KeyId: 28,
             GroupKey: 29,
-            MainteLankId: 32
+            MainteLankId: 32,
+            IsUpdateSchedule: 33,
+            NextScheduleDate: 34,
+            IsUpdateScheduleLabel: 35,
+            NextScheduleDateLabel: 36
         },
     },
     ButtonId: {
@@ -1016,6 +1025,10 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
                     changeInputControl(editMachineName, false);
 
                 }
+
+                // 「スケジュールを更新」を選択状態にする(新規・更新関係なし)
+                setValue(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.IsUpdateSchedule, 1, CtrlFlag.ChkBox, 1, true, false);
+
             } else if (transTarget == DetailUseParts.UsePartsList.Id) { // 使用部品一覧                
                 // 設定なし
                 if (rowNo == -1) {
@@ -1616,6 +1629,22 @@ function registCheckPre(appPath, conductId, formNo, btn) {
             return false;
         }
     }
+    else if (formNo == MachineDatail.No) {
+        //  詳細画面
+
+        // 機器別管理基準 保全項目編集画面で「スケジュールを更新」がエラーになっている場合、
+        // チェックボックスの親要素の背景色をもとに戻す
+
+        // スケジュールを更新 の親要素を取得
+        var isUpdateSchedule = $(getCtrl(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.IsUpdateSchedule, 0, CtrlFlag.ChkBox, true, false)).parent();
+
+        // 要素が取得できている場合
+        if (isUpdateSchedule && $(isUpdateSchedule).hasClass("updateScheduleError")) {
+
+            // チェックボックスの親要素にエラークラスを付与する
+            $(isUpdateSchedule).removeClass("updateScheduleError");
+        }
+    }
     return true;
 }
 
@@ -1692,6 +1721,10 @@ function postBuiltTabulator(tbl, id) {
         // ラベル列/入力可能列の表示切替を行う
         hideColumnOfScheduleBaseList(getIsHisotyManagement(false));
 
+        // スケジュールを更新(ラベル用) を非活性にする
+        var isUpdateScheduleList = $(P_Article).find(".IsUpdateScheduleEnable");
+        changeInputControl(isUpdateScheduleList, false);
+
         // 描画に間に合っていないため間隔をあけて実行
         setTimeout(function () {
             setEventFlg();
@@ -1702,6 +1735,10 @@ function postBuiltTabulator(tbl, id) {
 
         // ラベル列/入力可能列の表示切替を行う
         hideColumnOfScheduleLankList(getIsHisotyManagement(false));
+
+        // スケジュールを更新(ラベル用) を非活性にする
+        var isUpdateScheduleList = $(P_Article).find(".IsUpdateScheduleEnable");
+        changeInputControl(isUpdateScheduleList, false);
 
         // 詳細画面 機器別管理基準タブ 点検種別毎スケジューリング一覧
         // 保全活動一覧(点検種別毎)の場合、罫線調整処理を呼び出す
@@ -1862,6 +1899,35 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     // 構成機器タブ
     initTabConstitution();
 }
+
+/**
+ * 【オーバーライド用関数】実行異常終了後処理
+ *  @param {string}                     appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string}                     conductId   ：機能ID
+ *  @param {string}                     pgmId       ：プログラムID
+ *  @param {number}                     formNo      ：画面NO
+ *  @param {html}                       btn         ：ボタン要素
+ *  @param {number}                     conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param {boolean}                    autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param {boolean}                    isEdit      ：単票表示フラグ
+ *  @param {List<Dictionary<string>>}   data        ：結果ﾃﾞｰﾀ
+ */
+function postRegistProcessFailure(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+
+    // 機器別管理基準 保全項目編集画面で「スケジュールを更新」がエラーになった場合、
+    // チェックボックスの背景色が変わらないため親要素の背景色を変更する
+
+    // スケジュールを更新 の要素を取得
+    var isUpdateSchedule = getCtrl(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.IsUpdateSchedule, 0, CtrlFlag.ChkBox, true, false);
+
+    // 要素が取得できている場合
+    if (isUpdateSchedule && $(isUpdateSchedule).hasClass("errorcom")) {
+
+        // チェックボックスの親要素にエラークラスを付与する
+        $(isUpdateSchedule).parent().addClass("updateScheduleError");
+    }
+}
+
 
 /**
  *【オーバーライド用関数】登録前追加条件取得処理
@@ -2459,7 +2525,24 @@ function setMaintKindListGroupingMachine() {
         // 点検種別を調整
         var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLankId, prevKindId, index, list);
         prevKindId = newPrevKindId;
-        changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante];
+        changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonthLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDayLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateSchedule,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDate,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateScheduleLabel,
+            DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDateLabel,
+        ];
         setGroupToCols(index, changeCols, isTopMachine || isTopKind, isBottomMachine || isBottomKind);
 
         // スケジュール部分をグループ化
@@ -2669,6 +2752,8 @@ function hideColumnOfScheduleLankList(historyManagementFlg) {
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp);     // 表示周期
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate);     // 開始日
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante); // スケジュール管理
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateSchedule); // スケジュールを更新
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDate); // 次回実施予定日
 
         // ラベル列を表示する
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel);     // 周期(年)
@@ -2677,6 +2762,8 @@ function hideColumnOfScheduleLankList(historyManagementFlg) {
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel);     // 表示周期
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel);     // 開始日
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateScheduleLabel); // スケジュールを更新
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDateLabel); // 次回実施予定日
     }
     else {
         // 入力項目列を表示する
@@ -2686,6 +2773,8 @@ function hideColumnOfScheduleLankList(historyManagementFlg) {
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp);     // 表示周期
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate);     // 開始日
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante); // スケジュール管理
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateSchedule); // スケジュールを更新
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDate); // 次回実施予定日
 
         // ラベル列を非表示する
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel);     // 周期(年)
@@ -2694,6 +2783,8 @@ function hideColumnOfScheduleLankList(historyManagementFlg) {
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel);     // 表示周期
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel);     // 開始日
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateScheduleLabel); // スケジュールを更新
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDateLabel); // 次回実施予定日
     }
 }
 
@@ -2714,6 +2805,8 @@ function hideColumnOfScheduleBaseList(historyManagementFlg) {
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDisp);     // 表示周期
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.StartDate);     // 開始日
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleMante); // スケジュール管理
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.IsUpdateSchedule); // スケジュールを更新
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.NextScheduleDate); // 次回実施予定日
 
         // ラベル列を表示する
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleYearLabel);     // 周期(年)
@@ -2722,6 +2815,8 @@ function hideColumnOfScheduleBaseList(historyManagementFlg) {
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDispLabel);     // 表示周期
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.StartDateLabel);     // 開始日
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.IsUpdateScheduleLabel); // スケジュールを更新
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.NextScheduleDateLabel); // 次回実施予定日
     }
     else {
         // 入力項目列を表示する
@@ -2731,6 +2826,8 @@ function hideColumnOfScheduleBaseList(historyManagementFlg) {
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.CycleDisp);     // 表示周期
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.StartDate);     // 開始日
         hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleMante); // スケジュール管理
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.IsUpdateSchedule); // スケジュールを更新
+        hideColumnOfScheduleList(table, true, DatailManagementStandard.ScheduleList.ColumnNo.NextScheduleDate); // 次回実施予定日
 
         // ラベル列を非表示する
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleYearLabel);     // 周期(年)
@@ -2739,6 +2836,8 @@ function hideColumnOfScheduleBaseList(historyManagementFlg) {
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.CycleDispLabel);     // 表示周期
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.StartDateLabel);     // 開始日
         hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.ScheduleManteLabel); // スケジュール管理
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.IsUpdateScheduleLabel); // スケジュールを更新
+        hideColumnOfScheduleList(table, false, DatailManagementStandard.ScheduleList.ColumnNo.NextScheduleDateLabel); // 次回実施予定日
     }
 }
 

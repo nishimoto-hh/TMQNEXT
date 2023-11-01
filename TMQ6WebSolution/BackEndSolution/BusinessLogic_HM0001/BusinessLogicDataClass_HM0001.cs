@@ -591,6 +591,21 @@ namespace BusinessLogic_HM0001
             /// <summary>Gets or sets 保全スケジュール変更管理ID</summary>
             /// <value>保全スケジュール変更管理ID</value>
             public long HmMaintainanceScheduleId { get; set; }
+            /// <summary>Gets or sets 備考</summary>
+            /// <value>備考</value>
+            public string Remarks { get; set; }
+            /// <summary>Gets or sets スケジュールを更新</summary>
+            /// <value>スケジュールを更新</value>
+            public int IsUpdateSchedule { get; set; }
+            /// <summary>Gets or sets 次回実施予定日</summary>
+            /// <value>次回実施予定日</value>
+            public DateTime? ScheduleDate { get; set; }
+            /// <summary>Gets or sets 次回実施予定日(非表示で定義されている変更前の値)</summary>
+            /// <value>次回実施予定日(非表示で定義されている変更前の値)</value>
+            public DateTime? ScheduleDateBefore { get; set; }
+            /// <summary>Gets or sets 次回実施予定日(非表示で定義されている変更前の値、承認時に使用)</summary>
+            /// <value>次回実施予定日(非表示で定義されている変更前の値、承認時に使用)</value>
+            public DateTime? ScheduleDateTransaction { get; set; }
 
             #region 翻訳
             /// <summary>Gets or sets 機器レベル</summary>
