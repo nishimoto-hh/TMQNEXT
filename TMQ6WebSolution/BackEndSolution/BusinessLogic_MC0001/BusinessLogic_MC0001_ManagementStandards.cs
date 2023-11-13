@@ -1362,8 +1362,8 @@ namespace BusinessLogic_MC0001
                         cycleChangeFlg = true;
                     }
 
-                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
-                    if (updResult.NextScheduleDate != null && cycleChangeFlg)
+                    // 次回実施予定日が入力されているかつ値が変更されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (updResult.NextScheduleDate != null && updResult.NextScheduleDateDisp != updResult.NextScheduleDate && cycleChangeFlg)
                     {
                         // エラー情報格納クラス
                         ErrorInfo errorInfo = new ErrorInfo(row);
@@ -1865,8 +1865,8 @@ namespace BusinessLogic_MC0001
                         cycleChangeFlg = true;
                     }
 
-                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
-                    if (updResult.NextScheduleDate != null && cycleChangeFlg)
+                    // 次回実施予定日が入力されているかつ値が変更されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (updResult.NextScheduleDate != null && updResult.NextScheduleDateDisp != updResult.NextScheduleDate && cycleChangeFlg)
                     {
                         // エラー情報格納クラス
                         ErrorInfo errorInfo = new ErrorInfo(row);
@@ -2689,8 +2689,8 @@ namespace BusinessLogic_MC0001
                         cycleChangeFlg = true;
                     }
 
-                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
-                    if (result.ScheduleDate != null && cycleChangeFlg)
+                    // 次回実施予定日が入力されているかつ値が変更されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (result.ScheduleDate != null && result.ScheduleDateBefore != result.ScheduleDate && cycleChangeFlg)
                     {
                         // エラー情報格納クラス
                         ErrorInfo errorInfo = new ErrorInfo(targetDic);
@@ -3867,8 +3867,8 @@ namespace BusinessLogic_MC0001
                                     rowErrFlg = true;
                                 }
 
-                                // 次回実施予定日が入力されている場合
-                                if (resultList[i].ScheduleDate != null)
+                                // 次回実施予定日が入力されているかつ値が変更されている場合
+                                if (resultList[i].ScheduleDate != null && resultList[i].ScheduleDate != resultList[i].ScheduleDateBefore)
                                 {
                                     // 周期または開始日が変更されていいます。　同時に次回実施予定日は更新できません。
                                     errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)resultList[i].RowNo, ExcelPortManagementStandardListInfo.NextScheduleDate, null, GetResMessage("141120019"), TMQUtil.ComReport.LongitudinalDirection, resultList[i].ProcessId.ToString()));

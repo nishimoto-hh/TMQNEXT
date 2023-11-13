@@ -1188,8 +1188,8 @@ namespace BusinessLogic_HM0001
                         cycleChangeFlg = true;
                     }
 
-                    // 次回実施予定日が入力されていて、開始日または周期(年・月・日)が変更されている場合
-                    if (result.ScheduleDate != null && cycleChangeFlg)
+                    // 次回実施予定日が入力されているかつ値が変更されていて、開始日または周期(年・月・日)が変更されている場合
+                    if (result.ScheduleDate != null && result.ScheduleDate != result.ScheduleDateBefore && cycleChangeFlg)
                     {
                         // エラー情報格納クラス
                         ErrorInfo errorInfo = new ErrorInfo(targetDic);
