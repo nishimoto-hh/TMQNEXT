@@ -740,7 +740,7 @@ namespace BusinessLogic_MA0001
             condition.NumberingPattern = Convert.ToInt32(pattern);
             condition.Year = Convert.ToInt32(now.ToString("yyyy"));
             //パターン1の場合は画面で選択されている場所階層ID、左記以外は0
-            if (pattern == RequestNumberingPattern.Pattern5)
+            if (pattern == RequestNumberingPattern.Pattern5 || pattern == RequestNumberingPattern.Pattern3) //20231116 AEC パターン番号3追加
             {
                 factoryId = Convert.ToInt32(registSummaryInfo.DistrictId); //新規追加パターン
             }
@@ -826,8 +826,15 @@ namespace BusinessLogic_MA0001
                     requestNo = "1" + now.ToString("yyyy") + seqNo.ToString("D5");
                     break;
                 case RequestNumberingPattern.Pattern3:
-                    //yy+連番4桁
-                    requestNo = now.ToString("yy") + seqNo.ToString("D4");
+                    //yy+連番5桁
+                    if (Convert.ToInt32(now.ToString("%M")) < 4)
+                    {
+                        requestNo = Convert.ToString(Convert.ToInt32(now.ToString("yy")) - 1) + seqNo.ToString("D5");
+                    }
+                    else
+                    {
+                        requestNo = now.ToString("yy") + seqNo.ToString("D5");
+                    }
                     break;
                 case RequestNumberingPattern.Pattern4:
                     //R+連番7桁
