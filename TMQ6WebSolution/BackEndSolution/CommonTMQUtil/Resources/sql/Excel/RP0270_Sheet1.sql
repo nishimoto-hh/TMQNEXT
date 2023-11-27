@@ -180,10 +180,10 @@ SELECT
         AND tra.structure_id = pp.unit_structure_id
     ) AS unit_name,
 
-    ISNULL(pls.stock_quantity, 0) AS stock_quantity, -- 在庫数
+    ISNULL(pfs.inventory_quantity, 0) AS stock_quantity, -- 在庫数
     ISNULL(pl.unit_price, 0) AS unit_price, -- 単価
-    FORMAT(dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
-    dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
+    FORMAT(dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
+    dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
     
     pl.old_new_structure_id, -- 新旧区分
     --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_nm,
@@ -234,6 +234,8 @@ FROM pt_lot pl -- ロット情報
     -- 確定在庫データ
     LEFT OUTER JOIN pt_fixed_stock pfs 
          ON pfs.parts_id = pp.parts_id
+        AND pfs.lot_control_id = pl.lot_control_id
+        AND pfs.inventory_control_id = pls.inventory_control_id
 @TargetYearMonth*/
 WHERE
     1 = 1
@@ -444,7 +446,7 @@ GROUP BY
     pp.model_type, -- 規格・寸法
     pp.standard_size,
     pp.unit_structure_id, -- 数量管理単位id
-    pls.stock_quantity, -- 在庫数
+    pfs.inventory_quantity, -- 在庫数
     pl.unit_price, -- 単価
     pl.old_new_structure_id, -- 新旧区分
     pl.receiving_datetime,  -- 入庫日

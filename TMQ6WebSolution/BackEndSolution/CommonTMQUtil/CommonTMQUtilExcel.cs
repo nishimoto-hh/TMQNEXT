@@ -1647,8 +1647,8 @@ namespace CommonTMQUtil
                     var rowDic = (IDictionary<string, object>)data;
                     var accountStructureId = rowDic["account_structure_id"];
                     var departmentStructureId = rowDic["department_structure_id"];
-                    var accountId = rowDic["account_id"];
-                    var departmentId = rowDic["department_id"];
+                    var accountId = rowDic["account_id"] ?? "";
+                    var departmentId = rowDic["department_id"] ?? "";
                     var total = rowDic["total"];
                     var dataCnt = rowDic["data_cnt"];
 
@@ -1985,7 +1985,7 @@ namespace CommonTMQUtil
 
                 int valueCount = 0; // SQL文に設定したレコードの数
                 StringBuilder insertSql = getNewSql(); // 実行するSQL
-                // キーの件数文繰り返し
+                                                       // キーの件数文繰り返し
                 foreach (var keyData in keyDataList)
                 {
                     // SQL文のレコードの数が上限より大きい場合、新しいSQLに切り替え
@@ -2086,11 +2086,8 @@ namespace CommonTMQUtil
             condAccountReport.Total = Decimal.Parse(targetSqlParam[2]);
             condAccountReport.ListMaxCnt = int.Parse(targetSqlParam[3]);
 
-            // 勘定科目ID　※画面で未設定の場合のみ
-            if (condAccountReport.AccountStructureId == null || condAccountReport.AccountStructureId <= 0)
-            {
-                condAccountReport.AccountStructureId = int.Parse(targetSqlParam[4]);
-            }
+            // 勘定科目ID
+            condAccountReport.AccountStructureId = int.Parse(targetSqlParam[4]);
             listUnCommentForData.Add(nameof(condAccountReport.AccountStructureId));
 
             // 部門IDリスト　※画面で設定済であれば一旦クリアする
@@ -2432,7 +2429,7 @@ namespace CommonTMQUtil
                 {
                     // 文字列に変換
                     string strStockAmount = (result.stock_amount).ToString();       // 在庫金額
-                    string strStockQuantity = (result.stock_quantity).ToString(); 　// 在庫数
+                    string strStockQuantity = (result.stock_quantity).ToString();  // 在庫数
 
                     result.stock_Amount = TMQUtil.roundDigit(strStockAmount, result.unit_digit, result.unit_round_division);        // 在庫金額
                     result.stock_quantity = TMQUtil.roundDigit(strStockQuantity, result.unit_digit, result.unit_round_division);    // 在庫数
@@ -2610,7 +2607,6 @@ namespace CommonTMQUtil
         {
             // 初期化
             var mappingList = new List<CommonExcelPrtInfo>();
-
             optionRowCount = 0;
             optionColumnCount = 0;
 
@@ -2778,7 +2774,7 @@ namespace CommonTMQUtil
                     var info = new CommonExcelPrtInfo();
                     info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
                     info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
-                    // 出力方式
+                                              // 出力方式
                     int startColNo = 0;
                     int startRowNo = 0;
                     switch (reportInfo.OutputMethod.GetValueOrDefault())
@@ -2786,7 +2782,7 @@ namespace CommonTMQUtil
                         // 1:単一セルの場合
                         case (ComReport.SingleCell):
                             continue; // 何もしない
-                        // 2:縦方向連続の場合
+                                      // 2:縦方向連続の場合
                         case (ComReport.LongitudinalDirection):
                             startColNo = (int)reportInfo.StartColNo;
                             startRowNo = reportInfo.StartRowNo.GetValueOrDefault() - 1; // 行がマイナス１
@@ -3786,7 +3782,7 @@ namespace CommonTMQUtil
                 {
                     info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
                     info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
-                    // マッピングセルを設定
+                                              // マッピングセルを設定
                     address = "A" + (i + outputRowCount).ToString();
                     // マッピング情報設定
                     info.SetExlSetValueByAddress(address, conditionSheetNameList[i]);
@@ -4424,8 +4420,8 @@ namespace CommonTMQUtil
                 }
 
                 param[0] = cellRange; // [0]：セル範囲
-                //param[1] = ""; // [1]：罫線の太さ、デフォルトは細線
-                //param[2] = borderIndex; // [2]：罫線の作成位置
+                                      //param[1] = ""; // [1]：罫線の太さ、デフォルトは細線
+                                      //param[2] = borderIndex; // [2]：罫線の作成位置
                 param[1] = borderIndex; // [2]：罫線の作成位置
                 param[2] = ""; // [1]：罫線の太さ、デフォルトは細線
                 param[3] = sheetName; // [3]：シート名　デフォルトは先頭シート

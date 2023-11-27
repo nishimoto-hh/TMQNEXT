@@ -104,7 +104,7 @@ max_target_month AS( -- 確定在庫データより一覧で選択された対�
                     FROM
                         pt_fixed_stock stock_a
                     WHERE
-                        format(stock_a.target_month, 'yyyy/MM') = @LastConfirmedDate
+                        format(stock_a.target_month, 'yyyy/MM') <= @LastConfirmedDate
                     GROUP BY
                         stock_a.lot_control_id,
                         stock_a.inventory_control_id
@@ -114,7 +114,8 @@ max_target_month AS( -- 確定在庫データより一覧で選択された対�
             AND stock_c.lot_control_id = stock_b.lot_control_id
             AND stock_c.inventory_control_id = stock_b.inventory_control_id
         )
-)
+),
+main_exists as ( -- 受入が行われたデータ
 SELECT DISTINCT
     history_data.parts_id,                                                          -- 予備品ID
     history_data.lot_control_id,                                                    -- ロット管理ID
@@ -138,3 +139,52 @@ FROM
         max_target_month
     ON  history_data.lot_control_id = max_target_month.lot_control_id
     AND history_data.inventory_control_id = max_target_month.inventory_control_id
+),
+main_not_exists as ( -- 受入が行われなかったデータ
+    select
+        stock.parts_id                          -- 予備品ID
+        , stock.lot_control_id                  -- ロット管理ID
+        , stock.inventory_control_id            -- 在庫管理ID
+        , lot.unit_structure_id                 -- 数量単位
+        , lot.unit_price                        -- 入庫単価
+        , lot.currency_structure_id             -- 金額単位
+        , 0 as storage_quantity                 -- 入庫していないので「0」
+        , 0 as storage_amount                   -- 入庫していないので「0」
+        , 0 as shipping_quantity                -- 出庫していないので「0」
+        , 0 as shipping_amount                  -- 出庫していないので「0」
+        , coalesce(max_target_month.inventory_quantity, 0) as inventory_quantity -- 末在庫数(最後に在庫確定された際の在庫数)
+        , coalesce(max_target_month.inventory_amount, 0) as inventory_amount -- 末在庫金額(最後に在庫確定された際の末在庫金額)
+    from
+        pt_location_stock stock 
+        left join pt_parts parts 
+            on stock.parts_id = parts.parts_id 
+        left join pt_lot lot 
+            on stock.lot_control_id = lot.lot_control_id 
+        left join max_target_month 
+            on stock.lot_control_id = max_target_month.lot_control_id 
+            and stock.inventory_control_id = max_target_month.inventory_control_id 
+    where
+        parts.factory_id = @FactoryId -- 一覧で選択されたレコードの工場
+        and COALESCE(parts.job_structure_id, 0) = COALESCE(@PartsJobId, 0) -- 一覧で選択されたレコードの職種
+        and not exists ( 
+            select
+                * 
+            from
+                main_exists 
+            where
+                stock.inventory_control_id = main_exists.inventory_control_id
+        )
+)
+
+-- 受入が行われたデータ
+select
+    * 
+from
+    main_exists
+
+-- 受入が行われなかったデータ
+union all 
+select
+    * 
+from
+    main_not_exists 
