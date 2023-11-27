@@ -738,13 +738,30 @@ namespace BusinessLogic_MA0001
             //検索条件
             ComDao.MaRequestNumberingEntity condition = new ComDao.MaRequestNumberingEntity();
             condition.NumberingPattern = Convert.ToInt32(pattern);
-            condition.Year = Convert.ToInt32(now.ToString("yyyy"));
-            //パターン1の場合は画面で選択されている場所階層ID、左記以外は0
-            if (pattern == RequestNumberingPattern.Pattern5 || pattern == RequestNumberingPattern.Pattern3) //20231116 AEC パターン番号3追加
+
+            // 年度
+            int yearStartMonth = getYearStartMonth(factoryId); // 年度開始月を取得
+            if (pattern == RequestNumberingPattern.Pattern3 && Convert.ToInt32(now.ToString("%M")) < yearStartMonth)
             {
-                factoryId = Convert.ToInt32(registSummaryInfo.DistrictId); //新規追加パターン
+                //パターン3 かつ 年度開始月より前の月 の場合、年度対応のため 年-1 とする
+                condition.Year = Convert.ToInt32(now.ToString("yyyy")) - 1;
             }
-            condition.LocationStructureId = factoryId; //pattern == RequestNumberingPattern.Pattern1 ? (registSummaryInfo.LocationStructureId ?? 0) : 0;
+            else
+            {
+                condition.Year = Convert.ToInt32(now.ToString("yyyy"));
+            }
+
+            // 採番単位
+            if (pattern == RequestNumberingPattern.Pattern3 || pattern == RequestNumberingPattern.Pattern5)
+            {
+                // パターン3 または パターン5：地区ID単位
+                condition.LocationStructureId = Convert.ToInt32(registSummaryInfo.DistrictId);
+            }
+            else
+            {
+                // その他：工場ID単位
+                condition.LocationStructureId = factoryId;
+            }
 
             //採番テーブルを検索
             ComDao.MaRequestNumberingEntity result = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.MaRequestNumberingEntity>(SqlName.Regist.GetRequestNumbering, SqlName.SubDir, condition, this.db);
@@ -791,7 +808,7 @@ namespace BusinessLogic_MA0001
             db.BeginTransaction();
 
             //採番パターンより依頼番号を取得
-            string requestNo = getNumberingPattern(pattern, seqNo, registSummaryInfo.LocationStructureId ?? 0, now);
+            string requestNo = getNumberingPattern(pattern, seqNo, registSummaryInfo.LocationStructureId ?? 0, now, yearStartMonth);
 
             return requestNo;
         }
@@ -803,8 +820,9 @@ namespace BusinessLogic_MA0001
         /// <param name="seqNo">採番テーブルから取得した連番</param>
         /// <param name="locationStructureId">場所階層ID</param>
         /// <param name="now">システム日時</param>
+        /// <param name="yearStartMonth">年度開始月 パターン3用</param>
         /// <returns>依頼番号の文字列</returns>
-        private string getNumberingPattern(string pattern, int seqNo, int locationStructureId, DateTime now)
+        private string getNumberingPattern(string pattern, int seqNo, int locationStructureId, DateTime now, int yearStartMonth)
         {
             string requestNo = "";
             string strLocationStructureId = ""; //aec shiraishi add 20230913
@@ -827,8 +845,9 @@ namespace BusinessLogic_MA0001
                     break;
                 case RequestNumberingPattern.Pattern3:
                     //yy+連番5桁
-                    if (Convert.ToInt32(now.ToString("%M")) < 4)
+                    if (Convert.ToInt32(now.ToString("%M")) < yearStartMonth)
                     {
+                        // 年度開始月より前の月 の場合、年度対応のため 年-1 とする
                         requestNo = Convert.ToString(Convert.ToInt32(now.ToString("yy")) - 1) + seqNo.ToString("D5");
                     }
                     else

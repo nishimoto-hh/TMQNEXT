@@ -1638,6 +1638,26 @@ namespace BusinessLogic_MA0001
 
         #region privateメソッド
         /// <summary>
+        /// 年度開始月を取得する処理
+        /// </summary>
+        /// <param name="factoryId">工場ID 省略時はユーザの本務工場</param>
+        /// <returns>年度開始月</returns>
+        private int getYearStartMonth(int? factoryId = null)
+        {
+            int startMonth;
+            if (factoryId == null)
+            {
+                int userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                startMonth = TMQUtil.GetYearStartMonth(this.db, userFactoryId);
+            }
+            else
+            {
+                startMonth = TMQUtil.GetYearStartMonth(this.db, factoryId ?? -1);
+            }
+            return startMonth;
+        }
+
+        /// <summary>
         /// 出力帳票シート定義の対象sqlパラメータよりキー情報を取得する
         /// </summary>
         /// <param name="targetSqlParams">対象sqlパラメータ</param>
