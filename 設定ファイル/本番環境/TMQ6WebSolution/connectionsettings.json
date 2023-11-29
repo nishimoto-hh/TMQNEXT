@@ -1,0 +1,22 @@
+{
+  "ConnectionStringWrapperSettings": {
+    "DefaultConnectionStringName": "SqlServer",
+    "ConnectionStringSettings": [
+      {
+        "Name": "SqlServer",
+        "ConnectionString": "data source=tmq-akg.a5a674a8bafd.database.windows.net;initial catalog=TMQ_AFTER;persist security info=True;user id=ADMINDBTMQ85;password=P#ssw0rdP#ssw0rd;MultipleActiveResultSets=True;App=EntityFramework",
+        "ProviderName": "System.Data.SqlClient"
+      },
+      {
+        "Name": "PostgreSql",
+        "ConnectionString": "Server=server_address;Port=port_no;User Id=user_id;Password=password;Database=database_name;",
+        "ProviderName": "Npgsql"
+      },
+      {
+        "Name": "Oracle",
+        "ConnectionString": "User Id=oracle_user;Password=oracle_user_password;Data Source=oracle",
+        "ProviderName": "Oracle.ManagedDataAccess.Client"
+      }
+    ]
+  }
+}
