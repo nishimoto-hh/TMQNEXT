@@ -195,6 +195,7 @@
     <None Remove="Resources\sql\Excel\RP0130_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0130_Sheet2.sql" />
     <None Remove="Resources\sql\Excel\RP0140_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0140_Sheet1_suzuka.sql" />
     <None Remove="Resources\sql\Excel\RP0150_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0160_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0190_Sheet1.sql" />
@@ -1439,6 +1440,7 @@
 
     <EmbeddedResource Include="Resources\sql\Excel\RP0140_Sheet1.sql" />
 
+    <EmbeddedResource Include="Resources\sql\Excel\RP0140_Sheet1_suzuka.sql" />
 
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetIssueSparesList.sql" />
 
