@@ -41,6 +41,8 @@ namespace BusinessLogic_MA0001
             public const string SubDir = @"Maintenance";
             /// <summary>SQL格納先サブディレクトリ名：機器台帳</summary>
             public const string SubDirMachine = @"Machine";
+            /// <summary>SQL格納先サブディレクトリ名：共通</summary>
+            public const string CommonDir = @"Common";
 
             /// <summary>
             /// 一覧画面で使用するSQL
@@ -53,6 +55,8 @@ namespace BusinessLogic_MA0001
                 public const string AddGetList = "ADD_GetMaintenanceList";
                 /// <summary>SQL名：ユーザ役割取得</summary>
                 public const string GetUserRole = "GetUserRole";
+                /// <summary>SQL名：ユーザ所属工場取得</summary>
+                public const string GetUserBelongingList = "UserBelonging_GetList";
 
                 /// <summary>SQL名：一時テーブル作成：一覧取得用</summary>
                 public const string CreateTempForGetList = "CreateTableTempGetMaintenanceList";
@@ -287,6 +291,8 @@ namespace BusinessLogic_MA0001
                     public const string NewInspection = "NewInspection";
                     /// <summary>故障情報登録</summary>
                     public const string NewFailure = "NewFailure";
+                    /// <summary>建材日報出力</summary>
+                    public const string DailyReportOutput = "DailyReportOutput";
                 }
 
                 /// <summary>
@@ -899,12 +905,25 @@ namespace BusinessLogic_MA0001
             public const string ReportIdRP0150 = "RP0150";
             // 処理対象帳票ID 故障原因分析書
             public const string ReportIdRP0160 = "RP0160";
+            // 処理対象帳票ID 建材日報出力
+            public const string ReportIdRP0440 = "RP0440";
         }
 
         /// <summary>
         /// ExcelPortの場合、SQLをアンコメントするキー
         /// </summary>
         private static string uncommentExcelPort = "ExcelPort";
+
+        /// <summary>
+        /// 日報出力フラグ
+        /// </summary>
+        private static class DailyReportOutputFlg
+        {
+            /// <summary>連番</summary>
+            public const short Seq = 6;
+            /// <summary>拡張データ</summary>
+            public const string ExData = "1";
+        }
         #endregion
 
         #region コンストラクタ
@@ -1156,8 +1175,6 @@ namespace BusinessLogic_MA0001
             string reportId = "";
             Dictionary<int, List<CommonSTDUtil.CommonBusinessLogic.SelectKeyData>> dicSelectKeyDataList = new Dictionary<int, List<SelectKeyData>>();
 
-            //// 実装の際は、不要な帳票に対する分岐は削除して構いません
-
             switch (this.CtrlId)
             {
                 case ConductInfo.FormDetail.Button.AcceptanceSlipOutput:
@@ -1397,6 +1414,76 @@ namespace BusinessLogic_MA0001
                         out message,          // メッセージ
                         db);
 
+                    // OUTPUTパラメータに設定
+                    this.OutputFileType = fileType;
+                    this.OutputFileName = fileName;
+                    this.OutputStream = memStream;
+
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    // 出力処理が完了しました。
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941060002, ComRes.ID.ID911120006 });
+                    return ComConsts.RETURN_RESULT.OK;
+                    break;
+                case ConductInfo.FormList.Button.DailyReportOutput:
+                    // 建材日報出力
+                    reportId = ReportInfo.ReportIdRP0440;
+                    // 個別工場ID設定の帳票定義の存在を確認して、存在しない場合は共通の工場IDを設定する
+                    userFactoryId = TMQUtil.GetUserFactoryId(this.UserId, this.db);
+                    reportFactoryId = TMQUtil.IsExistsFactoryReportDefine(userFactoryId, this.PgmId, reportId, this.db) ? userFactoryId : 0;
+                    // 帳票定義取得
+                    // 出力帳票シート定義のリストを取得
+                    sheetDefineList = TMQUtil.SqlExecuteClass.SelectList<ReportDao.MsOutputReportSheetDefineEntity>(
+                        TMQUtil.ComReport.GetReportSheetDefine,
+                        TMQUtil.ExcelPath,
+                        new { FactoryId = reportFactoryId, ReportId = reportId },
+                        db);
+                    if (sheetDefineList == null)
+                    {
+                        // 取得できない場合、処理を戻す
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    // シート定義毎にループ
+                    foreach (var sheetDefine in sheetDefineList)
+                    {
+                        // 検索条件フラグの場合はスキップする
+                        if (sheetDefine.SearchConditionFlg == true)
+                        {
+                            continue;
+                        }
+                        Key keyInfo = getKeyInfoByTargetSqlParams(sheetDefine.TargetSqlParams);
+
+                        // 帳票用選択キーデータ取得
+                        // 一覧のコントールIDに持つキー項目の値を画面データと紐づけを行い取得する
+                        List<SelectKeyData> selectKeyDataList = getSelectKeyDataForReport(
+                            ConductInfo.FormList.ControlId.SearchResult, // 一覧のコントールID
+                            keyInfo,                     // 設定したキー情報
+                            this.resultInfoDictionary);  // 画面データ
+
+                        // シートNoをキーとして帳票用選択キーデータを保存する
+                        dicSelectKeyDataList.Add(sheetDefine.SheetNo, selectKeyDataList);
+                    }
+
+                    // エクセル出力共通処理
+                    TMQUtil.CommonOutputDailyReportExcel(
+                        reportFactoryId,             // 工場ID
+                        this.PgmId,                  // プログラムID
+                        dicSelectKeyDataList,        // シートごとのパラメータでの選択キー情報リスト
+                        null,                        // 検索条件
+                        reportId,                    // 帳票ID
+                        1,                           // テンプレートID
+                        1,                           // 出力パターンID
+                        this.UserId,                 // ユーザID
+                        this.LanguageId,             // 言語ID
+                        this.conditionSheetLocationList,    // 場所階層構成IDリスト
+                        this.conditionSheetJobList,         // 職種機種構成IDリスト
+                        this.conditionSheetNameList,        // 検索条件項目名リスト
+                        this.conditionSheetValueList,       // 検索条件設定値リスト
+                        out fileType,         // ファイルタイプ
+                        out fileName,         // ファイル名
+                        out memStream,  // メモリストリーム
+                        out message,          // メッセージ
+                        db);
                     // OUTPUTパラメータに設定
                     this.OutputFileType = fileType;
                     this.OutputFileName = fileName;

@@ -195,7 +195,6 @@
     <None Remove="Resources\sql\Excel\RP0130_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0130_Sheet2.sql" />
     <None Remove="Resources\sql\Excel\RP0140_Sheet1.sql" />
-    <None Remove="Resources\sql\Excel\RP0140_Sheet1_suzuka.sql" />
     <None Remove="Resources\sql\Excel\RP0150_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0160_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0190_Sheet1.sql" />
@@ -211,6 +210,20 @@
     <None Remove="Resources\sql\Excel\RP0410_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0420_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0430_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0440_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\CreateJobIdData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\CreateJobOrderData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\GetJobOrderData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\InsertJobIdData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\InsertJobOrderData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonMqData.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonStopAndMaintenance.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonSuddenAndCall.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet10.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet12.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\Detail\DeleteHmContent.sql" />
@@ -959,6 +972,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0440_Sheet1.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\CreateJobIdData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\CreateJobOrderData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\GetJobOrderData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\InsertJobIdData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\InsertJobOrderData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_CommonMqData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_CommonStopAndMaintenance.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_CommonSuddenAndCall.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet1.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\UpdateScheduleDateByDetailId.sql" />
   </ItemGroup>
 
@@ -1440,7 +1466,6 @@
 
     <EmbeddedResource Include="Resources\sql\Excel\RP0140_Sheet1.sql" />
 
-    <EmbeddedResource Include="Resources\sql\Excel\RP0140_Sheet1_suzuka.sql" />
 
     <EmbeddedResource Include="Resources\sql\InventoryControl\GetIssueSparesList.sql" />
 

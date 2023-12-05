@@ -330,6 +330,9 @@ namespace CommonExcelUtil
                         case CommonExcelCmdInfo.CExecCmdFontChange:
                             exlCmdMain.FontChange(cmdInfo.GetExecPram());
                             break;
+                        case CommonExcelCmdInfo.CExecCmdFontColorPart:
+                            exlCmdMain.FontColorPart(cmdInfo.GetExecPram());
+                            break;
                         case CommonExcelCmdInfo.CExecCmdAlignment:
                             exlCmdMain.Alignment(cmdInfo.GetExecPram());
                             break;
@@ -350,6 +353,12 @@ namespace CommonExcelUtil
                             break;
                         case CommonExcelCmdInfo.CExecCmdCopyInsRange:
                             exlCmdMain.CopyInsRange(cmdInfo.GetExecPram());
+                            break;
+                        case CommonExcelCmdInfo.CExecCmdSetFunctionToCell:
+                            exlCmdMain.SetFunctionToCell(cmdInfo.GetExecPram());
+                            break;
+                        case CommonExcelCmdInfo.CExecCmdInsertColumn:
+                            exlCmdMain.InsertColumn(cmdInfo.GetExecPram());
                             break;
                         case CommonExcelCmdInfo.CExecCmdChangeSheetName:
                             exlCmdMain.ChangeSheetName(cmdInfo.GetExecPram());

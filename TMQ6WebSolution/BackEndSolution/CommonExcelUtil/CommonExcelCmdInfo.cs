@@ -51,6 +51,8 @@ namespace CommonExcelUtil
         public const string CExecCmdFormatLocal = "FormatLocal";
         /// <summary>フォントサイズ変更</summary>
         public const string CExecCmdFontChange = "FontChange";
+        /// <summary>文字色(指定された部分のみ)を変更</summary>
+        public const string CExecCmdFontColorPart = "FontColorPart";
         /// <summary>文字位置指定</summary>
         public const string CExecCmdAlignment = "Alignment";
         /// <summary>改ページ挿入</summary>
@@ -65,6 +67,10 @@ namespace CommonExcelUtil
         public const string CExecCmdCopyInsCol = "CopyInsCol";
         /// <summary>行コピーしたセルの挿入</summary>
         public const string CExecCmdCopyInsRange = "CopyInsRange";
+        /// <summary>セルに数式を設定する</summary>
+        public const string CExecCmdSetFunctionToCell = "SetFunctionToCell";
+        /// <summary>指定された列に新しく列を追加</summary>
+        public const string CExecCmdInsertColumn = "InsertColumn";
         /// <summary>電子印作成</summary>
         public const string CExecCmdMakeStamp = "MakeStamp";
         /// <summary>シート名の変更</summary>
