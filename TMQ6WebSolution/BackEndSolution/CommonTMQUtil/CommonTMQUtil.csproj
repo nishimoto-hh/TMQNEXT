@@ -220,7 +220,6 @@
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonStopAndMaintenance.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonSuddenAndCall.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet1.sql" />
-    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />

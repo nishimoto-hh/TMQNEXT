@@ -24,6 +24,8 @@ using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeI
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using static CommonTMQUtil.CommonTMQUtil.ComExcelPort;
 using static CommonTMQUtil.CommonTMQUtil.ReportRP0450;
+using DocumentFormat.OpenXml.EMMA;
+using System.Net;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -2544,6 +2546,15 @@ namespace CommonTMQUtil
                 public const int JobNameStartRow = 6;
 
                 /// <summary>
+                /// 系停止時間表示するための数式を設定する行
+                /// </summary
+                public const int StopTimeRow = 8;
+                /// <summary>
+                /// 工程停止時間表示するための数式を設定する行
+                /// </summary
+                public const int ProcessStopTimeRow = 10;
+
+                /// <summary>
                 /// 突発作業率(%) を表示するための数式を設定する行
                 /// </summary
                 public const int FuncPerSuddenRow = 38;
@@ -2840,6 +2851,15 @@ namespace CommonTMQUtil
                             {
                                 // 詳細情報
                                 cmdInfoList.AddRange(CommandLineBoxOldStyleDetail());
+
+                                // マッピング情報格納用
+                                var info = new CommonExcelPrtInfo();
+                                info.SetSheetNo(ReportRP0450.SheetNo.Detail); // マッピング対象のシート番号
+
+                                // 帳票タイトルをマッピング
+                                var reportName = new ComDao.MsTranslationEntity().GetEntity(0, 111120118, searchCondition.LanguageId, db).TranslationText;
+                                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.ReportNameCell, reportName);
+                                mappingInfoList.Add(info);
                             }
                         }
 
@@ -3194,12 +3214,24 @@ namespace CommonTMQUtil
                     jobNameStartColYear++;
                 }
 
+                // 「件数」「実績金額」「自社時間」「外注時間」「自係＋外注」シートの場合
+                if (sheetNo == ReportRP0450.SheetNo.MaintenanceCount ||
+                    sheetNo == ReportRP0450.SheetNo.Expenditure ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeSelf ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeCompany ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
+                {
+                    // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間)
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.StopTimeRow.ToString(), sheetNo, ref cmdInfoList);
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString(), sheetNo, ref cmdInfoList);
+                }
+
                 // 「自社時間」「外注時間」「自係＋外注」シートの場合
                 if (sheetNo == ReportRP0450.SheetNo.WorkingTimeSelf ||
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeCompany ||
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
                 {
-                    // 条件付き書式を追加するコマンドを作成
+                    // 条件付き書式を追加するコマンドを作成(小数がある数値)
                     setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.DataStartRowTotal.ToString(), sheetNo, ref cmdInfoList);
                 }
             }
