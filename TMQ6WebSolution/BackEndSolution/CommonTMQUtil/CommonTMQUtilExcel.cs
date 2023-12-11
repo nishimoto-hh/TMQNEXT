@@ -3222,8 +3222,8 @@ namespace CommonTMQUtil
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
                 {
                     // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間)
-                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.StopTimeRow.ToString(), sheetNo, ref cmdInfoList);
-                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString(), sheetNo, ref cmdInfoList);
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.StopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString());
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString());
                 }
 
                 // 「自社時間」「外注時間」「自係＋外注」シートの場合
@@ -3232,7 +3232,7 @@ namespace CommonTMQUtil
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
                 {
                     // 条件付き書式を追加するコマンドを作成(小数がある数値)
-                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.DataStartRowTotal.ToString(), sheetNo, ref cmdInfoList);
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.DataStartRowTotal.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString());
                 }
             }
 
@@ -3291,11 +3291,10 @@ namespace CommonTMQUtil
             }
 
             // 条件付き書式を追加するコマンドを作成
-            void setCmdCondition(string address, int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList)
+            void setCmdCondition(string address, int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList, string targetCell)
             {
                 var cmdInfo = new CommonExcelCmdInfo();
                 string[] param;
-                string targetCell = ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString();
 
                 // 条件付き書式を設定(3桁区切り小数点無しの場合)
                 cmdInfo = new CommonExcelCmdInfo();

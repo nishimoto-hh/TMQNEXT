@@ -1175,6 +1175,8 @@ namespace BusinessLogic_MA0001
             string reportId = "";
             Dictionary<int, List<CommonSTDUtil.CommonBusinessLogic.SelectKeyData>> dicSelectKeyDataList = new Dictionary<int, List<SelectKeyData>>();
 
+            //// 実装の際は、不要な帳票に対する分岐は削除して構いません
+
             switch (this.CtrlId)
             {
                 case ConductInfo.FormDetail.Button.AcceptanceSlipOutput:
@@ -2077,28 +2079,28 @@ namespace BusinessLogic_MA0001
                         errFlg = false;
                     }
                     //保全計画情報に対する入力が行われている場合、「実施件名」「着工予定日」「完了予定日」は必須
-/*                    if (role.Maintenance && Convert.ToBoolean(result.PlanInputFlg))
-                    {
-                        if (result.PlanSubject == null)
-                        {
-                            // 入力してください。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.PlanSubject, GetResMessage("111120025"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = false;
-                        }
-                        if (result.ExpectedConstructionDate == null)
-                        {
-                            // 入力してください。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.ExpectedConstructionDate, GetResMessage("111170003"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = false;
-                        }
-                        if (result.ExpectedCompletionDate == null)
-                        {
-                            // 入力してください。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.ExpectedCompletionDate, GetResMessage("111060010"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = false;
-                        }
-                    }
-*/
+                    /*                    if (role.Maintenance && Convert.ToBoolean(result.PlanInputFlg))
+                                        {
+                                            if (result.PlanSubject == null)
+                                            {
+                                                // 入力してください。
+                                                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.PlanSubject, GetResMessage("111120025"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                                                errFlg = false;
+                                            }
+                                            if (result.ExpectedConstructionDate == null)
+                                            {
+                                                // 入力してください。
+                                                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.ExpectedConstructionDate, GetResMessage("111170003"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                                                errFlg = false;
+                                            }
+                                            if (result.ExpectedCompletionDate == null)
+                                            {
+                                                // 入力してください。
+                                                errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.ExpectedCompletionDate, GetResMessage("111060010"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                                                errFlg = false;
+                                            }
+                                        }
+                    */
                     //MQ分類が「設備工事」「撤去工事」以外の場合、「突発区分」は必須
                     if (result.MqClassStructureId != null)
                     {
