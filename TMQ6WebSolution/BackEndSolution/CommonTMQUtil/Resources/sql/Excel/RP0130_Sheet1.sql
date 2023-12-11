@@ -52,6 +52,8 @@ SELECT
     , ma_request.request_personnel_tel AS request_personnel_tel --PHS
     , ma_request.desired_start_date AS desired_start_date --希望日
     , ma_request.issue_date AS issue_date --発行日
+    , ma_request.desired_end_date AS desired_end_date --完了希望日
+    , ma_request.construction_place AS construction_place --場所
 FROM
     ma_summary                                                          -- 保全依頼
     LEFT JOIN ma_request                                                -- 保全活動件名
