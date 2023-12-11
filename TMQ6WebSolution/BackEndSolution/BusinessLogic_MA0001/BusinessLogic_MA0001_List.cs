@@ -46,6 +46,8 @@ namespace BusinessLogic_MA0001
             Dao.userRole role = new Dao.userRole();
             // ユーザ役割の設定（新規登録ボタンの表示制御に使用）
             setUserRole<Dao.userRole>(role);
+            // 日報出力ボタン表示フラグの設定
+            setDailyReportBtnDispFlg(role);
             // ユーザ役割の設定
             SetSearchResultsByDataClass<Dao.userRole>(pageInfo, new List<Dao.userRole>() { role }, 1);
             if (isFromScheduleLink)
@@ -222,6 +224,52 @@ namespace BusinessLogic_MA0001
                 ComUtil.SetPropertyValue<T>(propMaintenance, result, results.Exists(x => x.ExtensionData == UserRole.Maintenance));
             }
 
+        }
+
+        /// <summary>
+        /// ユーザの所属工場を取得し、日報出力ボタン表示フラグ設定
+        /// </summary>
+        /// <param name="result">日報出力ボタン表示フラグを設定するデータ</param>
+        private void setDailyReportBtnDispFlg(Dao.userRole result)
+        {
+            // ユーザがシステム管理者かどうか判定
+            TMQUtil.HistoryManagement historyClass = new(this.db, this.UserId, this.LanguageId, DateTime.Now, Const.MsStructure.StructureId.ApplicationConduct.None);
+            bool isAdmin = historyClass.isSystemAdministrator();
+            if(isAdmin)
+            {
+                //システム管理者の場合、ボタン表示
+                result.DailyReportBtnDispFlg = true;
+                return;
+            }
+
+            // ユーザ所属工場の取得
+            var belongingList = db.GetListByOutsideSql<StructureInfo>(SqlName.List.GetUserBelongingList, SqlName.CommonDir, new { UserId = this.UserId });
+            if (belongingList == null)
+            {
+                result.DailyReportBtnDispFlg = false;
+                return;
+            }
+            List<int> belongFactoryIdList = belongingList.Select(x => x.FactoryId).Distinct().ToList();
+
+            //構成アイテムを取得するパラメータ設定
+            TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+            //構成グループID
+            param.StructureGroupId = (int)Const.MsStructure.GroupId.Location;
+            //連番
+            param.Seq = DailyReportOutputFlg.Seq;
+            //拡張データ
+            param.ExData = DailyReportOutputFlg.ExData;
+
+            // 拡張データの日報出力フラグが設定されている工場を取得
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
+            if (list == null)
+            {
+                result.DailyReportBtnDispFlg = false;
+                return;
+            }
+            // ユーザの所属工場に日報出力対象の工場が含まれている場合、ボタン表示
+            List<int> targetFactoryIdList = list.Select(x => x.FactoryId ?? -1).Distinct().ToList();
+            result.DailyReportBtnDispFlg = belongFactoryIdList.Exists(targetFactoryIdList.Contains);
         }
 
         /// <summary>

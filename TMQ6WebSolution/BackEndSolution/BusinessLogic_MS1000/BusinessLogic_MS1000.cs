@@ -42,7 +42,7 @@ namespace BusinessLogic_MS1000
             /// <summary>地区</summary>
             public const int District = 0;
             /// <summary>工場</summary>
-            public const int Factory = 5;
+            public const int Factory = 6;
         }
 
         /// <summary>

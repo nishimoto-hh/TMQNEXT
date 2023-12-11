@@ -22,6 +22,10 @@ using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
+using static CommonTMQUtil.CommonTMQUtil.ComExcelPort;
+using static CommonTMQUtil.CommonTMQUtil.ReportRP0450;
+using DocumentFormat.OpenXml.EMMA;
+using System.Net;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -1806,6 +1810,1982 @@ namespace CommonTMQUtil
             }
 
         }
+        #region RP0440 保全活動 個別日報専用メソッド
+        public class ReportRP0440
+        {
+            /// <summary>
+            /// データ種類
+            /// </summary>
+            public class DataType
+            {
+                /// <summary>
+                /// 計画
+                /// </summary>
+                public const int Plan = 1;
+                /// <summary>
+                /// 非計画
+                /// </summary>
+                public const int UnPlanned = 2;
+            }
+        }
+        /// <summary>
+        /// エクセル出力処理(個別日報)
+        /// </summary>
+        /// <typeparam name="T">データクラス</typeparam>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="programId">プログラムID</param>
+        /// <param name="selectKeyDataList">選択データ</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="reportId">帳票ID</param>
+        /// <param name="templateId">テンプレートID</param>
+        /// <param name="outputPatternId">出力パターンID</param>
+        /// <param name="userId">ユーザID</param>
+        /// <param name="languageId">言語ID</param>
+        /// /// <param name="conditionSheetLocatoinList">場所階層構成IDリスト</param>
+        /// <param name="conditionSheetJobList">職種機種構成IDリスト</param>
+        /// <param name="conditionSheetNameList">検索条件項目名リスト</param>
+        /// <param name="conditionSheetValueList">検索条件設定値リスト</param>
+        /// <param name="fileType">ファイルタイプ</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="memoryStream">メモリストリーム</param>
+        /// <param name="message">メッセージ</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <param name="option">オプションクラス</param>
+        /// <param name="msgResources">メッセージリソース管理クラス</param>
+        /// <returns>true:正常　false:エラー</returns>
+        public static bool CommonOutputDailyReportExcel(
+        int factoryId,
+        string programId,
+        Dictionary<int, List<CommonSTDUtil.CommonBusinessLogic.SelectKeyData>> dicSelectKeyDataList,
+        dynamic searchCondition,
+        string reportId,
+        int templateId,
+        int outputPatternId,
+        string userId,
+        string languageId,
+        List<int> conditionSheetLocatoinList,
+        List<int> conditionSheetJobList,
+        List<string> conditionSheetNameList,
+        List<string> conditionSheetValueList,
+        out string fileType,
+        out string fileName,
+        out MemoryStream memoryStream,
+        out string message,
+        ComDB db,
+        ComUtil.MessageResources msgResources = null)
+        {
+
+            //==========
+            // 初期化
+            //==========
+            // ファイルタイプ
+            fileType = ComConsts.REPORT.FILETYPE.EXCEL;
+            // ダウンロードファイル名
+            fileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", reportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.EXCEL_BOOK;
+            // メモリストリーム
+            memoryStream = new MemoryStream();
+            // メッセージ
+            message = "";
+
+            // マッピング情報生成
+            List<CommonExcelPrtInfo> mappingInfoList = new List<CommonExcelPrtInfo>();
+
+            // コマンド情報生成
+            // セルの結合や罫線を引く等のコマンド実行が必要な場合はここでセットする。不要な場合はnullでOK
+            List<CommonExcelCmdInfo> cmdInfoList = new List<CommonExcelCmdInfo>();
+
+            int optionRowCount = 0;
+            int optionColomnCount = 0;
+
+            // テンプレート情報を取得
+            var template = new ReportDao.MsOutputTemplateEntity().GetEntity(factoryId, reportId, templateId, db);
+            if (template == null)
+            {
+                // 取得できない場合、処理を戻す
+                return false;
+            }
+            // テンプレートファイル名を設定
+            string templateFileName = template.TemplateFileName;
+            // テンプレートファイルパスを設定
+            string templateFilePath = template.TemplateFilePath;
+
+            // 出力帳票シート定義のリストを取得
+            var sheetDefineList = TMQUtil.SqlExecuteClass.SelectList<ReportDao.MsOutputReportSheetDefineEntity>(
+                ComReport.GetReportSheetDefine,
+                ExcelPath,
+                new { FactoryId = factoryId, ReportId = reportId },
+                db);
+
+            if (sheetDefineList == null)
+            {
+                // 取得できない場合、処理を戻す
+                return false;
+            }
+
+            // シート定義毎にループ
+            foreach (var sheetDefine in sheetDefineList)
+            {
+                // 項目定義
+                List<Dao.InoutDefine> reportInfoList = new List<Dao.InoutDefine>();
+
+                // 検索条件フラグの場合
+                if (sheetDefine.SearchConditionFlg == true)
+                {
+                    // 検索条件からデータを取得し、エクセルを作成する
+                    var dataList = GetReportDatabySearchCondition(searchCondition, languageId, db);
+                    // マッピングデータ作成
+                    List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingListForCondition(
+                                                                            factoryId,
+                                                                            programId,
+                                                                            reportId,
+                                                                            sheetDefine.SheetNo,
+                                                                            templateId,
+                                                                            outputPatternId,
+                                                                            dataList,
+                                                                            conditionSheetLocatoinList,
+                                                                            conditionSheetJobList,
+                                                                            conditionSheetNameList,
+                                                                            conditionSheetValueList,
+                                                                            templateFileName,
+                                                                            templateFilePath,
+                                                                            languageId,
+                                                                            db,
+                                                                            out optionRowCount,
+                                                                            out optionColomnCount);
+                    // マッピング情報リストに追加
+                    mappingInfoList.AddRange(mappingDataList);
+                }
+                else
+                {
+                    // tempテーブルに対象帳票シート定義の使用構成グループデータを設定する
+                    if (string.IsNullOrEmpty(sheetDefine.UseStructureGroupId) == false)
+                    {
+                        // 使用構成グループを取得
+                        TMQUtil.ListPerformanceUtil listPf = new(db, languageId);
+                        // temp情報作成
+                        listPf.GetAttachmentSql(new List<FunctionTypeId>());
+                        // 翻訳用一時テーブル登録
+                        // 翻訳する構成グループのリスト
+                        var structuregroupList = new List<GroupId>();
+                        foreach (string groupId in sheetDefine.UseStructureGroupId.Split(','))
+                        {
+                            int iGroupId = int.Parse(groupId);
+                            foreach (GroupId Value in Enum.GetValues(typeof(GroupId)))
+                            {
+                                int iVal = (int)Value;
+                                if (iVal == iGroupId)
+                                {
+                                    structuregroupList.Add(Value);
+                                    break;
+                                }
+                            }
+                        }
+                        listPf.GetCreateTranslation(); // テーブル作成
+                        listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                        listPf.RegistTempTable(); // 登録
+                    }
+
+                    // 対象SQLファイルにてSQLを実行し、エクセルを作成する
+                    string targetSql = sheetDefine.TargetSql;
+                    IList<dynamic> dataList = null;
+                    // 帳票データを取得
+                    dataList = GetReportData(dicSelectKeyDataList[sheetDefine.SheetNo], targetSql, db, userId, languageId);
+                    // 出力最大データ数チェック
+                    if (!CheckDownloadExcelMaxRowCnt(dataList.Count, db))
+                    {
+                        // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                        message = GetResMessage(ComRes.ID.ID141120013, languageId, msgResources);
+                        return false;
+                    }
+
+                    // 計画作業のデータ
+                    IList<dynamic> planList = dataList.Where(x => x.data_type == ReportRP0440.DataType.Plan).ToList();
+                    // 非計画作業のデータ
+                    IList<dynamic> UnPlannedList = dataList.Where(x => x.data_type == ReportRP0440.DataType.UnPlanned).ToList();
+
+                    // マッピングデータ作成
+                    List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateDailyReportMappingList(
+                                                                            factoryId,
+                                                                            programId,
+                                                                            reportId,
+                                                                            sheetDefine.SheetNo,
+                                                                            templateId,
+                                                                            outputPatternId,
+                                                                            planList,
+                                                                            UnPlannedList,
+                                                                            templateFileName,
+                                                                            templateFilePath,
+                                                                            languageId,
+                                                                            db,
+                                                                            out reportInfoList);
+                    // マッピング情報リストに追加
+                    mappingInfoList.AddRange(mappingDataList);
+
+                    // コマンド設定
+                    cmdInfoList.AddRange(setCommand(sheetDefine, reportInfoList, planList, UnPlannedList));
+
+                }
+
+            }
+            // エクセルファイル作成
+            ExcelUtil.CreateExcelFile(templateFileName, templateFilePath, userId, mappingInfoList, cmdInfoList, ref memoryStream, ref message);
+
+            return true;
+
+            // コマンドの設定
+            List<CommonExcelCmdInfo> setCommand(ReportDao.MsOutputReportSheetDefineEntity sheetDefine, List<Dao.InoutDefine> reportInfoList, IList<dynamic> planList, IList<dynamic> UnPlannedList)
+            {
+                List<CommonExcelCmdInfo> cmdInfoList = new List<CommonExcelCmdInfo>();
+
+                // 開始列を設定
+                IList<Dao.InoutDefine> workList = reportInfoList.Where(x => x.OutputMethod != null && !x.OutputMethod.Equals(ComReport.SingleCell)).ToArray();
+                int startCol = workList.Where(x => !ComUtil.IsNullOrEmpty(x.StartColNo)).Select(x => (int)x.StartColNo).Min();
+
+                // 終了列を設定
+                int endCol = workList.Where(x => !ComUtil.IsNullOrEmpty(x.StartColNo)).Select(x => (int)x.StartColNo).Max();
+
+                // 計画作業一覧の開始行
+                int planStartRow = workList.Where(x => !ComUtil.IsNullOrEmpty(x.StartRowNo)).Select(x => (int)x.StartRowNo).Min();
+                // 非計画作業一覧の開始行
+                int unPlannedStartRow = workList.Where(x => !ComUtil.IsNullOrEmpty(x.StartRowNo)).Select(x => (int)x.StartRowNo).Max();
+
+                // コマンド情報生成
+                // 計画作業一覧 行挿入＆コピー
+                copyInsRow(planStartRow, planList.Count);
+                // 計画作業一覧 罫線
+                lineBox(planStartRow, planList.Count);
+                // 非計画作業一覧 行挿入＆コピー
+                copyInsRow(unPlannedStartRow, UnPlannedList.Count);
+                // 非計画作業一覧 罫線
+                lineBox(unPlannedStartRow, UnPlannedList.Count);
+
+                return cmdInfoList;
+
+                // 行挿入＆コピー
+                void copyInsRow(int startRow, int dataCount)
+                {
+                    if (dataCount <= 1)
+                    {
+                        return;
+                    }
+
+                    // コピー元行(範囲)
+                    string copyFromRange = startRow.ToString();
+                    // コピー先行(範囲)
+                    string copyToRange = (startRow + 1).ToString();
+                    CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+                    string[] param = new string[5];
+                    param[0] = copyFromRange;                       // [0]：コピー元行（範囲）
+                    param[1] = copyToRange;                         // [1]：コピー先行（範囲）
+                    param[2] = Convert.ToString(dataCount - 1);     // [2]：N数
+                    param[3] = sheetDefine.SheetNo.ToString();      // [3]：コピー元シート名（未設定時は先頭シート）
+                    param[4] = sheetDefine.SheetNo.ToString();      // [4]：コピー先シート名（未設定時は先頭シート）
+                    cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdCopyInsRow, param);
+                    cmdInfoList.Add(cmdInfo);
+                }
+
+                // 罫線
+                void lineBox(int startRow, int dataCount)
+                {
+                    if (dataCount <= 1)
+                    {
+                        return;
+                    }
+
+                    //罫線（下部破線）
+                    string range = ToAlphabet((int)startCol) + startRow + ":" + ToAlphabet((int)endCol + 5) + (startRow + (dataCount - 1) - 1); //最終行は含まない
+                    CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+                    string[] param = new string[5];
+                    param[0] = range; // [0]：対象行、列、セル範囲
+                    param[1] = "B";   // [1]：罫線の作成位置
+                    param[2] = "H";   // [2]：罫線の太さ　デフォルトは細線
+                    param[3] = sheetDefine.SheetNo.ToString(); // [3]：シート名またはシート番号　デフォルトは先頭シート
+                    cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdLineBox, param);
+                    cmdInfoList.Add(cmdInfo);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 個別日報ファイル マッピング情報
+        /// </summary>
+        /// <typeparam name="T">データクラス</typeparam>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="programId">プログラムID</param>
+        /// <param name="reportId">帳票ID</param>
+        /// <param name="sheetNo">シート番号</param>
+        /// <param name="templateId">テンプレートID</param>
+        /// <param name="outputPattenId">出力パターンID</param>
+        /// <param name="planList">計画作業データ</param>
+        /// <param name="unPlannedList">非計画作業データ</param>
+        /// <param name="templateFileName">テンプレートファイル名</param>
+        /// <param name="templateFilePath">テンプレートファイルパス</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <param name="reportItemInfoList">項目定義リスト</param>
+        /// <returns>ファイル マッピング情報リスト</returns>
+        public static List<CommonExcelPrtInfo> CreateDailyReportMappingList(
+            int factoryId,
+            string programId,
+            string reportId,
+            int sheetNo,
+            int templateId,
+            int outputPattenId,
+            dynamic planList,
+            dynamic unPlannedList,
+            string templateFileName,
+            string templateFilePath,
+            string languageId,
+            ComDB db,
+            out List<Dao.InoutDefine> reportItemInfoList)
+        {
+            // 初期化
+            var mappingList = new List<CommonExcelPrtInfo>();
+            reportItemInfoList = new();
+
+            // 帳票定義を取得
+            var reportDefine = new ReportDao.MsOutputReportDefineEntity().GetEntity(factoryId, programId, reportId, db);
+
+            // シート定義を取得
+            var sheetDefine = new ReportDao.MsOutputReportSheetDefineEntity().GetEntity(factoryId, reportId, sheetNo, db);
+            if (sheetDefine == null)
+            {
+                // 取得できない場合、処理を戻す
+                return null;
+            }
+
+            // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
+            TMQUtil.GetFixedSqlStatement(ExcelPath, ComReport.GetComReportInfo, out string baseSql);
+
+            // 項目定義を取得
+            IList<Dao.InoutDefine> reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
+                baseSql,
+                new { FactoryId = factoryId, LanguageId = languageId, ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
+            if (reportInfoList == null || reportInfoList.Count == 0)
+            {
+                // 取得できない場合、処理を戻す
+                return null;
+            }
+
+            // 対象テンプレートファイルシートのデータを読込み、開始行番号と開始列番号を設定
+            SetStartInfo(ref reportInfoList, templateFileName, templateFilePath, sheetNo, sheetDefine.SheetDefineMaxRow, sheetDefine.SheetDefineMaxColumn, reportDefine.OutputItemType);
+
+            // 非計画作業一覧の開始行を取得
+            int unPlannedDefineStartRow = reportInfoList.Where(x => x.OutputMethod == ComReport.LongitudinalDirection && !ComUtil.IsNullOrEmpty(x.StartRowNo)).Max(x => (int)x.StartRowNo);
+            int unPlannedStartRow = unPlannedDefineStartRow + (planList.Count > 0 ? planList.Count - 1 : 0);
+
+            //ディクショナリーに変換
+            var dicPlanList = ((List<dynamic>)planList).ConvertAll(x => (IDictionary<string, object>)x).ToList();
+            var dicUnPlannedList = ((List<dynamic>)unPlannedList).ConvertAll(x => (IDictionary<string, object>)x).ToList();
+            // 概要の情報取得
+            List<IDictionary<string, object>> topInfo = new();
+            if (dicPlanList.Count > 0)
+            {
+                topInfo.Add(dicPlanList[0]);
+            }
+            else if (dicUnPlannedList.Count > 0)
+            {
+                topInfo.Add(dicUnPlannedList[0]);
+            }
+            // 項目定義
+            foreach (var reportInfo in reportInfoList)
+            {
+                // 開始行番号、開始列番号が未指定の場合、スキップ
+                if (reportInfo.StartRowNo == null || reportInfo.StartColNo == null)
+                {
+                    continue;
+                }
+                // カラム名が共通用タイトル、共通用日付、共通用時刻の場合、スキップ
+                if (ColumnName.IsCommonColumn(reportInfo.ColumnName))
+                {
+                    continue;
+                }
+                int index = 0;
+                List<IDictionary<string, object>> dicList = null;
+
+                // 非計画作業一覧フラグ
+                bool isUnPlanned = reportInfo.StartRowNo == unPlannedDefineStartRow;
+                if (reportInfo.OutputMethod == ComReport.SingleCell)
+                {
+                    // 概要の情報
+                    dicList = topInfo;
+                }
+                else if (isUnPlanned)
+                {
+                    // 非計画作業一覧の開始行を再設定（計画作業一覧の件数分下にずれる）
+                    reportInfo.StartRowNo = unPlannedStartRow;
+                    dicList = dicUnPlannedList;
+                }
+                else
+                {
+                    // 計画作業一覧
+                    dicList = dicPlanList;
+                }
+
+                if (sheetDefine.ListFlg)
+                {
+                    //列単位でマッピング可能な一覧
+
+                    // 初期化
+                    var info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+                    //対象項目を取得する
+                    int conunt = dicList.Count == 0 ? 1 : dicList.Count;
+                    object[] rowData = Enumerable.Repeat("", conunt).ToArray();
+                    string columnName = null;
+                    bool rigthAlign = false;
+                    if (dicList.Any(x => x.ContainsKey(reportInfo.ColumnName)))
+                    {
+                        columnName = reportInfo.ColumnName;
+                    }
+                    else if (dicList.Any(x => x.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName))))
+                    {
+                        // パスカルケースも
+                        columnName = ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName);
+                    }
+                    if (!string.IsNullOrEmpty(columnName))
+                    {
+                        // カラム名ごとに値を設定
+
+                        if (!string.IsNullOrEmpty(reportInfo.FormatText))
+                        {
+                            //###.##等
+                            int idx = reportInfo.FormatText.IndexOf("#.#");
+                            if (idx >= 0)
+                            {
+                                int decimalLength = reportInfo.FormatText.Length - idx - 2;
+                                // ###.## → ##0.00
+                                reportInfo.FormatText = reportInfo.FormatText.Substring(0, idx) + "0." + new string('0', decimalLength);
+                            }
+                            else if (reportInfo.FormatText.IndexOf("#") >= 0)
+                            {
+                                //小数なしの数値 #,### → #,##0 (値「0」がブランクにならないよう変換)
+                                reportInfo.FormatText = reportInfo.FormatText.Substring(0, reportInfo.FormatText.Length - 1) + "0";
+                            }
+                        }
+
+                        object val = dicList.Where(x => x[columnName] != null).Select(x => x[columnName]).FirstOrDefault();
+                        if (val != null)
+                        {
+                            //型を取得
+                            Type type = val.GetType();
+                            //フォーマットした値を取得
+                            if (type == typeof(int))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((int)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(long))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((long)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(decimal))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((decimal)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                                rigthAlign = true;
+                            }
+                            else if (type == typeof(DateTime))
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? (x[columnName] != null && !string.IsNullOrEmpty(reportInfo.FormatText) ? ((DateTime)x[columnName]).ToString(reportInfo.FormatText) : x[columnName]) : null).ToArray();
+                            }
+                            else
+                            {
+                                rowData = dicList.Select(x => x.ContainsKey(columnName) ? x[columnName] : null).ToArray();
+                            }
+                        }
+                    }
+
+                    if (rowData != null)
+                    {
+                        switch (reportInfo.OutputMethod)
+                        {
+                            case ComReport.SingleCell:
+                                // 単一セルの場合
+                                rowData = new[] { rowData[0] };
+                                break;
+                            case ComReport.LongitudinalDirection:
+                                // 縦方向連続の場合
+                                break;
+                            case ComReport.LateralDirection:
+                                // 横方向連続の場合
+                                rowData = new[] { rowData };
+                                break;
+                            default:
+                                // 入出力方式が未設定の場合、スキップ
+                                break;
+                        }
+                    }
+                    // マッピングセルを設定
+                    string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
+                    // フォーマット設定
+                    string format = null;
+                    if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr || !string.IsNullOrEmpty(reportInfo.FormatText))
+                    {
+                        format = ComReport.StrFormat;
+                    }
+
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, null, format);
+                    info.SetAddress(address);
+                    info.SetColData(rowData, rigthAlign);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+                }
+                else
+                {
+                    //セル単位でマッピング
+
+                    // 出力結果分ループ
+                    foreach (var rowDic in dicList)
+                    {
+                        // 2行目以降、出力方式によって、マッピング位置を変更
+                        if (index > 0)
+                        {
+                            switch (reportInfo.OutputMethod)
+                            {
+                                case ComReport.SingleCell:
+                                    // 単一セルの場合
+                                    continue;
+                                case ComReport.LongitudinalDirection:
+                                    // 縦方向連続の場合、行番号を加算する
+                                    reportInfo.StartRowNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
+                                    break;
+                                case ComReport.LateralDirection:
+                                    // 横方向連続の場合、列番号を加算する
+                                    reportInfo.StartColNo += reportInfo.ContinuousOutputInterval.GetValueOrDefault(1);
+                                    break;
+                                default:
+                                    // 入出力方式が未設定の場合、スキップ
+                                    break;
+                            }
+                        }
+
+                        // 初期化
+                        var info = new CommonExcelPrtInfo();
+                        info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                        info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+                        // Dictionaryにキャストする
+                        //var rowDic = (IDictionary<string, object>)data;
+                        object val;
+                        // 取得データに対象項目が存在するか
+                        if (rowDic.ContainsKey(reportInfo.ColumnName))
+                        {
+                            val = rowDic[reportInfo.ColumnName];
+                        }
+                        else
+                        {
+                            // パスカルケースも
+                            if (rowDic.ContainsKey(ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)))
+                            {
+                                val = rowDic[ComUtil.SnakeCaseToPascalCase(reportInfo.ColumnName)];
+                            }
+                            else
+                            {
+                                // 取得データに対象項目名がない場合、空文字
+                                val = "";
+                            }
+                        }
+                        // マッピングセルを設定
+                        string address = ToAlphabet((int)reportInfo.StartColNo) + reportInfo.StartRowNo;
+                        // フォーマット設定
+                        string format = null;
+
+                        if (reportInfo.DataType != null && reportInfo.DataType == ComReport.DataTypeStr)
+                        {
+                            format = ComReport.StrFormat;
+                        }
+                        // マッピング情報設定
+                        info.SetExlSetValueByAddress(address, val, format);
+                        // マッピングリストに追加
+                        mappingList.Add(info);
+                        // 行数を加算
+                        index++;
+                    }
+                }
+
+            }
+            reportItemInfoList = reportInfoList.ToList();
+
+            // マッピング情報リストを返却
+            return mappingList;
+        }
+        #endregion
+
+
+        #region RP0450 保全実績評価 MQ月報(旧様式) 専用メソッド
+        /// <summary>
+        /// 保全実績評価 MQ月報(旧様式)
+        /// </summary>
+        public class ReportRP0450
+        {
+            /// <summary>
+            /// 帳票ID
+            /// </summary>
+            public const string ReportId = "RP0450";
+            /// <summary>
+            /// SQLファイルが格納されているサブディレクトリ
+            /// </summary>
+            public const string SubDir = "RP0450";
+
+            /// <summary>
+            /// シート番号
+            /// </summary>
+            public class SheetNo
+            {
+                /// <summary>
+                /// 作業件名一覧
+                /// </summary>
+                public const int SubjectList = 1;
+                /// <summary>
+                /// 工場別件数
+                /// </summary>
+                public const int CountByFactory = 2;
+                /// <summary>
+                /// 件数
+                /// </summary>
+                public const int MaintenanceCount = 3;
+                /// <summary>
+                /// 実績金額
+                /// </summary>
+                public const int Expenditure = 4;
+                /// <summary>
+                /// 自社時間
+                /// </summary>
+                public const int WorkingTimeSelf = 5;
+                /// <summary>
+                /// 外注時間
+                /// </summary>
+                public const int WorkingTimeCompany = 6;
+                /// <summary>
+                /// 自係＋外注
+                /// </summary>
+                public const int WorkingTimeSelfAndCompany = 7;
+                /// <summary>
+                /// 詳細情報
+                /// </summary>
+                public const int Detail = 8;
+                /// <summary>
+                /// 検索条件
+                /// </summary>
+                public const int Condition = 9;
+            }
+
+            /// <summary>
+            /// コマンドの実行などの共通処理を適用させるシート番号のリスト
+            /// </summary>
+            public static List<int> CommonSheetNo = new()
+            {
+                SheetNo.MaintenanceCount,         // 件数
+                SheetNo.Expenditure,              // 実績金額
+                SheetNo.WorkingTimeSelf,          // 自社時間
+                SheetNo.WorkingTimeCompany,       // 外注時間
+                SheetNo.WorkingTimeSelfAndCompany // 自係＋外注
+            };
+
+            /// <summary>
+            /// 検索データ種類
+            /// </summary>
+            public class DataType
+            {
+                /// <summary>
+                /// 画面で指定された年月
+                /// </summary>
+                public const int TargetMonth = 1;
+                /// <summary>
+                /// 半期
+                /// </summary>
+                public const int Half = 2;
+                /// <summary>
+                /// 年度
+                /// </summary>
+                public const int Year = 3;
+            }
+
+            /// <summary>
+            /// 件数～自係＋外注 シートの共通クラス
+            /// </summary>
+            public class CommonSheet
+            {
+                /// <summary>
+                /// 帳票名をマッピングするセル
+                /// </summary>
+                public const string ReportNameCell = "B2";
+                /// <summary>
+                /// 日付をマッピングするセル
+                /// </summary>
+                public const string DateCell = "O2";
+                /// <summary>
+                /// 時刻をマッピングする列
+                /// </summary>
+                public const string TimeCell = "Q2";
+                /// <summary>
+                /// 画面で指定された年月をマッピングする列
+                /// </summary>
+                public const string TargetMonthCell = "B5";
+
+                /// <summary>
+                /// MQ分類名のマッピングを開始する列
+                /// </summary>
+                public const int MqNameStartColumn = 1;
+                /// <summary>
+                /// MQ分類名のマッピングを開始する行
+                /// </summary>
+                public const int MqNameStartRow = 13;
+
+                /// <summary>
+                /// 職種名のマッピングを開始する列
+                /// </summary>
+                public const int JobNameStartColumn = 2;
+                /// <summary>
+                /// 職種名のマッピングを開始する行
+                /// </summary
+                public const int JobNameStartRow = 6;
+
+                /// <summary>
+                /// 系停止時間表示するための数式を設定する行
+                /// </summary
+                public const int StopTimeRow = 8;
+                /// <summary>
+                /// 工程停止時間表示するための数式を設定する行
+                /// </summary
+                public const int ProcessStopTimeRow = 10;
+
+                /// <summary>
+                /// 突発作業率(%) を表示するための数式を設定する行
+                /// </summary
+                public const int FuncPerSuddenRow = 38;
+                /// <summary>
+                /// 突発作業率(%) を表示するための数式の範囲(分母)
+                /// </summary
+                public const int FuncPerSuddenAllRow = 34;
+                /// <summary>
+                /// 突発作業率(%) を表示するための数式の範囲(分子)
+                /// </summary
+                public const int FuncPerSuddenTargetRow = 35;
+
+                /// <summary>
+                /// 検索したデータのマッピングを開始する列
+                /// </summary>
+                public const int DataStartColumn = 2;
+                /// <summary>
+                /// 系停止回数～総作業件数のデータをマッピングする開始行
+                /// </summary>
+                public const int DataStartRowStopAndMaintenance = 7;
+                /// <summary>
+                /// MQ分類ごとの集計値のデータをマッピングする開始行
+                /// </summary>
+                public const int DataStartRowMq = 12;
+                /// <summary>
+                /// 小累計のデータをマッピングする行
+                /// </summary>
+                public const int DataStartRowTotal = 34;
+                /// <summary>
+                /// 突発作業件数～呼出回数のデータをマッピングする開始行
+                /// </summary>
+                public const int DataStartRowSuddenAndCall = 35;
+            }
+        }
+
+        /// <summary>
+        /// エクセル出力共通処理
+        /// </summary>
+        /// <typeparam name="T">データクラス</typeparam>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="programId">プログラムID</param>
+        /// <param name="selectKeyDataList">選択データ</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="reportId">帳票ID</param>
+        /// <param name="templateId">テンプレートID</param>
+        /// <param name="outputPatternId">出力パターンID</param>
+        /// <param name="userId">ユーザID</param>
+        /// <param name="languageId">言語ID</param>
+        /// /// <param name="conditionSheetLocatoinList">場所階層構成IDリスト</param>
+        /// <param name="conditionSheetJobList">職種機種構成IDリスト</param>
+        /// <param name="conditionSheetNameList">検索条件項目名リスト</param>
+        /// <param name="conditionSheetValueList">検索条件設定値リスト</param>
+        /// <param name="fileType">ファイルタイプ</param>
+        /// <param name="fileName">ファイル名</param>
+        /// <param name="memoryStream">メモリストリーム</param>
+        /// <param name="message">メッセージ</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <param name="option">オプションクラス</param>
+        /// <param name="summaryDataList">集計帳票集計データ</param>
+        /// <param name="msgResources">メッセージリソース管理クラス</param>
+        /// <returns>true:正常　false:エラー</returns>
+        public static bool CommonOutputExcelForOldStyle(
+        Dictionary<string, List<int>> jobNameToId,
+        int factoryId,
+        string programId,
+        dynamic searchCondition,
+        string reportId,
+        int templateId,
+        int outputPatternId,
+        string userId,
+        string languageId,
+        List<int> conditionSheetLocatoinList,
+        List<int> conditionSheetJobList,
+        List<string> conditionSheetNameList,
+        List<string> conditionSheetValueList,
+        out string fileType,
+        out string fileName,
+        out MemoryStream memoryStream,
+        out string message,
+        ComDB db,
+        ComUtil.MessageResources msgResources = null)
+        {
+
+            //==========
+            // 初期化
+            //==========
+            // ファイルタイプ
+            fileType = ComConsts.REPORT.FILETYPE.EXCEL;
+            // ダウンロードファイル名
+            fileName = string.Format("{0}_{1:yyyyMMddHHmmssfff}", reportId, DateTime.Now) + ComConsts.REPORT.EXTENSION.EXCEL_BOOK;
+            // メモリストリーム
+            memoryStream = new MemoryStream();
+            // メッセージ
+            message = "";
+            // シートデータ件数
+            int sheetDataCount = 0;
+
+            // マッピング情報生成
+            List<CommonExcelPrtInfo> mappingInfoList = new List<CommonExcelPrtInfo>();
+
+            // コマンド情報生成
+            // セルの結合や罫線を引く等のコマンド実行が必要な場合はここでセットする。不要な場合はnullでOK
+            List<CommonExcelCmdInfo> cmdInfoList = new List<CommonExcelCmdInfo>();
+
+            // オプションデータ用
+            List<TMQDao.ScheduleList.Display> scheduleDisplayList = null;
+
+            int optionRowCount = 0;
+            int optionColomnCount = 0;
+
+            // テンプレート情報を取得
+            var template = new ReportDao.MsOutputTemplateEntity().GetEntity(factoryId, reportId, templateId, db);
+            if (template == null)
+            {
+                // 取得できない場合、処理を戻す
+                return false;
+            }
+            // テンプレートファイル名を設定
+            string templateFileName = template.TemplateFileName;
+            // テンプレートファイルパスを設定
+            string templateFilePath = template.TemplateFilePath;
+
+            // 出力帳票シート定義のリストを取得
+            var sheetDefineList = TMQUtil.SqlExecuteClass.SelectList<ReportDao.MsOutputReportSheetDefineEntity>(
+                ComReport.GetReportSheetDefine,
+                ExcelPath,
+                new { FactoryId = factoryId, ReportId = reportId },
+                db);
+
+            if (sheetDefineList == null)
+            {
+                // 取得できない場合、処理を戻す
+                return false;
+            }
+
+            IList<dynamic> mqList = null;
+            // シート定義毎にループ
+            foreach (var sheetDefine in sheetDefineList)
+            {
+                // tempテーブルに対象帳票シート定義の使用構成グループデータを設定する
+                if (string.IsNullOrEmpty(sheetDefine.UseStructureGroupId) == false)
+                {
+                    // 使用構成グループを取得
+                    TMQUtil.ListPerformanceUtil listPf = new(db, languageId);
+                    // temp情報作成
+                    listPf.GetAttachmentSql(new List<FunctionTypeId>());
+                    // 翻訳用一時テーブル登録
+                    // 翻訳する構成グループのリスト
+                    var structuregroupList = new List<GroupId>();
+                    foreach (string groupId in sheetDefine.UseStructureGroupId.Split(','))
+                    {
+                        int iGroupId = int.Parse(groupId);
+                        foreach (GroupId Value in Enum.GetValues(typeof(GroupId)))
+                        {
+                            int iVal = (int)Value;
+                            if (iVal == iGroupId)
+                            {
+                                structuregroupList.Add(Value);
+                                break;
+                            }
+                        }
+                    }
+                    listPf.GetCreateTranslation(); // テーブル作成
+                    listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                    listPf.RegistTempTable(); // 登録
+                }
+
+                IList<dynamic> dataList = null;
+
+                // シート番号を判定
+                switch (sheetDefine.SheetNo)
+                {
+                    case ReportRP0450.SheetNo.SubjectList: // 作業件名一覧
+                    case ReportRP0450.SheetNo.Detail:      // 詳細情報
+                        if (!getOutDataForOldStyleGetList(db, searchCondition, sheetDefine.TargetSql, out dataList))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case ReportRP0450.SheetNo.CountByFactory: // 工場別件数
+                        if (!getOutDataForOldStyleCountByFactory(db, searchCondition, sheetDefine.TargetSql, ref mappingInfoList, out mqList))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+
+                // 件数～自係＋外注 シートの場合はマッピングは個別で行うためループはここで終了
+                if (sheetDefine.SheetNo == ReportRP0450.SheetNo.CountByFactory)
+                {
+                    // 件数～自係＋外注 シートの共通処理
+                    getOutDataForOldStyleCommon(db, searchCondition, jobNameToId, mqList, ref cmdInfoList, ref mappingInfoList);
+
+                    // 件数～自係＋外注 シートの共通部分の検索処理
+                    getCommonDataForOldStyleCommon(db, searchCondition, jobNameToId, ref mappingInfoList);
+
+                    continue;
+                }
+
+                // 検索条件フラグの場合
+                if (sheetDefine.SearchConditionFlg == true)
+                {
+                    // 検索条件からデータを取得し、エクセルを作成する
+                    dataList = GetReportDatabySearchCondition(searchCondition, languageId, db);
+                    // マッピングデータ作成
+                    List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingListForConditionOldStyle(
+                                                                            factoryId,
+                                                                            programId,
+                                                                            reportId,
+                                                                            sheetDefine.SheetNo,
+                                                                            templateId,
+                                                                            outputPatternId,
+                                                                            dataList,
+                                                                            conditionSheetLocatoinList,
+                                                                            conditionSheetJobList,
+                                                                            conditionSheetNameList,
+                                                                            conditionSheetValueList,
+                                                                            templateFileName,
+                                                                            templateFilePath,
+                                                                            languageId,
+                                                                            db,
+                                                                            out optionRowCount,
+                                                                            out optionColomnCount);
+                    // マッピング情報リストに追加
+                    mappingInfoList.AddRange(mappingDataList);
+                }
+                else
+                {
+                    // 出力最大データ数チェック
+                    if (!CheckDownloadExcelMaxRowCnt(dataList.Count, db))
+                    {
+                        // 「出力可能上限データ数を超えているため、ダウンロードできません。」
+                        message = GetResMessage(ComRes.ID.ID141120013, languageId, msgResources);
+                        return false;
+                    }
+
+                    // マッピングデータ作成
+                    List<CommonExcelPrtInfo> mappingDataList = TMQUtil.CreateMappingList(
+                                                                            factoryId,
+                                                                            programId,
+                                                                            reportId,
+                                                                            sheetDefine.SheetNo,
+                                                                            templateId,
+                                                                            outputPatternId,
+                                                                            dataList,
+                                                                            templateFileName,
+                                                                            templateFilePath,
+                                                                            languageId,
+                                                                            db,
+                                                                            out optionRowCount,
+                                                                            out optionColomnCount,
+                                                                            null,
+                                                                            scheduleDisplayList);
+                    // マッピング情報リストに追加
+                    mappingInfoList.AddRange(mappingDataList);
+                    // 一覧罫線用にデータ件数を退避
+                    sheetDataCount = dataList.Count;
+
+                }
+                // 一覧フラグの場合
+                if (sheetDefine.ListFlg == true)
+                {
+                    // 罫線設定セル範囲を取得
+                    string range = GetTargetCellRange(
+                        factoryId,
+                        reportId,
+                        templateId,
+                        outputPatternId,
+                        sheetDefine.SheetNo,
+                        sheetDataCount,
+                        sheetDefine.RecordCount,
+                        db,
+                        optionRowCount,
+                        optionColomnCount);
+                    if (range != null)
+                    {
+                        string sheetName = GetSheetName(factoryId, reportId, sheetDefine.SheetNo, languageId, db);
+                        if (!string.IsNullOrEmpty(sheetName))
+                        {
+                            //範囲が取得できた場合、罫線を引く
+                            cmdInfoList.AddRange(CommandLineBox(range, GetSheetName(factoryId, reportId, sheetDefine.SheetNo, languageId, db)));
+
+                            // シート番号を判定し、個別でコマンドを作成する
+                            if (sheetDefine.SheetNo == ReportRP0450.SheetNo.SubjectList)
+                            {
+                                // 作業件名一覧 
+                                cmdInfoList.AddRange(CommandLineBoxOldStyleSubjectList(range, GetSheetName(factoryId, reportId, sheetDefine.SheetNo, languageId, db)));
+                            }
+                            else if (sheetDefine.SheetNo == ReportRP0450.SheetNo.Detail)
+                            {
+                                // 詳細情報
+                                cmdInfoList.AddRange(CommandLineBoxOldStyleDetail());
+
+                                // マッピング情報格納用
+                                var info = new CommonExcelPrtInfo();
+                                info.SetSheetNo(ReportRP0450.SheetNo.Detail); // マッピング対象のシート番号
+
+                                // 帳票タイトルをマッピング
+                                var reportName = new ComDao.MsTranslationEntity().GetEntity(0, 111120118, searchCondition.LanguageId, db).TranslationText;
+                                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.ReportNameCell, reportName);
+                                mappingInfoList.Add(info);
+                            }
+                        }
+
+                    }
+                }
+            }
+            // エクセルファイル作成
+            ExcelUtil.CreateExcelFile(templateFileName, templateFilePath, userId, mappingInfoList, cmdInfoList, ref memoryStream, ref message);
+
+            return true;
+
+        }
+
+        #region 作業件名一覧、詳細情報 シート
+        /// <summary>
+        /// 検索処理
+        /// </summary>
+        /// <param name="db">DBクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="targetSql">SQL名</param>
+        /// <param name="dataList">検索結果</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool getOutDataForOldStyleGetList(ComDB db, dynamic searchCondition, string targetSql, out IList<dynamic> dataList)
+        {
+            // 検索結果格納用リスト
+            dataList = null;
+
+            // 対象SQLファイルからSQL文を取得
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, targetSql, out string selectSql))
+            {
+                return false;
+            }
+
+            // 帳票データ取得
+            dataList = db.GetList(selectSql, searchCondition);
+
+            return true;
+        }
+        #endregion
+
+        #region 作業件名一覧 シート個別マッピング処理
+        /// <summary>
+        /// 個別で罫線を引くコマンドを作成
+        /// </summary>
+        /// <param name="cellRange">セル範囲</param>
+        /// <param name="sheetName">シート名</param>
+        /// <returns>コマンド情報</returns>
+        private static List<CommonExcelCmdInfo> CommandLineBoxOldStyleSubjectList(string cellRange, string sheetName)
+        {
+            List<CommonExcelCmdInfo> cmdInfoList = new List<CommonExcelCmdInfo>();
+            CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+
+            // 出力範囲全体に枠線を引くコマンド
+            string[] param = new string[4];
+            param[0] = cellRange; // [0]：セル範囲
+            param[1] = "O";       // [1]：罫線の作成位置は外枠
+            param[2] = "M";       // [2]：罫線の太さは太め
+            param[3] = sheetName; // [3]：シート名
+            cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdLineBox, param);
+            cmdInfoList.Add(cmdInfo);
+
+            // ヘッダーの下部に二重線を引くコマンド
+            cmdInfo = new CommonExcelCmdInfo();
+            param = new string[4];
+            param[0] = "B8:F8";   // [0]：セル範囲
+            param[1] = "B";       // [1]：罫線の作成位置は下部
+            param[2] = "DB";      // [2]：罫線の太さは太め
+            param[3] = sheetName; // [3]：シート名
+            cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdLineBox, param);
+            cmdInfoList.Add(cmdInfo);
+
+            return cmdInfoList;
+        }
+        #endregion
+
+        #region 詳細情報 シート個別マッピング処理
+        /// <summary>
+        /// 文字の一部分の色を変更するコマンドを作成
+        /// </summary>
+        /// <param name="cellRange">セル範囲</param>
+        /// <param name="sheetName">シート名</param>
+        /// <returns>コマンド情報</returns>
+        private static List<CommonExcelCmdInfo> CommandLineBoxOldStyleDetail()
+        {
+            List<CommonExcelCmdInfo> cmdInfoList = new List<CommonExcelCmdInfo>();
+            CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+
+            // 指定されたセルの一部分の文字色を変更
+            string[] param = new string[4];
+            param[0] = "K4";                                   // [0]：セル範囲
+            param[1] = "0";                                    // [1]：文字色変更範囲の開始文字
+            param[2] = "3";                                    // [2]：文字色変更範囲の終了文字
+            param[3] = ReportRP0450.SheetNo.Detail.ToString(); // [3]：シート番号
+            cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdFontColorPart, param);
+            cmdInfoList.Add(cmdInfo);
+
+            return cmdInfoList;
+        }
+        #endregion
+
+        #region 工場別件数 シート
+        /// <summary>
+        /// 検索処理・個別マッピング
+        /// </summary>
+        /// <param name="db">DBクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="targetSql">検索SQL</param>
+        /// <param name="mappingInfoList">マッピング情報リスト</param>
+        /// <param name="mqList">MQ分類のリスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool getOutDataForOldStyleCountByFactory(ComDB db, dynamic searchCondition, string targetSql, ref List<CommonExcelPrtInfo> mappingInfoList, out IList<dynamic> mqList)
+        {
+            // 検索結果格納用リスト
+            IList<dynamic> dataList = null;
+
+            // MQ分類の検索結果(他のシートでも使用する)
+            mqList = null;
+
+            // マッピング情報格納用
+            var info = new CommonExcelPrtInfo();
+            info.SetSheetNo(ReportRP0450.SheetNo.CountByFactory); // マッピング対象のシート番号
+
+            // 対象SQLファイルからSQL文を取得(MQ分類ごとの件数)
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, targetSql + "_1", out string selectMqSql))
+            {
+                return false;
+            }
+
+            // 対象SQLファイルからSQL文を取得(突発計画区分ごとの件数)
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, targetSql + "_2", out string selectSuddenSql))
+            {
+                return false;
+            }
+
+            // 帳票データ(MQ分類)取得
+            dataList = db.GetList(selectMqSql, searchCondition);
+            mqList = dataList;
+
+            // 検索結果(MQ分類)をマッピング
+            mappingInfoList.AddRange(setMappingInfoMq());
+
+            // 帳票データ(突発計画区分)取得
+            dataList = db.GetList(selectSuddenSql, searchCondition);
+
+            // 検索結果(突発計画区分)をマッピング
+            mappingInfoList.AddRange(setMappingInfoSudden());
+
+            // 帳票名など、SQLで取得するデータ以外のマッピング
+            mappingInfoList.AddRange(setMappingInfoOtherItem());
+
+            return true;
+
+            // MQ分類のデータをマッピング
+            List<CommonExcelPrtInfo> setMappingInfoMq()
+            {
+                string mqNameColumn = "H";  // MQ分類名をマッピングする列
+                string mqCountColumn = "I"; // MQ分類ごとの件数をマッピングする列
+                int startRowNo = 7;         // データのマッピングを開始する行
+
+                List<CommonExcelPrtInfo> mappingInfoListMq = new();
+
+                // 検索結果をマッピングする
+                foreach (dynamic data in dataList)
+                {
+                    // MQ分類名をマッピング
+                    info.SetExlSetValueByAddress(mqNameColumn + startRowNo.ToString(), data.mq_name);
+                    mappingInfoListMq.Add(info);
+
+                    // MQ分類ごとの件数をマッピング
+                    info.SetExlSetValueByAddress(mqCountColumn + startRowNo.ToString(), data.cnt);
+                    mappingInfoListMq.Add(info);
+
+                    startRowNo++;
+                }
+
+                return mappingInfoListMq;
+            }
+
+            // 突発計画区分のデータをマッピング
+            List<CommonExcelPrtInfo> setMappingInfoSudden()
+            {
+                string suddenCountColumn = "I"; // 突発計画区分ごとの件数をマッピングする列
+                int startRowNo = 32;            // データのマッピングを開始する行
+
+                List<CommonExcelPrtInfo> mappingInfoListSudden = new();
+
+                // 検索結果をマッピングする
+                foreach (dynamic data in dataList)
+                {
+                    // MQ分類ごとの件数をマッピング
+                    info.SetExlSetValueByAddress(suddenCountColumn + startRowNo.ToString(), data.cnt);
+                    mappingInfoListSudden.Add(info);
+
+                    startRowNo++;
+                }
+
+                return mappingInfoListSudden;
+            }
+
+            // 帳票名など、SQLで取得するデータ以外のマッピング
+            List<CommonExcelPrtInfo> setMappingInfoOtherItem()
+            {
+                List<CommonExcelPrtInfo> mappingInfoListOtherItem = new();
+
+                object val;
+
+                // 帳票名
+                var reportDefine = new ReportDao.MsOutputReportDefineEntity().GetEntity(0, "MP0001", ReportRP0450.ReportId, db);
+                val = GetTranslationText(reportDefine.ReportNameTranslationId, searchCondition.LanguageId, db);
+                info.SetExlSetValueByAddress("C2", val, ComReport.StrFormat);
+                mappingInfoListOtherItem.Add(info);
+
+                // 共通日付
+                val = DateTime.Now.ToString("dddd, MMM d yyyy", new System.Globalization.CultureInfo("en-US"));
+                info.SetExlSetValueByAddress("I2", val, ComReport.StrFormat);
+                mappingInfoListOtherItem.Add(info);
+
+                // 共通時刻
+                val = DateTime.Now.ToString("HH:mm:ss");
+                info.SetExlSetValueByAddress("K2", val, ComReport.StrFormat);
+                mappingInfoListOtherItem.Add(info);
+
+                // 検索対象の年月(画面で指定された年月の月)
+                val = searchCondition.TargetStartDate.Month.ToString() +
+                    GetTranslationText(131180001, searchCondition.LanguageId, db);
+                // 指定された年月は他のシートでもマッピングを行うので検索条件に格納する
+                searchCondition.TargetMonth = val;
+
+                // MQ分類の一覧にマッピング
+                info.SetExlSetValueByAddress("I5", val, ComReport.StrFormat);
+                mappingInfoListOtherItem.Add(info);
+
+                // 突発区分の一覧にマッピング
+                info.SetExlSetValueByAddress("I30", val, ComReport.StrFormat);
+                mappingInfoListOtherItem.Add(info);
+
+                return mappingInfoListOtherItem;
+            }
+        }
+        #endregion
+
+        #region 件数～自係＋外注 シート共通処理
+        /// <summary>
+        /// 共通データのマッピング、コマンド作成
+        /// </summary>
+        /// <param name="db">DBクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="jobNameToId">職種リスト</param>
+        /// <param name="mqList">MQ分類リスト</param>
+        /// <param name="cmdInfoList">コマンド情報リスト</param>
+        /// <param name="mappingInfoList">マッピング情報リスト</param>
+        public static void getOutDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, IList<dynamic> mqList, ref List<CommonExcelCmdInfo> cmdInfoList, ref List<CommonExcelPrtInfo> mappingInfoList)
+        {
+            CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+            string[] param;
+
+            // MQ分類名のマッピング開始行
+            int workMqNameStartRow = ReportRP0450.CommonSheet.MqNameStartRow;
+
+            // マッピング情報格納用
+            CommonExcelPrtInfo info;
+
+            // 帳票名・日付・時刻を取得
+            var reportName = new ComDao.MsTranslationEntity().GetEntity(0, 111040018, searchCondition.LanguageId, db).TranslationText;
+            object comDate = DateTime.Now.ToString("dddd, MMM d yyyy", new System.Globalization.CultureInfo("en-US"));
+            object comTime = DateTime.Now.ToString("HH:mm:ss");
+
+
+            // 共通処理を適用させるシートごとに繰り返し処理を行う
+            foreach (int sheetNo in ReportRP0450.CommonSheetNo)
+            {
+                info = new();
+                info.SetSheetNo(sheetNo); // マッピング対象のシート番号
+
+                // 帳票名をマッピングする
+                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.ReportNameCell, reportName, ComReport.StrFormat);
+                mappingInfoList.Add(info);
+
+                // 日付をマッピングする
+                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.DateCell, comDate, ComReport.StrFormat);
+                mappingInfoList.Add(info);
+
+                // 時刻をマッピングする
+                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.TimeCell, comTime, ComReport.StrFormat);
+                mappingInfoList.Add(info);
+
+                // 画面で指定された年月をマッピングする
+                info.SetExlSetValueByAddress(ReportRP0450.CommonSheet.TargetMonthCell, searchCondition.TargetMonth, ComReport.StrFormat);
+                mappingInfoList.Add(info);
+
+                // MQ分類名をマッピングする
+                workMqNameStartRow = ReportRP0450.CommonSheet.MqNameStartRow; // MQ分類名のマッピング開始位置をもとに戻す
+                foreach (dynamic data in mqList)
+                {
+                    // MQ分類名をマッピング
+                    info.SetExlSetValueByAddress(ToAlphabet(ReportRP0450.CommonSheet.MqNameStartColumn) + workMqNameStartRow.ToString(), data.mq_name);
+                    mappingInfoList.Add(info);
+                    workMqNameStartRow++;
+                }
+
+                // 職種の件数分列を挿入するコマンドを作成(年度累計の部分)
+                setCmdInsertColumn("G", sheetNo, ref cmdInfoList);
+
+                // 職種の件数分列を挿入するコマンドを作成(半期累計の部分)
+                setCmdInsertColumn("E", sheetNo, ref cmdInfoList);
+
+                // 職種の件数分列を挿入するコマンドを作成(対象月の部分)
+                setCmdInsertColumn("C", sheetNo, ref cmdInfoList);
+
+                int lineColNoFrom = ReportRP0450.CommonSheet.JobNameStartColumn;
+                int lineColTo = lineColNoFrom + jobNameToId.Count;
+                // 罫線を整えるコマンドを作成(年月の部分)
+                setCmdClearLineBox(ToAlphabet(lineColNoFrom), ToAlphabet(lineColTo), sheetNo, ref cmdInfoList);
+
+                // 罫線を整えるコマンドを作成(半期累計の部分)
+                lineColNoFrom = lineColTo + 1;
+                lineColTo = lineColNoFrom + jobNameToId.Count;
+                setCmdClearLineBox(ToAlphabet(lineColNoFrom), ToAlphabet(lineColTo), sheetNo, ref cmdInfoList);
+
+                // 罫線を整えるコマンドを作成(年度累計の部分)
+                lineColNoFrom = lineColTo + 1;
+                lineColTo = lineColNoFrom + jobNameToId.Count;
+                setCmdClearLineBox(ToAlphabet(lineColNoFrom), ToAlphabet(lineColTo), sheetNo, ref cmdInfoList);
+
+                // 日付のフォントサイズを変更するコマンドを作成
+                setCmdChgFontSize(sheetNo, ref cmdInfoList);
+
+
+                // 職種名をマッピング(年月の部分)
+                int jobNameStartRow = ReportRP0450.CommonSheet.JobNameStartRow;         // 職種名のマッピングを開始する行
+                int jobNameStartColMonth = ReportRP0450.CommonSheet.JobNameStartColumn; // 職種名をマッピングする列番号(年月の部分)
+                int jobNameStartColHalf = jobNameStartColMonth + jobNameToId.Count + 1; // 職種名をマッピングする列番号(半期累計の部分)
+                int jobNameStartColYear = jobNameStartColHalf + jobNameToId.Count + 1;  // 職種名をマッピングする列番号(年度累計の部分)
+                string targetCol = string.Empty;
+
+                foreach (KeyValuePair<string, List<int>> jobName in jobNameToId)
+                {
+                    // 職種名をマッピング(年月の部分)
+                    info.SetExlSetValueByAddress(ToAlphabet(jobNameStartColMonth) + jobNameStartRow.ToString(), jobName.Key);
+                    mappingInfoList.Add(info);
+
+                    // 職種名をマッピング(半期累計の部分)
+                    info.SetExlSetValueByAddress(ToAlphabet(jobNameStartColHalf) + jobNameStartRow.ToString(), jobName.Key);
+                    mappingInfoList.Add(info);
+
+                    // 職種名をマッピング(年度累計の部分)
+                    info.SetExlSetValueByAddress(ToAlphabet(jobNameStartColYear) + jobNameStartRow.ToString(), jobName.Key);
+                    mappingInfoList.Add(info);
+
+                    jobNameStartColMonth++;
+                    jobNameStartColHalf++;
+                    jobNameStartColYear++;
+                }
+
+                // 「件数」「実績金額」「自社時間」「外注時間」「自係＋外注」シートの場合
+                if (sheetNo == ReportRP0450.SheetNo.MaintenanceCount ||
+                    sheetNo == ReportRP0450.SheetNo.Expenditure ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeSelf ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeCompany ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
+                {
+                    // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間)
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.StopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString());
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString());
+                }
+
+                // 「自社時間」「外注時間」「自係＋外注」シートの場合
+                if (sheetNo == ReportRP0450.SheetNo.WorkingTimeSelf ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeCompany ||
+                    sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
+                {
+                    // 条件付き書式を追加するコマンドを作成(小数がある数値)
+                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.DataStartRowTotal.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + (ReportRP0450.CommonSheet.MqNameStartRow - 1).ToString());
+                }
+            }
+
+            // 列を挿入するコマンドを作成
+            void setCmdInsertColumn(string targetColmun, int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList)
+            {
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[4];
+                param[0] = targetColmun;                       // [0]：挿入対象列
+                param[1] = "1";                                // [1]：1→指定された列の前に挿入、2→指定された列の後に挿入
+                param[2] = (jobNameToId.Count - 1).ToString(); // [2]：挿入する列数(テンプレートファイルには予め空の列が用意されているので職種の数-1)
+                param[3] = sheetNo.ToString();                 // [3]：挿入対象シート
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdInsertColumn, param);
+                cmdInfoList.Add(cmdInfo);
+
+            }
+
+            // 罫線を整えるコマンドを作成
+            void setCmdClearLineBox(string targetColmunFrom, string targetColmunTo, int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList)
+            {
+                // 罫線を整える対象行
+                string targetRow = "5";
+
+                // 一度罫線を削除する
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[4];
+                param[0] = targetColmunFrom + targetRow + ":" + targetColmunTo + targetRow; // [0]：対象行、列、セル範囲
+                param[1] = "IO";                                                            // [1]：罫線の作成位置
+                param[2] = "N";                                                             // [2]：罫線の太さ　デフォルトは細線
+                param[3] = sheetNo.ToString();                                              // [3]：対象シート
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdLineBox, param);
+                cmdInfoList.Add(cmdInfo);
+
+                // 指定された範囲の外枠に罫線を引く
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[4];
+                param[0] = targetColmunFrom + targetRow + ":" + targetColmunTo + targetRow; // [0]：対象行、列、セル範囲
+                param[1] = "O";                                                             // [1]：罫線の作成位置
+                param[2] = "";                                                              // [2]：罫線の太さ　デフォルトは細線
+                param[3] = sheetNo.ToString();                                              // [3]：対象シート
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdLineBox, param);
+                cmdInfoList.Add(cmdInfo);
+            }
+
+            // 日付のフォントサイズを変更する
+            void setCmdChgFontSize(int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList)
+            {
+                // 一度罫線を削除する
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[3];
+                param[0] = ReportRP0450.CommonSheet.DateCell; // [0]：対象行、列、セル範囲
+                param[1] = "11";                              // [1]：変更サイズ
+                param[2] = sheetNo.ToString();                // [2]：シート名またはシート番号
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgBefore, CommonExcelCmdInfo.CExecCmdFontChange, param);
+                cmdInfoList.Add(cmdInfo);
+            }
+
+            // 条件付き書式を追加するコマンドを作成
+            void setCmdCondition(string address, int sheetNo, ref List<CommonExcelCmdInfo> cmdInfoList, string targetCell)
+            {
+                var cmdInfo = new CommonExcelCmdInfo();
+                string[] param;
+
+                // 条件付き書式を設定(3桁区切り小数点無しの場合)
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[5];
+                param[0] = address;
+                param[1] = "IsTrue";
+                param[2] = "=IFERROR(LEN(" + targetCell + ")-FIND(\".\"," + targetCell + "),0)=0";                                                              // [2]：罫線の太さ　デフォルトは細線
+                param[3] = "#,##0";
+                param[4] = sheetNo.ToString();
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
+                cmdInfoList.Add(cmdInfo);
+
+                // 条件付き書式を設定(3桁区切り小数1桁の場合)
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[5];
+                param[0] = address;
+                param[1] = "IsTrue";
+                param[2] = "=IFERROR(LEN(" + targetCell + ")-FIND(\".\"," + targetCell + "),0)=1";                                                              // [2]：罫線の太さ　デフォルトは細線
+                param[3] = "#,##0.#";
+                param[4] = sheetNo.ToString();
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
+                cmdInfoList.Add(cmdInfo);
+
+                // 条件付き書式を設定(3桁区切り小数1桁の場合)
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[5];
+                param[0] = address;
+                param[1] = "IsTrue";
+                param[2] = "=IFERROR(LEN(" + targetCell + ")-FIND(\".\"," + targetCell + "),0)=2";                                                              // [2]：罫線の太さ　デフォルトは細線
+                param[3] = "#,##0.##";
+                param[4] = sheetNo.ToString();
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
+                cmdInfoList.Add(cmdInfo);
+            }
+        }
+
+        /// <summary>
+        /// データの検索、検索したデータのマッピング処理
+        /// </summary>
+        /// <param name="db">DBクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="jobNameToId">職種リスト</param>
+        /// <param name="mappingInfoList">マッピング情報リスト</param>
+        public static void getCommonDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, ref List<CommonExcelPrtInfo> mappingInfoList)
+        {
+            // 検索データ種類
+            List<int> dataTypeList = new()
+            {
+                ReportRP0450.DataType.TargetMonth, // 画面で指定された年月
+                ReportRP0450.DataType.Half,        // 半期
+                ReportRP0450.DataType.Year         // 年度
+            };
+
+            // 検索SQLでアンコメントする箇所
+            string unCommentRange = string.Empty; // 「対象年月」「半期」「年度」を判別する
+
+            // 職種ごとのデータをマッピングする列番号
+            int dataStartColmun = 0;
+
+            // 対象年月・半期・年度のデータを検索
+            foreach (int dataType in dataTypeList)
+            {
+                // 検索するデータに応じてSQLでアンコメントする文言、マッピング開始列を設定
+                switch (dataType)
+                {
+                    case ReportRP0450.DataType.TargetMonth: // 画面で指定された年月
+                        unCommentRange = "TargetMonth";
+                        dataStartColmun = ReportRP0450.CommonSheet.DataStartColumn;
+                        break;
+
+                    case ReportRP0450.DataType.Half: // 半期
+                        unCommentRange = "Half";
+
+                        // マッピング開始列をずらす(「合計」列を考慮して+1する)
+                        dataStartColmun++;
+                        break;
+
+                    case ReportRP0450.DataType.Year: // 年度
+                        unCommentRange = "Year";
+
+                        // マッピング開始列をずらす(「合計」列を考慮して+1する)
+                        dataStartColmun++;
+                        break;
+                }
+
+                // SQLを取得(系停止回数～総作業件数)
+                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonStopAndMaintenance", out string selectStopAndMaintenanceSql, new List<string>() { unCommentRange });
+
+                // SQLを取得(突発作業件数～呼出回数)
+                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonSuddenAndCall", out string selectSuddenAndCallSql, new List<string>() { unCommentRange });
+
+                // 検索SQL実行、取得したデータのマッピングの実行
+                searchAndMapping(selectStopAndMaintenanceSql, selectSuddenAndCallSql, ref mappingInfoList);
+            }
+
+            // 検索SQL実行、取得したデータのマッピングの実行
+            void searchAndMapping(string stopAndMaintenanceSql, string suddenAndCallSql, ref List<CommonExcelPrtInfo> mappingInfoList)
+            {
+                // SQL検索結果
+                IList<dynamic> dataListStopAndMaintenance = null; // 系停止回数～総作業件数
+                IList<dynamic> dataListMqData = null;             // MQ分類ごとの集計値
+                IList<dynamic> dataListSuddenAndCall = null;      // 突発作業件数～呼出回数
+
+                // マッピング情報格納用
+                CommonExcelPrtInfo info;
+
+                // 系停止回数～総作業件数のデータをマッピングする開始行
+                int workDataStartRowdataStartRowStopAndMaintenance = ReportRP0450.CommonSheet.DataStartRowStopAndMaintenance;
+
+                // 突発作業件数～呼出回数のデータをマッピングする開始行
+                int workDataStartRowdataStartRowSuddenAndCall = ReportRP0450.CommonSheet.DataStartRowSuddenAndCall;
+
+                // MQ分類ごとの集計値のデータをマッピングする開始行
+                int workDataStartRowMq = ReportRP0450.CommonSheet.DataStartRowMq;
+
+                // 小累計の合計値(合計列の突発作業率の算出に使用)
+                decimal totalSummary = 0;
+
+                // 突発作業件数の合計値(合計列の突発作業率の算出に使用)
+                int suddennCnt = 0;
+
+                // マッピングが完了した職種の件数(合計列の突発作業率の算出に使用)
+                int mappedJobCnt = 0;
+
+                // 職種に対して繰り返し処理
+                foreach (KeyValuePair<string, List<int>> jobName in jobNameToId)
+                {
+                    // マッピングが完了した職種の件数を加算
+                    mappedJobCnt++;
+
+                    // 検索対象の職種IDが格納される一時テーブルを作成する
+                    TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "CreateJobIdData", out string createJobIdTblSql);
+                    db.Regist(createJobIdTblSql);
+
+                    // 検索対象の職種IDを一時テーブルに登録
+                    TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "InsertJobIdData", out string insertJobIdTblSql);
+                    db.Regist(insertJobIdTblSql, new { JobIdList = string.Join(',', jobName.Value) });
+
+                    // SQL実行
+                    dataListStopAndMaintenance = db.GetList(stopAndMaintenanceSql, searchCondition); // 系停止回数～総作業件数
+                    dataListSuddenAndCall = db.GetList(suddenAndCallSql, searchCondition);           // 突発作業件数～呼出回数
+
+                    // シートごとに繰り返し処理
+                    foreach (int sheetNo in ReportRP0450.CommonSheetNo)
+                    {
+                        info = new();
+                        info.SetSheetNo(sheetNo); // マッピング対象のシート番号
+
+                        // 検索結果をマッピングする(系停止回数～総作業件数)
+                        workDataStartRowdataStartRowStopAndMaintenance = ReportRP0450.CommonSheet.DataStartRowStopAndMaintenance;
+                        foreach (dynamic data in dataListStopAndMaintenance)
+                        {
+                            info.SetExlSetValueByAddress(ToAlphabet(dataStartColmun) + workDataStartRowdataStartRowStopAndMaintenance.ToString(), data.data);
+                            mappingInfoList.Add(info);
+
+                            // マッピングする行を加算
+                            workDataStartRowdataStartRowStopAndMaintenance++;
+                        }
+
+                        // 検索SQLでアンコメントする箇所
+                        string unCommentItem = string.Empty; // シートに応じて集計する項目を判別する
+                        switch (sheetNo)
+                        {
+                            case ReportRP0450.SheetNo.MaintenanceCount: // 件数
+                                unCommentItem = "MaintenanceCount";
+                                break;
+                            case ReportRP0450.SheetNo.Expenditure: // 実績金額
+                                unCommentItem = "Expenditure";
+                                break;
+                            case ReportRP0450.SheetNo.WorkingTimeSelf: // 自社時間
+                                unCommentItem = "WorkingTimeSelf";
+                                break;
+                            case ReportRP0450.SheetNo.WorkingTimeCompany: // 外注時間
+                                unCommentItem = "WorkingTimeCompany";
+                                break;
+                            case ReportRP0450.SheetNo.WorkingTimeSelfAndCompany: // 自係+外注
+                                unCommentItem = "WorkingTimeSelfAndCompany";
+                                break;
+
+                            default:
+                                continue;
+                        }
+
+                        // SQLを取得(MQ分類ごとの集計値)
+                        TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonMqData", out string selectMqDataSql, new List<string>() { unCommentRange, unCommentItem });
+
+                        // SQL実行
+                        dataListMqData = db.GetList(selectMqDataSql, searchCondition); // MQ分類ごとの集計値
+
+                        // 検索結果をマッピングする(MQ分類ごとの集計値)
+                        workDataStartRowMq = ReportRP0450.CommonSheet.DataStartRowMq;
+
+                        foreach (dynamic data in dataListMqData)
+                        {
+                            info.SetExlSetValueByAddress(ToAlphabet(dataStartColmun) + workDataStartRowMq.ToString(), data.data);
+                            mappingInfoList.Add(info);
+
+                            // マッピングする行を加算
+                            workDataStartRowMq++;
+                        }
+
+                        // 小累計をマッピング
+                        List<decimal> mqDataList = dataListMqData.Select(x => (decimal)x.data).ToList();
+                        decimal total = mqDataList.Select(x => x).Sum();
+                        info.SetExlSetValueByAddress(ToAlphabet(dataStartColmun) + ReportRP0450.CommonSheet.DataStartRowTotal.ToString(), total);
+                        mappingInfoList.Add(info);
+
+                        // 件数シートの場合(実績金額～自係+外注シートは件数シートと同一の値をマッピングするため、件数シートの場合のみ処理を行う)
+                        if (sheetNo == ReportRP0450.SheetNo.MaintenanceCount)
+                        {
+                            // 小累計の合計値を加算
+                            totalSummary += total;
+
+                            // 突発作業件数の合計値を加算
+                            suddennCnt += dataListSuddenAndCall[0].data;
+
+                            // MQ分類ごとの小累計と突発作業件数がどちらも0より大きい場合
+                            if (total > 0 && dataListSuddenAndCall[0].data > 0)
+                            {
+                                // 突発作業率(%)に 突発作業件数/小累計 の値を格納する
+                                dataListSuddenAndCall[3].data = Math.Round(double.Parse(dataListSuddenAndCall[0].data.ToString()) / double.Parse(total.ToString()), 2, MidpointRounding.AwayFromZero);
+                            }
+                        }
+
+                        // 検索結果をマッピングする(突発作業件数～呼出回数)
+                        workDataStartRowdataStartRowSuddenAndCall = ReportRP0450.CommonSheet.DataStartRowSuddenAndCall;
+                        for (int i = 0; i < 5; i++)
+                        {
+                            info.SetExlSetValueByAddress(ToAlphabet(dataStartColmun) + workDataStartRowdataStartRowSuddenAndCall.ToString(), dataListSuddenAndCall[i].data);
+                            mappingInfoList.Add(info);
+
+                            // 突発作業率のマッピングかつ、すべての職種のデータをマッピングし終わるとき
+                            if (i == 3 && mappedJobCnt == jobNameToId.Count)
+                            {
+                                // 合計列にも突発作業率をマッピングする
+                                double suddenPerMainte = 0;
+
+                                // 突発作業率が計算できる(突発作業件数の合計値も小累計の合計値も0より大きい)場合
+                                if (suddennCnt > 0 && totalSummary > 0)
+                                {
+                                    suddenPerMainte = Math.Round(double.Parse(suddennCnt.ToString()) / double.Parse(totalSummary.ToString()), 2, MidpointRounding.AwayFromZero);
+                                }
+
+                                info.SetExlSetValueByAddress(ToAlphabet(dataStartColmun + 1) + workDataStartRowdataStartRowSuddenAndCall.ToString(), suddenPerMainte);
+                                mappingInfoList.Add(info);
+
+                            }
+
+                            // マッピングする行を加算
+                            workDataStartRowdataStartRowSuddenAndCall++;
+                        }
+                    }
+
+                    // マッピングする列数を加算
+                    dataStartColmun++;
+                }
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// ファイル マッピング情報
+        /// </summary>
+        /// <typeparam name="T">データクラス</typeparam>
+        /// <param name="factoryId">工場ID</param>
+        /// <param name="programId">プログラムID</param>
+        /// <param name="reportId">帳票ID</param>
+        /// <param name="sheetNo">シート番号</param>
+        /// <param name="templateId">テンプレートID</param>
+        /// <param name="outputPattenId">出力パターンID</param>
+        /// <param name="list">出力結果</param>
+        /// <param name="conditionSheetLocatoinList">場所階層構成IDリスト</param>
+        /// <param name="conditionSheetJobList">職種機種構成IDリスト</param>
+        /// <param name="conditionSheetNameList">検索条件項目名リスト</param>
+        /// <param name="conditionSheetValueList">検索条件設定値リスト</param>
+        /// <param name="templateFileName">テンプレートファイル名</param>
+        /// <param name="templateFilePath">テンプレートファイルパス</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="db">DB操作クラス</param>
+        /// <param name="optionRowCount">オプション行数</param>
+        /// <param name="optionColumnCount">オプション行数</param>
+        /// <param name="option">オプションクラス</param>
+        /// <param name="optionDataList">オプションクラス</param>
+        /// <returns>ファイル マッピング情報リスト</returns>
+        public static List<CommonExcelPrtInfo> CreateMappingListForConditionOldStyle(
+        int factoryId,
+        string programId,
+        string reportId,
+        int sheetNo,
+        int templateId,
+        int outputPattenId,
+        dynamic list,
+        List<int> conditionSheetLocationList,
+        List<int> conditionSheetJobList,
+        List<string> conditionSheetNameList,
+        List<string> conditionSheetValueList,
+         string templateFileName,
+        string templateFilePath,
+        string languageId,
+        ComDB db,
+        out int optionRowCount,
+        out int optionColumnCount,
+        Option option = null,
+        List<TMQDao.ScheduleList.Display> optionDataList = null)
+        {
+            // 初期化
+            var mappingList = new List<CommonExcelPrtInfo>();
+            var info = new CommonExcelPrtInfo();
+
+            string address;
+            optionRowCount = 0;
+            optionColumnCount = 0;
+
+            // 帳票定義を取得
+            var reportDefine = new ReportDao.MsOutputReportDefineEntity().GetEntity(factoryId, programId, reportId, db);
+
+            // シート定義を取得
+            var sheetDefine = new ReportDao.MsOutputReportSheetDefineEntity().GetEntity(factoryId, reportId, sheetNo, db);
+            if (sheetDefine == null)
+            {
+                // 取得できない場合、処理を戻す
+                return null;
+            }
+
+            // 出力行の制御
+            long outputRowCount = 1;
+
+            // 固定見出しをマッピング情報に追加
+            info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+            info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+            // 検索条件
+            info.SetExlSetValueByAddress("A" + outputRowCount.ToString(), GetTranslationText(111090032, languageId, db));
+            mappingList.Add(info);
+            outputRowCount += 1;
+
+            // 場所階層
+            info.SetExlSetValueByAddress("A" + outputRowCount.ToString(), GetTranslationText(111260021, languageId, db));
+            mappingList.Add(info);
+            // 地区
+            info.SetExlSetValueByAddress("B" + outputRowCount.ToString(), GetTranslationText(111170008, languageId, db));
+            mappingList.Add(info);
+            // 工場
+            info.SetExlSetValueByAddress("C" + outputRowCount.ToString(), GetTranslationText(111100012, languageId, db));
+            mappingList.Add(info);
+            // プラント
+            info.SetExlSetValueByAddress("D" + outputRowCount.ToString(), GetTranslationText(111280011, languageId, db));
+            mappingList.Add(info);
+            // 系列
+            info.SetExlSetValueByAddress("E" + outputRowCount.ToString(), GetTranslationText(111090018, languageId, db));
+            mappingList.Add(info);
+            // 工程
+            info.SetExlSetValueByAddress("F" + outputRowCount.ToString(), GetTranslationText(111100013, languageId, db));
+            mappingList.Add(info);
+            // 設備
+            info.SetExlSetValueByAddress("G" + outputRowCount.ToString(), GetTranslationText(111140018, languageId, db));
+            mappingList.Add(info);
+
+            // 場所階層
+            if (conditionSheetLocationList.Count > 0)
+            {
+                // SQL取得
+                GetFixedSqlStatement(SqlName.SubDir, SqlName.GetUpperStructureList, out string sqlText);
+                // IDのリストより上位の階層を検索し、階層情報のリストを取得
+                // 場所階層はカンマ区切りの文字列で渡す
+                var param = new { LanguageId = languageId, StructureIdList = string.Join(",", conditionSheetLocationList) };
+
+                IList<TMQUtil.StructureLayerInfo.StructureGetInfo> results = db.GetListByDataClass<TMQUtil.StructureLayerInfo.StructureGetInfo>(sqlText, param);
+                if (results != null)
+                {
+                    var structureInfoList = results.ToList();
+                    if (structureInfoList != null)
+                    {
+                        // 最上位の階層から最下層IDを取る
+                        IList<TMQUtil.StructureLayerInfo.StructureGetInfo> structureLayerInfoList = structureInfoList.Where(x => x.StructureLayerNo == 0).ToArray();
+
+                        // 最下層のリスト
+                        IList<TMQUtil.StructureLayerInfo.StructureLocationInfoEx> bottomLayerAll = new List<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>();
+
+                        // 最上位の階層ごとに処理を繰り返す
+                        foreach (TMQUtil.StructureLayerInfo.StructureGetInfo structureGetInfo in structureLayerInfoList)
+                        {
+                            TMQUtil.StructureLayerInfo.StructureLocationInfoEx temp = new();
+                            temp.LocationStructureId = structureGetInfo.OrgStructureId;
+                            bottomLayerAll.Add(temp);
+                        }
+
+                        // データクラスに地区及び職種の階層情報を設定する処理
+                        TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<TMQUtil.StructureLayerInfo.StructureLocationInfoEx>(ref bottomLayerAll, new List<TMQUtil.StructureLayerInfo.StructureType> { TMQUtil.StructureLayerInfo.StructureType.Location }, db, languageId);
+                        // 地区、工場、プラント、系列、工程、設備の順に並び替え(場所階層ツリーの表示順に合わせる)
+                        var sortList = bottomLayerAll.OrderBy(x => x.DistrictId).ThenBy(x => x.FactoryId).ThenBy(x => x.PlantId).ThenBy(x => x.SeriesId)
+                                                        .ThenBy(x => x.StrokeId).ThenBy(x => x.FacilityId).ToList();
+
+                        for (int i = 0; i < sortList.Count; i++)
+                        {
+                            // 地区
+                            // マッピングセルを設定
+                            address = "B" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].DistrictName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 工場
+                            // マッピングセルを設定
+                            address = "C" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].FactoryName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // プラント
+                            // マッピングセルを設定
+                            address = "D" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].PlantName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 系列
+                            // マッピングセルを設定
+                            address = "E" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].SeriesName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 工程
+                            // マッピングセルを設定
+                            address = "F" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].StrokeName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            // 設備
+                            // マッピングセルを設定
+                            address = "G" + (outputRowCount + 1).ToString();
+                            // マッピング情報設定
+                            info.SetExlSetValueByAddress(address, sortList[i].FacilityName);
+                            // マッピングリストに追加
+                            mappingList.Add(info);
+
+                            outputRowCount += 1;
+                        }
+                    }
+                }
+            }
+
+            // 行をあける
+            outputRowCount += 2;
+
+            // 検索条件(項目名、設定値)
+            if ((conditionSheetNameList != null) && (conditionSheetNameList.Count >= 1))
+            {
+                // 固定見出しをマッピング情報に追加 
+                info.SetExlSetValueByAddress("A" + outputRowCount.ToString(), GetTranslationText(111100030, languageId, db));
+                mappingList.Add(info);
+                info.SetExlSetValueByAddress("B" + outputRowCount.ToString(), GetTranslationText(111120218, languageId, db));
+                mappingList.Add(info);
+
+                outputRowCount += 1;
+
+                // 項目定義
+                for (int i = 0; i < conditionSheetNameList.Count; i++)
+                {
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+                                              // マッピングセルを設定
+                    address = "A" + (i + outputRowCount).ToString();
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, conditionSheetNameList[i]);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+
+                    // マッピングセルを設定
+                    address = "B" + (i + outputRowCount).ToString();
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, conditionSheetValueList[i]);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+                }
+            }
+
+            // マッピング情報リストを返却
+            return mappingList;
+
+        }
+
+        #endregion
 
         /// <summary>
         /// 帳票データ取得(検索条件から)

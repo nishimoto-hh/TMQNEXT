@@ -841,16 +841,16 @@ namespace CommonExcelUtil
                 // 未指定の場合はBefore
                 position--;
             }
-            if(position < 1)
+            if (position < 1)
             {
                 position = 1;   // 先頭
             }
-            else if(position > workBook.Worksheets.Count)
+            else if (position > workBook.Worksheets.Count)
             {
                 position = workBook.Worksheets.Count;   // 末尾
             }
 
-            if(workSheet.Position == position)
+            if (workSheet.Position == position)
             {
                 // 移動先のシート番号が同じ場合は移動しない
                 return;
@@ -1719,12 +1719,14 @@ namespace CommonExcelUtil
 
             var rangeTo = workSheet2.Range(copyTo);
 
-            // コピー元範囲行数*N数分だけ行挿入する [(10:12)の範囲を3件(3行*3件=9行)挿入する]
-            rangeTo.InsertRowsBelow(rowcountFrom * copyRow);
-
-            // N数分だけコピー処理を実施する
             int rowFrom = rangeFrom.FirstRow().RowNumber();
             int rowTo = rangeTo.FirstRow().RowNumber();
+
+            // コピー元範囲行数*N数分だけ行挿入する [(10:12)の範囲を3件(3行*3件=9行)挿入する]
+            //rangeTo.InsertRowsBelow(rowcountFrom * copyRow); //エラーになるため変更
+            workSheet2.Row(rowTo).InsertRowsBelow(rowcountFrom * copyRow);
+
+            // N数分だけコピー処理を実施する
             for (int i = 0; i < copyRow; i++)
             {
                 rangeFrom.CopyTo(workSheet2.Row(rowTo));
@@ -1776,6 +1778,39 @@ namespace CommonExcelUtil
                 copyTo = ToAlphabet(i) + ":" + ToAlphabet(i);
                 rangeFrom.CopyTo(workSheet2.Range(copyTo));
                 i += colcountFrom;
+            }
+        }
+
+        /// <summary>
+        /// copyInsCol：出力対象シート内の列に新たに列を挿入
+        /// （コピー元、挿入先のシートは同一でも別シートでも可）
+        /// </summary>
+        /// <param name="param">
+        /// [0]：挿入対象列
+        /// [1]：1：指定された列の前に挿入、2：指定された列の後に挿入
+        /// [2]：挿入する列数
+        /// [3]：挿入対象シート名
+        /// </param>
+        public void InsertColumn(string[] param)
+        {
+            int copyColCnt = 0;
+            if (!checkCopyInsParam(param, ref copyColCnt))
+            {
+                // パラメータ不正
+                return;
+            }
+
+            if (param[1] == "1")
+            {
+                workSheet.Column(param[0]).InsertColumnsBefore(int.Parse(param[2]));
+            }
+            else if (param[1] == "2")
+            {
+                workSheet.Column(param[0]).InsertColumnsAfter(int.Parse(param[2]));
+            }
+            else
+            {
+                return;
             }
         }
 
@@ -1843,6 +1878,20 @@ namespace CommonExcelUtil
 
             // コピー処理
             rangeFrom.CopyTo(workSheet2.Range(copyTo));
+        }
+
+        /// <summary>
+        /// セルに数式を設定する
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象セル
+        /// [1]：埋め込み数式
+        /// [2]：シート名（未設定時は先頭シート）
+        /// </param>
+        public void SetFunctionToCell(string[] param)
+        {
+            // 指定されたセルに数式を設定する
+            workSheet.Cell(param[0]).FormulaA1 = param[1];
         }
 
         /// <summary>
@@ -1939,6 +1988,14 @@ namespace CommonExcelUtil
                     // 書式：設定フォーマット
                     workSheet.Range(range).AddConditionalFormat()
                     .WhenNotContains(param[2])            // 条件
+                    .NumberFormat.Format = param[3];      // 書式
+                    break;
+
+                case "IsTrue":
+                    // 条件：数式を使用
+                    // 書式：設定フォーマット
+                    workSheet.Range(range).AddConditionalFormat()
+                    .WhenIsTrue(param[2])                 // 条件
                     .NumberFormat.Format = param[3];      // 書式
                     break;
                 default:
@@ -2062,6 +2119,51 @@ namespace CommonExcelUtil
         }
 
         /// <summary>
+        /// FontColorPart：セル内の指定された範囲の文字色の設定を行う
+        /// </summary>
+        /// <param name="param">
+        /// [0]：対象行、列、セル範囲
+        /// [1]: 文字色変更範囲の開始文字
+        /// [2]: 文字色変更範囲の終了文字
+        /// [3]：シート名またはシート番号　デフォルトは先頭シート
+        public void FontColorPart(string[] param)
+        {
+            if (param.Length < 3)
+            {
+                // パラメータ不足
+                return;
+            }
+            if (string.IsNullOrEmpty(param[0]))
+            {
+                // 対象行、列、セル範囲が指定されている場合のみ実行
+                return;
+            }
+
+            // シート名　デフォルトは先頭シート
+            workSheet = workBook.Worksheet(1);
+            if (param.Length >= 3 && !string.IsNullOrEmpty(param[3]))
+            {
+                workSheet = GetWorkSheet(param[3], 1);
+                if (workSheet == null)
+                {
+                    // 対象シート無し
+                    return;
+                }
+            }
+
+            // 指定された範囲の文字の色を変更
+            IXLCell cell = workSheet.Cell(param[0]);
+            IXLRichText rich = cell.GetRichText();
+
+            // 文字列が存在する場合は色を変更
+            if (!string.IsNullOrEmpty(rich.Text))
+            {
+                IXLFormattedText<IXLRichText> text = rich.Substring(int.Parse(param[1]), int.Parse(param[2]));
+                text.SetFontColor(XLColor.Red);
+            }
+        }
+
+        /// <summary>
         /// formulaA1：計算式の設定
         /// </summary>
         /// <param name="param">
@@ -2126,7 +2228,7 @@ namespace CommonExcelUtil
         /// [5]：幅　省略時の場合は自動調整
         /// [6]：高さ　省略時の場合は自動調整
         /// </param>
-        public void SetCellComment(string [] param)
+        public void SetCellComment(string[] param)
         {
             if (param.Length < 2)
             {
@@ -2189,7 +2291,7 @@ namespace CommonExcelUtil
             }
             // コメントを追加
             comment.AddText(commentText);
-            
+
 
             if (param.Length >= 5 && "1".Equals(param[4]))
             {
@@ -2200,7 +2302,7 @@ namespace CommonExcelUtil
             // コメントサイズの自動調整をON
             comment.Style.Size.AutomaticSize = true;
 
-            if (param.Length >= 6 && !string.IsNullOrEmpty (param[5]))
+            if (param.Length >= 6 && !string.IsNullOrEmpty(param[5]))
             {
                 // 幅が指定されている場合、コメントの幅を設定
                 comment.Style.Size.SetWidth(Convert.ToInt64(param[5]));

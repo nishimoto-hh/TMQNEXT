@@ -473,6 +473,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全権限有無</summary>
             /// <value>保全権限有無</value>
             public bool Maintenance { get; set; }
+            /// <summary>Gets or sets 日報出力ボタン表示フラグ</summary>
+            /// <value>日報出力ボタン表示フラグ</value>
+            public bool DailyReportBtnDispFlg { get; set; }
         }
 
         /// <summary>

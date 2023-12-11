@@ -132,11 +132,14 @@ const MqClassCodeWorkPersonality = {
 function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data) {
 
     //*対象年月度初期値設定
-    //前日日付取得
-    var datetime = getBeforeYMDString(new Date());
+    // システム日付を取得
+    var tempDateTime = new Date();
+
+    // システム日付の月を-1する
+    tempDateTime.setMonth(tempDateTime.getMonth() - 1);
 
     //画面表示
-    setValue(TargetDateList.List.Id, TargetDateRow.Months, 1, CtrlFlag.Input, datetime.slice(0, 7));
+    setValue(TargetDateList.List.Id, TargetDateRow.Months, 1, CtrlFlag.Input, tempDateTime.getFullYear() + '/' + ('0' + (tempDateTime.getMonth() + 1)).slice(-2));
 }
 
 /**

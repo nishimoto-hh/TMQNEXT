@@ -132,5 +132,34 @@ namespace BusinessLogic_MP0001
             /// <value>行番号</value>
             public int RowNo { get; set; }
         }
+
+        /// <summary>
+        /// MQ月報(旧様式) 用検索条件
+        /// </summary>
+        public class JobOrder
+        {
+            /// <summary>Gets or sets 構成ID</summary>
+            /// <value>構成ID</value>
+            public int Structureid { get; set; }
+            /// <summary>Gets or sets 職種名</summary>
+            /// <value>職種名</value>
+            public string Translationtext { get; set; }
+            /// <summary>Gets or sets ソート順</summary>
+            /// <value>ソート順</value>
+            public int Sort { get; set; }
+        }
+
+        /// <summary>
+        /// MQ月報(旧様式) 出力に使用するためのリスト
+        /// </summary>
+        public class JobListForOutput
+        {
+            /// <summary>Gets or sets 職種名</summary>
+            /// <value>職種名</value>
+            public string Translationtext { get; set; }
+            /// <summary>Gets or sets 構成IDリスト</summary>
+            /// <value>構成IDリスト</value>
+            public List<int> StructureIdList { get; set; }
+        }
     }
 }

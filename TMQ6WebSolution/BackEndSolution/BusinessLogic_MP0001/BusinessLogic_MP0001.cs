@@ -22,6 +22,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
 using System.Text.RegularExpressions;
+using CommonWebTemplate.CommonDefinitions;
 
 /// <summary>
 /// 保全実績評価
@@ -145,6 +146,10 @@ namespace BusinessLogic_MP0001
             /// 分析結果出力ボタン
             /// </summary>
             public const string Output = "Output";
+            /// <summary>
+            /// 旧様式出力ボタン
+            /// </summary>
+            public const string OutOldStyle = "OutOldStyle";
         }
         /// <summary>
         /// 帳票定義
@@ -194,6 +199,20 @@ namespace BusinessLogic_MP0001
         }
 
         /// <summary>
+        /// 帳票定義
+        /// </summary>
+        private static class ReportDefineOldStyle
+        {
+            /// <summary>帳票ID</summary>
+            public const string ReportIdOldStyle = "RP0450";
+            /// <summary>テンプレートID</summary>
+            public const int TemplateId = 1;
+            /// <summary>パターンID</summary>
+            public const int PatternId = 1;
+
+        }
+
+        /// <summary>
         /// SQLファイル名称
         /// </summary>
         private static class SqlName
@@ -220,6 +239,13 @@ namespace BusinessLogic_MP0001
             public const string GetStructureId = "GetStructureId";
             /// <summary>SQL名：MQ指標実績表（年俸）の集計結果</summary>
             public const string GetRepMqActualEvaluation = "GetRepMqActualEvaluation";
+
+            /// <summary>SQL名：MQ月報 職種のソート順を取得</summary>
+            public const string GetJobOrderData = "GetJobOrderData";
+            /// <summary>SQL名：MQ月報 職種のソート順を格納する一時テーブルを作成</summary>
+            public const string CreateJobOrderData = "CreateJobOrderData";
+            /// <summary>SQL名：MQ月報 職種のソート順を一時テーブルに登録</summary>
+            public const string InsertJobOrderData = "InsertJobOrderData";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"MaintenancePerformance";
@@ -329,9 +355,20 @@ namespace BusinessLogic_MP0001
 
             switch (this.CtrlId)
             {
-                case Button.Output:
-                    //分析結果出力
+                case Button.OutOldStyle:
+                    // 旧様式出力
+                    if (!outOldStyle())
+                    {
+                        // 異常終了
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
 
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                    return ComConsts.RETURN_RESULT.OK;
+
+                case Button.Output:
                     //分析結果出力
                     result = 0;
 
@@ -988,11 +1025,11 @@ namespace BusinessLogic_MP0001
                 }
             }
             // データが存在しなければエラー
-            if (dataCnt == 0)
-            {
-                isExistFlg = false;
-                return false;
-            }
+            //if (dataCnt == 0)
+            //{
+            //    isExistFlg = false;
+            //    return false;
+            //}
 
             isExistFlg = true;
             return true;
@@ -1029,8 +1066,8 @@ namespace BusinessLogic_MP0001
             // 対象年月度が表示されていない場合は初期値設定された集計条件を設定(デフォルトで1が入る)
             if (conditionObj.TargetYear.Year == 1)
             {
-                //昨日の日付を取得(システム日付の前日の月を条件とする)
-                conditionObj.TargetYear = DateTime.Now.AddDays(-1);
+                // システム日付の1月前の年月を設定する
+                conditionObj.TargetYear = DateTime.Now.AddMonths(-1);
             }
 
             // 対象年月度の月末を条件に追加
@@ -1738,6 +1775,155 @@ namespace BusinessLogic_MP0001
             //期の開始月が取得できなかった場合は0を返す(エラー)
             return 0;
         }
+
+        #region 旧様式出力 出力処理
+        /// <summary>
+        ///  旧様式出力 出力処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool outOldStyle()
+        {
+            // 検索条件を取得
+            if (!getConditionForOldStyle(out IDictionary<string, object> searchConditionForOldStyle))
+            {
+                return false;
+            }
+
+            // 場所階層ツリーで選択されている項目の構成IDが格納されている一時テーブルを作成
+            if (!GetWhereClauseAndParam2(new PageInfo(), "location_structure_id", out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
+            {
+                return false;
+            }
+
+            // 職種IDに対するソート順の一時テーブルを作成
+            createTempJobOrderTbl(out Dictionary<string, List<int>> jobNameToId);
+
+            // エクセル出力共通処理
+            TMQUtil.CommonOutputExcelForOldStyle(
+                jobNameToId,
+                0,                                     // 工場ID
+                this.PgmId,                            // プログラムID
+                searchConditionForOldStyle,            // 検索条件
+                ReportDefineOldStyle.ReportIdOldStyle, // 帳票ID
+                ReportDefineOldStyle.TemplateId,       // テンプレートID
+                ReportDefineOldStyle.PatternId,        // 出力パターンID
+                this.UserId,                           // ユーザID
+                this.LanguageId,                       // 言語ID
+                this.conditionSheetLocationList,       // 場所階層構成IDリスト
+                this.conditionSheetJobList,            // 職種機種構成IDリスト
+                this.conditionSheetNameList,           // 検索条件項目名リスト
+                this.conditionSheetValueList,          // 検索条件設定値リスト
+                out string fileType,                   // ファイルタイプ
+                out string fileName,                   // ファイル名
+                out MemoryStream memStream,            // メモリストリーム
+                out string message,                    // メッセージ
+                db,
+                null);
+
+            // OUTPUTパラメータに設定
+            this.OutputFileType = fileType;
+            this.OutputFileName = fileName;
+            this.OutputStream = memStream;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 検索条件を取得
+        /// </summary>
+        /// <param name="searchConditionForOldStyle">検索条件</param>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool getConditionForOldStyle(out IDictionary<string, object> searchConditionForOldStyle)
+        {
+            searchConditionForOldStyle = new ExpandoObject() as IDictionary<string, object>;
+
+            ///// 画面側で使用されている検索条件作成ロジックをそのまま使用 /////
+            // ページ情報取得(条件)
+            Dao.searchCondition conditionObj = new Dao.searchCondition();
+            // 場所階層IDリスト
+            List<int> locationIdList = new();
+
+            // 検索条件取得
+            if (!GetConditions(out conditionObj, out locationIdList))
+            {
+                // エラーの場合終了
+                return false;
+            }
+            ///// 画面側で使用されている検索条件作成ロジックをそのまま使用 /////
+
+            // 検索条件を作成
+            searchConditionForOldStyle.Add("LocationIdList", GetLowerStructureIdList(GetLocationTreeValues()));                              // 場所階層IDリスト
+            searchConditionForOldStyle.Add("LanguageId", this.LanguageId);                                                                   // 言語ID
+            searchConditionForOldStyle.Add("TargetStartDate", new DateTime(conditionObj.TargetYear.Year, conditionObj.TargetYear.Month, 1)); // 画面で指定された年月の初日
+            searchConditionForOldStyle.Add("TargetEndDate", conditionObj.TargetYear);                                                        // 画面で指定された年月の末日
+            searchConditionForOldStyle.Add("StartMonth", conditionObj.StartMonth);                                                           // 画面で指定された年月の期の開始月
+            searchConditionForOldStyle.Add("BeginningMonth", conditionObj.BeginningMonth);                                                   // 画面で指定された年月の期首月
+
+            return true;
+        }
+
+        /// <summary>
+        /// 職種IDに対するソート順の一時テーブルを作成
+        /// </summary>
+        /// <param name="jobNameToId">出力に使用する職種名に対する構成IDリスト</param>
+        private void createTempJobOrderTbl(out Dictionary<string, List<int>> jobNameToId)
+        {
+            // 職種ツリーと同じ順番でデータを取得するための一時テーブルを作成
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, SqlName.GetJobOrderData, out string jobOrderDataSql);
+
+            // 職種のソート順取得
+            IList<Dao.JobOrder> results = db.GetListByDataClass<Dao.JobOrder>(jobOrderDataSql, new { LanguageId = this.LanguageId });
+
+            // DBから取得したデータでソート順リストを再作成
+            Dictionary<string, int> jobOrderDic = new(); // 同一の職種名称が複数あるかチェックするためのもの
+            List<Dao.JobOrder> jobOrderList = new();     // 職種の構成IDごとのソート順を格納するリスト
+
+            jobNameToId = new(); // 職種名から構成IDを紐付けるためのディクショナリ
+
+            int order = 1;
+            foreach (Dao.JobOrder result in results)
+            {
+                // 職種名リストに自身の職種名が含まれているか判定
+                if (jobNameToId.ContainsKey(result.Translationtext))
+                {
+                    // 含まれている場合
+                    // 職種名に対する構成IDリストに自身の構成IDを追加
+                    jobNameToId[result.Translationtext].Add(result.Structureid);
+                }
+                else
+                {
+                    // 職種名から構成IDを紐付けるためのディクショナリに自身の職種名と構成IDを追加
+                    jobNameToId.Add(result.Translationtext, new List<int>() { result.Structureid });
+                }
+
+                // 重複確認用ディクショナリに自身の職種名が含まれているか判定
+                if (!jobOrderDic.ContainsKey(result.Translationtext))
+                {
+                    // 含まれていない場合は職種名とソート順を追加し、ソート順を加算
+                    jobOrderDic.Add(result.Translationtext, order);
+                    order++;
+                }
+
+                // 職種の構成IDごとのソート順をリストに格納
+                Dao.JobOrder orderInfo = new();
+                orderInfo.Structureid = result.Structureid;
+                orderInfo.Sort = jobOrderDic[result.Translationtext];
+                jobOrderList.Add(orderInfo);
+            }
+
+            // 一時テーブル作成
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, SqlName.CreateJobOrderData, out string createJobOrderTblSql);
+            this.db.Regist(createJobOrderTblSql);
+
+            // 一時テーブルに登録
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, SqlName.InsertJobOrderData, out string insertJobOrderTblSql);
+            foreach (Dao.JobOrder orderInfo in jobOrderList)
+            {
+                this.db.Regist(insertJobOrderTblSql, orderInfo);
+            }
+        }
+        #endregion
+
         #endregion
     }
 }

@@ -66,6 +66,8 @@ const FormList = {
         Manufacturing: 2,
         //保全権限
         Maintenance: 3,
+        //日報出力ボタン表示フラグ
+        DailyReportBtnDispFlg: 4,
     },
     //フィルタ
     Filter: {
@@ -95,6 +97,8 @@ const FormList = {
         Output: "Output",
         //工程表の表示
         ProcessReport: "ProcessReport",
+        //建材日報出力
+        DailyReportOutput: "DailyReportOutput",
     },
 };
 // 詳細画面
@@ -687,6 +691,15 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             } else {
                 setFocusButton(FormList.ButtonId.NewInspection);
             }
+        }
+
+        //日報出力ボタンの表示制御
+        //日報出力ボタン表示フラグの値取得
+        var dailyReportBtnDispStr = getValue(FormList.HideInfo.Id, FormList.HideInfo.DailyReportBtnDispFlg, 1, CtrlFlag.Label);
+        var dailyReportBtnDispFlg = convertStrToBool(dailyReportBtnDispStr);
+        if (!dailyReportBtnDispFlg) {
+            //日報出力ボタン非表示
+            setHideButton(FormList.ButtonId.DailyReportOutput, true);
         }
 
         //保全実績評価から遷移してきた場合、詳細検索条件を設定する
@@ -1477,6 +1490,15 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
     // 機能IDが「帳票出力」の場合
     if (getConductId() == RM00001_ConductId) {
         return RM0001_reportCheckPre(appPath, conductId, formNo, btn)
+    }
+
+    // 一覧画面で建材日報出力ボタン押下時
+    var btnName = $(btn).attr("name");
+    if (formNo == FormList.No && btnName == FormList.ButtonId.DailyReportOutput) {
+        // 一覧にチェックされた行が存在しない場合、エラーメッセージ表示
+        if (!isCheckedList(FormList.List.Id)) {
+            return false;
+        }
     }
     return true;
 }
