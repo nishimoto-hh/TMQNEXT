@@ -272,21 +272,21 @@ namespace BusinessLogic_PT0003
         }
 
         /// <summary>
-        /// 準備状況
+        /// RFIDタグ紐付け有無
         /// </summary>
         private static class ReadyStatus
         {
             /// <summary>拡張データの連番</summary>
             public const short Seq = 1;
-            /// <summary>拡張データ：準備リスト作成済み</summary>
-            public const string Created = "1";
-            /// <summary>拡張データ：未実施</summary>
-            public const string NotYet = "2";
+            /// <summary>拡張データ：あり</summary>
+            public const string Relation = "1";
+            /// <summary>拡張データ：なし</summary>
+            public const string NotRelation = "2";
 
-            /// <summary>準備リスト作成済みが選択された場合、SQLをアンコメントするキー</summary>
-            public const string CreatedUncommentKey = "Created";
-            /// <summary>未実施が選択された場合、SQLをアンコメントするキー</summary>
-            public const string NotYetUncommentKey = "NotYet";
+            /// <summary>ありが選択された場合、SQLをアンコメントするキー</summary>
+            public const string RelationUncommentKey = "Relation";
+            /// <summary>なしが選択された場合、SQLをアンコメントするキー</summary>
+            public const string NotRelationUncommentKey = "NotRelation";
 
         }
 

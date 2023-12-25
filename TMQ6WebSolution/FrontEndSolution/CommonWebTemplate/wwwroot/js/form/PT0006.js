@@ -33,6 +33,8 @@ const PT0006_FormList = {
     ConductId: "PT0006",                        // 機能ID
     No: 0,                                      // 画面番号
     Spare: "CBODY_000_00_LST_6",           　　 // 予備品情報
+    DispYearFrom: 7,                            // 表示年度(From) ※予備品詳細画面に戻った際に使用するための値を保持する場所
+    DispYearTo: 8,                              // 表示年度(To) ※予備品詳細画面に戻った際に使用するための値を保持する場所
     Department: {
         Id: "CBODY_010_00_LST_6",               // 部門在庫情報
         StockQuantity: 4,                       // 出庫数
@@ -330,6 +332,13 @@ function PT0006_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conduc
     // 機能IDが「出庫入力」ではない場合は何もしない
     if (conductId != PT0006_FormList.ConductId) {
         return;
+    }
+
+    // 取消ボタンが押下されている場合
+    if (btn[0].name == BtnName.Cancel) {
+
+        // 表示年度の値をグローバル変数に格納
+        PT0006_postBackBtnProcessForPopup(PT0006_FormList.ConductId);
     }
 
     // 登録・取消ボタン実行正常終了後画面を閉じて遷移元に移動
@@ -738,4 +747,52 @@ function PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, lis
 
     // 何もしていないのでそのまま返す
     return listData;
+}
+
+/**
+*【オーバーライド用関数】
+*  閉じる処理の後(ポップアップ画面用)
+*/
+function PT0006_postBackBtnProcessForPopup(conductId) {
+
+    // 出庫入力画面の機能IDでない場合は何もせずに終了
+    if (conductId != PT0006_FormList.ConductId) {
+        return;
+    }
+
+    var val = null;
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(From)の値を取得
+    val = getValue(PT0006_FormList.Spare, PT0006_FormList.DispYearFrom, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最小値を設定
+        val = SqlYear.MinYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearFrom] = val;
+
+    val = null;
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
+
+    // 表示年度(To)の値を取得
+    val = getValue(PT0006_FormList.Spare, PT0006_FormList.DispYearTo, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最大値を設定
+        val = SqlYear.MaxYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearTo] = val;
 }

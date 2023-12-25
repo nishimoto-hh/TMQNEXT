@@ -4,6 +4,7 @@ WITH old_new_division_list AS (
     SELECT
         ex.extension_data
         , ms.structure_id 
+        , ms.factory_id 
     FROM
         ms_structure ms 
         LEFT JOIN ms_item_extension ex 
@@ -20,12 +21,15 @@ SELECT
     , acc_ex1.extension_data AS account_code        -- 勘定科目コード
     , acc_ex2.extension_data AS old_new_division    -- 勘定科目コード
     , ( 
-        SELECT
+        SELECT TOP 1
             structure_id 
         FROM
             old_new_division_list 
         WHERE
             extension_data = acc_ex2.extension_data
+            AND factory_id in (0, parts.factory_id)
+        ORDER BY
+            factory_id
     ) AS old_new_structure_id                  -- 新旧区分
 FROM
     pt_parts parts                              -- 予備品情報

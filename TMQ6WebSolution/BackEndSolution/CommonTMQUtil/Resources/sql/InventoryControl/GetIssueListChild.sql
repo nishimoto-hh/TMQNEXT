@@ -116,6 +116,7 @@ SELECT DISTINCT
     ) AS  parts_location_name, --棚ID
     pls.parts_location_detail_no,                                                    --棚枝番
     FORMAT(plt.unit_price, '#,###') AS unit_price,                                   --入庫単価
+    FORMAT(plt.unit_price, '#,###') AS unit_price_value,                                   --入庫単価
     ( 
         SELECT
             tra.translation_text 
@@ -133,8 +134,27 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, ppt.factory_id)
             ) 
             AND tra.structure_id = plt.currency_structure_id
-    ) AS currency_name,                                                              --金額単位名称  
+    ) AS currency_name,                                                              --金額単位名称
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.currency_structure_id
+                    AND st_f.factory_id IN (0, ppt.factory_id)
+            ) 
+            AND tra.structure_id = plt.currency_structure_id
+    ) AS currency_name_child,                                                              --金額単位名称  
     pih.inout_quantity,                                                              --出庫数
+    pih.inout_quantity AS inout_quantity_value_child,                                --出庫数
     ( 
         SELECT
             tra.translation_text 
@@ -153,7 +173,26 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = plt.unit_structure_id
     ) AS unit_name,                                                                  --数量単位名称
+    ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = plt.unit_structure_id
+                    AND st_f.factory_id IN (0, ppt.factory_id)
+            ) 
+            AND tra.structure_id = plt.unit_structure_id
+    ) AS unit_name_child,                                                                  --数量単位名称(帳票用)
     FORMAT(pih.inout_quantity * plt.unit_price, '#,###') AS amount_money,            --受払数*入庫単価(画面：出庫金額)
+    FORMAT(pih.inout_quantity * plt.unit_price, '#,###') AS issue_monney_child_value,            --受払数*入庫単価(画面：出庫金額)
     dpm.extension_data AS department_cd,                                             --部門CD
     COALESCE(
     (

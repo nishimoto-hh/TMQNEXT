@@ -80,6 +80,7 @@ FROM pt_inout_history pih -- 受払履歴
     -- 確定在庫データ
     LEFT OUTER JOIN pt_fixed_stock pfs 
          ON pfs.parts_id = pp.parts_id
+         AND pfs.inventory_control_id = pls.inventory_control_id
 @TargetYearMonth*/
 
 WHERE
@@ -118,6 +119,8 @@ AND pih.work_division_structure_id IN (
 /*@TargetYearMonth
 AND
     pfs.target_month >= CONVERT(date,@TargetYearMonth + '/01')
+AND
+    pfs.target_month < DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))
 @TargetYearMonth*/
 
 /*@FactoryId

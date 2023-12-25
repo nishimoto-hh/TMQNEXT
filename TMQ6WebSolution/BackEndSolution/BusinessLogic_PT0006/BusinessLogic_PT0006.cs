@@ -162,6 +162,20 @@ namespace BusinessLogic_PT0006
             public const string PT0003 = "PT0003";
         }
 
+        /// <summary>
+        /// 予備品一覧の詳細画面の入出庫履歴タブの表示年度を保持するためのキー名称
+        /// </summary>
+        private class DispYearKeyName
+        {
+            /// <summary>
+            /// 表示年度(From)
+            /// </summary>
+            public const string YearFrom = "YearFrom";
+            /// <summary>
+            /// 表示年度(To)
+            /// </summary>
+            public const string YearTo = "YearTo";
+        }
         #endregion
 
         #region コンストラクタ
@@ -476,6 +490,15 @@ namespace BusinessLogic_PT0006
             // 小数点以下桁数と丸め処理区分を条件に追加
             conditionObj.UnitDigit = result.UnitDigit;
             conditionObj.UnitRoundDivision = result.UnitRoundDivision;
+
+            // 予備品一覧の詳細画面の入出庫履歴タブから遷移してきている場合はグローバルリストに表示年度(From・To)が格納されているので画面の非表示項目に設定する
+            // ※画面の非表示項目に設定しておかないと予備品詳細画面に戻った際に値が保持されていないため
+            // グローバルリストに表示年度の値を保持しているか判定
+            if (this.IndividualDictionary.ContainsKey(DispYearKeyName.YearFrom) || this.IndividualDictionary.ContainsKey(DispYearKeyName.YearTo))
+            {
+                result.DispYearFrom = this.IndividualDictionary[DispYearKeyName.YearFrom].ToString(); // 表示年度(From)
+                result.DispYearTo = this.IndividualDictionary[DispYearKeyName.YearTo].ToString();     // 表示年度(To)
+            }
 
             // ページ情報取得
             var hierarchyInfo = getPageInfoBlank(TargetCtrlId.SparePartsInformation);
@@ -1152,6 +1175,7 @@ namespace BusinessLogic_PT0006
             {
                 return false;
             }
+
             return true;
         }
 

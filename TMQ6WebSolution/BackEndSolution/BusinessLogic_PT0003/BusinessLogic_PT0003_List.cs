@@ -207,8 +207,8 @@ namespace BusinessLogic_PT0003
                         condition.InventoryIdList = hiddenCondition.InventoryId.Split(",").ToList().ConvertAll(x => Convert.ToInt64(x));
                         condition.InventoryIdFlg = true;
                     }
-                    //準備状況は検索条件から外す
-                    condition.ReadyStatus = null;
+                    //RFIDタグ紐付けは検索条件から外す
+                    condition.RftagRelationStatus = null;
                 }
             }
 
@@ -225,21 +225,21 @@ namespace BusinessLogic_PT0003
             // SQLのアンコメントする条件を設定
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             listUnComment = ComUtil.GetNotNullNameByClass<Dao.searchCondition>(condition);
-            //準備状況でどちらか選択されていた場合
-            if (condition.ReadyStatus != null)
+            //RFIDタグ紐付けでどちらか選択されていた場合
+            if (condition.RftagRelationStatus != null)
             {
                 //構成アイテムを取得するパラメータ設定
                 TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
                 //構成グループID
-                param.StructureGroupId = (int)Const.MsStructure.GroupId.InventoryStatus;
+                param.StructureGroupId = (int)Const.MsStructure.GroupId.RfRelation;
                 //連番
                 param.Seq = ReadyStatus.Seq;
 
-                //棚卸状況の構成アイテム情報取得
+                //RFIDタグ紐付けの構成アイテム情報取得
                 List<TMQUtil.StructureItemEx.StructureItemExInfo> readyStatusList = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
-                //準備状況で選択された構成IDに一致するデータの拡張データを取得
-                string status = readyStatusList.Where(x => x.StructureId == condition.ReadyStatus).Select(x => x.ExData).FirstOrDefault();
-                listUnComment.Add(status == ReadyStatus.Created ? ReadyStatus.CreatedUncommentKey : ReadyStatus.NotYetUncommentKey);
+                //RFIDタグ紐付け有無で選択された構成IDに一致するデータの拡張データを取得
+                string status = readyStatusList.Where(x => x.StructureId == condition.RftagRelationStatus).Select(x => x.ExData).FirstOrDefault();
+                listUnComment.Add(status == ReadyStatus.Relation ? ReadyStatus.RelationUncommentKey : ReadyStatus.NotRelationUncommentKey);
             }
             return condition;
         }

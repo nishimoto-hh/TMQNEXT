@@ -126,7 +126,12 @@ const FormDetail = {
 const FormEdit = {
     No: 2,                                    // 画面番号
     PartsInfo: "BODY_010_00_LST_2",           // 予備品情報
-    DefalutLocation: "BODY_030_00_LST_2",     // 標準保管場所情報(地区～倉庫)
+    DefalutLocation: {                        // 標準保管場所情報(地区～倉庫)
+        Id: "BODY_030_00_LST_2",
+        District: 1,                          // 地区
+        Factory: 2,                           // 標準工場
+        WareHouse: 3,                         // 標準予備品倉庫
+    },
     Location: {                               // 標準保管場所情報
         Id: "BODY_040_00_LST_2",
         InputLocationId: 1,                   // 入力された棚番ID
@@ -205,7 +210,6 @@ const InoutDivisionNo =
     InventoryIssue: "6"  // 棚卸出庫
 };
 
-
 /*==94:初期化処理==*/
 /**
  * 【オーバーライド用関数】
@@ -249,6 +253,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             delete P_dicIndividual["RFUploadMessage"];
             return true;
         }
+
+        // グローバル変数に保持している入出庫履歴タブの表示年度(From・To)の値を削除する
+        // 一覧画面から詳細画面に遷移する際は前回と同じ予備品の詳細画面を開くとは限らないため
+        deleteDispYearValue();
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
@@ -490,6 +498,9 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         }
     }
     else if (formNo == FormDetail.No) { // 詳細画面
+
+        // 入出庫履歴タブの表示年度(From・To)に表示されている値をグローバル変数に格納
+        setDispYearValue();
 
         // ボタンコントロールIDを判定
         if (btn_ctrlId == FormDetail.Button.Edit || btn_ctrlId == FormDetail.Button.Copy) {// 修正・複写
@@ -766,6 +777,33 @@ function preDeleteRow(appPath, btn, id, checkes) {
 }
 
 /**
+ * 【オーバーライド用関数】実行ボタン前処理
+ *  @param {string} appPath ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string} transDiv：画面遷移アクション区分
+ *  @param {string} conductId：機能ID
+ *  @param {string} pgmId ：プログラムID
+ *  @param {number} formNo ：画面NO
+ *  @param {html} btn  ：ボタン要素
+ *  @param {number} conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param {boolean} autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param {boolean} isEdit ：単票表示フラグ
+ *  @param {number} confirmNo ：確認番号
+ *  @return {bool} 処理続行フラグ Trueなら続行、Falseなら処理終了
+ */
+function preRegistProcess(appPath, transDiv, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, confirmNo) {
+
+    // 詳細編集画面(複写)で登録ボタンが押下された場合
+    if (formNo == FormEdit.No && btn[0].name == FormEdit.Button.Regist) {
+
+        // グローバル変数に保持している入出庫履歴タブの表示年度(From・To)の値を削除する
+        // 複写で登録した場合は予備品を新しく作成することになるため表示年度の値は保持する必要はない
+        deleteDispYearValue();
+    }
+
+    return true;
+}
+
+/**
  * 【オーバーライド用関数】実行正常終了後処理
  *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  *  @param conductId   ：機能ID
@@ -810,6 +848,74 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
             $(modal).modal('hide');
         }
     }
+}
+
+
+/**
+ *【オーバーライド用関数】バリデーション前処理
+ *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId   {string}   ：機能ID
+ *  @formNo      {number}   ：画面番号
+ *  @btn         {button}   ：押下されたボタン要素
+ */
+function validDataPre(appPath, conductId, formNo, btn) {
+
+    // 予備品一覧の詳細画面で「再表示」ボタンが押下されている場合
+    if (conductId == ConductId_PT0001 && formNo == FormDetail.No && btn.name == FormDetail.Button.reDisp) {
+
+        //エラー状態を初期化
+        //clearErrorComStatusForAreas(false);
+
+        // 表示年度(From)の要素を取得
+        var dispYearFromEle = $(P_Article).find("#" + FormDetail.DispCondition.Id + getAddFormNo() + "VAL" + FormDetail.DispCondition.No)[0];
+
+        // 表示年度(To) の要素を取得
+        var dispYearToEle = $(P_Article).find("#" + FormDetail.DispCondition.Id + getAddFormNo() + "VAL" + FormDetail.DispCondition.No + "To")[0];
+
+        // 表示年度(From)の値を取得
+        var dispYearFromVal = dispYearFromEle.value;
+
+        // 表示年度(To) の値を取得
+        var dispYearToVal = dispYearToEle.value;
+
+        // 表示年度のFrom・To どちらも未入力の場合はエラーとする
+        if (dispYearFromVal == "" && dispYearToVal == "") {
+
+            // エラー情報を作成
+            var message = { required: P_ComMsgTranslated[141270006] }; // 表示年度の開始または終了どちらか一方は入力して下さい。
+            var rule = {};
+            rule['required'] = true;
+            rule['messages'] = message;
+
+            // エラー情報を表示年度のFrom・Toに設定する
+            $(dispYearFromEle).rules('add', rule);
+            $(dispYearToEle).rules('add', rule);
+
+            return false;
+        }
+
+        // 表示年度(From)が空または「1753」未満の場合
+        if (dispYearFromVal == "" || dispYearFromVal < SqlYear.MinYear) {
+
+            // SQLで扱える年の最小値で補完する
+            dispYearFromEle.value = SqlYear.MinYear;
+        }
+
+        // 表示年度(To)が空の場合
+        if (dispYearToVal == "") {
+
+            // SQLで扱える年の最大値で補完する
+            dispYearToEle.value = SqlYear.MaxYear;
+        }
+        // 表示年度(To)が「1753」未満の場合
+        else if (dispYearToVal < SqlYear.MinYear) {
+
+            // SQLで扱える年の最小値で補完する
+            dispYearToEle.value = SqlYear.MinYear;
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -1147,6 +1253,16 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
         if (id.indexOf(FormEdit.Location.Id) > -1 && id.indexOf("VAL" + FormEdit.Location.InputLocationId) > -1) {
             // 標準棚番(オートコンプリート)選択時、構成IDを非表示の項目に設定する
             setValue(FormEdit.Location.Id, FormEdit.Location.LocationId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
+            setValue(FormEdit.Location.Id, FormEdit.Location.WareHouseId, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+            // 棚番を再設定（付属情報を削除）
+            setValue(FormEdit.Location.Id, FormEdit.Location.InputLocationId, 1, CtrlFlag.Input, data[0].EXPARAM2, false, false);
+            // 上位階層の地区～予備品倉庫を設定
+            var district = getCtrl(FormEdit.DefalutLocation.Id, FormEdit.DefalutLocation.District, 1, CtrlFlag.Label);
+            setStructureInfoToTreeLabel(district, data[0].EXPARAM3, data[0].EXPARAM4);
+            var factory = getCtrl(FormEdit.DefalutLocation.Id, FormEdit.DefalutLocation.Factory, 1, CtrlFlag.Label);
+            setStructureInfoToTreeLabel(factory, data[0].EXPARAM5, data[0].EXPARAM6);
+            var wareHouse = getCtrl(FormEdit.DefalutLocation.Id, FormEdit.DefalutLocation.WareHouse, 1, CtrlFlag.Label);
+            setStructureInfoToTreeLabel(wareHouse, data[0].EXPARAM7, data[0].EXPARAM8);
         }
         else if (id.indexOf(FormEdit.PartsInfo) > -1 && id.indexOf("VAL" + FormEdit.ManufacureCode) > -1) {
             // メーカー(オートコンプリート)選択時、構成IDを非表示の項目に設定する
@@ -1179,11 +1295,18 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
 function afterSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStructureNo, node) {
 
     // 詳細編集画面の標準保管場所情報ツリーの場合
-    if (ctrlId == FormEdit.DefalutLocation) {
+    if (ctrlId == FormEdit.DefalutLocation.Id) {
 
         // 取得した最下層の値(構成ID)を退避する
         var wareHouseId = node.original.li_attr["data-structureid"];
-        setValue(FormEdit.Location.Id, FormEdit.Location.WareHouseId, 1, CtrlFlag.Label, wareHouseId, false, false);
+        var structureNo = node.original.li_attr["data-structureno"];
+        if (structureNo == 2) {
+            // 予備品倉庫まで選択されている場合
+            setValue(FormEdit.Location.Id, FormEdit.Location.WareHouseId, 1, CtrlFlag.Label, wareHouseId, false, false);
+        } else {
+            // 予備品倉庫は未選択の場合
+            setValue(FormEdit.Location.Id, FormEdit.Location.WareHouseId, 1, CtrlFlag.Label, "", false, false);
+        }
     }
 }
 
@@ -1218,6 +1341,28 @@ function prevCommonValidCheck(appPath, conductId, formNo, btn) {
 
     return PT0007_prevCommonValidCheck(appPath, conductId, formNo, btn);
 
+}
+
+/**
+ *【オーバーライド用関数】
+ *  閉じる処理の後(ポップアップ画面用)
+ */
+function postBackBtnProcessForPopup() {
+
+    // 機能IDを取得
+    var conductId = getConductId();
+
+    // 文書管理
+    DM0002_postBackBtnProcessForPopup(conductId);
+
+    // 入庫入力
+    PT0005_postBackBtnProcessForPopup(conductId);
+
+    // 出庫入力
+    PT0006_postBackBtnProcessForPopup(conductId);
+
+    // 移庫入力
+    PT0007_postBackBtnProcessForPopup(conductId);
 }
 
 /**
@@ -1292,7 +1437,7 @@ function postSearchList(tbl) {
     if ($(table).length) {
         $.each($(table), function (idx, row) {
             // 在庫数 <= 発注点(発注アラーム列の値が「Y」)の場合は背景色を黄色に変更する
-            if ($(row).find("div[tabulator-field=VAL" + FormList.OrderAlert.CtrlNo + "]")[0].innerText == FormList.OrderAlert.Value) {
+            if ($($(row).find("div[tabulator-field=VAL" + FormList.OrderAlert.CtrlNo + "]").children()[0]).hasClass('checked')) {
                 $(row).addClass(FormList.OrderAlert.CssClass);
             }
         });
@@ -1484,4 +1629,64 @@ function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) 
 
     // 何もしていないのでそのまま返す
     return listData;
+}
+
+/**
+ * 入出庫履歴タブの表示年度(From・To)の値を取得してグローバル変数に格納
+ * @returns
+ */
+function setDispYearValue() {
+
+    var val = null;
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(From)の値を取得
+    val = $(P_Article).find("#" + FormDetail.DispCondition.Id + getAddFormNo() + "VAL" + FormDetail.DispCondition.No)[0].value;
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最小値を設定
+        val = SqlYear.MinYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearFrom] = val;
+
+    val = null;
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
+
+    // 表示年度(To)の値を取得
+    val = $(P_Article).find("#" + FormDetail.DispCondition.Id + getAddFormNo() + "VAL" + FormDetail.DispCondition.No + "To")[0].value;
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最大値を設定
+        val = SqlYear.MaxYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearTo] = val;
+
+}
+
+/**
+ * グローバル変数に保持している入出庫履歴タブの表示年度(From・To)の値を削除する
+ */
+function deleteDispYearValue() {
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
 }

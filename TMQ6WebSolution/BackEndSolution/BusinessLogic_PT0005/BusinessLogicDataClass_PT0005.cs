@@ -109,6 +109,12 @@ namespace BusinessLogic_PT0005
             /// <summary>Gets or sets メーカー</summary>
             /// <value>メーカー</value>
             public string ManufacturerName { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
         }
 
         /// <summary>
@@ -121,10 +127,10 @@ namespace BusinessLogic_PT0005
             public DateTime InoutDatetime { get; set; }
             /// <summary>Gets or sets 予備品倉庫ID</summary>
             /// <value>予備品倉庫ID</value>
-            public long StorageLocationId { get; set; }
+            public long? StorageLocationId { get; set; }
             /// <summary>Gets or sets 棚番ID</summary>
             /// <value>棚番ID</value>
-            public long PartsLocationId { get; set; }
+            public long? PartsLocationId { get; set; }
             /// <summary>Gets or sets 棚番コード</summary>
             /// <value>棚番コード</value>
             public string PartsLocationCd { get; set; }
@@ -136,7 +142,7 @@ namespace BusinessLogic_PT0005
             public string PartsLocationDetailNo { get; set; }
             /// <summary>Gets or sets 予備品倉庫ID(棚情報)</summary>
             /// <value>予備品倉庫ID(棚情報)</value>
-            public long PartsStorageLocationId { get; set; }
+            public long? PartsStorageLocationId { get; set; }
             /// <summary>Gets or sets 新旧区分ID</summary>
             /// <value>新旧区分ID</value>
             public long OldNewStructureId { get; set; }
@@ -224,6 +230,9 @@ namespace BusinessLogic_PT0005
             /// <summary>Gets or sets 管理工場ID</summary>
             /// <value>管理工場ID</value>
             public long PartsFactoryId { get; set; }
+            /// <summary>Gets or sets 新品購入時の最新のロットの入庫単価</summary>
+            /// <value>新品購入時の最新のロットの入庫単価</value>
+            public string UnitPriceByNewestLot { get; set; }
         }
 
         /// <summary>

@@ -392,9 +392,11 @@ function setPageStatusEx(status, pageRowCount, conductPtn, formNo) {
         $(CurrencyUnitArea)[0].innerText = getValue(EnterInput.Id, EnterInput.CurrencyUnit, EnterInput.FirstRowNo, CtrlFlag.TextBox, false, false);
     }
 
+    // 共通-入庫入力画面
+    PT0005_setPageStatusEx(status, pageRowCount, conductPtn, formNo);
+
     // 共通-出庫入力画面
     PT0006_setPageStatusEx(status, pageRowCount, conductPtn, formNo);
-
 }
 
 

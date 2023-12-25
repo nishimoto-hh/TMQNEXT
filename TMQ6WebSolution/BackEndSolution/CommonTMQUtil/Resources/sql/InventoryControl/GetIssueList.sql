@@ -7,12 +7,16 @@ SELECT
     parts_no,
     parts_name,
     old_new_structure_name,
-    dimensions,
+    --dimensions,
     shipping_division_name,
     SUM(inout_quantity) AS inout_quantity,
+    SUM(inout_quantity) AS inout_quantity_value,
     issue_quantity,
+    issue_quantity AS issue_quantity_value,
     SUM(inout_quantity * unit_price) AS issue_monney,
+    SUM(inout_quantity * unit_price) AS issue_monney_parent_value,
     currency_name,
+    currency_name AS currency_name_parent,
     unit_digit,
     currency_digit,
     unit_round_division,
@@ -21,7 +25,8 @@ SELECT
     job_structure_id,
     parts_location_id,
     parts_factory_id,
-    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id) AS nest_key
+    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id) AS nest_key,
+    model_type
 FROM
     target
 GROUP BY
@@ -30,7 +35,7 @@ GROUP BY
     parts_no,
     parts_name,
     old_new_structure_name,
-    dimensions,
+    --dimensions,
     shipping_division_name,
     issue_quantity,
     currency_name,
@@ -42,4 +47,5 @@ GROUP BY
     job_structure_id,
     parts_location_id,
     parts_factory_id,
-    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id)
+    CONVERT(varchar, work_no) + '_' + CONVERT(varchar, old_new_structure_id),
+    model_type

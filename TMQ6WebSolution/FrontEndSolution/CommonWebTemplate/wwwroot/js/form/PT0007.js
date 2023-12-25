@@ -20,6 +20,7 @@ function getPath() {
 
 // 移庫画面 コントロール項目番号
 const PT0007_FormList = {
+    ConductId: "PT0007",                 // 機能ID
     FormNo: 0,
     TabNo: {                             // タブ番号
         Location: 3,                     // 棚番移庫
@@ -34,7 +35,9 @@ const PT0007_FormList = {
         TabSelected: 11,                 // タブ選択フラグ
         LocationDataCnt: 12,             // 棚別在庫一覧の件数
         DepartmentDataCnt: 13,           // 部門別在庫一覧の件数
-        PartsFactoryId: 14               // 管理工場ID(部門タブの部門の初期表示に使用)
+        PartsFactoryId: 14,              // 管理工場ID(部門タブの部門の初期表示に使用)
+        DispYearFrom: 15,                // 表示年度(From) ※予備品詳細画面に戻った際に使用するための値を保持する場所
+        DispYearTo: 16                   // 表示年度(To) ※予備品詳細画面に戻った際に使用するための値を保持する場所
     },
     LocationList: {
         Id: "CBODY_010_00_LST_7",        // 棚別在庫一覧
@@ -551,6 +554,10 @@ function PT0007_setCodeTransOtherNames(appPath, formNo, ctrl, data) {
     if (ctrl[0].id == PT0007_FormList.LocationInfoTo.ToWarehouseId.Id + getAddFormNo() + "VAL" + PT0007_FormList.LocationInfoTo.ToWarehouseId.PartsLocationCode && data && data.length > 0) {
         // 棚番(オートコンプリート)選択時、構成IDを非表示の項目に設定する
         setValue(PT0007_FormList.LocationInfoTo.ToWarehouseId.Id, PT0007_FormList.LocationInfoTo.ToWarehouseId.PartsLocationId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
+        setValue(PT0007_FormList.LocationInfoTo.ToWarehouse.Id, PT0007_FormList.LocationInfoTo.ToWarehouse.Warehouse, 1, CtrlFlag.Combo, data[0].EXPARAM7, false, false);
+        setValue(PT0007_FormList.LocationInfoTo.ToWarehouseId.Id, PT0007_FormList.LocationInfoTo.ToWarehouseId.WarehouseId, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+        // 棚番を再設定（付属情報を削除）
+        setValue(PT0007_FormList.LocationInfoTo.ToWarehouseId.Id, PT0007_FormList.LocationInfoTo.ToWarehouseId.PartsLocationCode, 1, CtrlFlag.Input, data[0].EXPARAM2, false, false);
     }
     else if (ctrl[0].id == PT0007_FormList.DepartmentInfoTo.Id + getAddFormNo() + "VAL" + PT0007_FormList.DepartmentInfoTo.Department && data && data.length > 0) {
 
@@ -1134,4 +1141,50 @@ function setFocusLocation(isEdit) {
     }
 }
 
+/**
+ *【オーバーライド用関数】
+ *  閉じる処理の後(ポップアップ画面用)
+ */
+function PT0007_postBackBtnProcessForPopup(conductId) {
 
+    // 移庫入力画面の機能IDでない場合は何もせずに終了
+    if (conductId != PT0007_FormList.ConductId) {
+        return;
+    }
+
+    var val = null;
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(From)の値を取得
+    val = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.DispYearFrom, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最小値を設定
+        val = SqlYear.MinYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearFrom] = val;
+
+    val = null;
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
+
+    // 表示年度(To)の値を取得
+    val = getValue(PT0007_FormList.PartsInfo.Id, PT0007_FormList.PartsInfo.DispYearTo, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最大値を設定
+        val = SqlYear.MaxYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearTo] = val;
+}

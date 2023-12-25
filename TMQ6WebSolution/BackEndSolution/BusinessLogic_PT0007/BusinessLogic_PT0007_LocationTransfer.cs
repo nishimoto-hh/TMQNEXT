@@ -198,6 +198,13 @@ namespace BusinessLogic_PT0007
                 }
             }
 
+            // 非表示項目の表示年度(From・To)をグローバルリストに格納(値が存在する場合)
+            if (!string.IsNullOrEmpty(partsInfo.DispYearFrom) && !string.IsNullOrEmpty(partsInfo.DispYearTo))
+            {
+                this.IndividualDictionary[DispYearKeyName.YearFrom] = partsInfo.DispYearFrom; // 表示年度(From)
+                this.IndividualDictionary[DispYearKeyName.YearTo] = partsInfo.DispYearTo;     // 表示年度(To)
+            }
+
             return true;
 
             TMQDao.PartsInventory.MoveLocation setNewCondition()

@@ -162,6 +162,21 @@ namespace BusinessLogic_PT0005
                 public const short Seq = 1;
             }
         }
+
+        /// <summary>
+        /// 予備品一覧の詳細画面の入出庫履歴タブの表示年度を保持するためのキー名称
+        /// </summary>
+        private class DispYearKeyName
+        {
+            /// <summary>
+            /// 表示年度(From)
+            /// </summary>
+            public const string YearFrom = "YearFrom";
+            /// <summary>
+            /// 表示年度(To)
+            /// </summary>
+            public const string YearTo = "YearTo";
+        }
         #endregion
 
         #region コンストラクタ
@@ -452,6 +467,15 @@ namespace BusinessLogic_PT0005
             // 在庫数(表示用)
             result.StockQuantityDisp = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.StockQuantity.ToString(), result.UnitDigit, result.RoundDivision), result.UnitName, true);
 
+            // 予備品一覧の詳細画面の入出庫履歴タブから遷移してきている場合はグローバルリストに表示年度(From・To)が格納されているので画面の非表示項目に設定する
+            // ※画面の非表示項目に設定しておかないと予備品詳細画面に戻った際に値が保持されていないため
+            // グローバルリストに表示年度の値を保持しているか判定
+            if (this.IndividualDictionary.ContainsKey(DispYearKeyName.YearFrom) || this.IndividualDictionary.ContainsKey(DispYearKeyName.YearTo))
+            {
+                result.DispYearFrom = this.IndividualDictionary[DispYearKeyName.YearFrom].ToString(); // 表示年度(From)
+                result.DispYearTo = this.IndividualDictionary[DispYearKeyName.YearTo].ToString();     // 表示年度(To)
+            }
+
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SparePartsInfo, this.pageInfoList);
 
@@ -489,9 +513,12 @@ namespace BusinessLogic_PT0005
                 // 入庫日
                 result.InoutDatetime = DateTime.Today;
                 // 入庫単価(表示用)
-                result.UnitPriceDisp = TMQUtil.roundDigit(result.UnitPrice.ToString(), result.CurrencyDigit, result.RoundDivision);
+                result.UnitPriceDisp = string.Empty;
                 // 画面タイプをセット(ボタン制御用)
                 result.FormType = int.Parse(formMode);
+
+                // 新品購入時の最新のロットの入庫単価
+                result.UnitPriceByNewestLot = TMQUtil.roundDigit(result.UnitPriceByNewestLot.ToString(), result.CurrencyDigit, result.RoundDivision);
 
                 // 条件追加
                 conditionObj.FactoryId = Convert.ToInt32(result.FactoryId);  // 工場ID
@@ -569,14 +596,6 @@ namespace BusinessLogic_PT0005
                     result.AccountCd = initValByPartsInfo.AccountCode;
                     result.AccountOldNewDivision = initValByPartsInfo.OldNewDivision;
                 }
-
-                // 入庫する予備品データを取得
-                ComDao.PtPartsEntity partsInfo = new ComDao.PtPartsEntity().GetEntity(result.PartsId, this.db);
-                // 取得した予備品の棚番がNULLの場合は検索結果に「-1」を設定する
-                if (partsInfo.LocationRackStructureId == null)
-                {
-                    result.PartsLocationId = -1;
-                }
             }
             // 編集の場合
             else
@@ -608,7 +627,7 @@ namespace BusinessLogic_PT0005
                 conditionObj.DepartmentStructureId = lotInfo.DepartmentStructureId;　// 部門
                 conditionObj.AccountStructureId = lotInfo.AccountStructureId;　　　　// 勘定科目
                 conditionObj.LanguageId = this.LanguageId;                           // 言語ID
-                conditionObj.PartsLocationId = result.PartsLocationId;               // 棚ID
+                conditionObj.PartsLocationId = result.PartsLocationId ?? -1;         // 棚ID
                 conditionObj.PartsLocationDetailNo = result.PartsLocationDetailNo;   // 棚枝番
 
                 // エラーチェック
@@ -1159,6 +1178,18 @@ namespace BusinessLogic_PT0005
                 {
                     return false;
                 }
+            }
+
+            // 予備品情報のデータ取得
+            Dao.searchResultSpareInfo partsInfo = new();
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, TargetCtrlId.SparePartsInfo);
+            SetDataClassFromDictionary(targetDic, TargetCtrlId.SparePartsInfo, partsInfo);
+
+            // 非表示項目の表示年度(From・To)をグローバルリストに格納(値が存在する場合)
+            if (!string.IsNullOrEmpty(partsInfo.DispYearFrom) && !string.IsNullOrEmpty(partsInfo.DispYearTo))
+            {
+                this.IndividualDictionary[DispYearKeyName.YearFrom] = partsInfo.DispYearFrom; // 表示年度(From)
+                this.IndividualDictionary[DispYearKeyName.YearTo] = partsInfo.DispYearTo;     // 表示年度(To)
             }
 
             return true;

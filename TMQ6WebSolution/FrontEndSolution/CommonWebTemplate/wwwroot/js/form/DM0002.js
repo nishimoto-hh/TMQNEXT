@@ -44,7 +44,9 @@ const DM0002_FormDetail = {
 const DM0002_Subject = {
     Id: "CBODY_000_00_LST_0_DM0002",     // 検索結果一覧
     FunctionTypeId: 2,                   // 機能タイプID
-    DocumentTypeValNo: 5                 // 文書種類コンボボックスの項目番号
+    DocumentTypeValNo: 5,                // 文書種類コンボボックスの項目番号
+    DispYearFrom: 6,                     // 表示年度(From) ※予備品詳細画面に戻った際に使用するための値を保持する場所
+    DispYearTo: 7                        // 表示年度(To) ※予備品詳細画面に戻った際に使用するための値を保持する場所
 };
 
 // 文書種類コンボボックスの項目番号
@@ -596,4 +598,52 @@ function DM0002_postBuitTabulator(tbl, id) {
         // テーブルの再描画
         tbl.redraw(true);
     }
+}
+
+/**
+ *【オーバーライド用関数】
+ *  閉じる処理の後(ポップアップ画面用)
+ */
+function DM0002_postBackBtnProcessForPopup(conductId) {
+
+    // 文書管理画面の機能IDでない場合は何もせずに終了
+    if (conductId != DM0002_FormDetail.ConductId) {
+        return;
+    }
+
+    var val = null;
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(From)の値を取得
+    val = getValue(DM0002_Subject.Id, DM0002_Subject.DispYearFrom, 1, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最小値を設定
+        val = SqlYear.MinYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearFrom] = val;
+
+    val = null;
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
+
+    // 表示年度(To)の値を取得
+    val = getValue(DM0002_Subject.Id, DM0002_Subject.DispYearTo, 1, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最大値を設定
+        val = SqlYear.MaxYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearTo] = val;
 }

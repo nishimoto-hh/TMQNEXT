@@ -33,6 +33,8 @@ const PT0005_FormList = {
     ConductId: "PT0005",                        // 機能ID
     No: 0,                                      // 画面番号
     PartsInfo: "CBODY_000_00_LST_5",            // 予備品情報
+    DispYearFrom: 8,                            // 表示年度(From) ※予備品詳細画面に戻った際に使用するための値を保持する場所
+    DispYearTo: 9,                              // 表示年度(To) ※予備品詳細画面に戻った際に使用するための値を保持する場所
     InputArea1: {
         Id: "CBODY_010_00_LST_5",               // 入庫情報(入庫日～予備品倉庫)
         InoutDatetime: 1,                       // 入庫日
@@ -69,6 +71,7 @@ const PT0005_FormList = {
         AccountStructureId: 27,                 // 勘定科目ID
         AccountOldNewDivision: 28,              // 勘定科目の新旧区分
         VenderStructureId: 29,                  // 仕入先ID
+        UnitPriceByNewestLot: 31                // 新品購入時の最新のロットの入庫単価
     },
     InputArea4: {
         Id: "CBODY_050_00_LST_5",               // 入庫情報(棚枝番)
@@ -134,16 +137,6 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         PT0005_changeDisabled();
     }
 
-    // 「棚番」に設定されている値を取得
-    var partsLocationId = getValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.TextBox, false, false);
-    // 設定されている値が「-1」の場合(入庫する予備品データに標準棚が設定されていない場合はバックエンド側で「-1」を設定するようにしている)
-    if (partsLocationId == "-1") {
-        // 「棚番」を空にする
-        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.TextBox, "", false, false);
-        // 非表示の「棚番」を空にする
-        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationId, 1, CtrlFlag.Label, "", false, false);
-    }
-
     // 結合文字列を棚枝番入力コントロールのヘッダーにセット
     var joinStr = getValue(PT0005_FormList.InputArea5.Id, PT0005_FormList.InputArea5.JoinStr, 1, CtrlFlag.Label, false, false);
     setValue(PT0005_FormList.InputArea4.Id, PT0005_FormList.InputArea4.PartsLocationDetailNo, 1, CtrlFlag.Label, joinStr, false, true);
@@ -205,6 +198,25 @@ function PT0005_initFormOriginal(appPath, conductId, formNo, articleForm, curPag
         // 非表示の「棚枝番」に設定する
         setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationDetailNo, 1, CtrlFlag.TextBox, partsLocationDetailNoValue, false, false);
     });
+
+
+    // 新品購入時の最新のロットの入庫単価(非表示項目)を取得
+    var unitPriceByNewestLot = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.UnitPriceByNewestLot, 1, CtrlFlag.TextBox, false, false);
+
+    //入庫単価の右隣に新品購入時の単価を表示するための要素を作成
+    var newElement = document.createElement('td');     // td要素
+    var newContent = document.createTextNode(unitPriceByNewestLot); // 表示値(非表示項目の値を表示)
+    newElement.setAttribute('class', 'newest_price');  // スタイルを適用させるためにクラスを付与
+    newElement.appendChild(newContent);                // td要素にテキストノードを追加
+
+    // 作成した要素を追加する親要素を取得
+    var parentEle = $(P_Article).find("#" + PT0005_FormList.InputArea3.Id + getAddFormNo() + 'VAL' + PT0005_FormList.InputArea3.UnitPrice).parent();
+
+    // 作成した要素を親要素に追加
+    parentEle.closest('tr')[0].appendChild(newElement);
+
+    // 要素を追加するとtbodyの右端に枠線ができてしまうため線をなくすスタイルを適用する
+    parentEle.closest('tbody').addClass('border-none');
 
     // 登録ボタンにフォーカスをセット
     setFocusButton(PT0005_BtnName.Regist);
@@ -278,6 +290,8 @@ function PT0005_setStorageCalculation() {
     var currencyDigit = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.CurrencyDigit, 1, CtrlFlag.Label, false, false);
     // 丸め処理区分
     var roundDivision = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.RoundDivision, 1, CtrlFlag.Label, false, false);
+    // 新品購入時の最新のロットの入庫単価取得
+    var unitPriceByNewestLot = getValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.UnitPriceByNewestLot, 1, CtrlFlag.TextBox, false, false).replace(/[^-0-9.]/g, '');
 
     // 入庫数が入力されている場合
     if (!isNaN(storageQuantity) && storageQuantity != "") {
@@ -304,6 +318,14 @@ function PT0005_setStorageCalculation() {
     } else {
         // 入庫金額に金額と単位を設定
         setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.StorageAmount, 1, CtrlFlag.Label, combineNumberAndUnit("0", currencyName, true), false, false);
+    }
+
+    // 新品購入時の最新のロットの入庫単価が入力されている場合
+    if (!isNaN(unitPriceByNewestLot) && unitPriceByNewestLot != "") {
+        // 入庫単価(非表示)の小数点以下桁数 丸め処理
+        var unitPriceByNewestLot = roundDigit(unitPriceByNewestLot, unitDigit, roundDivision);
+        // 入庫単価(非表示)に設定
+        setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.UnitPriceByNewestLot, 1, CtrlFlag.TextBox, combineNumberAndUnit(unitPriceByNewestLot, currencyName, true), false, false);
     }
 }
 
@@ -465,6 +487,10 @@ function PT0005_setCodeTransOtherNames(appPath, formNo, ctrl, data) {
     if (ctrl[0].id == PT0005_FormList.InputArea2.Id + getAddFormNo() + "VAL" + PT0005_FormList.InputArea2.PartsLocationNo && data && data.length > 0) {
         // 棚番選択時、構成IDを非表示の項目に設定する
         setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
+        setValue(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, data[0].EXPARAM7, false, false);
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+        // 棚番を再設定（付属情報を削除）
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.Input, data[0].EXPARAM2, false, false);
     } else if (ctrl[0].id == PT0005_FormList.InputArea3.Id + getAddFormNo() + "VAL" + PT0005_FormList.InputArea3.Department && data && data.length > 0) {
         // 部門選択時、構成IDを非表示の項目に設定する
         setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.DepartmentStructureId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
@@ -477,4 +503,54 @@ function PT0005_setCodeTransOtherNames(appPath, formNo, ctrl, data) {
         // 仕入先選択時、構成IDを非表示の項目に設定する
         setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.VenderStructureId, 1, CtrlFlag.Label, data[0].VALUE1, false, false);
     }
+}
+
+
+
+/**
+ *【オーバーライド用関数】
+ *  閉じる処理の後(ポップアップ画面用)
+ */
+function PT0005_postBackBtnProcessForPopup(conductId) {
+
+    // 入庫入力画面の機能IDでない場合は何もせずに終了
+    if (conductId != PT0005_FormList.ConductId) {
+        return;
+    }
+
+    var val = null;
+
+    // 表示年度(From)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearFrom]) {
+        delete P_dicIndividual[DispYearKeyName.YearFrom];
+    }
+
+    // 表示年度(From)の値を取得
+    val = getValue(PT0005_FormList.PartsInfo, PT0005_FormList.DispYearFrom, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最小値を設定
+        val = SqlYear.MinYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearFrom] = val;
+
+    val = null;
+
+    // 表示年度(To)がグローバル変数に格納されている場合は一度削除する
+    if (P_dicIndividual[DispYearKeyName.YearTo]) {
+        delete P_dicIndividual[DispYearKeyName.YearTo];
+    }
+
+    // 表示年度(To)の値を取得
+    val = getValue(PT0005_FormList.PartsInfo, PT0005_FormList.DispYearTo, 0, CtrlFlag.Label, false, false).trim();
+
+    if (!val) {
+        // 入力されていない場合はSQLで扱うことのできる年の最大値を設定
+        val = SqlYear.MaxYear;
+    }
+
+    // グローバル変数に格納
+    P_dicIndividual[DispYearKeyName.YearTo] = val;
 }

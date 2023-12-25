@@ -14,7 +14,7 @@ SELECT
     , preparation_datetime                   --棚卸準備日時
     , inventory_datetime                     --棚卸日時
     , difference_datetime                    --棚卸調整日時
-    , inventory_quantity                     --棚卸数(取込の場合、取込値を表示)
+    , inventory_quantity                     --棚卸数(取込の場合、取込値を表示。棚卸数がNULLの場合、在庫数を表示)
     , inout_quantity                         --棚卸調整数
     , inventory_diff                         --棚差
     , manufacturer_structure_id              --メーカー

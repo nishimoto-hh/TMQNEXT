@@ -1008,10 +1008,10 @@ namespace BusinessLogic_PT0004
 
             // 取得した在庫IDのレコードを削除する
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.DeleteFixedStock, out string deleteSql);
-            foreach (ComDao.PtFixedStockEntity reult in results)
+            foreach (ComDao.PtFixedStockEntity result in results)
             {
                 // 削除処理
-                if (this.db.Regist(deleteSql, results) < 0)
+                if (this.db.Regist(deleteSql, result) < 0)
                 {
                     return false;
                 }

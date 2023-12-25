@@ -78,6 +78,11 @@ namespace BusinessLogic_PT0002
                     // 金額と単位結合
                     result.IssueQuantity = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.InoutQuantity, result.UnitDigit, result.UnitRoundDivision), result.IssueQuantity);
                     result.IssueMonney = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.IssueMonney, result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName);
+
+                    // 数値を3桁区切り
+                    result.IssueMonneyParentValue = TMQUtil.roundDigit(result.IssueMonneyParentValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                    result.InoutQuantityValue = TMQUtil.roundDigit(result.InoutQuantityValue, result.UnitDigit, result.UnitRoundDivision);
+
                 }
             }
             // 検索結果の設定
@@ -129,6 +134,11 @@ namespace BusinessLogic_PT0002
                 result.PartsLocationName = TMQUtil.GetDisplayPartsLocation(result.PartsLocationName, result.PartsLocationDetailNo, strJoin);
                 result.DepartmentNm = TMQUtil.CombineNumberAndUnit(result.DepartmentCd, result.DepartmentNm, true);
                 result.SubjectNm = TMQUtil.CombineNumberAndUnit(result.SubjectCd, result.SubjectNm, true);
+
+                // 数値を3桁区切り
+                result.UnitPriceValue = TMQUtil.roundDigit(result.UnitPriceValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                result.IssueMonneyChildValue = TMQUtil.roundDigit(result.IssueMonneyChildValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                result.InoutQuantityValueChild = TMQUtil.roundDigit(result.InoutQuantityValueChild, result.UnitDigit, result.UnitRoundDivision);
             }
 
             // 検索結果の設定

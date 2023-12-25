@@ -107,6 +107,11 @@ namespace BusinessLogic_PT0002
                     // コードと名称結合
                     result.DepartmentNm = TMQUtil.CombineNumberAndUnit(result.DepartmentCd, result.DepartmentNm, true);
                     result.SubjectNm = TMQUtil.CombineNumberAndUnit(result.SubjectCd, result.SubjectNm, true);
+
+                    // 数値を3桁区切り
+                    result.UnitPriceValue = TMQUtil.roundDigit(result.UnitPriceValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                    result.TransferAmountValue = TMQUtil.roundDigit(result.TransferAmountValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                    result.TransferCountValue = TMQUtil.roundDigit(result.TransferCountValue, result.UnitDigit, result.UnitRoundDivision);
                 }
 
                 // 移庫元棚IDリスト

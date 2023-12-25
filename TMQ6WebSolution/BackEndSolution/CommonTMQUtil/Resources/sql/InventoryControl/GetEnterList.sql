@@ -44,10 +44,14 @@ SELECT DISTINCT
            )
       AND tra.structure_id = plt.old_new_structure_id
     ) AS old_new_structure_name,--新旧区分
-    pps.standard_size AS dimensions,                                                --規格・寸法
+    --pps.standard_size AS dimensions,                                                --規格・寸法
+    pps.model_type,                                                                 --型式
     pih.inout_quantity,                                                             --受払数(画面：入庫数)
+    pih.inout_quantity AS inout_quantity_value,                                     --受払数(帳票用)
     plt.unit_price,                                                                 --入庫単価
+    plt.unit_price AS unit_price_value,                                             --入庫単価(非表示用)
     pih.inout_quantity * plt.unit_price AS amount_money,                            --入庫金額
+    pih.inout_quantity * plt.unit_price AS amount_money_value,                      --入庫金額(非表示用)
     dpm.extension_data AS department_cd,                                            --部門CD
     act.extension_data AS subject_cd,                                               --勘定科目CD
     dpm.extension_data AS department_cd_enter,                                      --部門CD(ラベル出力用)

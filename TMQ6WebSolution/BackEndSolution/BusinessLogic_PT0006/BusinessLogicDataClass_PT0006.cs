@@ -163,6 +163,12 @@ namespace BusinessLogic_PT0006
             /// <summary>Gets or sets 丸め処理区分(金額)</summary>
             /// <value>丸め処理区分(金額)</value>
             public int CurrencyRoundDivision { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
         }
 
         /// <summary>

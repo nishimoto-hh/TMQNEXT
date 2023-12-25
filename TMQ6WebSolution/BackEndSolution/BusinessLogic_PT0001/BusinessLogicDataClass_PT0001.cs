@@ -98,7 +98,7 @@ namespace BusinessLogic_PT0001
             public decimal? StockQuantityExceptUnit { get; set; }
             /// <summary>Gets or sets 発注アラーム</summary>
             /// <value>発注アラーム</value>
-            public string OrderAlert { get; set; }
+            public int? OrderAlert { get; set; }
             /// <summary>Gets or sets 予備品№(変更前)</summary>
             /// <value>予備品№(変更前)</value>
             public string PartsNoBefore { get; set; }
@@ -189,6 +189,12 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
             /// <value>勘定科目CD(ラベル出力用)</value>
             public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
 
             #region 共通　地区・職種設定用
             /// <summary>Gets or sets 機能場所階層ID</summary>
@@ -428,6 +434,12 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 標準勘定科目コード</summary>
             /// <value>標準勘定科目コード</value>
             public string AccountCode { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
 
             #region 共通　地区・職種設定用
             /// <summary>Gets or sets 機能場所階層ID</summary>

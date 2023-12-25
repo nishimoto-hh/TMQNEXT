@@ -37,9 +37,9 @@ namespace BusinessLogic_PT0003
             /// <summary>Gets or sets 部門ID</summary>
             /// <value>部門ID</value>
             public List<long> DepartmentIdList { get; set; }
-            /// <summary>Gets or sets 準備状況</summary>
-            /// <value>準備状況</value>
-            public int? ReadyStatus { get; set; }
+            /// <summary>Gets or sets RFIDタグ紐付け</summary>
+            /// <value>RFIDタグ紐付け</value>
+            public int? RftagRelationStatus { get; set; }
             /// <summary>Gets or sets 工場IDリスト</summary>
             /// <value>工場IDリスト</value>
             public List<int> FactoryIdList { get; set; }

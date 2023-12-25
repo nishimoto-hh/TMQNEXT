@@ -66,11 +66,15 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_structure_name
-    , pp.standard_size AS dimensions                          --規格・寸法
+    --, pp.standard_size AS dimensions                          --規格・寸法
+    , pp.model_type                                            --型式
     , ts.inout_quantity AS transfer_count                      --移庫数
+    , ts.inout_quantity AS transfer_count_value                --移庫数(帳票用)
     , pl.lot_no                                 --ロットNo
     , pl.unit_price
+    , pl.unit_price AS unit_price_value
     , ts.inout_quantity * pl.unit_price AS transfer_amount
+    , ts.inout_quantity * pl.unit_price AS transfer_amount_value
     , dp.extension_data AS department_cd        --部門CD
     , sus.extension_data AS subject_cd          --勘定科目CD
     , dp.extension_data AS department_cd_enter  --部門CD(ラベル出力用)

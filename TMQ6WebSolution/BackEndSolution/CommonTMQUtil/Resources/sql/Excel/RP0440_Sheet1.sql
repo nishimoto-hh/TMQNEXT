@@ -330,4 +330,5 @@ FROM
         ON su.sudden_division_structure_id = sudden_code.structure_id 
     CROSS JOIN header_info 
 WHERE
-    sudden_code.extension_data IN ('20', '30')  --計画外、突発
+    sudden_code.extension_data IN ('20', '30')  --計画外、突発、
+    OR su.sudden_division_structure_id IS NULL  --突発区分が未設定

@@ -31,10 +31,16 @@ namespace BusinessLogic_SP0001
         {
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"SelectParts";
+            /// <summary>共通SQL格納先サブディレクトリ名</summary>
+            public const string CommonDir = "Common";
             /// <summary>
             /// 一覧検索SQL
             /// </summary>
             public const string GetPartsList = "GetPartsList";
+            /// <summary>職種機種IDを保存する一時テーブル作成用SQL</summary>
+            public const string CreateTableTempJob = "CreateTableTempJob";
+            /// <summary>職種機種IDを保存する一時テーブルへの登録用SQL</summary>
+            public const string InsertTempJob = "InsertTempJob";
         }
 
         /// <summary>
@@ -152,6 +158,27 @@ namespace BusinessLogic_SP0001
                 condition.MachineId = long.Parse((string)machineId);
             }
             condition.LanguageId = this.LanguageId;
+
+            // 所属職種を検索条件に追加する（職種NULLのデータも対象とする）
+            if (this.BelongingInfo.JobInfoList != null && this.BelongingInfo.JobInfoList.Count > 0)
+            {
+                // 所属職種機種を取得
+                List<int> jobIdList = this.BelongingInfo.JobInfoList.Select(x => x.StructureId).ToList();
+                // 職種階層のみを取得
+                jobIdList = GetTargetLayerStructureIdList(jobIdList, 0);
+                //カンマ区切りの文字列にする
+                string jobIds = string.Join(',', jobIdList);
+                // 一時テーブル作成用SQL取得
+                ComUtil.GetFixedSqlStatement(SqlName.CommonDir, SqlName.CreateTableTempJob, out string createSql);
+                // 職種機種用の一時テーブル作成
+                this.db.Regist(createSql);
+                // 一時テーブル登録用SQL取得
+                ComUtil.GetFixedSqlStatement(SqlName.CommonDir, SqlName.InsertTempJob, out string insertSql);
+                // カンマ区切りの文字列にする
+                string locationIds = string.Join(',', jobIdList);
+                // 職種機種用の一時テーブルへ構成IDを登録
+                this.db.Regist(insertSql, new { LocationIds = locationIds });
+            }
 
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.searchCondition>(condition);

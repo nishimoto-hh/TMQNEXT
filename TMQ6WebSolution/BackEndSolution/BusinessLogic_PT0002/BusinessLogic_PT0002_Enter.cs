@@ -76,6 +76,11 @@ namespace BusinessLogic_PT0002
                     result.UnitPrice = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.UnitPrice, result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName);
                     result.AmountMoney = TMQUtil.CombineNumberAndUnit(TMQUtil.roundDigit(result.AmountMoney, result.CurrencyDigit, result.CurrencyRoundDivision), result.CurrencyName);
 
+                    // 数値を3桁区切り
+                    result.UnitPriceValue = TMQUtil.roundDigit(result.UnitPriceValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                    result.AmountMoneyValue = TMQUtil.roundDigit(result.AmountMoneyValue, result.CurrencyDigit, result.CurrencyRoundDivision);
+                    result.InoutQuantityValue = TMQUtil.roundDigit(result.InoutQuantityValue, result.UnitDigit, result.UnitRoundDivision);
+
                     // 結合文字取得
                     strJoin = TMQUtil.GetJoinStrOfPartsLocationNoDuplicate(result.PartsFactoryId, this.LanguageId, this.db, ref factoryJoinDic);
 

@@ -123,6 +123,12 @@ namespace BusinessLogic_DM0002
             /// <summary>Gets or sets 表示する文書種類コンボボックスの項目番号</summary>
             /// <value>表示する文書種類コンボボックスの項目番号</value>
             public int DocumentTypeValNo { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
         }
 
         /// <summary>

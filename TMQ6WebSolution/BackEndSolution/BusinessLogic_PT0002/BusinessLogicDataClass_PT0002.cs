@@ -155,6 +155,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
             /// <value>勘定科目CD(ラベル出力用)</value>
             public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 型式</summary>
+            /// <value>型式</value>
+            public string ModelType { get; set; }
+            /// <summary>Gets or sets 入庫単価(単位なし値のみ)</summary>
+            /// <value>入庫単価(単位なし値のみ)</value>
+            public string UnitPriceValue { get; set; }
+            /// <summary>Gets or sets 入庫金額(単位なし値のみ)</summary>
+            /// <value>入庫金額(単位なし値のみ)</value>
+            public string AmountMoneyValue { get; set; }
+            /// <summary>Gets or sets 受払数(入庫数、単位なし値のみ)</summary>
+            /// <value>受払数(入庫数、単位なし値のみ)</value>
+            public string InoutQuantityValue { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -206,6 +218,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelType, nameof(this.ModelType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitPriceValue, nameof(this.UnitPriceValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AmountMoneyValue, nameof(this.AmountMoneyValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InoutQuantityValue, nameof(this.InoutQuantityValue), mapDic);
 
                 return paramObj;
             }
@@ -234,6 +250,30 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 入れ子キー</summary>
             /// <value>入れ子キー</value>
             public string NestKey { get; set; }
+            /// <summary>Gets or sets 型式</summary>
+            /// <value>型式</value>
+            public string ModelType { get; set; }
+            /// <summary>Gets or sets 出庫金額(単位なし値のみ)</summary>
+            /// <value>出庫金額(単位なし値のみ)</value>
+            public string IssueMonneyParentValue { get; set; }
+            /// <summary>Gets or sets 入庫単価(単位)</summary>
+            /// <value>入庫単価(単位)</value>
+            public string CurrencyNameParent { get; set; }
+            /// <summary>Gets or sets 入庫単価(単位)</summary>
+            /// <value>入庫単価(単位)</value>
+            public string CurrencyNameChild { get; set; }
+            /// <summary>Gets or sets 出庫金額(単位なし値のみ)</summary>
+            /// <value>出庫金額(単位なし値のみ)</value>
+            public string IssueMonneyChildValue { get; set; }
+            /// <summary>Gets or sets 出庫数(単位なし値のみ)</summary>
+            /// <value>出庫数(単位なし値のみ)</value>
+            public string IssueQuantityValue { get; set; }
+            /// <summary>Gets or sets 数量単位名称</summary>
+            /// <value>数量単位名称</value>
+            public string UnitNameChild { get; set; }
+            /// <summary>Gets or sets 出庫数(単位なし値のみ)</summary>
+            /// <value>出庫数(単位なし値のみ)</value>
+            public string InoutQuantityValueChild { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -287,6 +327,17 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.NestKey, nameof(this.NestKey), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelType, nameof(this.ModelType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IssueMonneyParentValue, nameof(this.IssueMonneyParentValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.CurrencyNameParent, nameof(this.CurrencyNameParent), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.CurrencyNameChild, nameof(this.CurrencyNameChild), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitPriceValue, nameof(this.UnitPriceValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IssueMonneyChildValue, nameof(this.IssueMonneyChildValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.IssueQuantityValue, nameof(this.IssueQuantityValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InoutQuantityValue, nameof(this.InoutQuantityValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitNameChild, nameof(this.UnitNameChild), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.InoutQuantityValueChild, nameof(this.InoutQuantityValueChild), mapDic);
+
 
                 return paramObj;
             }
@@ -440,6 +491,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
             /// <value>勘定科目CD(ラベル出力用)</value>
             public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 型式</summary>
+            /// <value>型式</value>
+            public string ModelType { get; set; }
+            /// <summary>Gets or sets 入庫単価(単位なし値のみ)</summary>
+            /// <value>入庫単価(単位なし値のみ)</value>
+            public string UnitPriceValue { get; set; }
+            /// <summary>Gets or sets 移庫金額(単位なし値のみ)</summary>
+            /// <value>移庫金額(単位なし値のみ)</value>
+            public string TransferAmountValue { get; set; }
+            /// <summary>Gets or sets 移庫数(単位なし値のみ)</summary>
+            /// <value>移庫数(単位なし値のみ)</value>
+            public string TransferCountValue { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -497,6 +560,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelType, nameof(this.ModelType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitPriceValue, nameof(this.UnitPriceValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TransferAmountValue, nameof(this.TransferAmountValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TransferCountValue, nameof(this.TransferCountValue), mapDic);
 
                 return paramObj;
             }
@@ -546,6 +613,18 @@ namespace BusinessLogic_PT0002
             /// <summary>Gets or sets 勘定科目CD(ラベル出力用)</summary>
             /// <value>勘定科目CD(ラベル出力用)</value>
             public string SubjectCdEnter { get; set; }
+            /// <summary>Gets or sets 型式</summary>
+            /// <value>型式</value>
+            public string ModelType { get; set; }
+            /// <summary>Gets or sets 入庫単価(単位なし値のみ)</summary>
+            /// <value>入庫単価(単位なし値のみ)</value>
+            public string UnitPriceValue { get; set; }
+            /// <summary>Gets or sets 移庫金額(単位なし値のみ)</summary>
+            /// <value>移庫金額(単位なし値のみ)</value>
+            public string TransferAmountValue { get; set; }
+            /// <summary>Gets or sets 移庫数(単位なし値のみ)</summary>
+            /// <value>移庫数(単位なし値のみ)</value>
+            public string TransferCountValue { get; set; }
 
             /// <summary>
             /// 一時テーブルレイアウト作成処理(性能改善対応)
@@ -602,6 +681,10 @@ namespace BusinessLogic_PT0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsLocationDetailNoEnter, nameof(this.PartsLocationDetailNoEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DepartmentCdEnter, nameof(this.DepartmentCdEnter), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.SubjectCdEnter, nameof(this.SubjectCdEnter), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ModelType, nameof(this.ModelType), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UnitPriceValue, nameof(this.UnitPriceValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TransferAmountValue, nameof(this.TransferAmountValue), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.TransferCountValue, nameof(this.TransferCountValue), mapDic);
 
                 return paramObj;
             }

@@ -220,9 +220,15 @@ WITH stock AS (
         , pi.difference_datetime                    --棚卸調整日時
         , CASE 
             WHEN @InventoryIdFlg = 0  
-                THEN pi.inventory_quantity 
+                THEN CASE 
+                WHEN pi.inventory_id IS NULL
+                    THEN stock.stock_quantity 
+                WHEN pi.inventory_quantity IS NULL 
+                    THEN pi.stock_quantity 
+                ELSE pi.inventory_quantity 
+                END 
             ELSE pi.temp_inventory_quantity 
-            END AS inventory_quantity               --棚卸数(取込の場合、取込値を表示)
+            END AS inventory_quantity               --棚卸数(取込の場合、取込値を表示。棚卸数がNULLの場合、在庫数を表示)
         , CASE 
             WHEN @InventoryIdFlg = 0 
                 THEN CASE 
@@ -312,12 +318,30 @@ WITH stock AS (
     WHERE
         pls.parts_location_id IN @PartsLocationIdList --棚番
         AND pl.department_structure_id IN @DepartmentIdList --部門
-    /*@Created
-        AND pi.preparation_datetime IS NOT NULL
-    @Created*/
-    /*@NotYet
-        AND pi.inventory_id IS NULL 
-    @NotYet*/
+    /*@Relation
+        AND EXISTS ( 
+            SELECT
+                1 
+            FROM
+                pt_rftag_parts_link pr 
+            WHERE
+                pp.parts_id = pr.parts_id 
+                AND pl.department_structure_id = pr.department_structure_id 
+                AND pl.account_structure_id = pr.account_structure_id
+        )
+    @Relation*/
+    /*@NotRelation
+        AND NOT EXISTS ( 
+            SELECT
+                1 
+            FROM
+                pt_rftag_parts_link pr 
+            WHERE
+                pp.parts_id = pr.parts_id 
+                AND pl.department_structure_id = pr.department_structure_id 
+                AND pl.account_structure_id = pr.account_structure_id
+        )
+    @NotRelation*/
     /*@InventoryIdList
         AND pi.inventory_id IN @InventoryIdList
     @InventoryIdList*/
@@ -365,9 +389,13 @@ WITH stock AS (
         , pi.difference_datetime                    --棚卸調整日時
         , CASE 
             WHEN @InventoryIdFlg = 0  
-                THEN pi.inventory_quantity 
+                THEN CASE 
+                WHEN pi.inventory_quantity IS NULL 
+                    THEN pi.stock_quantity 
+                ELSE pi.inventory_quantity 
+                END 
             ELSE pi.temp_inventory_quantity 
-            END AS inventory_quantity               --棚卸数(取込の場合、取込値を表示)
+            END AS inventory_quantity               --棚卸数(取込の場合、取込値を表示。棚卸数がNULLの場合、在庫数を表示)
         , CASE 
             WHEN @InventoryIdFlg = 0 
                 THEN CASE 
@@ -441,12 +469,30 @@ WITH stock AS (
     WHERE
         pi.parts_location_id IN @PartsLocationIdList --棚番
         AND pi.department_structure_id IN @DepartmentIdList --部門
-    /*@Created
-        AND pi.preparation_datetime IS NOT NULL
-    @Created*/
-    /*@NotYet
-        AND pi.inventory_id IS NULL 
-    @NotYet*/
+    /*@Relation
+        AND EXISTS ( 
+            SELECT
+                1 
+            FROM
+                pt_rftag_parts_link pr 
+            WHERE
+                pi.parts_id = pr.parts_id 
+                AND pi.department_structure_id = pr.department_structure_id 
+                AND pi.account_structure_id = pr.account_structure_id
+        )
+    @Relation*/
+    /*@NotRelation
+        AND NOT EXISTS ( 
+            SELECT
+                1 
+            FROM
+                pt_rftag_parts_link pr 
+            WHERE
+                pi.parts_id = pr.parts_id 
+                AND pi.department_structure_id = pr.department_structure_id 
+                AND pi.account_structure_id = pr.account_structure_id
+        )
+    @NotRelation*/
     /*@InventoryIdList
         AND pi.inventory_id IN @InventoryIdList
     @InventoryIdList*/

@@ -24,11 +24,15 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_structure_name
-    , pp.standard_size AS dimensions            --‹KŠiE¡–@
+    --, pp.standard_size AS dimensions            --‹KŠiE¡–@
+    , pp.model_type                             --Œ^®
     , pih.inout_quantity AS transfer_count      --ó•¥”
+    , pih.inout_quantity AS transfer_count_value--ó•¥”(’ •[—p)
     , pl.lot_no                                 --ƒƒbƒgNo
-    , pl.unit_price                             --‹àŠz
-    , pih.inout_quantity * pl.unit_price AS transfer_amount
+    , pl.unit_price                             --“üŒÉ‹àŠz
+    , pl.unit_price AS unit_price_value         --“üŒÉ‹àŠz
+    , pih.inout_quantity * pl.unit_price AS transfer_amount       --ˆÚŒÉ‹àŠz
+    , pih.inout_quantity * pl.unit_price AS transfer_amount_value --ˆÚŒÉ‹àŠz
     , dp.extension_data AS department_cd        --•”–åƒR[ƒh
     , COALESCE(
     ( 

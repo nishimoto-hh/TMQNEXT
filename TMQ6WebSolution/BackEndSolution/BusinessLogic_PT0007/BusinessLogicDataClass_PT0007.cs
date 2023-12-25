@@ -84,6 +84,12 @@ namespace BusinessLogic_PT0007
             /// <summary>Gets or sets 管理工場ID</summary>
             /// <value>管理工場ID</value>
             public long PartsFactoryId { get; set; }
+            /// <summary>Gets or sets 表示年度(From)</summary>
+            /// <value>表示年度(From)</value>
+            public string DispYearFrom { get; set; }
+            /// <summary>Gets or sets 表示年度(To)</summary>
+            /// <value>表示年度(To)</value>
+            public string DispYearTo { get; set; }
             /// <summary>
             /// 丸め処理・数量と単位の結合
             /// </summary>

@@ -77,5 +77,18 @@ input#CBODY_090_00_LST_7_0VAL1 {
     display: none;
 }
 
+/*入庫単価の単位の右側に表示されている新品購入時の単価*/
+.newest_price {
+    display: block;
+    position: relative;
+    left: -100px;
+    text-align: right;
+    width: 100px;
+    border: none !important;
+}
+
+.border-none {
+    border: none !important;
+}
 
 /*********************************************************/

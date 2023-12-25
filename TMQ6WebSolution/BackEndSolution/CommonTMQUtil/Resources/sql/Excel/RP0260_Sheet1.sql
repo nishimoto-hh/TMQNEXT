@@ -1,4 +1,5 @@
-SELECT 
+WITH main as(
+SELECT DISTINCT
     pls.parts_location_id, -- 棚番
     pls.parts_location_detail_no, 
     pp.factory_id,
@@ -63,7 +64,26 @@ SELECT
     pl.management_no, -- 管理No
     pl.management_division, -- 管理区分
     '1' AS output_report_location_name_got_flg,                            -- 機能場所名称情報取得済フラグ（帳票用）
-    '1' AS output_report_job_name_got_flg                                 -- 職種・機種名称情報取得済フラグ（帳票用）
+    '1' AS output_report_job_name_got_flg,                                 -- 職種・機種名称情報取得済フラグ（帳票用）
+
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pls.parts_location_id
+                AND st_f.factory_id IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pls.parts_location_id
+    ) as parts_location_name_for_order
 FROM pt_lot pl -- ロット情報
     -- 予備品仕様マスタ
     INNER JOIN pt_parts pp 
@@ -77,9 +97,14 @@ FROM pt_lot pl -- ロット情報
     -- 確定在庫データ
     LEFT OUTER JOIN pt_fixed_stock pfs 
          ON pfs.parts_id = pp.parts_id
+         AND pfs.inventory_control_id = pls.inventory_control_id
 @TargetYearMonth*/
+
 WHERE
-    1 = 1
+
+-- 在庫数が0より大きいデータが対象
+ISNULL(pls.stock_quantity, 0) > 0
+
 AND
     pl.delete_flg = 0
 
@@ -229,49 +254,19 @@ AND
     pl.management_no = @ManagementNo
 @ManagementNo*/
 
+)
+
+SELECT *
+
+FROM main
+
 ORDER BY
     -- 棚番、予備品ｺｰﾄﾞNo.、新旧区分、勘定科目、部門コード、管理No、管理区分
-     --[dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, @LanguageId)
-    (
-        SELECT
-            tra.translation_text
-        FROM
-            v_structure_item_all AS tra
-        WHERE
-            tra.language_id = @LanguageId
-        AND tra.location_structure_id = (
-                SELECT
-                    MAX(st_f.factory_id)
-                FROM
-                    #temp_structure_factory AS st_f
-                WHERE
-                    st_f.structure_id = pls.parts_location_id
-                AND st_f.factory_id IN(0, pp.factory_id)
-            )
-        AND tra.structure_id = pls.parts_location_id
-    )
-    ,pls.parts_location_detail_no
-    ,pp.parts_no
-    --,[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId)
-    ,(
-        SELECT
-            tra.translation_text
-        FROM
-            v_structure_item_all AS tra
-        WHERE
-            tra.language_id = @LanguageId
-        AND tra.location_structure_id = (
-                SELECT
-                    MAX(st_f.factory_id)
-                FROM
-                    #temp_structure_factory AS st_f
-                WHERE
-                    st_f.structure_id = pl.old_new_structure_id
-                AND st_f.factory_id IN(0, pp.factory_id)
-            )
-        AND tra.structure_id = pl.old_new_structure_id
-    )
-    ,[dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1)
-    ,[dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, @LanguageId, 1)
-    ,pl.management_no
-    ,pl.management_division
+     parts_location_name_for_order
+    , parts_location_detail_no
+    , parts_no
+    , old_new_name
+    , [dbo].[get_rep_extension_data](account_structure_id, factory_id, @LanguageId, 1)
+    , [dbo].[get_rep_extension_data](department_structure_id, factory_id, @LanguageId, 1)
+    , management_no
+    , management_division

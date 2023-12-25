@@ -27,16 +27,16 @@ SELECT
         WHEN judge_flg.extension_data = '2' THEN
         -- 在庫数 < 発注点 を判定
         CASE
-            WHEN COALESCE(inventory.stock_quantity, 0) < COALESCE(parts.lead_time, 0) THEN 'Y'
+            WHEN COALESCE(inventory.stock_quantity, 0) < COALESCE(parts.lead_time, 0) THEN 1
             -- 発注アラーム
-            ELSE ''
+            ELSE 0
         END
         ELSE
         -- 在庫数 <= 発注点 を判定
         CASE
-            WHEN COALESCE(inventory.stock_quantity, 0) <= COALESCE(parts.lead_time, 0) THEN 'Y'
+            WHEN COALESCE(inventory.stock_quantity, 0) <= COALESCE(parts.lead_time, 0) THEN 1
             -- 発注アラーム
-            ELSE ''
+            ELSE 0
         END
     END AS order_alert,                                                                                          -- 発注アラーム
     parts.purchasing_no,                                                                                         -- 購買システムコード

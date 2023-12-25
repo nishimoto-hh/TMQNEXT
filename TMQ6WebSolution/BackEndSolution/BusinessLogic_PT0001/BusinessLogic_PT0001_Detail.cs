@@ -45,6 +45,26 @@ namespace BusinessLogic_PT0001
         }
 
         /// <summary>
+        /// SQLで扱うことのできる年の最大値
+        /// </summary>
+        private const string SqlMaxYear = "9999";
+
+        /// <summary>
+        /// 入出庫履歴タブの表示年度を保持するためのキー名称
+        /// </summary>
+        private class DispYearKeyName
+        {
+            /// <summary>
+            /// 表示年度(From)
+            /// </summary>
+            public const string YearFrom = "YearFrom";
+            /// <summary>
+            /// 表示年度(To)
+            /// </summary>
+            public const string YearTo = "YearTo";
+        }
+
+        /// <summary>
         /// 詳細画面 検索処理
         /// </summary>
         /// <param name="detailType">画面の表示種類</param>
@@ -182,6 +202,15 @@ namespace BusinessLogic_PT0001
                 results[0].PartsNo = string.Empty;
             }
 
+            // 詳細画面→詳細編集画面遷移してきている場合はグローバルリストに表示年度(From・To)が格納されているので画面の非表示項目に設定する
+            // ※画面の非表示項目に設定しておかないと予備品詳細画面に戻った際に値が保持されていないため
+            // グローバルリストに表示年度の値を保持しているか判定
+            if (this.IndividualDictionary.ContainsKey(DispYearKeyName.YearFrom) || this.IndividualDictionary.ContainsKey(DispYearKeyName.YearTo))
+            {
+                results[0].DispYearFrom = this.IndividualDictionary[DispYearKeyName.YearFrom].ToString(); // 表示年度(From)
+                results[0].DispYearTo = this.IndividualDictionary[DispYearKeyName.YearTo].ToString();     // 表示年度(To)
+            }
+
             // 一覧に対して繰り返し値を設定する
             foreach (var ctrlId in ctrlIdList)
             {
@@ -311,12 +340,22 @@ namespace BusinessLogic_PT0001
             }
             else
             {
-                // 現在の年度を求める
-                DateTime today = new DateTime(DateTime.Now.Year, int.Parse(startMonth), 1);
-                int bscktTo = (int.Parse(startMonth) - 1) * -1;
-                string year = DateTime.Now.AddMonths(bscktTo).ToString("yyyy");
-                condition.YearFrom = year;
-                condition.YearTo = year;
+                // グローバルリストに表示年度の値を保持しているか判定
+                if (this.IndividualDictionary.ContainsKey(DispYearKeyName.YearFrom) || this.IndividualDictionary.ContainsKey(DispYearKeyName.YearTo))
+                {
+                    // グローバルリストに値を保持している場合は保持している値を使用して検索を行う
+                    condition.YearFrom = this.IndividualDictionary[DispYearKeyName.YearFrom].ToString(); // 表示年度(From)
+                    condition.YearTo = this.IndividualDictionary[DispYearKeyName.YearTo].ToString();     // 表示年度(To)
+                }
+                else
+                {
+                    // 現在の年度を求める
+                    DateTime today = new DateTime(DateTime.Now.Year, int.Parse(startMonth), 1);
+                    int bscktTo = (int.Parse(startMonth) - 1) * -1;
+                    string year = DateTime.Now.AddMonths(bscktTo).ToString("yyyy");
+                    condition.YearFrom = year;
+                    condition.YearTo = year;
+                }
             }
 
             // ページ情報取得
@@ -330,8 +369,21 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
+            // 表示年度(From)
             condition.DispYearFrom = new DateTime(int.Parse(condition.YearFrom), int.Parse(startMonth), 1).ToString();
-            condition.DispYearTo = new DateTime(int.Parse(condition.YearTo), int.Parse(startMonth), 1).AddYears(1).AddDays(-1).ToString();
+
+            // 表示年度(To)
+            if (condition.YearTo == SqlMaxYear)
+            {
+                // 画面で年の最大値(9999)が入力されている場合、SQLで扱うことのできる日付の最大値を設定
+                condition.DispYearTo = System.Data.SqlTypes.SqlDateTime.MaxValue.ToString();
+            }
+            else
+            {
+                // 画面で入力された年の年度末の日付を設定
+                condition.DispYearTo = new DateTime(int.Parse(condition.YearTo), int.Parse(startMonth), 1).AddYears(1).AddDays(-1).ToString();
+            }
+
             return true;
 
             string getValNoByKey(MappingInfo info, string keyName)

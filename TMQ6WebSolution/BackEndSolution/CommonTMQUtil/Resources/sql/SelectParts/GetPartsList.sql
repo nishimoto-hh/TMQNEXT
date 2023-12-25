@@ -53,13 +53,20 @@ WHERE   (pt.factory_id = (SELECT v.factory_id
 						AND ie.sequence_no = 3 
 						AND ie.extension_data = '1'
 						)
-		)
-AND     (pt.job_structure_id = dbo.get_top_layer_id((SELECT job_structure_id
-						FROM mc_machine m
-						WHERE REPLACE(STR(machine_id),' ','') = @MachineId)) -- 対象工場
-		)		
+		)	
+        AND ( 
+            EXISTS ( 
+                SELECT
+                    * 
+                FROM
+                    #temp_job temp 
+                WHERE
+                    pt.job_structure_id = temp.structure_id
+            ) 
+            OR pt.job_structure_id IS NULL
+        )
 /*@PartsName
-    -- 担当者名
+    -- 予備品名
 AND parts_name LIKE '%'+ @PartsName +'%'
 @PartsName*/
 

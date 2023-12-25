@@ -211,6 +211,20 @@ const HistoryOutputDivision = {
     HM0002: 2  //長期計画
 }
 
+// SQLで扱うことのできる日付(年)
+const SqlYear =
+{
+    MaxYear: 9999, // 最大値
+    MinYear: 1753  // 最小値
+};
+
+// 予備品一覧 入出庫履歴タブの表示年度を保持するためのキー名称
+const DispYearKeyName =
+{
+    YearFrom: "YearFrom", // 表示年度(From)
+    YearTo: "YearTo"      // 表示年度(To)
+}
+
 /**
  * 対象コントロールを取得し、返す。
  * @param ctrlId コントロールID

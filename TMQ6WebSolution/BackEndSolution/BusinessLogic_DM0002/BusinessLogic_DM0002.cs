@@ -199,6 +199,21 @@ namespace BusinessLogic_DM0002
         /// 一覧画面の機能ID
         /// </summary>
         public const string ParentConductId = "DM0001";
+
+        /// <summary>
+        /// 予備品一覧の詳細画面の入出庫履歴タブの表示年度を保持するためのキー名称
+        /// </summary>
+        private class DispYearKeyName
+        {
+            /// <summary>
+            /// 表示年度(From)
+            /// </summary>
+            public const string YearFrom = "YearFrom";
+            /// <summary>
+            /// 表示年度(To)
+            /// </summary>
+            public const string YearTo = "YearTo";
+        }
         #endregion
 
         #region コンストラクタ
@@ -304,6 +319,18 @@ namespace BusinessLogic_DM0002
                     setError();
                     return ComConsts.RETURN_RESULT.NG;
                 }
+            }
+
+            // 件名情報を取得
+            Dao.subject subjectInfo = new();
+            var targetDic = ComUtil.GetDictionaryByCtrlId(this.searchConditionDictionary, ConductInfo.FormDetail.ControlId.Subject);
+            SetDataClassFromDictionary(targetDic, ConductInfo.FormDetail.ControlId.Subject, subjectInfo);
+
+            // 非表示項目に予備品詳細画面用の表示年度(From・To)が格納されている場合はグローバルリストに格納する
+            if (!string.IsNullOrEmpty(subjectInfo.DispYearFrom) && !string.IsNullOrEmpty(subjectInfo.DispYearTo))
+            {
+                this.IndividualDictionary[DispYearKeyName.YearFrom] = subjectInfo.DispYearFrom; // 表示年度(From)
+                this.IndividualDictionary[DispYearKeyName.YearTo] = subjectInfo.DispYearTo;     // 表示年度(To)
             }
 
             // 再検索処理
@@ -509,6 +536,15 @@ namespace BusinessLogic_DM0002
                 return false;
             }
 
+            // 予備品一覧の詳細画面の入出庫履歴タブから遷移してきている場合はグローバルリストに表示年度(From・To)が格納されているので画面の非表示項目に設定する
+            // ※画面の非表示項目に設定しておかないと予備品詳細画面に戻った際に値が保持されていないため
+            // グローバルリストに表示年度の値を保持しているか判定
+            if (this.IndividualDictionary.ContainsKey(DispYearKeyName.YearFrom) || this.IndividualDictionary.ContainsKey(DispYearKeyName.YearTo))
+            {
+                results[0].DispYearFrom = this.IndividualDictionary[DispYearKeyName.YearFrom].ToString(); // 表示年度(From)
+                results[0].DispYearTo = this.IndividualDictionary[DispYearKeyName.YearTo].ToString();     // 表示年度(To)
+            }
+
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.Subject, this.pageInfoList);
 
@@ -616,6 +652,13 @@ namespace BusinessLogic_DM0002
             if (!registDb(registInfo, updateFlg, this.InputStream, this.db))
             {
                 return false;
+            }
+
+            // 非表示項目に予備品詳細画面用の表示年度(From・To)が格納されている場合はグローバルリストに格納する
+            if (!string.IsNullOrEmpty(subjectInfo.DispYearFrom) && !string.IsNullOrEmpty(subjectInfo.DispYearTo))
+            {
+                this.IndividualDictionary[DispYearKeyName.YearFrom] = subjectInfo.DispYearFrom; // 表示年度(From)
+                this.IndividualDictionary[DispYearKeyName.YearTo] = subjectInfo.DispYearTo;     // 表示年度(To)
             }
 
             return true;

@@ -302,6 +302,8 @@
                 OutputItem = 2150,
                 // ExcelPort保全活動完了区分
                 CompletionDivision = 2170,
+                // RFIDタグ紐付け
+                RfRelation = 2250,
                 // 権限
                 Authority = 9040,
                 // テンポラリフォルダパス

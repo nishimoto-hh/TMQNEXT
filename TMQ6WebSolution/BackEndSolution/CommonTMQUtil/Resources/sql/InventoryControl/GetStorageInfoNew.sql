@@ -87,11 +87,6 @@ WITH number_unit AS (
 )
 SELECT
     pp.parts_id                                 --予備品ID
-    , dbo.get_target_layer_id(pp.parts_location_id, 2) AS storage_location_id --予備品倉庫ID
-    , pp.parts_location_id                      --棚ID
-    , location.parts_location_name              --棚番翻訳
-    , pp.parts_location_detail_no               --棚枝番
-    , dbo.get_target_layer_id(pp.parts_location_id, 2) AS parts_storage_location_id --予備品倉庫ID(棚情報)
     , pp.vender_structure_id AS vender_id       --仕入先ID
     , pp.vender_structure_id                    --仕入先ID
     ,(
@@ -157,6 +152,33 @@ SELECT
     , COALESCE(unit_round.round_division, 0) AS round_division  --丸め処理区分
     , pp.factory_id                             --工場ID
     , pp.factory_id AS parts_factory_id         --管理工場
+
+    -- 新品購入時の最新のロットの入庫単価
+    , coalesce(( 
+        select
+            lot.unit_price -- 入庫単価
+        from
+            pt_lot lot 
+        where
+            lot.lot_control_id = ( 
+                select
+                    max(lot.lot_control_id) -- ロット管理Noの最大値
+                from
+                    pt_lot lot 
+                    left join pt_parts parts 
+                        on lot.parts_id = parts.parts_id 
+                    left join ms_structure ms 
+                        on lot.old_new_structure_id = ms.structure_id 
+                    left join ms_item_extension ex 
+                        on ms.structure_item_id = ex.item_id 
+                        and ex.sequence_no = 1 
+                where
+                    parts.parts_id = @PartsId
+
+                    -- 新品が対象
+                    and ex.extension_data = '0'
+            )
+    ), 0) as unit_price_by_newest_lot
 FROM
     pt_parts AS pp 
     LEFT JOIN number_unit 

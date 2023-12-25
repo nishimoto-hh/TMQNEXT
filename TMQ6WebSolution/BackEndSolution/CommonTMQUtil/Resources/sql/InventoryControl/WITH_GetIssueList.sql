@@ -95,7 +95,8 @@ SELECT
             AND tra.structure_id = plt.old_new_structure_id
     ) AS old_new_structure_name,
     plt.old_new_structure_id,
-    pps.standard_size AS dimensions                                              --規格・寸法
+    --pps.standard_size AS dimensions,                                             --規格・寸法
+    pps.model_type                                                               --型式
   　, ( 
         SELECT
             tra.translation_text --出庫区分
