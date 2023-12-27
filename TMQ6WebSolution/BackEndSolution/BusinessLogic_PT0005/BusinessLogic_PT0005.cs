@@ -1081,15 +1081,16 @@ namespace BusinessLogic_PT0005
                         }
 
                         // 新旧区分と勘定項目の関連チェック
-                        if (checkAccountStructure(result))
-                        {
-                            // 「新旧区分と勘定科目の正しい組み合わせを入力してください。」
-                            errMsg = GetResMessage(new string[] { ComRes.ID.ID141120005 });
-                            val = info.getValName("account_structure");
-                            errorInfo.setError(errMsg, val);            // エラー情報をセット
-                            errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
-                            isError = true;
-                        }
+                        // 2023/12/27 組み合わせチェック廃止
+                        //if (checkAccountStructure(result))
+                        //{
+                        //    // 「新旧区分と勘定科目の正しい組み合わせを入力してください。」
+                        //    errMsg = GetResMessage(new string[] { ComRes.ID.ID141120005 });
+                        //    val = info.getValName("account_structure");
+                        //    errorInfo.setError(errMsg, val);            // エラー情報をセット
+                        //    errorInfoDictionary.Add(errorInfo.Result);  // エラー情報を追加
+                        //    isError = true;
+                        //}
 
                         bool checkAccountStructure(Dao.searchResultStorageInfo condition)
                         {

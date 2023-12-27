@@ -59,7 +59,7 @@ select item.factory_id as factoryId,
 /*END*/
 
 /*IF param4 != null && param4 != '' && param4 != 'null' */
-   and item.factory_id =  CAST(/*param4*/ as numeric)
+   and CAST(item.factory_id AS VARCHAR) = /*param4*/''
 /*END*/
 
 /*IF factoryIdList != null && factoryIdList.Count > 0*/

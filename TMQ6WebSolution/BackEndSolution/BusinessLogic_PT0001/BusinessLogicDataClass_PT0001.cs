@@ -98,7 +98,7 @@ namespace BusinessLogic_PT0001
             public decimal? StockQuantityExceptUnit { get; set; }
             /// <summary>Gets or sets 発注アラーム</summary>
             /// <value>発注アラーム</value>
-            public int? OrderAlert { get; set; }
+            public bool? OrderAlert { get; set; }
             /// <summary>Gets or sets 予備品№(変更前)</summary>
             /// <value>予備品№(変更前)</value>
             public string PartsNoBefore { get; set; }

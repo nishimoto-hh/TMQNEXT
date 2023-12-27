@@ -73,7 +73,7 @@ main AS(
     AND st.language_id = /*languageId*/'ja'
     /*IF param2 != null && param2 != ''*/
     -- 新旧区分を指定
-    AND ex2.extension_data = dbo.get_rep_extension_data( 
+    AND ISNULL(ex2.extension_data, '') = dbo.get_rep_extension_data( 
             /*param2*/375
             , /*param3*/5
             , /*languageId*/'ja'

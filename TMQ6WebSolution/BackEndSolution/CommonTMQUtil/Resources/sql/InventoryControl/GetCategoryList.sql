@@ -1,14 +1,14 @@
 --******************************************************************
---•”–åˆÚŒÉˆê——SQL
+--éƒ¨é–€ç§»åº«ä¸€è¦§SQL
 --******************************************************************
 SELECT DISTINCT
-    FORMAT(pih.inout_datetime, 'yyyy/MM/dd') AS relocation_date --Žó•¥“úŽž
-    , pih.work_no AS transfer_no                --ì‹ÆNo
-    , pp.parts_no                               --—\”õ•iNo
-    , pp.parts_name                             --—\”õ•i–¼
+    FORMAT(pih.inout_datetime, 'yyyy/MM/dd') AS relocation_date --å—æ‰•æ—¥æ™‚
+    , pih.work_no AS transfer_no                --ä½œæ¥­No
+    , pp.parts_no                               --äºˆå‚™å“No
+    , pp.parts_name                             --äºˆå‚™å“å
             , ( 
         SELECT
-            tra.translation_text --V‹Œ‹æ•ª
+            tra.translation_text --æ–°æ—§åŒºåˆ†
         FROM
             v_structure_item AS tra 
         WHERE
@@ -24,16 +24,16 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = pl.old_new_structure_id
     ) AS old_new_structure_name
-    --, pp.standard_size AS dimensions            --‹KŠiE¡–@
-    , pp.model_type                             --Œ^Ž®
-    , pih.inout_quantity AS transfer_count      --Žó•¥”
-    , pih.inout_quantity AS transfer_count_value--Žó•¥”(’ •[—p)
-    , pl.lot_no                                 --ƒƒbƒgNo
-    , pl.unit_price                             --“üŒÉ‹àŠz
-    , pl.unit_price AS unit_price_value         --“üŒÉ‹àŠz
-    , pih.inout_quantity * pl.unit_price AS transfer_amount       --ˆÚŒÉ‹àŠz
-    , pih.inout_quantity * pl.unit_price AS transfer_amount_value --ˆÚŒÉ‹àŠz
-    , dp.extension_data AS department_cd        --•”–åƒR[ƒh
+    --, pp.standard_size AS dimensions            --è¦æ ¼ãƒ»å¯¸æ³•
+    , pp.model_type                             --åž‹å¼
+    , pih.inout_quantity AS transfer_count      --å—æ‰•æ•°
+    , pih.inout_quantity AS transfer_count_value--å—æ‰•æ•°(å¸³ç¥¨ç”¨)
+    , pl.lot_no                                 --ãƒ­ãƒƒãƒˆNo
+    , pl.unit_price                             --å…¥åº«é‡‘é¡
+    , pl.unit_price AS unit_price_value         --å…¥åº«é‡‘é¡
+    , pih.inout_quantity * pl.unit_price AS transfer_amount       --ç§»åº«é‡‘é¡
+    , pih.inout_quantity * pl.unit_price AS transfer_amount_value --ç§»åº«é‡‘é¡
+    , dp.extension_data AS department_cd        --éƒ¨é–€ã‚³ãƒ¼ãƒ‰
     , COALESCE(
     ( 
         SELECT
@@ -71,12 +71,12 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = pih.department_structure_id
       )
-    ) AS department_nm  --•”–å(–|–ó)
-    , sus.extension_data AS subject_cd          --Š¨’è‰È–ÚƒR[ƒh
-    , pih.management_no                         --ŠÇ—No
-    , pih.management_division                   --ŠÇ—‹æ•ª
-    , tdp.extension_data AS to_department_cd    --•”–åƒR[ƒh
-    , tdp.extension_data AS department_cd_enter --•”–åƒR[ƒh(ƒ‰ƒxƒ‹o—Í—p)
+    ) AS department_nm  --éƒ¨é–€(ç¿»è¨³)
+    , sus.extension_data AS subject_cd          --å‹˜å®šç§‘ç›®ã‚³ãƒ¼ãƒ‰
+    , pih.management_no                         --ç®¡ç†No
+    , pih.management_division                   --ç®¡ç†åŒºåˆ†
+    , tdp.extension_data AS to_department_cd    --éƒ¨é–€ã‚³ãƒ¼ãƒ‰
+    , tdp.extension_data AS department_cd_enter --éƒ¨é–€ã‚³ãƒ¼ãƒ‰(ãƒ©ãƒ™ãƒ«å‡ºåŠ›ç”¨)
     , COALESCE(
     ( 
         SELECT
@@ -114,25 +114,25 @@ SELECT DISTINCT
             ) 
             AND tra.structure_id = tpih.department_structure_id
       )
-    ) AS to_department_nm  --•”–å(–|–ó)
+    ) AS to_department_nm  --éƒ¨é–€(ç¿»è¨³)
 
-    , tsus.extension_data AS to_subject_cd      --Š¨’è‰È–ÚƒR[ƒh
-    , tsus.extension_data AS subject_cd_enter   --Š¨’è‰È–ÚƒR[ƒh(ƒ‰ƒxƒ‹o—Í—p)
-    , tpih.management_no AS to_management_no    --ŠÇ—No
-    , tpih.management_division AS to_management_division --ŠÇ—‹æ•ª
-    , receiving_datetime                        --Žó•¥“úŽž
-    , pp.parts_id                               --—\”õ•iID
-    , tpih.work_no                              --ì‹ÆNo
+    , tsus.extension_data AS to_subject_cd      --å‹˜å®šç§‘ç›®ã‚³ãƒ¼ãƒ‰
+    , tsus.extension_data AS subject_cd_enter   --å‹˜å®šç§‘ç›®ã‚³ãƒ¼ãƒ‰(ãƒ©ãƒ™ãƒ«å‡ºåŠ›ç”¨)
+    , tpih.management_no AS to_management_no    --ç®¡ç†No
+    , tpih.management_division AS to_management_division --ç®¡ç†åŒºåˆ†
+    , receiving_datetime                        --å—æ‰•æ—¥æ™‚
+    , pp.parts_id                               --äºˆå‚™å“ID
+    , tpih.work_no                              --ä½œæ¥­No
     , COALESCE(number_unit.unit_digit, 0) AS unit_digit
     , COALESCE(currency_unit.currency_digit, 0) AS currency_digit
     , COALESCE(unit_round.round_division, 0) AS unit_round_division
     , COALESCE(unit_round.round_division, 0) AS currency_round_division
-    , '1' AS TransitionFlg                      --‘JˆÚƒtƒ‰ƒO
-    , COALESCE(pp.job_structure_id, 0) AS job_structure_id --EŽí
-    , pp.parts_location_id                      --’IID
-    , pp.factory_id AS parts_factory_id        --HêID
-    , pls_label.parts_location_id AS parts_location_id_enter -- ’IID(ƒ‰ƒxƒ‹o—Í—p)
-    , pls_label.parts_location_detail_no AS parts_location_detail_no_enter, -- ’IŽ}”Ô(ƒ‰ƒxƒ‹o—Í—p)
+    , '1' AS TransitionFlg                      --é·ç§»ãƒ•ãƒ©ã‚°
+    , COALESCE(pp.job_structure_id, 0) AS job_structure_id --è·ç¨®
+    , pp.parts_location_id                      --æ£šID
+    , pp.factory_id AS parts_factory_id        --å·¥å ´ID
+    , pls_label.parts_location_id AS parts_location_id_enter -- æ£šID(ãƒ©ãƒ™ãƒ«å‡ºåŠ›ç”¨)
+    , pls_label.parts_location_detail_no AS parts_location_detail_no_enter, -- æ£šæžç•ª(ãƒ©ãƒ™ãƒ«å‡ºåŠ›ç”¨)
     ( 
         SELECT
             tra.translation_text 
@@ -150,7 +150,7 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pp.factory_id)
             ) 
             AND tra.structure_id = pih.account_structure_id
-    ) AS subject_nm,                                                    --Š¨’è‰È–Ú–¼
+    ) AS subject_nm,                                                    --å‹˜å®šç§‘ç›®å
     ( 
         SELECT
             tra.translation_text 
@@ -168,7 +168,7 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pp.factory_id)
             ) 
             AND tra.structure_id = tpih.account_structure_id
-    ) AS to_subject_nm,                                                    --Š¨’è‰È–Ú–¼
+    ) AS to_subject_nm,                                                    --å‹˜å®šç§‘ç›®å
     ( 
         SELECT
             tra.translation_text 
@@ -186,7 +186,7 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pp.factory_id)
             ) 
             AND tra.structure_id = pl.unit_structure_id
-    ) AS unit_name,                                                    --”—Ê’PˆÊ–¼Ì   
+    ) AS unit_name,                                                    --æ•°é‡å˜ä½åç§°   
     ( 
         SELECT
             tra.translation_text 
@@ -204,10 +204,10 @@ SELECT DISTINCT
                     AND st_f.factory_id IN (0, pp.factory_id)
             ) 
             AND tra.structure_id = pl.currency_structure_id
-    ) AS currency_name                                                    --‹àŠz’PˆÊ–¼Ì   
+    ) AS currency_name                                                    --é‡‘é¡å˜ä½åç§°   
 FROM
-    pt_parts pp                                 --—\”õ•iŽd—lƒ}ƒXƒ^
-    LEFT JOIN pt_lot AS pl                      --ƒƒbƒgî•ñ
+    pt_parts pp                                 --äºˆå‚™å“ä»•æ§˜ãƒžã‚¹ã‚¿
+    LEFT JOIN pt_lot AS pl                      --ãƒ­ãƒƒãƒˆæƒ…å ±
         ON pp.parts_id = pl.parts_id 
     RIGHT JOIN ( 
         SELECT
@@ -232,7 +232,7 @@ FROM
             ids.extension_data = '2' 
             AND wds.extension_data = '4'
             AND pih.delete_flg = 0
-    ) AS pih                                    --Žó•¥—š—ð
+    ) AS pih                                    --å—æ‰•å±¥æ­´
         ON pl.lot_control_id = pih.lot_control_id 
     RIGHT JOIN ( 
         SELECT
@@ -257,31 +257,31 @@ FROM
             ids.extension_data = '1' 
             AND wds.extension_data = '4'
             AND pih.delete_flg = 0
-    ) AS tpih                                   --Žó•¥—š—ð
+    ) AS tpih                                   --å—æ‰•å±¥æ­´
         ON pl.lot_control_id = tpih.lot_control_id 
         AND pih.work_no = tpih.work_no
         AND pih.inventory_control_id = tpih.inventory_control_id
-    LEFT JOIN pt_location_stock AS pls          --ÝŒÉƒf[ƒ^
+    LEFT JOIN pt_location_stock AS pls          --åœ¨åº«ãƒ‡ãƒ¼ã‚¿
         ON pl.parts_id = pls.parts_id 
-    LEFT JOIN Department AS dp                  --•”–å
+    LEFT JOIN Department AS dp                  --éƒ¨é–€
         ON pih.department_structure_id = dp.structure_id 
-    LEFT JOIN Surveyed_Subjects AS sus          --Š¨’è‰È–Ú
+    LEFT JOIN Surveyed_Subjects AS sus          --å‹˜å®šç§‘ç›®
         ON pih.account_structure_id = sus.structure_id 
-    LEFT JOIN Department AS tdp                 --•”–å
+    LEFT JOIN Department AS tdp                 --éƒ¨é–€
         ON tpih.department_structure_id = tdp.structure_id 
-    LEFT JOIN Surveyed_Subjects AS tsus         --Š¨’è‰È–Ú
+    LEFT JOIN Surveyed_Subjects AS tsus         --å‹˜å®šç§‘ç›®
         ON tpih.account_structure_id = tsus.structure_id 
-    LEFT JOIN number_unit                       --’PˆÊ
+    LEFT JOIN number_unit                       --å˜ä½
         ON pl.unit_structure_id = number_unit.unit_id 
-    LEFT JOIN unit_round                        --ŠÛ–Úˆ—‹æ•ª
+    LEFT JOIN unit_round                        --ä¸¸ç›®å‡¦ç†åŒºåˆ†
         ON  pp.factory_id = unit_round.factory_id
-    LEFT JOIN currency_unit                     --‹àŠz’PˆÊ”—Ê
+    LEFT JOIN currency_unit                     --é‡‘é¡å˜ä½æ•°é‡
         ON pl.currency_structure_id = currency_unit.currency_id
-    LEFT JOIN pt_location_stock pls_label -- ÝŒÉî•ñ(ƒ‰ƒxƒ‹o—Í—p)
+    LEFT JOIN pt_location_stock pls_label -- åœ¨åº«æƒ…å ±(ãƒ©ãƒ™ãƒ«å‡ºåŠ›ç”¨)
         ON tpih.inventory_control_id = pls_label.inventory_control_id
 
 WHERE
     pih.inout_datetime >= @WorkingDay 
-    AND pih.inout_datetime < @WorkingDayNext    --ì‹Æ“ú
+    AND pih.inout_datetime < @WorkingDayNext    --ä½œæ¥­æ—¥
 
 AND EXISTS(SELECT * FROM #temp_location temp WHERE pp.factory_id = temp.structure_id)AND EXISTS(SELECT * FROM #temp_job temp WHERE COALESCE(pp.job_structure_id, 0) = temp.structure_id)
