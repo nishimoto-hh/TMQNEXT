@@ -319,6 +319,9 @@ function afterSearchBtnProcess(appPath, btn, conductId, pgmId, formNo, conductPt
  */
 function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo) {
 
+    // 共通-入庫入力画面のコンボボックス変更処理
+    PT0005_setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo);
+
     // 移庫入力画面 コンボボックス変更時イベント
     PT0007_setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, valNo);
 }
@@ -334,6 +337,9 @@ function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, va
  */
 function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
 
+    // 入庫入力画面 オートコンプリート設定時イベント
+    PT0005_setCodeTransOtherNames(appPath, formNo, ctrl, data);
+
     // 移庫入力画面 オートコンプリート設定時イベント
     PT0007_setCodeTransOtherNames(appPath, formNo, ctrl, data);
 
@@ -348,8 +354,20 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
  */
 function prevCommonValidCheck(appPath, conductId, formNo, btn) {
 
-    // 移庫入力画面個別入力チェック
-    return PT0007_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    // 機能IDを判定
+    if (conductId == PT0005_ConsuctId) {
+
+        // 入庫入力
+        return PT0005_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    }
+    else if (conductId == PT0007_ConsuctId) {
+
+        // 移庫入力
+        return PT0007_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    }
+
+    // 上記に該当しない場合、共通の入力チェックを行う「true」、入力エラーなし「false」を返す
+    return [true, false];
 
 }
 

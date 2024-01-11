@@ -44,8 +44,9 @@ const PT0005_FormList = {
         Id: "CBODY_030_00_LST_5",               // 入庫情報(棚番)
         PartsLocationNo: 3,                     // 棚番
         PartsLocationDetailNo: 4,               // 棚枝番
-        PartsStorageLocation: 5,                // 予備品倉庫ID
+        PartsStorageLocation: 5,                // 予備品倉庫ID ※1
         PartsLocationId: 6,                     // 棚ID
+        PartsStorageLocationNotLink: 7          // 予備品倉庫ID(値は※1と同じで、連動はしていない)
     },
     InputArea3: {
         Id: "CBODY_040_00_LST_5",               // 入庫情報(新旧区分～仕入先ID)
@@ -102,6 +103,12 @@ const PT0005_AccountCd =
 {
     Equipment: "B4140",  // 設備貯蔵品
     Old: "B4161"         // 中古貯蔵品
+};
+
+// グローバルリストのキー名称
+const PT0005_GlobalKeyName =
+{
+    IsNewAndFirst: "IsNewAndFirst" // 新規で初回表示の場合はこのキー名称のデータがグローバルリストに格納されている(予備品倉庫コンボボックスをブランクにするためのもの)
 };
 
 /**
@@ -447,7 +454,8 @@ function PT0005_setComboOtherValues(appPath, combo, datas, selected, formNo, ctr
     // 入庫情報の「予備品倉庫」コンボボックスが変更された場合
     if (ctrlId == PT0005_FormList.InputArea1.Id && valNo == PT0005_FormList.InputArea1.StorageLocation) {
         // 「予備品倉庫」コンボボックスの値(構成ID)を取得
-        var partsStorageLocation = getValue(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, false, false);
+        var partsStorageLocation = getCtrl(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, false, false).value;
+
         // 取得した構成IDを棚情報の「予備品倉庫」にセット
         setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, partsStorageLocation, false, false);
     }
@@ -487,10 +495,33 @@ function PT0005_setCodeTransOtherNames(appPath, formNo, ctrl, data) {
     if (ctrl[0].id == PT0005_FormList.InputArea2.Id + getAddFormNo() + "VAL" + PT0005_FormList.InputArea2.PartsLocationNo && data && data.length > 0) {
         // 棚番選択時、構成IDを非表示の項目に設定する
         setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
-        setValue(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, data[0].EXPARAM7, false, false);
-        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+        setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocationNotLink, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+
+        // 新規表示の初回の場合は予備品倉庫コンボボックスと非表示で連動している予備品倉庫IDには何も設定しない
+        if (!P_dicIndividual[PT0005_GlobalKeyName.IsNewAndFirst]) {
+            setValue(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, data[0].EXPARAM7, false, false);
+            setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, data[0].EXPARAM7, false, false);
+        }
+
+       
         // 棚番を再設定（付属情報を削除）
         setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.Input, data[0].EXPARAM2, false, false);
+
+        // 新規表示の初回かどうかを判定(バックエンド側でグローバルリストにフラグが設定されているかどうか)
+        // ※予備品情報の標準棚番が棚まで設定されている場合はキーが格納されている
+        if (P_dicIndividual[PT0005_GlobalKeyName.IsNewAndFirst]) {
+
+            // 値を設定する処理が2回実行されるが、1回目は何もしない
+            // ※1回目で下記を行うと正常に動作しない
+            if (P_dicIndividual[PT0005_GlobalKeyName.IsNewAndFirst] == 2) {
+                P_dicIndividual[PT0005_GlobalKeyName.IsNewAndFirst] = 1;
+                return;
+            }
+
+            // グローバルリストからフラグを削除する
+            delete P_dicIndividual[PT0005_GlobalKeyName.IsNewAndFirst];
+        }
+
     } else if (ctrl[0].id == PT0005_FormList.InputArea3.Id + getAddFormNo() + "VAL" + PT0005_FormList.InputArea3.Department && data && data.length > 0) {
         // 部門選択時、構成IDを非表示の項目に設定する
         setValue(PT0005_FormList.InputArea3.Id, PT0005_FormList.InputArea3.DepartmentStructureId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
@@ -553,4 +584,49 @@ function PT0005_postBackBtnProcessForPopup(conductId) {
 
     // グローバル変数に格納
     P_dicIndividual[DispYearKeyName.YearTo] = val;
+}
+
+/**
+ *【オーバーライド用関数】実行ﾁｪｯｸ処理 - 前処理
+ *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId   {string}   ：機能ID
+ *  @formNo      {number}   ：画面番号
+ *  @btn         {button}   ：押下されたボタン要素
+ */
+function PT0005_prevCommonValidCheck(appPath, conductId, formNo, btn) {
+
+    var isContinue = true; // 個別処理後も共通の入力チェックを行う場合はtrue
+    var isError = false;   // エラーがある場合はtrue
+
+    // 機能IDが「入庫入力」ではない場合は何もしない
+    if (getConductId() != PT0005_ConsuctId) {
+        return [isContinue, isError];
+    }
+
+    // 棚番の要素を取得
+    var partsLocationNoEle = getCtrl(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsLocationNo, 1, CtrlFlag.TextBox, false, false);
+
+    // 棚番が入力されている場合
+    if ($(partsLocationNoEle).val()) {
+
+        // 非表示の予備品倉庫ID(連動ではない)を取得
+        var storageLocationId = getValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocationNotLink, 1, CtrlFlag.Label, false, false);
+
+        // 取得できた場合
+        if (storageLocationId) {
+
+            // 予備品倉庫コンボボックスと連動している非表示のIDを取得
+            var storageLocationComboId = getValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, false, false);
+
+            // 取得できなかった場合
+            if (!storageLocationComboId) {
+
+                // 選択されている予備品倉庫と入力されている棚番が紐付いていない場合はここには入らない(バックエンド側で入力チェックするため問題なし)
+                // 予備品倉庫コンボボックスと連動している非表示のIDに、非表示の予備品倉庫ID(連動ではない)を設定する
+                setValue(PT0005_FormList.InputArea1.Id, PT0005_FormList.InputArea1.StorageLocation, 1, CtrlFlag.Combo, storageLocationId, false, false);
+                setValue(PT0005_FormList.InputArea2.Id, PT0005_FormList.InputArea2.PartsStorageLocation, 1, CtrlFlag.Label, storageLocationId, false, false);
+            }
+        }
+    }
+    return [isContinue, isError];
 }

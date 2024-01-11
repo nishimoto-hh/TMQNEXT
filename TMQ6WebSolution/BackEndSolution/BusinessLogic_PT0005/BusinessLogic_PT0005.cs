@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
@@ -177,6 +178,11 @@ namespace BusinessLogic_PT0005
             /// </summary>
             public const string YearTo = "YearTo";
         }
+
+        /// <summary>
+        /// 新規で初回表示の場合はこのキー名称のデータがグローバルリストに格納されている(予備品倉庫コンボボックスをブランクにするためのもの)
+        /// </summary>
+        private const string IsNewAndFirst = "IsNewAndFirst";
         #endregion
 
         #region コンストラクタ
@@ -519,6 +525,21 @@ namespace BusinessLogic_PT0005
 
                 // 新品購入時の最新のロットの入庫単価
                 result.UnitPriceByNewestLot = TMQUtil.roundDigit(result.UnitPriceByNewestLot.ToString(), result.CurrencyDigit, result.RoundDivision);
+
+                // 検索対象の予備品情報を取得
+                ComDao.PtPartsEntity partsInfo = new ComDao.PtPartsEntity().GetEntity(conditionObj.PartsId, this.db);
+
+                // 構成マスタより、取得した予備品情報の標準棚IDのデータを取得
+                ComDao.MsStructureEntity structureInfo = new ComDao.MsStructureEntity().GetEntity((int)partsInfo.PartsLocationId, this.db);
+
+                // 取得したデータの階層番号が棚(3)の場合は画面に設定する
+                if(structureInfo.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack)
+                {
+                    result.PartsLocationId = partsInfo.PartsLocationId;
+
+                    // 新規で初回表示の場合は予備品倉庫コンボボックスをブランクにするためにグローバルリストにキーを格納する
+                    this.IndividualDictionary[IsNewAndFirst] = 2; // フロント側でオートコンプリートの値設定処理が２回実行されるが、1回のみ処理を通すための数値
+                }
 
                 // 条件追加
                 conditionObj.FactoryId = Convert.ToInt32(result.FactoryId);  // 工場ID

@@ -580,7 +580,20 @@ function initTabOriginal(tabNo, tableId) {
  */
 function prevCommonValidCheck(appPath, conductId, formNo, btn) {
 
-    return PT0007_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    // 機能IDを判定
+    if (conductId == PT0005_ConsuctId) {
+
+        // 入庫入力
+        return PT0005_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    }
+    else if (conductId == PT0007_ConsuctId) {
+
+        // 移庫入力
+        return PT0007_prevCommonValidCheck(appPath, conductId, formNo, btn);
+    }
+
+    // 上記に該当しない場合、共通の入力チェックを行う「true」、入力エラーなし「false」を返す
+    return [true, false];
 
 }
 
@@ -1321,6 +1334,12 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
             setValue(FormRegist.List.Id, FormRegist.List.AccountOldNewDivision, 1, CtrlFlag.Label, data[0].EXPARAM2, false, false);
         }
     }
+
+    // 入庫入力画面 オートコンプリート設定時イベント
+    PT0005_setCodeTransOtherNames(appPath, formNo, ctrl, data);
+
+    // 移庫入力画面 オートコンプリート設定時イベント
+    PT0007_setCodeTransOtherNames(appPath, formNo, ctrl, data);
 }
 
 /**
