@@ -155,29 +155,35 @@ SELECT
 
     -- 新品購入時の最新のロットの入庫単価
     , coalesce(( 
-        select
-            lot.unit_price -- 入庫単価
-        from
-            pt_lot lot 
-        where
-            lot.lot_control_id = ( 
-                select
-                    max(lot.lot_control_id) -- ロット管理Noの最大値
-                from
-                    pt_lot lot 
-                    left join pt_parts parts 
-                        on lot.parts_id = parts.parts_id 
-                    left join ms_structure ms 
-                        on lot.old_new_structure_id = ms.structure_id 
-                    left join ms_item_extension ex 
-                        on ms.structure_item_id = ex.item_id 
-                        and ex.sequence_no = 1 
-                where
-                    parts.parts_id = @PartsId
-
-                    -- 新品が対象
-                    and ex.extension_data = '0'
-            )
+            select
+                lot.unit_price -- 入庫単価
+            from
+                pt_lot lot 
+            where
+                lot.lot_control_id = ( 
+                    select
+                        max(history.lot_control_id) 
+                    from
+                        pt_inout_history history 
+                        left join pt_lot lot 
+                            on history.lot_control_id = lot.lot_control_id 
+                        left join ms_structure ms 
+                            on lot.old_new_structure_id = ms.structure_id 
+                        left join ms_item_extension ex 
+                            on ms.structure_item_id = ex.item_id 
+                            and ex.sequence_no = 1 
+                    where
+                        history.lot_control_id in ( 
+                            select
+                                lot.lot_control_id 
+                            from
+                                pt_lot lot 
+                            where
+                                lot.parts_id = @PartsId
+                        ) 
+                        and ex.extension_data = '0' -- 新品が対象
+                        and history.delete_flg = 0  -- 有効な(取消されていない)データが対象
+                )
     ), 0) as unit_price_by_newest_lot
 FROM
     pt_parts AS pp 

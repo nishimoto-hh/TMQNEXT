@@ -535,7 +535,8 @@ namespace BusinessLogic_PT0005
                 // 取得したデータの階層番号が棚(3)の場合は画面に設定する
                 if(structureInfo.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack)
                 {
-                    result.PartsLocationId = partsInfo.PartsLocationId;
+                    result.PartsLocationId = partsInfo.PartsLocationId;             // 棚番
+                    result.PartsLocationDetailNo = partsInfo.PartsLocationDetailNo; // 棚枝番
 
                     // 新規で初回表示の場合は予備品倉庫コンボボックスをブランクにするためにグローバルリストにキーを格納する
                     this.IndividualDictionary[IsNewAndFirst] = 2; // フロント側でオートコンプリートの値設定処理が２回実行されるが、1回のみ処理を通すための数値
