@@ -820,9 +820,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets ランク</summary>
             /// <value>ランク</value>
             public int? RankStructureId { get; set; }
-
-
-
+            /// <summary>Gets or sets 履歴重要度</summary>
+            /// <value>履歴重要度</value>
+            public int? HistoryImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 履歴保全方式</summary>
+            /// <value>履歴保全方式</value>
+            public int? HistoryConservationStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー
