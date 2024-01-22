@@ -738,7 +738,7 @@ namespace CommonTMQUtil
             public int? LossAbsence { get; set; }
             /// <summary>Gets or sets 休損型数</summary>
             /// <value>休損型数</value>
-            public int? LossAbsenceTypeCount { get; set; }
+            public decimal? LossAbsenceTypeCount { get; set; }
             /// <summary>Gets or sets 発生時刻</summary>
             /// <value>発生時刻</value>
             public DateTime? OccurrenceTime { get; set; }

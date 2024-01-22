@@ -1575,7 +1575,7 @@ namespace BusinessLogic_MA0001
             public int? LossAbsence { get; set; }
             /// <summary>Gets or sets 休損型数</summary>
             /// <value>休損型数</value>
-            public int? LossAbsenceTypeCount { get; set; }
+            public decimal? LossAbsenceTypeCount { get; set; }
             /// <summary>Gets or sets 保全見解</summary>
             /// <value>保全見解</value>
             public string MaintenanceOpinion { get; set; }
