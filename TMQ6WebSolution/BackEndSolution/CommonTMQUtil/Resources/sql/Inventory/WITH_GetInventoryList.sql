@@ -97,6 +97,7 @@ WITH stock AS (
                             AND pih.update_datetime < pi.difference_datetime
                         )
                     ) 
+                    AND pih.delete_flg = 0
                 LEFT JOIN ms_structure ms 
                     ON pih.inout_division_structure_id = ms.structure_id 
                 LEFT JOIN ms_item_extension mie 

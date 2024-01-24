@@ -281,8 +281,13 @@ namespace BusinessLogic_PT0003
             {
                 // システム日付
                 DateTime nowDate = new DateTime(now.Year, now.Month, now.Day, 23, 59, 59);
+                // システム年月の初日
+                DateTime nowYearMonth = new DateTime(now.Year, now.Month, 1);
                 //入力された棚卸日時
                 DateTime inventoryDatetime = info.InventoryDatetime ?? now;
+                //対象年月(月末)
+                var endDate = DateTime.DaysInMonth(year: condition.TargetYearMonth.Year, month: condition.TargetYearMonth.Month);
+                condition.TargetYearMonthNext = new DateTime(condition.TargetYearMonth.Year, condition.TargetYearMonth.Month, endDate, 23, 59, 59);
 
                 if (nowDate.CompareTo(inventoryDatetime) == -1)
                 {
@@ -305,12 +310,22 @@ namespace BusinessLogic_PT0003
                     return true;
                 }
 
-                if (inventoryDatetime.CompareTo(condition.TargetYearMonth) == -1)
+                if (inventoryDatetime.CompareTo(nowYearMonth.AddMonths(-1)) == -1)
                 {
-                    //検索条件の対象年月より前の日付の場合、エラー
+                    //システム日付の前月より前の日付の場合、エラー（前月は許可する）
 
-                    //棚卸確定前の日付は入力できません。
-                    string errMsg = GetResMessage(ComRes.ID.ID141160002);
+                    //棚卸範囲外の日付です。
+                    string errMsg = GetResMessage(ComRes.ID.ID141160021);
+                    setErrorInfo(ConductInfo.FormRegist.Info, KeyName.InventoryDatetime, errMsg);
+                    return true;
+                }
+
+                if (condition.TargetYearMonthNext.CompareTo(now) == -1)
+                {
+                    //対象年月末より未来日の場合、エラー
+
+                    //対象年月より未来の日付は入力できません。
+                    string errMsg = GetResMessage(ComRes.ID.ID141160022);
                     setErrorInfo(ConductInfo.FormRegist.Info, KeyName.InventoryDatetime, errMsg);
                     return true;
                 }

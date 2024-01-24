@@ -1837,6 +1837,14 @@
             /// 次回実施予定日は前回実施予定日～次々回実施予定日以内の日付を指定してください。
             /// </summary>
             public const string ID141120020 = "141120020";
+            /// <summary>
+            /// 棚卸範囲外の日付です。
+            /// </summary>
+            public const string ID141160021 = "141160021";
+            /// <summary>
+            /// 対象年月より未来の日付は入力できません。
+            /// </summary>
+            public const string ID141160022 = "141160022";
         }
     }
 }

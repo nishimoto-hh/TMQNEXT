@@ -115,6 +115,11 @@ namespace BusinessLogic_PT0003
                 // システム日時
                 DateTime now = DateTime.Now;
                 DateTime nowYearMonth = new DateTime(now.Year, now.Month, 1);
+                if(nowYearMonth.AddMonths(-1) <= condition.TargetYearMonth && condition.TargetYearMonth <= nowYearMonth.AddMonths(1))
+                {
+                    //システム年月の前月～翌月はエラーとしない
+                    return false;
+                }
 
                 //対象年月のチェック
                 if (nowYearMonth.CompareTo(condition.TargetYearMonth) == 1)
@@ -132,8 +137,8 @@ namespace BusinessLogic_PT0003
                     if (cnt <= 0)
                     {
                         //対象の棚卸データが存在しない場合、エラー
-                        //棚卸確定前の日付は入力できません。
-                        this.MsgId = GetResMessage(ComRes.ID.ID141160002);
+                        //棚卸範囲外の日付です。
+                        this.MsgId = GetResMessage(ComRes.ID.ID141160021);
                         return true;
                     }
 
@@ -143,8 +148,8 @@ namespace BusinessLogic_PT0003
                 {
                     //未来年月が指定された場合、エラー
 
-                    //未来の日付は入力できません
-                    this.MsgId = GetResMessage(ComRes.ID.ID141320001);
+                    //棚卸範囲外の日付です。
+                    this.MsgId = GetResMessage(ComRes.ID.ID141160021);
                     return true;
                 }
                 return false;
