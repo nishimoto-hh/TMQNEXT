@@ -30,12 +30,12 @@ input:-webkit-autofill {
 }
 
 /* プルダウンのサイズ指定 列幅130用 */
-.select130-maxsize {
+.select130-max-width {
     max-width: 130px;
 }
 
 /* プルダウンのサイズ指定 列幅180用 */
-.select180-maxsize {
+.select180-max-width {
     max-width: 180px;
 }
 
