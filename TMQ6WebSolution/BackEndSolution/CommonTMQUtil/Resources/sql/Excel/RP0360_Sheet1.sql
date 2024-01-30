@@ -179,7 +179,9 @@ FROM pt_inout_history pih -- 受払履歴（移行元）
     LEFT JOIN Department AS tdp 
         ON pih_to.department_structure_id = tdp.structure_id 
     LEFT JOIN Surveyed_Subjects AS tsus 
-        ON pih_to.account_structure_id = tsus.structure_id 
+        ON pih_to.account_structure_id = tsus.structure_id
+    LEFT JOIN ms_structure ms
+         ON pls.parts_location_id = ms.structure_id
 
 /*@TargetYearMonth
     -- 確定在庫データ
@@ -198,10 +200,10 @@ AND
     pfs.target_month < DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))
 @TargetYearMonth*/
 
-/*@FactoryId
+/*@FactoryIdList
 AND
-    pp.factory_id = @FactoryId
-@FactoryId*/
+    ms.factory_id in @FactoryIdList
+@FactoryIdList*/
 
 /*@JobId
 AND

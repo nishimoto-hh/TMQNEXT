@@ -309,9 +309,10 @@ function DM0002_setComboOtherValues(appPath, combo, datas, selected, formNo, ctr
  *  @param	{string}	backFrom : 共通機能からの戻る処理時、戻る前の共通機能ID ※他機能同タブ遷移でも使える？
  */
 function DM0002_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom) {
-
-    // 共通画面を閉じた場合、指定した画面ならば再検索を行う
-    InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    if (backFrom == DM0002_ConductId) {
+        // 共通画面を閉じた場合、指定した画面ならば再検索を行う
+        InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    }
 
     // 単票画面を閉じた場合
     // 単票で、「登録」ボタンを閉じたときに再検索を行う

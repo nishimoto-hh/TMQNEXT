@@ -528,12 +528,20 @@ function postBuiltTabulator(tbl, id) {
 
     if (id == "#" + FormList.InventoryList.Id + getAddFormNo()) {
         //棚卸データ一覧
+
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.InventoryList.Id, FormList.Filter.Id, FormList.Filter.Input);
+
         //棚卸確定日時に値が入っている場合、棚卸数は編集不可
         setDisableInventoryQuantity(tbl);
 
     }
     else if (id == "#" + FormList.EnterHistory.Id + getAddFormNo()) {
         //入庫履歴一覧
+
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.EnterHistory.Id, FormList.EnterHistory.Filter, FormList.EnterHistory.FilterInput);
+
         //入庫一覧行のNoリンク非活性制御
         setDisabledLink(tbl);
     }
@@ -544,7 +552,10 @@ function postBuiltTabulator(tbl, id) {
     }
     else if (id == "#" + FormList.IssueHistory.ParentId + getAddFormNo()) {
         // 出庫一覧の場合Tabulatorの描画が完了後（renderComplete完了後）の処理
-        convertTabulatorListToNestedTable(id, FormList.IssueHistory.ParentId, FormList.IssueHistory.ChildId, FormList.IssueHistory.KeyValueParent, FormList.IssueHistory.KeyValueChild)
+        convertTabulatorListToNestedTable(id, FormList.IssueHistory.ParentId, FormList.IssueHistory.ChildId, FormList.IssueHistory.KeyValueParent, FormList.IssueHistory.KeyValueChild);
+
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.IssueHistory.ParentId, FormList.IssueHistory.Filter, FormList.IssueHistory.FilterInput);
     }
 }
 

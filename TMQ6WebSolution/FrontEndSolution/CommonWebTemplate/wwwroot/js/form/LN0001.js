@@ -1121,6 +1121,12 @@ function postBuiltTabulator(tbl, id) {
     // 保全一覧のスタイル設定処理
     callSetMaintListStyle(id);
 
+    // 一覧画面
+    if (id == '#' + FormList.List.Id + getAddFormNo()) {
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.List.Id, FormList.Filter.Id, FormList.Filter.Input);
+    }
+
     // 表示する一覧のIDを判定
     // 詳細画面の保全情報一覧・点検種別毎保全情報一覧の場合
     if (id == "#" + FormDetail.List.Id + getAddFormNo() || id == "#" + FormDetail.ListMaintKind.Id + getAddFormNo()) {

@@ -886,6 +886,7 @@
     <None Remove="Resources\sql\Parts\GetCountPartsList.sql" />
     <None Remove="Resources\sql\Parts\GetCountPartsNoByFactory.sql" />
     <None Remove="Resources\sql\Parts\GetCurrencyDigitAndDivision.sql" />
+    <None Remove="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\GetDetailPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetExcelPortPartsList.sql" />
@@ -905,14 +906,17 @@
     <None Remove="Resources\sql\Parts\GetPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\GetPartsList.sql" />
     <None Remove="Resources\sql\Parts\GetPartsNoCount.sql" />
+    <None Remove="Resources\sql\Parts\GetRfidTagList.sql" />
     <None Remove="Resources\sql\Parts\GetRftagOutputData.sql" />
     <None Remove="Resources\sql\Parts\GetRoundDivision.sql" />
+    <None Remove="Resources\sql\Parts\GetSerialNoForRfid.sql" />
     <None Remove="Resources\sql\Parts\GetStartMonthByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetUnitDigit.sql" />
     <None Remove="Resources\sql\Parts\GetUnitRoundDivision.sql" />
     <None Remove="Resources\sql\Parts\InsertCommonFactoryIdToTemp.sql" />
     <None Remove="Resources\sql\Parts\InsertNewPartsNoData.sql" />
     <None Remove="Resources\sql\Parts\InsertPartsInfo.sql" />
+    <None Remove="Resources\sql\Parts\InsertRfidTag.sql" />
     <None Remove="Resources\sql\Parts\InsertRftagPartsLink.sql" />
     <None Remove="Resources\sql\Parts\InsertTempTableRftagData.sql" />
     <None Remove="Resources\sql\Parts\UpdatePartsInfo.sql" />
@@ -1003,6 +1007,7 @@
     <EmbeddedResource Include="Resources\sql\Machine\UpdateScheduleDateByDetailIdAndSameKind.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\WITH_GetExcelPortManagementStandard.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>
 
@@ -1100,9 +1105,12 @@
     <EmbeddedResource Include="Resources\sql\Parts\GetExcelPortPartsList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetCountPartsNoByFactory.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetNewPartsNo.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetRfidTagList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetRftagOutputData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetRoundDivision.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetSerialNoForRfid.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertNewPartsNoData.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\InsertRfidTag.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertRftagPartsLink.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertTempTableRftagData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\UpdatePartsNoData.sql" />

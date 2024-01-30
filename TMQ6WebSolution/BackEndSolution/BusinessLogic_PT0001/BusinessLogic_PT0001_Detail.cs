@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -38,7 +39,7 @@ namespace BusinessLogic_PT0001
             Init,
             /// <summary>検索(ボタン処理後の再表示)</summary>
             Search,
-            /// <summary>再表示(入出庫履歴タブの再表示ボタン)</summary>
+            /// <summary>再表示(入出庫履歴タブの再表示ボタン)または再検索時</summary>
             Redisplay,
             /// <summary>新規登録後</summary>
             AfterRegist
@@ -100,6 +101,12 @@ namespace BusinessLogic_PT0001
 
             // 入出庫履歴一覧
             if (!searchInoutHistoryInfo(condition))
+            {
+                return false;
+            }
+
+            // RFIDタグ一覧
+            if (!searchRfidTagList(condition))
             {
                 return false;
             }
@@ -435,6 +442,50 @@ namespace BusinessLogic_PT0001
         }
 
         /// <summary>
+        /// RFIDタグ一覧 検索処理
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <returns>エラーの場合False</returns>
+        private bool searchRfidTagList(Dao.detailSearchCondition condition)
+        {
+            // ---------- RFIDタグ情報検索 ----------
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetRfidTagList, out string getRfidSql);
+
+            // SQL実行
+            IList<Dao.rftagList> result = db.GetListByDataClass<Dao.rftagList>(getRfidSql, condition);
+
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.RfidTagList, this.pageInfoList);
+
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<Dao.rftagList>(pageInfo, result, result.Count))
+            {
+                return false;
+            }
+            // ---------- RFIDタグ情報検索 ----------
+
+            // ---------- 予備品の標準情報検索 ----------
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetDefaultPartsInfo, out string getDefaultSql);
+
+            // SQL実行
+            IList<Dao.defaultPartsInfo> defaultResult = db.GetListByDataClass<Dao.defaultPartsInfo>(getDefaultSql, condition);
+
+            // ページ情報取得
+            pageInfo = GetPageInfo(ConductInfo.FormDetail.ControlId.DefaultPartsInfo, this.pageInfoList);
+
+            // 検索結果の設定
+            if (!SetSearchResultsByDataClass<Dao.defaultPartsInfo>(pageInfo, defaultResult, 1))
+            {
+                return false;
+            }
+            // ---------- 予備品の標準情報検索 ----------
+
+            return true;
+        }
+
+        /// <summary>
         /// 検索条件を取得
         /// </summary>
         /// <param name="fromCtrlId">値を取得する一覧のコントロールID</param>
@@ -732,6 +783,162 @@ namespace BusinessLogic_PT0001
             this.OutputStream = outStream;
 
             return true;
+        }
+
+        /// <summary>
+        /// RFIDタグ登録処理
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registRfidTag()
+        {
+            // 入力された内容を取得
+            Dictionary<string, object> result = ComUtil.GetDictionaryByCtrlId(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.RfidTagList);
+            Dao.rftagList registInfo = getRegist<Dao.rftagList>(result, ConductInfo.FormDetail.ControlId.RfidTagList);
+
+            ComDao.PtRftagPartsLinkEntity tag = new();
+
+            // 初期検索時のRFIDタグが存在する場合(編集の場合)
+            if (!string.IsNullOrEmpty(registInfo.RftagIdBefore))
+            {
+                // 排他チェック(初期検索時のRFIDタグのデータをテーブルより取得)
+                var oldInfo = tag.GetEntity(registInfo.RftagIdBefore, this.db);
+                if (!CheckExclusiveStatusByUpdateDatetime(registInfo.SavedUpdateDatetime, oldInfo == null ? null : oldInfo.UpdateDatetime))
+                {
+                    // 排他エラー
+                    return false;
+                }
+
+                // 部門または勘定科目が変更されている場合
+                if (registInfo.DepartmentStructureId != registInfo.DepartmentStructureIdBefore ||
+                    registInfo.AccountStructureId != registInfo.AccountStructureIdBefore)
+                {
+                    // 連番 に採番した値を設定
+                    registInfo.SerialNo = getSerialNo();
+                }
+
+                // 初期検索時のRFIDタグのデータを削除する
+                if (!tag.DeleteByPrimaryKey(registInfo.RftagIdBefore, this.db))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 初期検索時のRFIDタグが存在しない場合(新規の場合)
+
+                // 入力されたRFIDタグのデータを検索する
+                tag = tag.GetEntity(registInfo.RftagId, this.db);
+
+                // 取得できた場合(入力されたRFIDタグが既にテーブルに登録されている場合)
+                if (tag != null)
+                {
+                    // 確認メッセージを表示する
+                    if (this.Status < CommonProcReturn.ProcStatus.Confirm)
+                    {
+                        // 既に同一のRFIDタグが登録されています。処理を続行してよいですか？
+                        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141130004 });
+                        this.Status = CommonProcReturn.ProcStatus.Confirm;
+                        this.LogNo = ComConsts.LOG_NO.CONFIRM_LOG_NO;
+                        return true;
+                    }
+                    else
+                    {
+                        // 確認メッセージで「OK」がクリックされた場合にここに入ってくる
+                        // 既に登録されている古いRFIDタグのデータを削除する
+                        if (!tag.DeleteByPrimaryKey(registInfo.RftagId, this.db))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                // 連番 に採番した値を設定
+                registInfo.SerialNo = getSerialNo();
+            }
+
+            // 画面に入力された内容を登録する
+            if (!TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.InsertRfidTag, SqlName.SubDir, registInfo, this.db))
+            {
+                return false;
+            }
+
+            return true;
+
+            // 連番 を採番して取得
+            int getSerialNo()
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.GetSerialNoForRfid, out string getSerialNoSql);
+
+                // 検索SQL実行(予備品ID・部門ID・勘定科目IDごとの連番の最大値を取得)
+                var rfidTagInfo = this.db.GetEntity(getSerialNoSql, registInfo);
+
+                // 取得した 連番 の値を返す
+                return rfidTagInfo.serial_no;
+            }
+
+        }
+
+        /// <summary>
+        /// RFIDタグ削除
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool deleteRfidTag()
+        {
+
+            // 削除リスト取得
+            var deleteList = getSelectedRowsByList(this.resultInfoDictionary, ConductInfo.FormDetail.ControlId.RfidTagList);
+
+            // 行削除
+            ComDao.PtRftagPartsLinkEntity tag = new();
+            foreach (var deleteRow in deleteList)
+            {
+                // 選択されたレコードをデータクラスに変換
+                Dao.rftagList delCondition = new();
+                SetDeleteConditionByDataClass(deleteRow, ConductInfo.FormDetail.ControlId.RfidTagList, delCondition);
+
+                // 排他チェック
+                var oldInfo = tag.GetEntity(delCondition.RftagIdBefore, this.db);
+                if (!CheckExclusiveStatusByUpdateDatetime(delCondition.SavedUpdateDatetime, oldInfo == null ? null : oldInfo.UpdateDatetime))
+                {
+                    // 排他エラー
+                    return false;
+                }
+
+                // 削除SQL実行
+                if (!tag.DeleteByPrimaryKey(delCondition.RftagId, this.db))
+                {
+                    return false;
+                }
+            }
+
+            // 詳細画面の再検索
+            if (!searchDetailList(DetailDispType.Init))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 画面に登録する内容をデータクラスで取得(単一)
+        /// </summary>
+        /// <typeparam name="T">データクラスの型</typeparam>
+        /// <returns>登録内容のデータクラス</returns>
+        private T getRegist<T>(Dictionary<string, object> result, string ctrlId)
+        where T : CommonDataBaseClass.CommonTableItem, new()
+        {
+            // データクラスに変換
+            T data = new();
+
+            if (!SetExecuteConditionByDataClass<T>(result, ctrlId, data, DateTime.Now, this.UserId, this.UserId))
+            {
+                // エラーの場合終了
+                return data;
+            }
+
+            return data;
         }
     }
 }

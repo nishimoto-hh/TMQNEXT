@@ -88,7 +88,7 @@ namespace BusinessLogic_PT0001
             }
 
             // 一覧検索SQL文の取得
-            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+            executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");    // 並び順を指定
             selectSql.AppendLine("parts_no");    // 予備品No. 昇順

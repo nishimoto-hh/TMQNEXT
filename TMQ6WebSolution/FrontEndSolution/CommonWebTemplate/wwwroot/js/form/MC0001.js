@@ -1715,6 +1715,12 @@ function postBuiltTabulator(tbl, id) {
     // 文書管理 詳細画面
     DM0002_postBuitTabulator(tbl, id);
 
+    // 一覧画面
+    if (id == '#' + SearchList.List.Id + getAddFormNo()) {
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(SearchList.List.Id, SearchList.Filter.Id, SearchList.Filter.Input);
+    }
+
     if (id == "#" + DatailManagementStandard.ScheduleList.Id + getAddFormNo()) {
 
         // スケジューリング一覧

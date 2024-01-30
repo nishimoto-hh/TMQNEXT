@@ -155,6 +155,12 @@ function postBuiltTabulator(tbl, id) {
         return RM0001_postBuiltTabulator(tbl, id);
     }
 
+    // 一覧画面
+    if (id == '#' + FormList.List.Id + getAddFormNo()) {
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.List.Id, FormList.Filter.Id, FormList.Filter.Input);
+    }
+
     setListGroupStyleCall(id);
 }
 

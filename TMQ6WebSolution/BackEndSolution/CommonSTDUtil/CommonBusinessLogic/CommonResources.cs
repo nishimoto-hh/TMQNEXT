@@ -1845,6 +1845,10 @@
             /// 対象年月より未来の日付は入力できません。
             /// </summary>
             public const string ID141160022 = "141160022";
+            /// <summary>
+            /// 既に同一のRFIDタグが登録されています。処理を続行してよいですか？
+            /// </summary>
+            public const string ID141130004 = "141130004";
         }
     }
 }

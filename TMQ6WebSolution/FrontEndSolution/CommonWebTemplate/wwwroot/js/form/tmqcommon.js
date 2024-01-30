@@ -498,6 +498,43 @@ function setValue(ctrlId, val, rowNo, flg, value, isModal, tableHeader) {
 }
 
 /**
+ * 値を対象の場所に設定する
+ * @param ctrlId コントロールID
+ * @param val VAL値
+ * @param rowNo 行番号
+ * @param flg=0:テキストボックス、1:ラベル、2:コンボボックス、3:チェックボックス、4:リンク、5:入力項目、6:テキストエリア、7:パスワード
+ * @param value 設定値
+ * @param isModal モーダルのコントロールの場合True
+ * @param tableHeader ヘッダーの値を取得する場合はtrue
+ * @return 取得した値
+ */
+function setValue2(ctrlId, val, rowNo, flg, value, isModal, tableHeader) {
+    var target = getCtrl(ctrlId, val, rowNo, flg, isModal, tableHeader);
+
+    if (!target) {
+        return;
+    }
+
+    if (flg == CtrlFlag.TextBox) {
+        target.value = value;
+    } else if (flg == CtrlFlag.Label) {
+        target.innerText = value;
+    } else if (flg == CtrlFlag.Combo) {
+        target.value = value;
+    } else if (flg == CtrlFlag.Input) {
+        target.value = value;
+    } else if (flg == CtrlFlag.ChkBox) {
+        target.checked = value;
+    } else if (flg == CtrlFlag.Textarea) {
+        target.value = value;
+    } else if (flg == CtrlFlag.Password) {
+        target.value = value;
+    } else if (flg == CtrlFlag.Link) {
+        target.innerText = value;
+    }
+}
+
+/**
  * グローバルリストの値を追加・削除する
  * @param {any} key キー名称
  * @param {any} isDelete グローバルリストから削除する場合はtrue
@@ -2362,7 +2399,7 @@ function executeListFilter(transTarget, listId, filterId, filterVal) {
             var colValue = data[colName] + ""; // 行のデータより列の値を取得
 
             // 一覧画面のフィルタはselectの作成候補が変わったため、処理を通らないよう変更
-            if (false && colInfo.headerFilter == "select") {
+            if (false && colInfo.headerFilter == "list") {
 
                 // selectの場合、その列のコンボのメンバから、フィルタ条件と合致するメンバを全て選び、そのコード値リストを条件とする
                 // フィルタが「京」で、コンボのメンバが「1:東京,2:京都,3:大阪」の場合、1or2が検索条件となる

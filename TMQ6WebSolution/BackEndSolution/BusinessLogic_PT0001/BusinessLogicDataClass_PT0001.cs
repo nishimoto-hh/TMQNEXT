@@ -1137,5 +1137,52 @@ namespace BusinessLogic_PT0001
             /// <value>取込画面を閉じない場合（エラー等ある場合）true</value>
             public bool Flg { get; set; }
         }
+
+        /// <summary>
+        /// RFIDタグ一覧
+        /// </summary>
+        public class rftagList : ComDao.PtRftagPartsLinkEntity
+        {
+            /// <summary>Gets or sets 部門名(コード+名称)</summary>
+            /// <value>部門名(コード+名称)</value>
+            public string DepartmentName { get; set; }
+            /// <summary>Gets or sets 勘定科目名(コード+名称)</summary>
+            /// <value>勘定科目名(コード+名称)</value>
+            public string AccountName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int FactoryId { get; set; }
+            /// <summary>Gets or sets 部門コード</summary>
+            /// <value>部門コード</value>
+            public string DepartmentCode { get; set; }
+            /// <summary>Gets or sets 勘定科目コード</summary>
+            /// <value>勘定科目コード</value>
+            public string AccountCode { get; set; }
+            /// <summary>Gets or sets RFタグ管理ID(変更前)</summary>
+            /// <value>RFタグ管理ID(変更前)</value>
+            public string RftagIdBefore { get; set; }
+            /// <summary>Gets or sets 更新日時(排他チェック用)</summary>
+            /// <value>更新日時(排他チェック用)</value>
+            public DateTime SavedUpdateDatetime { get; set; }
+            /// <summary>Gets or sets 部門ID(変更前)</summary>
+            /// <value>部門ID(変更前)</value>
+            public long DepartmentStructureIdBefore { get; set; }
+            /// <summary>Gets or sets 勘定科目ID(変更前)</summary>
+            /// <value>勘定科目ID(変更前)</value>
+            public long AccountStructureIdBefore { get; set; }
+        }
+
+        /// <summary>
+        /// 予備品の標準情報
+        /// </summary>
+        public class defaultPartsInfo
+        {
+            /// <summary>Gets or sets 標準部門コード</summary>
+            /// <value>標準部門コード</value>
+            public string DefaultDepartmentCode { get; set; }
+            /// <summary>Gets or sets 標準勘定科目コード</summary>
+            /// <value>標準勘定科目コード</value>
+            public string DefaultAccountCode { get; set; }
+        }
     }
 }

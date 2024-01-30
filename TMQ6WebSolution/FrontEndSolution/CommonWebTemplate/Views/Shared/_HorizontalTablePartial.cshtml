@@ -386,7 +386,7 @@
 	    {
 	        @:<a href="#" data-actionkbn="@LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComItemCustomize" data-parentid="@Model.FORMDEFINE.CTRLID" style="margin-left:5px;" title="項目カスタマイズ" class="item_customize"><span class="glyphicon glyphicon-list-alt"></span></a>
 	    }
-	
+
 	    // ページサイズ変更コンボボックス
 	    if (Model.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3)
 	    {
@@ -1261,7 +1261,7 @@
                 case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.RadioButton:
                 case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ComboBox:
                 case LISTITEM_DEFINE_CONSTANTS.CELLTYPE.ListBox:
-                    headerFilter = "select";
+                    headerFilter = "list";
                     headerFilterParams = new Dictionary<string, object>
                 {
                     { "valuesLookup", true },

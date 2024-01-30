@@ -23,7 +23,7 @@ namespace BusinessLogic_PT0009
             public string TargetYearMonth { get; set; }
             /// <summary>Gets or sets 工場</summary>
             /// <value>工場</value>
-            public int? FactoryId { get; set; }
+            public List<int> FactoryIdList { get; set; }
             /// <summary>Gets or sets 職種</summary>
             /// <value>職種</value>
             public int? JobId { get; set; }

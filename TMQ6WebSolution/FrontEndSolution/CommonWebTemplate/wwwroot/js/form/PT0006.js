@@ -386,7 +386,11 @@ function IsExecPT0006_PrevTransForm(appPath, transPtn, transDiv, transTarget, di
  *  @param {number} transPtn ：画面遷移のパターン、transPtnDef
  */
 function PT0006_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom, transPtn) {
-
+    // 入庫、出庫、移庫
+    var listConductId = [PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId];
+    if (listConductId.indexOf(backFrom) < 0) {
+        return;
+    }
     // 共通画面を閉じた場合、指定した画面ならば再検索を行う
     InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
 }

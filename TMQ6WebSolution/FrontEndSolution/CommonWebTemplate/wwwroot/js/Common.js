@@ -54,6 +54,8 @@ var P_dicIndividual = {};
 var P_listData = {};
 // 行削除で削除したデータの退避用（crtltype=103のみ使用）
 var P_deleteData = {};
+// 一覧の列フィルター情報（crtltype=103のみ使用）
+var P_colFilterData = {};
 
 //処理中ﾀｽｸ数
 var P_ProcessCnt = 0;
@@ -6584,7 +6586,6 @@ function initCodeTransInitval() {
  */
 //function initForm(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, transPtn, selFlg, backFrom) {
 function initForm(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, transPtn, selFlg, backFrom, selDataFlg) {
-
     // selDataFlg = 1の場合、$("#main_contents > div.init_temp_data")のinput:hiddenタグからJSON文字列で受け取るよう修正
     if (selDataFlg + "" == "1") {
         var input = $("#main_contents > div.init_temp_data input:hidden[name='ConditionData_Temp']");
@@ -8031,7 +8032,6 @@ function dispDataVertical(appPath, data, formNo, isEdit) {
     if (data == null) {
         return;   //ﾃﾞｰﾀなし
     }
-
     var ctrlId = "";
     var tbl = null;
     // ツリーで複数選択された場合のみ、縦方向一覧でも値が複数となる
@@ -15944,8 +15944,12 @@ function getPageData(appPath, btn, btnCtrlId, conductId, pgmId, formNo, conductP
             $(select).find('option:selected').prop('selected', false);
             $(select).find('option[exparam1="' + selectCnt + '"]').prop('selected', true);
         }
-        define.VAL5 = selectCnt
+        define.VAL5 = selectCnt;
+        // 各テーブルの列フィルターの入力クリア
+        P_listData["#" + define.CTRLID + '_' + getFormNo()].clearHeaderFilter();
     });
+    // フィルターの入力クリア
+    P_Article.find('input[data-childno="FILTER"]').closest("td").find('input[data-type="codeTrans"]').val("");
 
     if (saveDetailCondition) {
         // チェック状態を含めた条件データをLocalStorageへ保存
@@ -16199,7 +16203,6 @@ function dispListData(appPath, conductId, pgmId, formNo, data, isSearch) {
                 //※2つ目以降の一覧の時
                 if (tbl != null && true == $(tbl).hasClass('vertical_tbl')) {
                     //※縦方向一覧の場合
-
                     // 取得ﾃﾞｰﾀを画面一覧に反映
                     dispDataVertical(appPath, data_ctrlId, formNo, false);
                     if (editPtn == editPtnDef.Input) {
@@ -19273,6 +19276,10 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
 
     var table = Tabulator.findTable(id)[0];
     if (table) {
+        //列フィルターの内容を取得
+        delete P_colFilterData[id];
+        P_colFilterData[id] = table.getHeaderFilters();
+
         table.destroy();
         table = null;
         delete P_listData[id];
@@ -19284,7 +19291,7 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
     var divWidth = 2;
     $.each(header, function (idx, head) {
         // 列ヘッダーフィルターのコンボ項目の更新
-        if (head.headerFilter == 'select') {
+        if (head.headerFilter == 'list') {
             //ベース用のテーブルからセレクトボックス要素を取得
             var select = $('table' + id + '_tablebase' + ' tbody td[data-name="' + head.field + '"] select');
             var selects = $(select).find('option');
@@ -19355,6 +19362,12 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
         paginationElement: paginationElement,
         //オプションの警告をコンソールに表示しない
         debugInvalidOptions: false,
+        //コンポーネント関数の警告をコンソールに表示しない
+        debugInvalidComponentFuncs: false,
+        //初期化の警告をコンソールに表示しない
+        debugInitialization: false,
+        //非推奨オプションの警告をコンソールに表示しない
+        debugDeprecation: false,
         columnDefaults: {
             //列の最小幅（デフォルトが40の為、小さめに設定）
             minWidth: 10,
@@ -19366,8 +19379,8 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
             headerTooltip: true,
             //データのツールチップ
             tooltip: function (e, cell, onRendered) {
-                ////getValueはコード値が表示されてしまうので、表示されているテキストを取得
-                ////return cell.getValue();
+                //getValueはコード値が表示されてしまうので、表示されているテキストを取得
+                //return cell.getValue();
                 return $(cell.getElement()).text();
             },
         },
@@ -19499,11 +19512,8 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
 
     //tabulatorのイベント設定
     setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id, paginationElement, editptn, referenceMode);
-
-    let rtnValue = table.getPageSize();
     table = null;
     header = null;
-    return rtnValue;
 }
 
 /**
@@ -20033,7 +20043,7 @@ function setHeaderMultiCheckBox(head, id, editptn, referenceMode, appPath) {
 
     if (head.headerFilter != "" && (editptn == editPtnDef.ReadOnly || referenceMode == referenceModeKbnDef.Reference)) {
         //列フィルターをセレクトボックスに変更
-        head.headerFilter = "select";
+        head.headerFilter = "list";
         var checkboxes = $(multi).find('> li:not(.hide) :checkbox');
         var headerOptions = { "": "" };
         $.each(checkboxes, function (i, checkbox) {
@@ -20265,7 +20275,7 @@ function setHeaderSelectBox(head, id, editptn, referenceMode, appPath) {
 
     if (head.headerFilter != "" && (editptn == editPtnDef.ReadOnly || referenceMode == referenceModeKbnDef.Reference)) {
         //列フィルターをセレクトボックスに変更
-        head.headerFilter = "select";
+        head.headerFilter = "list";
         let select = $('table' + id + '_tablebase' + ' tbody td[data-name="' + head.field + '"] select');
         var selects = $(select).find('option');
         var headerOptions = { "": "" };
@@ -20368,7 +20378,7 @@ function setHeaderRadioButton(head, id, editptn, referenceMode, appPath) {
 
     if (head.headerFilter != "" && (editptn == editPtnDef.ReadOnly || referenceMode == referenceModeKbnDef.Reference)) {
         //列フィルターをセレクトボックスに変更
-        head.headerFilter = "select";
+        head.headerFilter = "list";
         var radios = $(td).find(':radio');
         var headerOptions = { "": "" };
         $.each(radios, function (i, radio) {
@@ -21306,12 +21316,13 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         //ページングボタンは非表示にする
         $('.tabulator-page').hide();
 
+        var tbl = P_listData[id];
+
         //ページャーの再設定
         var pagination = $(P_Article).find(id + '_div').find('.paginationCommon[data-option="def"]');
-        var total = parseInt($(pagination).data("totalcnt"), 10);
+        //var total = parseInt($(pagination).data("totalcnt"), 10);
+        var total = getTotalRowCount(tbl);
         setupPagination(appPath, conductId, pgmId, formNo, ctrlId, total);
-
-        var tbl = P_listData[id];
 
         //ページャーの総ページ数が1件の場合、ページャーを非表示
         setHidePagination(id, tbl);
@@ -21329,12 +21340,13 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         //ページングボタンは非表示にする
         $('.tabulator-page').hide();
 
+        var tbl = P_listData[id];
+
         //ページャーの再設定
         var pagination = $(P_Article).find(id + '_div').find('.paginationCommon[data-option="def"]');
-        var total = parseInt($(pagination).data("totalcnt"), 10);
+        //var total = parseInt($(pagination).data("totalcnt"), 10);
+        var total = getTotalRowCount(tbl);
         setupPagination(appPath, conductId, pgmId, formNo, ctrlId, total);
-
-        var tbl = P_listData[id];
 
         //ページャーの総ページ数が1件の場合、ページャーを非表示
         setHidePagination(id, tbl);
@@ -21388,6 +21400,14 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
 
         // 【オーバーライド用関数】Tabulatorの描画が完了時の処理
         postBuiltTabulator(tbl, id);
+
+        // 前回設定した列フィルターを再設定
+        var filters = P_colFilterData[id];
+        if (filters && filters.length != 0) {
+            $.each(filters, function (idx, data) {
+                tbl.setHeaderFilterValue(data.field, data.value);
+            });
+        }
 
         //モーダル画面の幅調整
         setModalWidthAfterTableBuilt(tbl, id);

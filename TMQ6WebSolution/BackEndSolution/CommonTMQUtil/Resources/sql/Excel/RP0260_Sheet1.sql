@@ -92,6 +92,8 @@ FROM pt_lot pl -- ロット情報
          ON pls.lot_control_id = pl.lot_control_id 
         AND pls.parts_id = pp.parts_id 
         AND pls.delete_flg = 0
+    LEFT JOIN ms_structure ms
+         ON pls.parts_location_id = ms.structure_id
 
 /*@TargetYearMonth
     -- 確定在庫データ
@@ -115,10 +117,10 @@ AND
     pfs.target_month < DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))
 @TargetYearMonth*/
 
-/*@FactoryId
+/*@FactoryIdList
 AND
-    pp.factory_id = @FactoryId
-@FactoryId*/
+    ms.factory_id in @FactoryIdList
+@FactoryIdList*/
 
 /*@JobId
 AND

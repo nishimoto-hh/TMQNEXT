@@ -55,6 +55,7 @@ const FormList = {
 const FormDetail = {
     No: 1,                                    // 画面番号
     PartsInfo: "BODY_010_00_LST_1",           // 予備品情報
+    PartsFactoryId: 10,                       // 管理工場コンボボックス
     LocationInfo: "BODY_020_00_LST_1",        // 標準保管場所情報
     PurchaseInfo: {                           // 購買管理工場
         Id: "BODY_040_00_LST_1",              // 一覧ID
@@ -95,6 +96,24 @@ const FormDetail = {
         CarryLinkNone: "linkDisable",         // 繰越のデータのNo.リンクを無効にするCSSクラス
         ValueCarryCssStyle: "black"           // 繰越のデータのNo.リンクの文字色スタイル
     },
+    Rfid: {                                   // RFIDタグ一覧
+        Id: "BODY_150_00_LST_1",              // 一覧ID
+        RfidTag: 1,                           // RFIDタグ
+        Department: 4,                        // 部門(オートコンプリート)
+        Account: 5,                           // 勘定科目(オートコンプリート)
+        SerialNo: 6,                          // 連番
+        FactoryId: 7,                         // 工場ID
+        UpdateTime: 8,                        // 更新日時
+        DepartmentId: 9,                      // 部門ID
+        AccountId: 10,                        // 勘定科目ID
+        PartsId: 11,                          // 予備品ID
+        RfidTagBefore: 12                     // RFIDタグ(変更前)
+    },
+    RfidHide: {                               // RFIDタグ タブの非表示一覧
+        Id: "BODY_180_00_LST_1",              // 一覧ID
+        DefaultDepartmentCode: 1,             // 標準部門の部門コード
+        DefaultAccountCode: 2                 // 標準勘定科目の勘定科目コード
+    },
     LocationDetailNo: 5,                      // 棚枝番
     PartsId: 9,                               // 非表示で定義している予備品IDの項目番号
     FactoryId: 13,                            // 非表示で定義している地区ID(管理工場の地区)の項目番号
@@ -113,7 +132,9 @@ const FormDetail = {
         HistoryShelf: "HistoryShelf",         // 棚番移庫(入出庫履歴)
         HistoryCategory: "HistoryCategory",   // 部門移庫(入出庫履歴)
         OutputLabelDetail: "OutputLabelDetail", // ラベル出力(画面上部)
-        OutputLabelDetailShed: "OutputLabelDetailShed" // ラベル出力(棚別在庫情報)
+        OutputLabelDetailShed: "OutputLabelDetailShed", // ラベル出力(棚別在庫情報)
+        RegistRfidTag: "RegistRfidTag",                 // RFIDタグ編集画面の登録ボタン
+        DeleteRfid: "DeleteRfid"                        // RFIDタグ行削除用ボタン
     },
     TabNo:                                    // タブ番号
     {
@@ -208,6 +229,15 @@ const InoutDivisionNo =
     Department: "4",     // 部門移庫
     InventoryEnter: "5", // 棚卸入庫
     InventoryIssue: "6"  // 棚卸出庫
+};
+
+// グローバルリストで使用するキー名称(フロントのみで仕様)
+const GlobalKeys =
+{
+    FactoryId: "FactoryId",                         // 工場ID
+    PartsId: "PartsId",                             // 予備品ID
+    DefaultDepartmentCode: "DefaultDepartmentCode", // 標準部門コード
+    DefaultAccountCode: "DefaultAccountCode"        // 標準勘定科目コード
 };
 
 /*==94:初期化処理==*/
@@ -549,35 +579,60 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         // Noリンクがクリックされたら、非表示のボタンをクリックするのでもう一度このメソッド(prevTransForm)が呼ばれます
         else if (btn_ctrlId == '') { // 入出庫履歴一覧のNo.リンククリック
 
-            // 入出庫区分のアイテム番号を取得
-            var itemNo = $(element).parent().parent().find("div[tabulator-field='VAL" + FormDetail.InoutHistory.InoutDivision + "']").find("select").find("option[selected='true']")[0].attributes[1].value;
+            // 入出庫履歴タブが選択されている場合のみ
+            if ($($("#tab_btn_detail_1").find("a[data-tabno='" + FormDetail.TabNo.InoutHistory + "']")[0]).hasClass("selected")) {
 
-            // 入出庫区分に応じて一覧のボタン(非表示)をクリックする
-            var val;
-            switch (itemNo) {
-                case InoutDivisionNo.Enter:         // 入庫
-                case InoutDivisionNo.InventoryEnter:// 棚卸入庫
-                    val = FormDetail.InoutHistory.HistoryEnter; // 入庫ボタン    
-                    break;
+                // 入出庫区分のアイテム番号を取得
+                var itemNo = $(element).parent().parent().find("div[tabulator-field='VAL" + FormDetail.InoutHistory.InoutDivision + "']").find("select").find("option[selected='true']")[0].attributes[1].value;
 
-                case InoutDivisionNo.Issue:         // 出庫
-                case InoutDivisionNo.InventoryIssue:// 棚卸出庫
-                    val = FormDetail.InoutHistory.HistoryIssue; // 出庫ボタン   
-                    break;
+                // 入出庫区分に応じて一覧のボタン(非表示)をクリックする
+                var val;
+                switch (itemNo) {
+                    case InoutDivisionNo.Enter:         // 入庫
+                    case InoutDivisionNo.InventoryEnter:// 棚卸入庫
+                        val = FormDetail.InoutHistory.HistoryEnter; // 入庫ボタン    
+                        break;
 
-                case InoutDivisionNo.Subject:       // 棚番移庫
-                    val = FormDetail.InoutHistory.HistoryShelf; // 棚番移庫ボタン         
-                    break;
+                    case InoutDivisionNo.Issue:         // 出庫
+                    case InoutDivisionNo.InventoryIssue:// 棚卸出庫
+                        val = FormDetail.InoutHistory.HistoryIssue; // 出庫ボタン   
+                        break;
 
-                case InoutDivisionNo.Department:    // 部門移庫
-                    val = FormDetail.InoutHistory.HistoryCategory; // 部門移庫ボタン
-                    break;
+                    case InoutDivisionNo.Subject:       // 棚番移庫
+                        val = FormDetail.InoutHistory.HistoryShelf; // 棚番移庫ボタン         
+                        break;
 
-                default:
-                    return [false, conditionDataList];
+                    case InoutDivisionNo.Department:    // 部門移庫
+                        val = FormDetail.InoutHistory.HistoryCategory; // 部門移庫ボタン
+                        break;
+
+                    default:
+                        return [false, conditionDataList];
+                }
+                clickSelectedRowBtn(element, val);
+                return [false, conditionDataList];
             }
-            clickSelectedRowBtn(element, val);
-            return [false, conditionDataList];
+        }
+        else if (transTarget == FormDetail.Rfid.Id) {
+            // RFIDタグの行追加アイコンが押下された場合
+
+            // グローバル変数に工場ID(予備品の管理工場)を設定
+            var factoryId = getValue(FormDetail.PartsInfo, FormDetail.PartsFactoryId, 2, CtrlFlag.Combo, false, false);
+            P_dicIndividual[GlobalKeys.FactoryId] = factoryId;
+
+            // グローバル変数に予備品ID(表示対象の予備品の予備品ID)を設定
+            var partsId = getValue(FormDetail.PartsInfo, FormDetail.PartsId, 2, CtrlFlag.TextBox, false, false);
+            P_dicIndividual[GlobalKeys.PartsId] = partsId;
+
+            if (rowNo == -1) {
+                // グローバル変数に予備品に紐付く標準部門の部門コードを設定
+                var defaultDepartmentCode = getValue(FormDetail.RfidHide.Id, FormDetail.RfidHide.DefaultDepartmentCode, 1, CtrlFlag.Label, false, false);
+                P_dicIndividual[GlobalKeys.DefaultDepartmentCode] = defaultDepartmentCode;
+
+                // グローバル変数に予備品に紐付く標準勘定科目の勘定科目コードを設定
+                var defaultAccountCode = getValue(FormDetail.RfidHide.Id, FormDetail.RfidHide.DefaultAccountCode, 1, CtrlFlag.Label, false, false);
+                P_dicIndividual[GlobalKeys.DefaultAccountCode] = defaultAccountCode;
+            }
         }
     }
 
@@ -607,6 +662,9 @@ function postBuiltTabulator(tbl, id) {
 
     // 描画された一覧を判定
     if (id == "#" + FormList.Id + getAddFormNo()) { // 一覧画面 予備品一覧
+
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.Id, FormList.FilterId, FormList.Filter);
 
         // 予備品一覧の背景色変更、画像の高さ変更
         postSearchList(tbl);
@@ -670,7 +728,85 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     formNo = getFormNo();
 
     // 画面番号を判定
-    if (formNo == FormEdit.No) {
+    if (formNo == FormDetail.No) {
+
+        // 詳細画面
+        // RFIDタグ編集画面(単票)
+        if (transTarget == FormDetail.Rfid.Id) {
+
+            // 連番を非表示にする
+            var ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.SerialNo, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 工場IDを非表示にする
+            var ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.FactoryId, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 更新日時を非表示にする
+            ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.UpdateTime, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 部門IDを非表示にする
+            ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.DepartmentId, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 勘定科目IDを非表示にする
+            ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.AccountId, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 予備品IDを非表示にする
+            ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.PartsId, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // RFIDタグ(変更前)を非表示にする
+            ctrl = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.RfidTagBefore, 1, CtrlFlag.Label, true, false);
+            $(ctrl).parent().hide();
+
+            // 工場IDを設定(新規の場合)
+            if (P_dicIndividual[GlobalKeys.FactoryId]) {
+                setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.FactoryId, 1, CtrlFlag.Label, P_dicIndividual[GlobalKeys.FactoryId], true, false);
+                delete P_dicIndividual[GlobalKeys.FactoryId];
+            }
+
+            //  予備品IDを設定(新規の場合) 
+            if (P_dicIndividual[GlobalKeys.PartsId]) {
+                setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.PartsId, 1, CtrlFlag.Label, P_dicIndividual[GlobalKeys.PartsId], true, false);
+                delete P_dicIndividual[GlobalKeys.PartsId];
+            }
+
+            // 予備品に紐付く標準部門の部門コードを設定(新規の場合)
+            if (P_dicIndividual[GlobalKeys.DefaultDepartmentCode]) {
+                setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.Department, 1, CtrlFlag.TextBox, P_dicIndividual[GlobalKeys.DefaultDepartmentCode], true, false);
+                delete P_dicIndividual[GlobalKeys.DefaultDepartmentCode];
+            }
+
+            // 予備品に紐付く標準勘定科目の勘定科目コードを設定する(新規の場合)
+            if (P_dicIndividual[GlobalKeys.DefaultAccountCode]) {
+                setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.Account, 1, CtrlFlag.TextBox, P_dicIndividual[GlobalKeys.DefaultAccountCode], true, false);
+                delete P_dicIndividual[GlobalKeys.DefaultAccountCode];
+            }
+            
+            // RFIDタグにフォーカスをセットする
+            setFocusDelay(FormDetail.Rfid.Id, FormDetail.Rfid.RfidTag, 1, CtrlFlag.TextBox, true);
+
+            // オートコンプリート
+            setTimeout(function () {
+
+                // 部門の変更時イベントを発生させ、翻訳を表示
+                var department = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.Department, 1, CtrlFlag.TextBox, true, false);
+                changeNoEdit(department);
+
+                // 勘定科目の変更時イベントを発生させ、翻訳を表示
+                var account = getCtrl(FormDetail.Rfid.Id, FormDetail.Rfid.Account, 1, CtrlFlag.TextBox, true, false);
+                changeNoEdit(account);
+
+
+            }, 200); // 200ミリ秒
+        }
+    }
+    else if (formNo == FormEdit.No) {
+
+        // 詳細編集画面
         if (transDiv == transDivDef.New || transDiv == transDivDef.Edit || transDiv == transDivDef.Copy) {
 
             // 予備品名にフォーカスをセットする
@@ -715,6 +851,12 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
 
     // 共通-出庫一覧の画面再表示前処理
     PT0006_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+
+
+    // RFID一覧の単票で登録された場合 初期化処理を行う
+    if (btnCtrlId == FormDetail.Button.RegistRfidTag && targetCtrlId == FormDetail.Rfid.Id) {
+        initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);
+    }
 }
 
 /**
@@ -773,7 +915,10 @@ function preDeleteRow(appPath, btn, id, checkes) {
         return false;
     }
 
-    return preDeleteRowCommon(id, [FormDetail.List.Id, FormDetail.ListMaintKind.Id]);
+    // 入出庫履歴タブの表示年度(From・To)に表示されている値をグローバル変数に格納
+    setDispYearValue();
+
+    return preDeleteRowCommonForRfid(id, [FormDetail.Rfid.Id]);
 }
 
 /**
@@ -939,6 +1084,12 @@ function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) 
 
     // それ以外の場合
     var conditionDataList = [];
+
+    // 詳細画面 RFIDタグ登録画面で登録ボタンが押下された場合
+    if (conductId == PT0001_ConductId && formNo == FormDetail.No && btn[0].name == FormDetail.Button.RegistRfidTag) {
+        conditionDataList.push(getParamToPT0007FromPT0001(FormList.Id, getValue(FormDetail.Rfid.Id, FormDetail.Rfid.PartsId, 1, CtrlFlag.Label, true, false)));
+    }
+
     return conditionDataList;
 }
 
@@ -1247,9 +1398,10 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
     // 移庫入力画面
     PT0007_setCodeTransOtherNames(appPath, formNo, ctrl, data);
 
+    var id = ctrl[0].id + '';
+
     // 詳細編集画面
     if (formNo == FormEdit.No && data && data.length > 0) {
-        var id = ctrl[0].id + '';
         if (id.indexOf(FormEdit.Location.Id) > -1 && id.indexOf("VAL" + FormEdit.Location.InputLocationId) > -1) {
             // 標準棚番(オートコンプリート)選択時、構成IDを非表示の項目に設定する
             setValue(FormEdit.Location.Id, FormEdit.Location.LocationId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
@@ -1279,6 +1431,18 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
         else if (id.indexOf(FormEdit.Purchase.Id) > -1 && id.indexOf("VAL" + FormEdit.Purchase.AccountCode) > -1) {
             // 標準勘定科目(オートコンプリート)選択時、構成IDを非表示の項目に設定する
             setValue(FormEdit.Purchase.Id, FormEdit.Purchase.AccountStructureId, 1, CtrlFlag.Label, data[0].EXPARAM1, false, false);
+        }
+    }
+    else if (formNo == FormDetail.No && data && data.length > 0) {
+        // 詳細画面
+
+        if (id.indexOf(FormDetail.Rfid.Id) > -1 && id.indexOf("VAL" + FormDetail.Rfid.Department) > -1) {
+            // RFIDタグ編集画面の部門(オートコンプリート)選択時、構成IDを非表示の項目に設定する
+            setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.DepartmentId, 1, CtrlFlag.Label, data[0].EXPARAM1, true, false);
+        }
+        else if (id.indexOf(FormDetail.Rfid.Id) > -1 && id.indexOf("VAL" + FormDetail.Rfid.Account) > -1) {
+            // RFIDタグ編集画面の勘定科目(オートコンプリート)選択時、構成IDを非表示の項目に設定する
+            setValue2(FormDetail.Rfid.Id, FormDetail.Rfid.AccountId, 1, CtrlFlag.Label, data[0].EXPARAM1, true, false);
         }
     }
 }
@@ -1701,4 +1865,35 @@ function deleteDispYearValue() {
     if (P_dicIndividual[DispYearKeyName.YearTo]) {
         delete P_dicIndividual[DispYearKeyName.YearTo];
     }
+}
+
+
+/**
+* 行削除共通処理
+* preDeleteRowで呼出、この処理の戻り値をreturnする
+* @param {any} targetId メソッドの引数のid 処理対象の一覧のコントロールID
+* @param {any} arrListIds 行削除処理を行う対象の一覧のコントロールIDの配列
+*/
+function preDeleteRowCommonForRfid(targetId, arrListIds) {
+    // 削除を行っている一覧が引数に合致する場合True
+    var isMatch = false;
+    // 合致するか確認
+    $.each(arrListIds, function (index, value) {
+        // FormNoを付与
+        if (targetId == value + getAddFormNo()) {
+            // 合致する場合
+            isMatch = true;
+            return false;
+        }
+    })
+
+    if (isMatch) {
+        // 削除ボタン(非表示)をクリック
+        var button = $("#" + targetId).closest("form").find("input[type='button'][name='" + FormDetail.Button.DeleteRfid + "']");
+        $(button).click();
+        // 元々の行削除処理はキャンセル
+        return false;
+    }
+    // 合致しない場合は通常の処理
+    return true;
 }

@@ -254,4 +254,10 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
 function postBuiltTabulator(tbl, id) {
 
     DM0002_postBuitTabulator(tbl, id);
+
+    // 一覧画面
+    if (id == '#' + DM0001_FormList.Id + getAddFormNo()) {
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(DM0001_FormList.Id, DM0001_FormList.FilterId, DM0001_FormList.Filter);
+    }
 }

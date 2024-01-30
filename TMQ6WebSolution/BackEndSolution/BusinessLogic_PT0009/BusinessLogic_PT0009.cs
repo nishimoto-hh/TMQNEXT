@@ -16,6 +16,7 @@ using Dao = BusinessLogic_PT0009.BusinessLogicDataClass_PT0009;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
+using CommonTMQUtil;
 
 /// <summary>
 /// 会計帳票出力
@@ -377,10 +378,14 @@ namespace BusinessLogic_PT0009
                 listUnComment.Add(nameof(condition.TargetYearMonth));
             }
             // 工場
-            if (condition.FactoryId != null && condition.FactoryId >= 0)
+            if (condition.FactoryIdList != null && condition.FactoryIdList.Count > 0)
             {
-                condAccountReport.FactoryId = condition.FactoryId;
-                listUnComment.Add(nameof(condition.FactoryId));
+                condAccountReport.FactoryIdList = condition.FactoryIdList;
+
+                // 工場の絞り込み対象に標準工場「0」を追加
+                condAccountReport.FactoryIdList.Add(0);
+
+                listUnComment.Add(nameof(condition.FactoryIdList));
             }
             // 職種
             if (condition.JobId != null && condition.JobId >= 0)

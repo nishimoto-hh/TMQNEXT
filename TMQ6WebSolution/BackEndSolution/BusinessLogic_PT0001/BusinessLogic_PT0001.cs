@@ -78,6 +78,14 @@ namespace BusinessLogic_PT0001
                 public const string GetStartMonthByFactoryId = "GetStartMonthByFactoryId";
                 /// <summary>SQL名：予備品に紐付く添付情報の最大更新日時を取得</summary>
                 public const string GetMaxDateByPartsId = "GetMaxDateByPartsId";
+                /// <summary>SQL名：RFIDタグ一覧取得</summary>
+                public const string GetRfidTagList = "GetRfidTagList";
+                /// <summary>SQL名：RFIDタグ登録</summary>
+                public const string InsertRfidTag = "InsertRfidTag";
+                /// <summary>SQL名：予備品の標準情報を取得</summary>
+                public const string GetDefaultPartsInfo = "GetDefaultPartsInfo";
+                /// <summary>SQL名：RFIDタグを登録する際の「連番」の値を採番して取得</summary>
+                public const string GetSerialNoForRfid = "GetSerialNoForRfid";
             }
 
             /// <summary>
@@ -261,6 +269,14 @@ namespace BusinessLogic_PT0001
                     /// 入出庫履歴一覧
                     /// </summary>
                     public const string InOutHistoryList = "BODY_140_00_LST_1";
+                    /// <summary>
+                    /// RFIDタグ一覧
+                    /// </summary>
+                    public const string RfidTagList = "BODY_150_00_LST_1";
+                    /// <summary>
+                    /// 予備品標準情報
+                    /// </summary>
+                    public const string DefaultPartsInfo = "BODY_180_00_LST_1";
                 }
 
                 /// <summary>
@@ -269,6 +285,10 @@ namespace BusinessLogic_PT0001
                 public static class Button
                 {
                     /// <summary>
+                    /// 画面上部の削除
+                    /// </summary>
+                    public const string Delete = "Delete";
+                    /// <summary>
                     /// 画面上部(戻るボタンの横)のラベル出力
                     /// </summary>
                     public const string OutputLabelDetail = "OutputLabelDetail";
@@ -276,6 +296,14 @@ namespace BusinessLogic_PT0001
                     /// 棚別在庫一覧のラベル出力
                     /// </summary>
                     public const string OutputLabelDetailShed = "OutputLabelDetailShed";
+                    /// <summary>
+                    /// RFIDタグ一覧のレコード削除
+                    /// </summary>
+                    public const string DeleteRfid = "DeleteRfid";
+                    /// <summary>
+                    /// RFIDタグ単票の登録ボタン
+                    /// </summary>
+                    public const string RegistRfidTag = "RegistRfidTag";
                 }
             }
 
@@ -460,7 +488,25 @@ namespace BusinessLogic_PT0001
                     break;
                 case ConductInfo.FormDetail.FormNo:             // 詳細画面
                     // 詳細編集画面の新規登録後か初期表示(一覧画面のNo.リンク)を判定
-                    DetailDispType detailType = compareId.IsRegist() ? DetailDispType.AfterRegist : DetailDispType.Init;
+                    DetailDispType detailType;
+                    if (compareId.IsRegist())
+                    {
+                        if (compareId.IsStartId(ConductInfo.FormDetail.Button.RegistRfidTag.ToUpper()))
+                        {
+                            // 詳細画面のRFIDタグ単票画面の登録処理後
+                            detailType = DetailDispType.Init;
+                        }
+                        else
+                        {
+                            // 詳細編集画面の登録処理後
+                            detailType = DetailDispType.AfterRegist;
+                        }
+                    }
+                    else
+                    {
+                        detailType = DetailDispType.Init;
+                    }
+
                     if (compareId.IsBack())
                     {
                         // 戻るの場合
@@ -559,19 +605,50 @@ namespace BusinessLogic_PT0001
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int RegistImpl()
         {
-            // 詳細編集画面の登録処理結果によりエラー処理を行う
-            if (!executeRegistEdit())
+            // 画面番号を判定
+            switch (this.FormNo)
             {
-                // エラー終了
-                this.Status = CommonProcReturn.ProcStatus.Error;
-                // 未設定時にエラーメッセージを設定
-                if (string.IsNullOrEmpty(this.MsgId))
-                {
-                    // 「登録処理に失敗しました。」
-                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
-                }
-                return ComConsts.RETURN_RESULT.NG;
+                case ConductInfo.FormDetail.FormNo:
+                    // 詳細画面(RFIDタグ登録画面)
+                    if (!registRfidTag())
+                    {
+                        // エラー終了
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        // 未設定時にエラーメッセージを設定
+                        if (string.IsNullOrEmpty(this.MsgId))
+                        {
+                            // 「登録処理に失敗しました。」
+                            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
+                        }
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+
+                    // 登録時の確認メッセージを表示する場合はここで終了
+                    if(this.Status == CommonProcReturn.ProcStatus.Confirm)
+                    {
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+
+                    break;
+
+                case ConductInfo.FormEdit.FormNo: // 詳細編集画面
+                    if (!executeRegistEdit())
+                    {
+                        // エラー終了
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        // 未設定時にエラーメッセージを設定
+                        if (string.IsNullOrEmpty(this.MsgId))
+                        {
+                            // 「登録処理に失敗しました。」
+                            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911200003 });
+                        }
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+                default:
+                    return ComConsts.RETURN_RESULT.NG;
             }
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「登録処理に成功しました。」
@@ -588,11 +665,27 @@ namespace BusinessLogic_PT0001
         {
             this.ResultList = new();
 
-            // 詳細画面 削除ボタン
-            if (!deletePartsInfo())
+            switch (this.CtrlId)
             {
-                setError();
-                return ComConsts.RETURN_RESULT.NG;
+                case ConductInfo.FormDetail.Button.Delete:
+                    // 詳細画面 削除ボタン
+                    if (!deletePartsInfo())
+                    {
+                        setError();
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+
+                case ConductInfo.FormDetail.Button.DeleteRfid:
+                    // RFID一覧のレコード削除
+                    if (!deleteRfidTag())
+                    {
+                        setError();
+                        return ComConsts.RETURN_RESULT.NG;
+                    }
+                    break;
+                default:
+                    return ComConsts.RETURN_RESULT.NG;
             }
 
             // 正常終了

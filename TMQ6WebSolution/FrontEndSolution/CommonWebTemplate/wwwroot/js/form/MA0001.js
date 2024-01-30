@@ -2206,6 +2206,11 @@ function postBuiltTabulator(tbl, id) {
     // 文書管理 詳細画面
     DM0002_postBuitTabulator(tbl, id);
 
+    if (getFormNo() == FormList.No && id == '#' + FormList.List.Id + getAddFormNo()) {
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.List.Id, FormList.Filter.Id, FormList.Filter.Input);
+    }
+
     if (getFormNo() == FormDetail.No && id == '#' + FormDetail.MachineList.Id + getAddFormNo()) {
         //詳細画面の対象機器一覧
 
@@ -2870,7 +2875,8 @@ function unEnableUseDays(rows) {
     $.each(rows, function (idx, row) {
 
         // レコードの機番IDを取得
-        machineId = $(row._row.element).find("div[tabulator-field=VAL" + FormRegist.MachineList.MachineId + "]")[0].innerText;
+        //machineId = $(row._row.element).find("div[tabulator-field=VAL" + FormRegist.MachineList.MachineId + "]")[0].innerText;
+        machineId = row.getData()["VAL" + FormRegist.MachineList.MachineId];
 
         // レコードの機器使用期間のテキストボックス要素
         useDaysEle = $(row._row.element).find("div[tabulator-field=VAL" + FormRegist.MachineList.UseDays + "]").find("input")[0];

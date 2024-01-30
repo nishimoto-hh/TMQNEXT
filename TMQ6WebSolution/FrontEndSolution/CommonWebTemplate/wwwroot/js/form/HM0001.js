@@ -532,6 +532,8 @@ function postBuiltTabulator(tbl, id) {
 
     // 描画された一覧を判定
     if (id == "#" + FormList.List.Id + getAddFormNo()) { // 一覧画面 機器台帳一覧
+        // 一覧フィルタ処理実施
+        callExecuteListFilter(FormList.List.Id, FormList.Filter.Id, FormList.Filter.ColumnNo);
 
         // 背景色変更処理
         commonChangeBackGroundColorHistory(tbl, FormList.List.ColumnNo.ApplicationDivisionCode, FormList.List.ColumnNo.ValueChanged, FormList.List.ColumnNo);
