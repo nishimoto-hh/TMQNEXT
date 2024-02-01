@@ -38,9 +38,3 @@ input:-webkit-autofill {
 .select180-max-width {
     max-width: 180px;
 }
-
-/* プルダウンのサイズ指定 絞込件数用 */
-.DispCount {
-    max-width: 60px;
-}
-
