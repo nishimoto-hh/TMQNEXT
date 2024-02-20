@@ -64,6 +64,11 @@ main AS(
     AND st.language_id = /*languageId*/'ja'
     AND st.structure_layer_no = 3
     AND st.parent_structure_id = /*param1*/0
+    /*IF factoryIdList != null && factoryIdList.Count > 0*/
+        -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+        AND (st.factory_id = 0 and st.location_structure_id IN (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) IN (st.factory_id, 0))
+    /*END*/
+
     /*IF param2 != null && param2 != ''*/
         /*IF !getNameFlg */
             -- 翻訳で検索

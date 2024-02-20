@@ -225,7 +225,9 @@ AND NOT EXISTS(
         AND unused.structure_id = st.structure_id
     )
 )
-SELECT
+-- レコードの重複を除去する
+--SELECT
+SELECT DISTINCT
     0 AS factoryId,
     0 AS translationFactoryId,
     id AS 'values',
@@ -240,3 +242,5 @@ WHERE
 /*IF rowLimit != null && rowLimit != ''*/
     row_num < /*rowLimit*/30 
 /*END*/
+-- DISTINCT適用時にソートされてしまうため、row_numでソートする
+ORDER BY row_num

@@ -73,6 +73,8 @@ main AS (
         1 = 1 
     /*IF factoryIdList != null && factoryIdList.Count > 0*/
         AND vs.factory_id IN /*factoryIdList*/(0) 
+        -- 共通工場のレコードまたは翻訳用工場IDと表示順用工場IDが一致するもののみ抽出
+        AND vs.location_structure_id IN (coalesce(ft.factory_id, 0), 0)
     /*END*/
     /*IF param1 != null && param1 != ''*/
         AND ms.parent_structure_id = /*param1*/'1' 
