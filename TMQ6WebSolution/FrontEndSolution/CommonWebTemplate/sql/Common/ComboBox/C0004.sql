@@ -73,6 +73,8 @@ AND
            unused.factory_id = ft.factory_id
        AND unused.structure_id = item.structure_id
    )
+   -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+   AND (item.factory_id = 0 AND item.location_structure_id IN (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) IN (item.factory_id, 0))
 /*END*/
 ORDER BY
     item.structure_group_id,

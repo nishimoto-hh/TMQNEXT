@@ -52,6 +52,8 @@ select item.factory_id as factoryId,
    
 /*IF factoryIdList != null && factoryIdList.Count > 0*/
    and item.factory_id in /*factoryIdList*/(0)
+   -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+   and (item.factory_id = 0 and item.location_structure_id in (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) in (item.factory_id, 0))
 /*END*/
 
 /*IF param2 != null && param2 != '' */

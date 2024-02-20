@@ -185,6 +185,8 @@ WHERE
             unused.factory_id = ft.factory_id
         AND unused.structure_id IN(t.structure_id, t.factory_structure_id)
     )
+   -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+   AND (t.factoryId = 0 and t.translationFactoryId in (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) in (t.factoryId, 0))
 /*END*/
 ORDER BY
      orderFactoryId

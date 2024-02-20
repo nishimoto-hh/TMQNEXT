@@ -164,6 +164,10 @@ FROM
     LEFT OUTER JOIN ms_structure_order AS order_common
     ON  s.structure_id = order_common.structure_id
     AND order_common.factory_id = 0
+    /*IF factoryIdList != null && factoryIdList.Count > 0*/
+   -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+   WHERE (t.factoryId = 0 and s.location_structure_id in (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) in (t.factoryId, 0))
+    /*END*/
 ORDER BY
     /*IF factoryIdList != null && factoryIdList.Count > 0*/
     -- 工場ID毎の表示順

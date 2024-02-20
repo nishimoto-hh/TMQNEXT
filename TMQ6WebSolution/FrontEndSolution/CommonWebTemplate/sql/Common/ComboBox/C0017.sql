@@ -50,6 +50,8 @@ select item.factory_id as factoryId,
    and item.language_id = /*languageId*/'ja'
 --/*IF factoryIdList != null && factoryIdList.Count > 0*/
 --   and factory_id in /*factoryIdList*/(0)
+   -- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+   and (item.factory_id = 0 and item.location_structure_id in (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) in (item.factory_id, 0))
 --/*END*/
 /*IF param2 != null*/
    and item.structure_layer_no = /*param2*/0

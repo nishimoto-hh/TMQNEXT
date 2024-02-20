@@ -54,6 +54,8 @@ WHERE
 AND item.language_id = /*languageId*/'ja'
     /*IF factoryIdList != null && factoryIdList.Count > 0*/
 AND item.factory_id IN /*factoryIdList*/(0)
+-- 共通工場のレコードまたは絞込用工場IDと表示順用工場IDが一致するもののみ抽出
+AND (item.factory_id = 0 AND item.location_structure_id IN (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) IN (item.factory_id, 0))
     /*END*/
     /*IF param2 != null && param2 != '' */
 AND item.structure_layer_no = /*param2*/0
