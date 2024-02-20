@@ -20,10 +20,10 @@ with mq as ( -- 標準アイテム(工場IDも翻訳の工場IDも「0」)のMQ�
         mso.structure_group_id = 1850 
         and mso.factory_id = 0
 ) 
-, summary as ( -- MQ分類ごとの件数を取得
+, summary as ( -- MQ分類ごとのカウント件数の合計値を取得
     select
         summary.mq_class_structure_id
-        , count(*) as cnt 
+        , sum(summary.maintenance_count) as cnt
     from
         ma_summary summary
 
@@ -42,7 +42,7 @@ with mq as ( -- 標準アイテム(工場IDも翻訳の工場IDも「0」)のMQ�
 select
     mq.structure_id                   -- MQ分類の構成ID
     , mq.mq_name                      -- MQ分類名
-    , coalesce(summary.cnt, 0) as cnt -- MQ分類ごとの件数
+    , coalesce(summary.cnt, 0) as cnt -- MQ分類ごとのカウント件数の合計値
 from
     mq 
     left join sort 

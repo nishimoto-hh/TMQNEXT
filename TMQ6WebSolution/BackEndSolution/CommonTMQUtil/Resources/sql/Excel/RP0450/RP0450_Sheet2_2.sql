@@ -1,7 +1,7 @@
-with sudden as ( -- 突発計画区分ごとの件数を取得
+with sudden as ( -- 突発計画区分ごとのカウント件数の合計値を取得
     select
         ex.extension_data
-        , count(*) as cnt 
+        , sum(summary.maintenance_count) as cnt 
     from
         ma_summary summary 
         left join ms_structure ms 
@@ -44,7 +44,7 @@ with sudden as ( -- 突発計画区分ごとの件数を取得
 ) 
 select
     main.sudden_division           -- 突発計画区分
-    , coalesce(main.cnt, 0) as cnt -- 突発計画区分ごとの件数
+    , coalesce(main.cnt, 0) as cnt -- 突発計画区分ごとのカウント件数の合計値
 from
     main 
 order by

@@ -5180,6 +5180,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 設備区分</summary>
             /// <value>設備区分</value>
             public int? FacilityStructureId { get; set; }
+            /// <summary>Gets or sets 長計区分</summary>
+            /// <value>長計区分</value>
+            public int? LongPlanDivisionStructureId { get; set; }
+            /// <summary>Gets or sets 長計グループ</summary>
+            /// <value>長計グループ</value>
+            public int? LongPlanGroupStructureId { get; set; }
 
             /// <summary>
             /// プライマリーキー

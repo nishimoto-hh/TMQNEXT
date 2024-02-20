@@ -184,7 +184,7 @@ FROM
         -- COALESCE(pls.parts_location_detail_no, pin.parts_location_detail_no) AS parts_location_detail_no, 
         pin.parts_location_id AS parts_location_id, -- 棚番
         pin.parts_location_detail_no AS parts_location_detail_no, 
-        temp.factoryId,
+        pp.factory_id AS factoryId,
         temp.languageId,
         pp.parts_no, -- 予備品ｺｰﾄﾞNo.
         pp.parts_name, -- 品名
@@ -241,7 +241,7 @@ FROM
 --        pls.parts_location_detail_no, 
         pin.parts_location_id,
         pin.parts_location_detail_no,
-        temp.factoryId,
+        pp.factory_id,
         temp.languageId,
         pp.parts_no,
         pp.parts_name,
