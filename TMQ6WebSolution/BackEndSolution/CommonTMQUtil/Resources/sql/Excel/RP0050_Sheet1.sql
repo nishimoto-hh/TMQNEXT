@@ -180,7 +180,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.location_factory_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.location_factory_structure_id
 	    ) AS factory_name
@@ -199,7 +199,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.location_plant_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.location_plant_structure_id
 	    ) AS plant_name
@@ -218,7 +218,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.location_series_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.location_series_structure_id
 	    ) AS series_name
@@ -237,7 +237,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.location_stroke_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.location_stroke_structure_id
 	    ) AS stroke_name
@@ -256,7 +256,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.location_facility_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.location_facility_structure_id
 	    ) AS facility_name
@@ -275,7 +275,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = sm.job_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = sm.job_structure_id
 	    ) AS job_name,
@@ -286,7 +286,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
         ELSE 
             TransNotExists.translation_text -- なし
         END AS call_count_name,
-	    CASE WHEN ISNULL(maintenance_count, 0) >= 1 THEN 
+	    CASE WHEN ISNULL(stop_count, 0) >= 1 THEN 
             TransExists.translation_text -- あり
         ELSE 
             TransNotExists.translation_text -- なし
@@ -307,7 +307,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = sudden_division_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = sudden_division_structure_id
         ) AS sudden_division_name,                        -- 突発区分
@@ -325,7 +325,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mq_class_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = mq_class_structure_id
         ) AS mq_class_name,                        -- MQ分類
@@ -349,7 +349,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = hs.maintenance_season_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = hs.maintenance_season_structure_id
         ) AS maintenance_season_name,                        -- 時期
@@ -377,7 +377,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = discovery_methods_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = discovery_methods_structure_id
         ) AS discovery_methods_name,                        -- 発見方法
@@ -395,7 +395,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = actual_result_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = actual_result_structure_id
         ) AS actual_result_name,                        -- 実績結果
@@ -413,7 +413,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = sm.budget_management_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = sm.budget_management_structure_id
         ) AS budget_management_name,                        -- 予算管理区分
@@ -431,7 +431,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = budget_personality_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = budget_personality_structure_id
         ) AS budget_personality_name,                        -- 予算性格区分
@@ -451,7 +451,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mc.equipment_level_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = mc.equipment_level_structure_id
         ) AS equipment_level,                        -- 機器レベル
@@ -472,7 +472,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = importance_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = importance_structure_id
         ) AS importance_name,                        -- 重要度
@@ -490,7 +490,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = conservation_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = conservation_structure_id
         ) AS conservation_name,                        -- 保全方式
@@ -508,7 +508,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f 
 	                WHERE
 	                    st_f.structure_id = app1.applicable_laws_structure_id
-	                    AND st_f.factory_id IN (0, @w_key3)
+	                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 	            )
 	            AND tra.structure_id = app1.applicable_laws_structure_id
 	      ) AS applicable_laws_name1                        -- 適用法規１
@@ -526,7 +526,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f 
 	                WHERE
 	                    st_f.structure_id = app2.applicable_laws_structure_id
-	                    AND st_f.factory_id IN (0, @w_key3)
+	                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 	            )
 	            AND tra.structure_id = app2.applicable_laws_structure_id
 	      ) AS applicable_laws_name2                        -- 適用法規２
@@ -544,7 +544,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f 
 	                WHERE
 	                    st_f.structure_id = app3.applicable_laws_structure_id
-	                    AND st_f.factory_id IN (0, @w_key3)
+	                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 	            )
 	            AND tra.structure_id = app3.applicable_laws_structure_id
 	      ) AS applicable_laws_name3                        -- 適用法規３
@@ -562,7 +562,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f 
 	                WHERE
 	                    st_f.structure_id = app4.applicable_laws_structure_id
-	                    AND st_f.factory_id IN (0, @w_key3)
+	                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 	            )
 	            AND tra.structure_id = app4.applicable_laws_structure_id
 	      ) AS applicable_laws_name4                        -- 適用法規４
@@ -580,7 +580,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f 
 	                WHERE
 	                    st_f.structure_id = app5.applicable_laws_structure_id
-	                    AND st_f.factory_id IN (0, @w_key3)
+	                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 	            )
 	            AND tra.structure_id = app5.applicable_laws_structure_id
       ) AS applicable_laws_name5,                       -- 適用法規５
@@ -599,7 +599,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = use_segment_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = use_segment_structure_id
         ) AS use_segment_name,                        -- 使用区分
@@ -625,7 +625,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = manufacturer_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = manufacturer_structure_id
         ) AS manufacturer_name,                        -- メーカー
@@ -648,7 +648,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = inspection_content_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = inspection_content_structure_id
         ) AS work_item_name,                        -- 作業項目
@@ -676,7 +676,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = his.inspection_site_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = his.inspection_site_structure_id
         ) AS maintenance_site,                        -- 作業部位
@@ -694,7 +694,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = hic.inspection_content_structure_id
-                    AND st_f.factory_id IN (0, @w_key3)
+                    AND st_f.factory_id IN (0, sm.location_factory_structure_id)
             )
             AND tra.structure_id = hic.inspection_content_structure_id
         ) AS inspection_content_name,                        -- 作業項目(保全項目)
@@ -714,7 +714,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.location_factory_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.location_factory_structure_id
 	    ) AS factory_name2
@@ -733,7 +733,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.location_plant_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.location_plant_structure_id
 	    ) AS plant_name2
@@ -752,7 +752,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.location_series_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.location_series_structure_id
 	    ) AS series_name2
@@ -771,7 +771,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.location_stroke_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.location_stroke_structure_id
 	    ) AS stroke_name2
@@ -790,7 +790,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.location_facility_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.location_facility_structure_id
 	    ) AS facility_name2
@@ -809,7 +809,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.job_kind_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.job_kind_structure_id
 	    ) AS job_name2
@@ -828,7 +828,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.job_large_classfication_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.job_large_classfication_structure_id
 	    ) AS large_classfication_name2
@@ -847,7 +847,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.job_middle_classfication_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.job_middle_classfication_structure_id
 	    ) AS middle_classfication_name2
@@ -866,7 +866,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	                    #temp_structure_factory AS st_f
 	                WHERE
 	                    st_f.structure_id = mc.job_small_classfication_structure_id
-	                AND st_f.factory_id IN(0, @w_key3)
+	                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 	            )
 	        AND tra.structure_id = mc.job_small_classfication_structure_id
 	    ) AS small_classfication_name2
@@ -1019,7 +1019,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.location_factory_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.location_factory_structure_id
 		    ) AS factory_name
@@ -1038,7 +1038,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.location_plant_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.location_plant_structure_id
 		    ) AS plant_name
@@ -1057,7 +1057,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.location_series_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.location_series_structure_id
 		    ) AS series_name
@@ -1076,7 +1076,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.location_stroke_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.location_stroke_structure_id
 		    ) AS stroke_name
@@ -1095,7 +1095,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.location_facility_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.location_facility_structure_id
 		    ) AS facility_name
@@ -1114,7 +1114,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = sm.job_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, sm.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = sm.job_structure_id
 		    ) AS job_name,
@@ -1133,7 +1133,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = phenomenon_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = phenomenon_structure_id
             ) AS phenomenon_name,                        -- 現象
@@ -1163,7 +1163,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = sudden_division_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = sudden_division_structure_id
             ) AS sudden_division_name,                        -- 突発区分
@@ -1181,7 +1181,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = mq_class_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = mq_class_structure_id
             ) AS mq_class_name,                        -- MQ分類
@@ -1205,7 +1205,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = hs.maintenance_season_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = hs.maintenance_season_structure_id
             ) AS maintenance_season_name,                        -- 時期
@@ -1233,7 +1233,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = discovery_methods_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = discovery_methods_structure_id
             ) AS discovery_methods_name,                        -- 発見方法
@@ -1251,7 +1251,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = actual_result_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = actual_result_structure_id
             ) AS actual_result_name,                        -- 実績結果
@@ -1269,7 +1269,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = sm.budget_management_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = sm.budget_management_structure_id
             ) AS budget_management_name,                        -- 予算管理区分
@@ -1287,7 +1287,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = budget_personality_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = budget_personality_structure_id
             ) AS budget_personality_name,                        -- 予算性格区分
@@ -1307,7 +1307,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = mc.equipment_level_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, mc.location_factory_structure_id)
                  )
                  AND tra.structure_id = mc.equipment_level_structure_id
             ) AS equipment_level,                        -- 機器レベル
@@ -1328,7 +1328,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = importance_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, mc.location_factory_structure_id)
                  )
                  AND tra.structure_id = importance_structure_id
             ) AS importance_name,                        -- 重要度
@@ -1346,7 +1346,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = conservation_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, mc.location_factory_structure_id)
                  )
                  AND tra.structure_id = conservation_structure_id
             ) AS conservation_name,                        -- 保全方式
@@ -1364,7 +1364,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f 
 		                WHERE
 		                    st_f.structure_id = app1.applicable_laws_structure_id
-		                    AND st_f.factory_id IN (0, @w_key3)
+		                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 		            )
 		            AND tra.structure_id = app1.applicable_laws_structure_id
 		      ) AS applicable_laws_name1                        -- 適用法規１
@@ -1382,7 +1382,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f 
 		                WHERE
 		                    st_f.structure_id = app2.applicable_laws_structure_id
-		                    AND st_f.factory_id IN (0, @w_key3)
+		                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 		            )
 		            AND tra.structure_id = app2.applicable_laws_structure_id
 		      ) AS applicable_laws_name2                        -- 適用法規２
@@ -1400,7 +1400,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f 
 		                WHERE
 		                    st_f.structure_id = app3.applicable_laws_structure_id
-		                    AND st_f.factory_id IN (0, @w_key3)
+		                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 		            )
 		            AND tra.structure_id = app3.applicable_laws_structure_id
 		      ) AS applicable_laws_name3                        -- 適用法規３
@@ -1418,7 +1418,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f 
 		                WHERE
 		                    st_f.structure_id = app4.applicable_laws_structure_id
-		                    AND st_f.factory_id IN (0, @w_key3)
+		                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 		            )
 		            AND tra.structure_id = app4.applicable_laws_structure_id
 		      ) AS applicable_laws_name4                        -- 適用法規４
@@ -1436,7 +1436,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f 
 		                WHERE
 		                    st_f.structure_id = app5.applicable_laws_structure_id
-		                    AND st_f.factory_id IN (0, @w_key3)
+		                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
 		            )
 		            AND tra.structure_id = app5.applicable_laws_structure_id
 	      ) AS applicable_laws_name5,                       -- 適用法規５
@@ -1455,7 +1455,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = use_segment_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, mc.location_factory_structure_id)
                  )
                  AND tra.structure_id = use_segment_structure_id
             ) AS use_segment_name,                         -- 使用区分
@@ -1481,7 +1481,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = manufacturer_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, mc.location_factory_structure_id)
                  )
                  AND tra.structure_id = manufacturer_structure_id
             ) AS manufacturer_name,                        -- メーカー
@@ -1504,7 +1504,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = inspection_content_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = inspection_content_structure_id
             ) AS work_item_name,                        -- 作業項目
@@ -1523,7 +1523,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = hf.failure_cause_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = hf.failure_cause_structure_id
             ) AS failure_cause_addition_note,                        -- 故障原因
@@ -1541,7 +1541,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = hf.failure_cause_personality_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = hf.failure_cause_personality_structure_id
             ) AS failure_cause_personality_note,                        -- 原因性格
@@ -1559,7 +1559,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = hf.treatment_measure_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = hf.treatment_measure_structure_id
             ) AS treatment_measure_name,                        -- 処置・対策
@@ -1584,7 +1584,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
                          #temp_structure_factory AS st_f 
                      WHERE
                          st_f.structure_id = hic.inspection_content_structure_id
-                         AND st_f.factory_id IN (0, @w_key3)
+                         AND st_f.factory_id IN (0, sm.location_factory_structure_id)
                  )
                  AND tra.structure_id = hic.inspection_content_structure_id
             ) AS inspection_content_name,                        -- 作業項目(保全項目)
@@ -1604,7 +1604,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.location_factory_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.location_factory_structure_id
 		    ) AS factory_name2
@@ -1623,7 +1623,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.location_plant_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.location_plant_structure_id
 		    ) AS plant_name2
@@ -1642,7 +1642,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.location_series_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.location_series_structure_id
 		    ) AS series_name2
@@ -1661,7 +1661,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.location_stroke_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.location_stroke_structure_id
 		    ) AS stroke_name2
@@ -1680,7 +1680,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.location_facility_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.location_facility_structure_id
 		    ) AS facility_name2
@@ -1699,7 +1699,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.job_kind_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.job_kind_structure_id
 		    ) AS job_name2
@@ -1718,7 +1718,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.job_large_classfication_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.job_large_classfication_structure_id
 		    ) AS large_classfication_name2
@@ -1737,7 +1737,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.job_middle_classfication_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.job_middle_classfication_structure_id
 		    ) AS middle_classfication_name2
@@ -1756,7 +1756,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 		                    #temp_structure_factory AS st_f
 		                WHERE
 		                    st_f.structure_id = mc.job_small_classfication_structure_id
-		                AND st_f.factory_id IN(0, @w_key3)
+		                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
 		            )
 		        AND tra.structure_id = mc.job_small_classfication_structure_id
 		    ) AS small_classfication_name2
@@ -1767,16 +1767,19 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
         LEFT JOIN ma_plan mp
 	    ON mp.summary_id = sm.summary_id
 	    LEFT JOIN ma_request req
-	    ON req.summary_id = sm.summary_id,
-        ma_history hs
+	    ON req.summary_id = sm.summary_id
+        LEFT JOIN ma_history hs
+		ON sm.summary_id = hs.summary_id
 	    LEFT JOIN (select min(history_machine_id) AS history_machine_id, history_id, machine_id from ma_history_machine group by history_id, machine_id) hsm
 	    ON hs.history_id = hsm.history_id
 	    LEFT JOIN ma_history_inspection_site his
 	    ON hsm.history_machine_id = his.history_machine_id
 	    LEFT JOIN ma_history_inspection_content hic
 	    ON his.history_inspection_site_id = hic.history_inspection_site_id
+	    LEFT JOIN ma_history_failure hf
+		ON hs.history_id = hf.history_id
 	    LEFT JOIN mc_machine mc
-	    ON hsm.machine_id = mc.machine_id
+	    ON hf.machine_id = mc.machine_id
 	    LEFT JOIN mc_equipment eq
 	    ON mc.machine_id = eq.machine_id
         LEFT JOIN (
@@ -1873,8 +1876,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
 	            WHERE
 	                app.rnk = 5
 	            ) app5                      -- 適用法規５
-	        ON mc.machine_id = app5.machine_id,
-	    ma_history_failure hf
+	        ON mc.machine_id = app5.machine_id
     CROSS JOIN
        CirculationTargetTrue --「対象」の翻訳
     CROSS JOIN
@@ -1884,9 +1886,7 @@ WITH CirculationTargetTrue AS(-- 「対象」の翻訳を取得
     CROSS JOIN
        TransNotExists -- 「なし」の翻訳
         WHERE
-            sm.summary_id = hs.summary_id
-        and hs.history_id = hf.history_id
-        and sm.activity_division = 2 -- 故障
+        sm.activity_division = 2 -- 故障
         and hf.machine_id = @w_key1
     )tbl
     order by ISNULL(completion_date,'9999/12/31') desc

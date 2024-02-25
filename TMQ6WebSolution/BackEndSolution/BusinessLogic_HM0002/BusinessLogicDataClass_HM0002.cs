@@ -251,6 +251,12 @@ namespace BusinessLogic_HM0002
             /// <summary>Gets or sets 設備区分(翻訳)</summary>
             /// <value>設備区分(翻訳)</value>
             public string FacilityStructureName { get; set; }
+            /// <summary>Gets or sets 長計区分(翻訳)</summary>
+            /// <value>長計区分(翻訳)</value>
+            public string LongPlanDivisionName { get; set; }
+            /// <summary>Gets or sets 長計グループ(翻訳)</summary>
+            /// <value>長計グループ(翻訳)</value>
+            public string LongPlanGroupName { get; set; }
             /// <summary>Gets or sets 申請状況</summary>
             /// <value>申請状況</value>
             public string ApplicationStatusName { get; set; }
@@ -370,7 +376,8 @@ namespace BusinessLogic_HM0002
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateUserId, nameof(this.UpdateUserId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.DeleteFlg, nameof(this.DeleteFlg), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.LanguageId, nameof(this.LanguageId), mapDic);
-
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanDivisionName, nameof(this.LongPlanDivisionName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LongPlanGroupName, nameof(this.LongPlanGroupName), mapDic);
                 return paramObj;
             }
         }

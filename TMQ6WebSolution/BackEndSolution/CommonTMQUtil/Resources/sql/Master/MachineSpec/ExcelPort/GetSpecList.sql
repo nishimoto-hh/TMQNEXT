@@ -166,7 +166,9 @@ FROM
     ON  spec.spec_id = re.spec_id
 
 WHERE EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND stf.factory_id = temp.structure_id)
+/*@DeleteFlg
 AND spec.delete_flg = 0
+@DeleteFlg*/
 
 ORDER BY
     stf.factory_id,

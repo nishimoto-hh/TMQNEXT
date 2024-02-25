@@ -398,6 +398,8 @@ namespace BusinessLogic_HM0002
                 historyEntity.WorkClassStructureId = registInfo.WorkClassStructureId;
                 historyEntity.TreatmentStructureId = registInfo.TreatmentStructureId;
                 historyEntity.FacilityStructureId = registInfo.FacilityStructureId;
+                historyEntity.LongPlanDivisionStructureId = registInfo.LongPlanDivisionStructureId;
+                historyEntity.LongPlanGroupStructureId = registInfo.LongPlanGroupStructureId;
 
                 // テーブル共通項目を設定
                 setExecuteConditionByDataClassCommon<ComDao.HmLnLongPlanEntity>(ref historyEntity, now, userId, userId);

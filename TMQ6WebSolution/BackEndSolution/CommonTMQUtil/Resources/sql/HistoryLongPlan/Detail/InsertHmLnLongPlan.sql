@@ -33,6 +33,8 @@ INTO hm_ln_long_plan(
     , [insert_user_id]                          -- 登録ユーザー
     , [update_datetime]                         -- 更新日時
     , [update_user_id]                          -- 更新ユーザー
+    , [long_plan_division_structure_id]         -- 長計区分
+    , [long_plan_group_structure_id]            -- 長計グループ
 ) 
 VALUES ( 
     NEXT VALUE FOR seq_hm_ln_long_plan_hm_long_plan_id -- 長計件名変更管理id
@@ -74,4 +76,6 @@ VALUES (
     , @InsertUserId                             -- 登録ユーザー
     , @UpdateDatetime                           -- 更新日時
     , @UpdateUserId                             -- 更新ユーザー
+    , @LongPlanDivisionStructureId              -- 長計区分
+    , @LongPlanGroupStructureId                 -- 長計グループ
 )

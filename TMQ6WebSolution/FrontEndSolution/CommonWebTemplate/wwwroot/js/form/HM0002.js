@@ -97,7 +97,9 @@ const FormList = {
             FacilityDivision: 25,        // 設備区分
             Content: 30,                 // 保全情報変更有無
             ApplicationDivisionCode: 55, // 申請区分コード(拡張項目)
-            ValueChanged: 56             // 変更のあった項目
+            ValueChanged: 56,            // 変更のあった項目
+            LongPlanDivision: 57,        // 長計区分
+            LongPlanGroup: 58            // 長計グループ
         }
     } // 一覧
     , Button: {
@@ -195,6 +197,8 @@ const FormDetail = {
             , WorkClass: 2 //作業区分
             , Treatment: 3 //処置区分
             , FacilityDivision: 4 //設備区分
+            , LongPlanDivision: 5 // 長計区分
+            , LongPlanGroup: 6 // 長計グループ
         }
     }
     , Subject: {
@@ -1207,7 +1211,7 @@ function getColumnList() {
     var list = [];
     list.push(FormDetail.Location); // 地区～設備
     list.push(FormDetail.Job); // 職種～保全時期
-    list.push(FormDetail.Purpose); // 目的区分～設備区分
+    list.push(FormDetail.Purpose); // 目的区分～長計グループ
     list.push(FormDetail.Subject); // 件名～件名メモ
     list.push(FormDetail.Person); // 担当
 

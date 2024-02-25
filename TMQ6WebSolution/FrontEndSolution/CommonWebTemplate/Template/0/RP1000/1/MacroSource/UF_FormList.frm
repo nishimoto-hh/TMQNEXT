@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} UF_FormList
    ClientHeight    =   5448
    ClientLeft      =   105
    ClientTop       =   450
-   ClientWidth     =   9165
+   ClientWidth     =   9165.001
    OleObjectBlob   =   "UF_FormList.frx":0000
    StartUpPosition =   1  'オーナー フォームの中央
 End

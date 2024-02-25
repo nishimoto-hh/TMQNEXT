@@ -103,34 +103,721 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="csv\AA0001.csv" />
+    <None Remove="csv\AA0002.csv" />
+    <None Remove="csv\AA0003.csv" />
+    <None Remove="csv\AA0003_2.csv" />
+    <None Remove="csv\AA0003_3.csv" />
+    <None Remove="csv\AA0004.csv" />
+    <None Remove="csv\AA0005.csv" />
+    <None Remove="csv\CC0001.csv" />
+    <None Remove="csv\CC0002.csv" />
+    <None Remove="csv\CC0003.csv" />
+    <None Remove="csv\CC0004.csv" />
+    <None Remove="csv\CC0005.csv" />
+    <None Remove="csv\CC0006.csv" />
+    <None Remove="csv\CC0007.csv" />
+    <None Remove="csv\CM0001.csv" />
+    <None Remove="csv\CM0002.csv" />
+    <None Remove="csv\CM0012.csv" />
+    <None Remove="csv\CM0013.csv" />
+    <None Remove="csv\CM0014.csv" />
+    <None Remove="csv\DM0001.csv" />
+    <None Remove="csv\LN0001.csv" />
+    <None Remove="csv\LN0002.csv" />
+    <None Remove="csv\MA0001.csv" />
+    <None Remove="csv\MC0001.csv" />
+    <None Remove="csv\MP0001.csv" />
+    <None Remove="csv\PT0001.csv" />
+    <None Remove="csv\PT0002.csv" />
+    <None Remove="csv\PT0003.csv" />
+    <None Remove="csv\PT0004.csv" />
+    <None Remove="csv\PT0005.csv" />
+    <None Remove="csv\PT0006.csv" />
+    <None Remove="csv\PT0007.csv" />
+    <None Remove="csv\PT0008.csv" />
+    <None Remove="csv\PT0009.csv" />
+    <None Remove="csv\PT0010.csv" />
+    <None Remove="csv\PT0011.csv" />
+    <None Remove="csv\RM0001.csv" />
+    <None Remove="Images\bolt.png" />
+    <None Remove="sql\Batch\Com_bat_sch\Com_bat_sch_GetStatus.sql" />
+    <None Remove="sql\Batch\Com_bat_sch\Com_bat_sch_Insert.sql" />
+    <None Remove="sql\Batch\Names\GetNamesInfo.sql" />
+    <None Remove="sql\Batch\WorkFlow\GetWorkFlowInfo.sql" />
+    <None Remove="sql\Common\AutoComplete\A0001_Sample.sql" />
+    <None Remove="sql\Common\AutoComplete\A0002.sql" />
     <None Remove="sql\Common\AutoComplete\A0003.sql" />
+    <None Remove="sql\Common\AutoComplete\A0004.sql" />
+    <None Remove="sql\Common\AutoComplete\A0005.sql" />
+    <None Remove="sql\Common\AutoComplete\A0006.sql" />
     <None Remove="sql\Common\AutoComplete\A0007.sql" />
     <None Remove="sql\Common\AutoComplete\A0008.sql" />
+    <None Remove="sql\Common\AutoComplete\A0009.sql" />
+    <None Remove="sql\Common\AutoComplete\A0010.sql" />
+    <None Remove="sql\Common\AutoComplete\A0011.sql" />
+    <None Remove="sql\Common\AutoComplete\A0012.sql" />
+    <None Remove="sql\Common\AutoComplete\A0013.sql" />
+    <None Remove="sql\Common\BtnAuthInfo_GetList.sql" />
+    <None Remove="sql\Common\CheckBtnAuthority.sql" />
+    <None Remove="sql\Common\CheckBtnAuthorityForBatch.sql" />
+    <None Remove="sql\Common\CheckBtnControlid.sql" />
+    <None Remove="sql\Common\CheckConductAuthFlg.sql" />
+    <None Remove="sql\Common\ColumnInfo_GetList.sql" />
+    <None Remove="sql\Common\ComboBox\C0001.sql" />
+    <None Remove="sql\Common\ComboBox\C0002.sql" />
+    <None Remove="sql\Common\ComboBox\C0004.sql" />
     <None Remove="sql\Common\ComboBox\C0006.sql" />
     <None Remove="sql\Common\ComboBox\C0007.sql" />
     <None Remove="sql\Common\ComboBox\C0008.sql" />
     <None Remove="sql\Common\ComboBox\C0009.sql" />
     <None Remove="sql\Common\ComboBox\C0010.sql" />
     <None Remove="sql\Common\ComboBox\C0011.sql" />
+    <None Remove="sql\Common\ComboBox\C0012.sql" />
+    <None Remove="sql\Common\ComboBox\C0014.sql" />
+    <None Remove="sql\Common\ComboBox\C0015.sql" />
+    <None Remove="sql\Common\ComboBox\C0016.sql" />
+    <None Remove="sql\Common\ComboBox\C0017.sql" />
     <None Remove="sql\Common\ComboBox\C0018.sql" />
     <None Remove="sql\Common\ComboBox\C0019.sql" />
+    <None Remove="sql\Common\ComboBox\C0020.sql" />
+    <None Remove="sql\Common\ComboBox\C0021.sql" />
+    <None Remove="sql\Common\ComboBox\C0022.sql" />
+    <None Remove="sql\Common\ComboBox\C0023.sql" />
+    <None Remove="sql\Common\ComboBox\C0024.sql" />
+    <None Remove="sql\Common\ComboBox\C0025.sql" />
+    <None Remove="sql\Common\ComboBox\C0026.sql" />
+    <None Remove="sql\Common\ComboBox\C0027.sql" />
+    <None Remove="sql\Common\ComboBox\C0028.sql" />
+    <None Remove="sql\Common\ComboBox\C0029.sql" />
+    <None Remove="sql\Common\ComboBox\C0030.sql" />
+    <None Remove="sql\Common\ComboBox\C0031.sql" />
+    <None Remove="sql\Common\ComboBox\C0032.sql" />
+    <None Remove="sql\Common\ComboBox\C0033.sql" />
+    <None Remove="sql\Common\ComboBox\C0034.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0003.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0004.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0005.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0006.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0007.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0008.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0009.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0010.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0011.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0012.sql" />
+    <None Remove="sql\Common\ExcelPort\EPC0013.sql" />
+    <None Remove="sql\Common\GetComboRowsPerPage.sql" />
     <None Remove="sql\Common\GetImageFileInfo.sql" />
+    <None Remove="sql\Common\GetLanguageList.sql" />
+    <None Remove="sql\Common\GetTemporaryFolderPath.sql" />
+    <None Remove="sql\Common\ItemCustomizeInfoList_Delete.sql" />
+    <None Remove="sql\Common\ItemCustomizeInfoList_Insert.sql" />
+    <None Remove="sql\Common\MappingInfo_GetList.sql" />
+    <None Remove="sql\Common\SessionInfo_Insert.sql" />
+    <None Remove="sql\Common\SessionInfo_Update.sql" />
+    <None Remove="sql\Common\Structure_GetAllList.sql" />
+    <None Remove="sql\Common\Structure_GetFactoryAndJob.sql" />
+    <None Remove="sql\Common\Structure_GetInfoList.sql" />
     <None Remove="sql\Common\Structure_GetPartsLocationList.sql" />
+    <None Remove="sql\Common\TblRowEditInfo_GetList.sql" />
+    <None Remove="sql\Common\TempData_Delete.sql" />
+    <None Remove="sql\Common\TempData_GetCount.sql" />
+    <None Remove="sql\Common\TempData_GetList.sql" />
+    <None Remove="sql\Common\Translation_GetList.sql" />
+    <None Remove="sql\Common\UserAuth_GetCount.sql" />
+    <None Remove="sql\Common\UserAuth_GetListForLogin.sql" />
+    <None Remove="sql\Common\UserBelonging_GetList.sql" />
+    <None Remove="sql\Common\UserInfo_GetCount.sql" />
+    <None Remove="sql\Common\UserInfo_Update.sql" />
+    <None Remove="sql\Common\UserMst_GetLoginInfo.sql" />
+    <None Remove="sql\Common\UserMst_GetUserInfo.sql" />
+    <None Remove="sql\COM_CONDUCT_MST.sql" />
+    <None Remove="sql\Sample\ReadMe.txt" />
+    <None Remove="sql\Sample\SAMPLE_LIST_COUNT.sql" />
+    <None Remove="sql\WorkFlow\WorkFlowDetail_Update.sql" />
+    <None Remove="sql\WorkFlow\WorkFlowHeader_Update.sql" />
+    <None Remove="sql\WorkFlow\WorkFlowLog_Insert.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_ApprovalGetList.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_ApprovalInsert.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_Delete.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_DetailDelete.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_GetList.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_GetWfNo.sql" />
+    <None Remove="sql\WorkFlow\WorkFlow_PatternInfoInsert.sql" />
+    <None Remove="Template\0\RP0010\1\template_RP0010.xlsx" />
+    <None Remove="Template\0\RP0020\1\template_RP0020.xlsx" />
+    <None Remove="Template\0\RP0030\1\template_RP0030.xlsx" />
+    <None Remove="Template\0\RP0040\1\template_RP0040.xlsx" />
+    <None Remove="Template\0\RP0050\1\template_RP0050.xlsx" />
+    <None Remove="Template\0\RP0060\1\template_RP0060.xlsx" />
+    <None Remove="Template\0\RP0070\1\template_RP0070.xlsx" />
+    <None Remove="Template\0\RP0080\1\template_RP0080.xlsx" />
+    <None Remove="Template\0\RP0090\1\template_RP0090.xlsx" />
+    <None Remove="Template\0\RP0100\1\template_RP0100.xlsx" />
+    <None Remove="Template\0\RP0120\1\template_RP0120.xlsx" />
+    <None Remove="Template\0\RP0130\1\template_RP0130.xlsx" />
+    <None Remove="Template\0\RP0140\1\template_RP0140.xlsx" />
+    <None Remove="Template\0\RP0150\1\template_RP0150.xlsx" />
+    <None Remove="Template\0\RP0160\1\template_RP0160.xlsx" />
+    <None Remove="Template\0\RP0190\1\template_RP0190.xlsx" />
+    <None Remove="Template\0\RP0240\1\template_RP0240.xlsx" />
+    <None Remove="Template\0\RP0250\1\template_RP0250.xlsx" />
+    <None Remove="Template\0\RP0260\1\template_RP0260.xlsx" />
+    <None Remove="Template\0\RP0270\1\template_RP0270.xlsx" />
+    <None Remove="Template\0\RP0290\1\template_RP0290.xlsx" />
+    <None Remove="Template\0\RP0300\1\template_RP0300.xlsx" />
+    <None Remove="Template\0\RP0320\1\template_RP0320_1.xlsx" />
+    <None Remove="Template\0\RP0320\2\template_RP0320_2.xlsx" />
+    <None Remove="Template\0\RP0360\1\template_RP0360.xlsx" />
+    <None Remove="Template\0\RP0370\1\template_RP0370.xlsx" />
+    <None Remove="Template\0\RP0380\1\template_RP0380.xlsx" />
+    <None Remove="Template\0\RP0390\1\template_RP0390.xlsx" />
+    <None Remove="Template\0\RP0400\1\template_RP0400.xlsx" />
+    <None Remove="Template\0\RP0410\1\template_RP0410.xlsx" />
+    <None Remove="Template\0\RP0420\1\template_RP0420.xlsx" />
+    <None Remove="Template\0\RP0430\1\template_RP0430.xlsx" />
+    <None Remove="Template\0\RP0440\1\template_RP0440.xlsx" />
+    <None Remove="Template\0\RP0450\1\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP1000\1\template_RP1000.xlsm" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="sql\Common\AutoComplete\A0003.sql" />
-    <EmbeddedResource Include="sql\Common\AutoComplete\A0001.sql" />
-    <EmbeddedResource Include="sql\Common\AutoComplete\A0008.sql" />
-    <EmbeddedResource Include="sql\Common\AutoComplete\A0007.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0006.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0007.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0008.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0009.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0010.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0011.sql" />
-    <EmbeddedResource Include="sql\Common\ComboBox\C0018.sql" />
-    <EmbeddedResource Include="sql\Common\GetImageFileInfo.sql" />
+    <Content Include="csv\AA0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0002.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0003.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0003_2.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0003_3.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0004.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\AA0005.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0002.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0003.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0004.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0005.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0006.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CC0007.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CM0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CM0002.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CM0012.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CM0013.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\CM0014.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\DM0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\LN0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\LN0002.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\MA0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\MC0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\MP0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0002.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0003.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0004.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0005.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0006.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0007.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0008.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0009.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0010.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\PT0011.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="csv\RM0001.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\bolt.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Batch\Com_bat_sch\Com_bat_sch_GetStatus.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Batch\Com_bat_sch\Com_bat_sch_Insert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Batch\Names\GetNamesInfo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Batch\WorkFlow\GetWorkFlowInfo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0001_Sample.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0002.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="sql\Common\AutoComplete\A0003.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0001.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0004.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0005.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0006.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0008.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0007.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0009.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0010.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0011.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0012.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0013.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\BtnAuthInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\CheckBtnAuthority.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\CheckBtnAuthorityForBatch.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\CheckBtnControlid.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\CheckConductAuthFlg.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ColumnInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0001.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0002.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0004.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0006.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0007.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0008.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0009.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0010.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0011.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0012.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0014.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0015.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0016.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0017.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0018.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0020.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0021.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0022.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0023.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0024.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0025.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0026.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0027.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0028.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0029.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0030.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0031.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0032.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0033.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0034.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0001.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0002.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0003.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0004.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0005.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0006.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0007.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0008.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0009.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0010.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0011.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0012.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ExcelPort\EPC0013.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\GetComboRowsPerPage.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\GetImageFileInfo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\GetLanguageList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\GetTemporaryFolderPath.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ItemCustomizeInfoList_Delete.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ItemCustomizeInfoList_Insert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\MappingInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\SessionInfo_Insert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\SessionInfo_Update.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\Structure_GetAllList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\Structure_GetFactoryAndJob.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\Structure_GetInfoList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\TblRowEditInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\TempData_Delete.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\TempData_GetCount.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\TempData_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\Translation_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserAuth_GetCount.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserAuth_GetListForLogin.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserBelonging_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserInfo_GetCount.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserInfo_Update.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserMst_GetLoginInfo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\UserMst_GetUserInfo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\COM_CONDUCT_MST.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Sample\ReadMe.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Sample\SAMPLE_LIST_COUNT.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlowDetail_Update.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlowHeader_Update.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlowLog_Insert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_ApprovalGetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_ApprovalInsert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_Delete.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_DetailDelete.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_GetWfNo.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\WorkFlow\WorkFlow_PatternInfoInsert.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0010\1\template_RP0010.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0020\1\template_RP0020.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0030\1\template_RP0030.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0040\1\template_RP0040.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0050\1\template_RP0050.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0060\1\template_RP0060.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0070\1\template_RP0070.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0080\1\template_RP0080.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0090\1\template_RP0090.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0100\1\template_RP0100.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0120\1\template_RP0120.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0130\1\template_RP0130.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0140\1\template_RP0140.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0150\1\template_RP0150.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0160\1\template_RP0160.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0190\1\template_RP0190.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0240\1\template_RP0240.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0250\1\template_RP0250.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0260\1\template_RP0260.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0270\1\template_RP0270.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0290\1\template_RP0290.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0300\1\template_RP0300.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0320\1\template_RP0320_1.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0320\2\template_RP0320_2.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0360\1\template_RP0360.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0370\1\template_RP0370.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0380\1\template_RP0380.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0390\1\template_RP0390.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0400\1\template_RP0400.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0410\1\template_RP0410.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0420\1\template_RP0420.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0430\1\template_RP0430.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0440\1\template_RP0440.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\1\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP1000\1\template_RP1000.xlsm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -151,9 +838,6 @@
     <Folder Include="sql\Master\" />
     <Folder Include="sql\Maintenance\" />
     <Folder Include="TempFile\" />
-    <Folder Include="Template\0\RP0060\1\" />
-    <Folder Include="Template\0\RP0070\1\" />
-    <Folder Include="Template\0\RP0150\1\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -281,115 +965,7 @@
     <None Update="DownloadFile\MA0001\MaintenanceInstructInspection.xlsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="sql\Common\ExcelPort\EPC0001.sql">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0010\1\template_RP0010.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0020\1\template_RP0020.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0030\1\template_RP0030.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0040\1\template_RP0040.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0050\1\template_RP0050.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0060\1\template_RP0060.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0070\1\template_RP0070.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0080\1\template_RP0080.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0090\1\template_RP0090.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0100\1\template_RP0100.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0120\1\template_RP0120.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0130\1\template_RP0130.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0140\1\template_RP0140.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0150\1\template_RP0150.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0160\1\template_RP0160.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0190\1\template_RP0190.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0240\1\template_RP0240.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0250\1\template_RP0250.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0260\1\template_RP0260.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0270\1\template_RP0270.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0290\1\template_RP0290.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0300\1\template_RP0300.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Template\0\RP0310\1\template_RP0310.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0320\1\template_RP0320_1.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0320\2\template_RP0320_2.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0360\1\template_RP0360.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0370\1\template_RP0370.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0380\1\template_RP0380.xlsx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0390\1\template_RP0390.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0400\1\template_RP0400.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0410\1\template_RP0410.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0420\1\template_RP0420.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0430\1\template_RP0430.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0440\1\template_RP0440.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP0450\1\template_RP0450.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\0\RP1000\1\template_RP1000.xlsm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Template\template_RP0010.xlsx">

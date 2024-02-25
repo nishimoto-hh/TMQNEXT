@@ -20,6 +20,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using System.Collections;
 
 namespace BusinessLogic_MA0001
 {
@@ -119,7 +120,7 @@ namespace BusinessLogic_MA0001
             }
 
             //依頼概要、依頼申請情報の取得
-            ComDao.MaRequestEntity requestInfo = getDetailInfo<ComDao.MaRequestEntity>(conditionObj, requestInfoIdList, SqlName.Detail.GetRequestInfo, null);
+            ComDao.MaRequestEntity requestInfo = getRequestInfo(conditionObj, requestInfoIdList, SqlName.Detail.GetRequestInfo, compareId.IsCopy());
             //保全計画情報の取得
             ComDao.MaPlanEntity planInfo = getDetailInfo<ComDao.MaPlanEntity>(conditionObj, new List<string> { planId }, SqlName.Detail.GetPlanInfo, null);
             //保全履歴情報の取得
@@ -190,6 +191,50 @@ namespace BusinessLogic_MA0001
             {
                 // 検索結果の設定
                 if (SetSearchResultsByDataClass<Dao.detailSummaryInfo>(pageInfos[id], new List<Dao.detailSummaryInfo> { result }, 1))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 依頼概要、依頼申請情報の取得と設定
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="detailInfoIds">一覧のコントロールIDリスト</param>
+        /// <param name="sqlFileName">SQLファイル名</param>
+        /// <param name="isCopy">複写初期表示の場合True</param>
+        /// <returns>エラーの場合null</returns>
+        private ComDao.MaRequestEntity getRequestInfo(Dao.searchCondition condition, List<string> detailInfoIds, string sqlFileName, bool isCopy)
+        {
+            // ページ情報取得
+            Dictionary<string, PageInfo> pageInfos = new Dictionary<string, PageInfo>();
+            foreach (string id in detailInfoIds)
+            {
+                var pageInfo = GetPageInfo(id, this.pageInfoList);
+                pageInfos.Add(id, pageInfo);
+            }
+
+            // 一覧検索実行
+            ComDao.MaRequestEntity result = TMQUtil.SqlExecuteClass.SelectEntity<ComDao.MaRequestEntity>(sqlFileName, SqlName.SubDir, condition, this.db);
+            if (result == null)
+            {
+                return null;
+            }
+
+            if (isCopy)
+            {
+                // 複写の場合、発行日にシステム日付を設定
+                result.IssueDate = DateTime.Now;
+            }
+
+            foreach (string id in detailInfoIds)
+            {
+                // 検索結果の設定
+                if (SetSearchResultsByDataClass<ComDao.MaRequestEntity>(pageInfos[id], new List<ComDao.MaRequestEntity> { result }, 1))
                 {
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;

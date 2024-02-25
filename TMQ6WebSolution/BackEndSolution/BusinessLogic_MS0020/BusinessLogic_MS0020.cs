@@ -233,6 +233,10 @@ namespace BusinessLogic_MS0020
                 public const int SpecItemNameColumnNo = 11;
             }
         }
+        /// <summary>
+        /// ExcelPort SQLコメントアウト解除用文字列
+        /// </summary>
+        private string sqlUnComment = "DeleteFlg";
         #endregion
 
         #region コンストラクタ
@@ -524,7 +528,7 @@ namespace BusinessLogic_MS0020
             {
                 // 仕様項目
                 // SQLを取得
-                TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecList, out string sql);
+                TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecList, out string sql, new List<string>() { sqlUnComment });
 
                 // 一覧検索実行
                 IList<Dao.excelPortSpecList> results = db.GetListByDataClass<Dao.excelPortSpecList>(sql, new { @LanguageId = this.LanguageId });
@@ -544,7 +548,7 @@ namespace BusinessLogic_MS0020
             {
                 // 仕様項目選択肢
                 // SQLを取得
-                TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecItemList, out string sql);
+                TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecItemList, out string sql, new List<string>() { sqlUnComment });
 
                 // 一覧検索実行
                 IList<Dao.excelPortSpecItemList> results = db.GetListByDataClass<Dao.excelPortSpecItemList>(sql, new { @LanguageId = this.LanguageId });
@@ -705,6 +709,12 @@ namespace BusinessLogic_MS0020
             // 行単位エラー存在フラグ
             bool rowErrFlg = false;
 
+            // 翻訳の一時テーブルを作成
+            registTempTable();
+            // 変更前のデータを取得(削除アイテム含む)
+            TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecList, out string sql);
+            IList<Dao.excelPortSpecList> beforeResultList = db.GetListByDataClass<Dao.excelPortSpecList>(sql, new { @LanguageId = this.LanguageId });
+
             foreach (Dao.excelPortSpecList result in resultSpecList)
             {
                 // 送信時処理が設定されていない場合は何もしない
@@ -713,6 +723,13 @@ namespace BusinessLogic_MS0020
                     continue;
                 }
                 rowErrFlg = false;
+
+                // 非表示列の変更前の情報を再取得
+                setSpecBeforeData(result, beforeResultList);
+
+                // 工場IDがnullの場合は0にする
+                result.FactoryId = result.FactoryId == null ? TMQConsts.CommonFactoryId : result.FactoryId;
+                result.FactoryIdBefore = result.FactoryIdBefore == null ? TMQConsts.CommonFactoryId : result.FactoryIdBefore;
 
                 // アイテム翻訳重複チェック
                 if (!checkTranslationTextExcelPort(true, result.SpecName, result.SpecNameBefore, (long)result.FactoryId, result.SpecId))
@@ -905,6 +922,37 @@ namespace BusinessLogic_MS0020
                 }
             }
         }
+
+        /// <summary>
+        /// ExcelPort 非表示列に保持している変更前の値をDBから取得
+        /// </summary>
+        /// <param name="result">Excelから取得したデータ</param>
+        /// <param name="beforeResultList">ダウンロード検索SQLの実行結果</param>
+        private void setSpecBeforeData(Dao.excelPortSpecList result, IList<Dao.excelPortSpecList> beforeResultList)
+        {
+            if (beforeResultList == null || beforeResultList.Count == 0)
+            {
+                result.SpecNameBefore = null;
+                result.FactoryIdBefore = null;
+                return;
+            }
+            // 対象データの仕様項目ID
+            int specId = result.SpecId;
+            // 変更前の情報
+            Dao.excelPortSpecList beforeResult = beforeResultList.Where(x => x.SpecId == specId).FirstOrDefault();
+            if (beforeResult != null)
+            {
+                // 非表示列に保持している変更前の値は、DBから取得した値を正とする
+                result.SpecNameBefore = beforeResult.SpecNameBefore;
+                result.FactoryIdBefore = beforeResult.FactoryIdBefore;
+                result.TranslationId = beforeResult.TranslationId;
+            }
+            else
+            {
+                result.SpecNameBefore = null;
+                result.FactoryIdBefore = null;
+            }
+        }
         #endregion
 
         #region 機種別仕様関連付け
@@ -923,6 +971,13 @@ namespace BusinessLogic_MS0020
                 if (result.ProcessId == null)
                 {
                     continue;
+                }
+
+                // 変更前の仕様項目IDを取得
+                ComDao.MsMachineSpecRelationEntity beforeSpecRelation = new ComDao.MsMachineSpecRelationEntity().GetEntity(result.MachineSpecRelationId, this.db);
+                if (beforeSpecRelation != null && beforeSpecRelation.SpecId != null)
+                {
+                    result.SpecIdBefore = beforeSpecRelation.SpecId ?? 0;
                 }
 
                 // 仕様項目に紐付く機種別仕様関連付データを取得
@@ -1290,6 +1345,12 @@ namespace BusinessLogic_MS0020
             // 行単位エラー存在フラグ
             bool rowErrFlg = false;
 
+            // 翻訳の一時テーブルを作成
+            registTempTable();
+            // 変更前のデータを取得(削除アイテム含む)
+            TMQUtil.GetFixedSqlStatement(Sql.Excelport.SubDir, Sql.Excelport.GetSpecItemList, out string sql);
+            IList<Dao.excelPortSpecItemList> beforeResultList = db.GetListByDataClass<Dao.excelPortSpecItemList>(sql, new { @LanguageId = this.LanguageId });
+
             foreach (Dao.excelPortSpecItemList result in resultSpecList)
             {
                 // 送信時処理が設定されていない場合は何もしない
@@ -1298,6 +1359,9 @@ namespace BusinessLogic_MS0020
                     continue;
                 }
                 rowErrFlg = false;
+
+                // 非表示列の変更前の情報を再取得
+                setSpecItemBeforeData(result, beforeResultList);
 
                 // アイテム翻訳重複チェック
                 if (!checkTranslationTextExcelPort(false, result.TranslationText, result.TranslationTextBefore, (long)result.FactoryId, result.SpecId))
@@ -1511,6 +1575,35 @@ namespace BusinessLogic_MS0020
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// ExcelPort 非表示列に保持している変更前の値をDBから取得
+        /// </summary>
+        /// <param name="result">Excelから取得したデータ</param>
+        /// <param name="beforeResultList">ダウンロード検索SQLの実行結果</param>
+        private void setSpecItemBeforeData(Dao.excelPortSpecItemList result, IList<Dao.excelPortSpecItemList> beforeResultList)
+        {
+            if (beforeResultList == null || beforeResultList.Count == 0)
+            {
+                result.TranslationTextBefore = null;
+                return;
+            }
+            // 対象データの構成ID
+            int structureId = result.StructureId;
+            // 変更前の情報
+            Dao.excelPortSpecItemList beforeResult = beforeResultList.Where(x => x.StructureId == structureId).FirstOrDefault();
+            if (beforeResult != null)
+            {
+                // 非表示列に保持している変更前の値は、DBから取得した値を正とする
+                result.TranslationTextBefore = beforeResult.TranslationTextBefore;
+                result.ItemId = beforeResult.ItemId;
+                result.TranslationId = beforeResult.TranslationId;
+            }
+            else
+            {
+                result.TranslationTextBefore = null;
+            }
         }
         #endregion
 
@@ -2061,6 +2154,30 @@ namespace BusinessLogic_MS0020
             }
             bool result = !checkExclusiveList(ctrlId, dicList);
             return result;
+        }
+
+        /// <summary>
+        /// 翻訳の一時テーブルを作成
+        /// </summary>
+        private void registTempTable()
+        {
+            // 翻訳の一時テーブルを作成
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+
+            // 翻訳する構成グループのリスト
+            var structuregroupList = new List<GroupId>
+            {
+                GroupId.Location,
+                GroupId.SpecSelectItem,
+                GroupId.SpecUnitType,
+                GroupId.SpecUnit,
+                GroupId.SpecType,
+                GroupId.SpecNumDecimalPlaces
+            };
+
+            listPf.GetCreateTranslation(); // テーブル作成
+            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            listPf.RegistTempTable(); // 登録
         }
         #endregion
     }

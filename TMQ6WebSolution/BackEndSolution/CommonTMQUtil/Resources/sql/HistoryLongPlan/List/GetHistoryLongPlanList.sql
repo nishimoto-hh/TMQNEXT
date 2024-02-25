@@ -26,6 +26,8 @@ SELECT
     ,target.work_class_structure_id
     ,target.treatment_structure_id
     ,target.facility_structure_id
+    ,target.long_plan_division_structure_id
+    ,target.long_plan_group_structure_id
     ,target.long_plan_id_dt
     ,target.mc_man_st_con_update_datetime
     ,target.sche_detail_update_datetime
@@ -199,6 +201,44 @@ SELECT
             )
         AND tra.structure_id = target.facility_structure_id
     ) AS facility_structure_name
+    -- 長計区分
+    ,(
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.long_plan_division_structure_id
+                AND st_f.factory_id IN(0, target.factory_id)
+            )
+        AND tra.structure_id = target.long_plan_division_structure_id
+    ) AS long_plan_division_name
+    -- 長計グループ
+    ,(
+         SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                 SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = target.long_plan_group_structure_id
+                AND st_f.factory_id IN(0, target.factory_id)
+            )
+        AND tra.structure_id = target.long_plan_group_structure_id
+    ) AS long_plan_group_name
     -- 申請状況
     ,(
         SELECT

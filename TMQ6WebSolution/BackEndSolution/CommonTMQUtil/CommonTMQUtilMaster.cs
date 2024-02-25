@@ -235,6 +235,8 @@ namespace CommonTMQUtil
                 public const string GetMsTranslationInfoByFactory = "GetMsTranslationInfoByFactory";
                 /// <summary>SQL名：ExcelPortマスタ情報取得</summary>
                 public const string GetExcelPortMasterList = "GetExcelPortMasterList";
+                /// <summary>SQL名：ExcelPortマスタ情報（削除アイテム含む）取得</summary>
+                public const string GetExcelPortMasterAllList = "GetExcelPortMasterAllList";
                 /// <summary>SQL名：ExcelPort地区情報取得</summary>
                 public const string GetExcelPortMasterDistrictList = "GetExcelPortMasterDistrictList";
                 /// <summary>SQL名：ExcelPort工場情報取得</summary>
@@ -4075,6 +4077,61 @@ namespace CommonTMQUtil
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// ExcelPort ダウンロード検索SQLを実行
+        /// </summary>
+        /// <param name="structureGroupId">構成グループID</param>
+        /// <param name="db">DBクラス</param>
+        /// <param name="languageId">言語ID</param>
+        /// <returns>検索結果(削除アイテム含む)</returns>
+        public static IList<CommonExcelPortMasterList> getExcelPortMasterAllList(int structureGroupId, ComDB db, string languageId)
+        {
+            // 一時テーブル作成
+            createTempTblExcelPort(structureGroupId, db, languageId);
+            // 検索条件
+            CommonExcelPortMasterCondition condition = new();
+            condition.LanguageId = languageId; // 言語ID
+            condition.StructureGroupId = structureGroupId; // 構成グループID
+            condition.MasterTransLationId = ComMaster.MasterNameTranslation[structureGroupId]; // マスタ名称の翻訳ID
+            // SQLを取得
+            GetFixedSqlStatement(ComMaster.SqlName.ExcelPortDir, ComMaster.SqlName.GetExcelPortMasterAllList, out string masterSql);
+            // 検索実行
+            return db.GetListByDataClass<CommonExcelPortMasterList>(masterSql, condition);
+        }
+
+        /// <summary>
+        /// ExcelPort 非表示列に保持している変更前の値をDBから取得
+        /// </summary>
+        /// <param name="result">Excelから取得したデータ</param>
+        /// <param name="beforeResultList">ダウンロード検索SQLの実行結果</param>
+        public static void setBeforeData(CommonExcelPortMasterList result, IList<CommonExcelPortMasterList> beforeResultList) 
+        {
+            if (beforeResultList == null || beforeResultList.Count == 0)
+            {
+                result.FactoryIdBefore = null;
+                result.TranslationTextBefore = null;
+                return;
+            }
+            // 対象データの構成ID
+            int structureId = result.StructureId;
+            // 変更前の情報
+            CommonExcelPortMasterList beforeResult = beforeResultList.Where(x => x.StructureId == structureId).FirstOrDefault();
+            if (beforeResult != null)
+            {
+                // 非表示列に保持している変更前の値は、DBから取得した値を正とする
+                result.ItemId = beforeResult.ItemId;
+                result.FactoryIdBefore = beforeResult.FactoryIdBefore;
+                result.TranslationId = beforeResult.TranslationId;
+                result.TranslationTextBefore = beforeResult.TranslationTextBefore;
+            }
+            else
+            {
+                // 新規登録時
+                result.FactoryIdBefore = null;
+                result.TranslationTextBefore = null;
+            }
         }
         #endregion
     }

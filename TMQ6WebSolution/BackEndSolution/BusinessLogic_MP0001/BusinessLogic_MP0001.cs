@@ -1852,7 +1852,6 @@ namespace BusinessLogic_MP0001
             ///// 画面側で使用されている検索条件作成ロジックをそのまま使用 /////
 
             // 検索条件を作成
-            searchConditionForOldStyle.Add("LocationIdList", GetLowerStructureIdList(GetLocationTreeValues()));                              // 場所階層IDリスト
             searchConditionForOldStyle.Add("LanguageId", this.LanguageId);                                                                   // 言語ID
             searchConditionForOldStyle.Add("TargetStartDate", new DateTime(conditionObj.TargetYear.Year, conditionObj.TargetYear.Month, 1)); // 画面で指定された年月の初日
             searchConditionForOldStyle.Add("TargetEndDate", conditionObj.TargetYear);                                                        // 画面で指定された年月の末日

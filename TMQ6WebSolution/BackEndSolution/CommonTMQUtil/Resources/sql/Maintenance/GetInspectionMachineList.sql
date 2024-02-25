@@ -25,6 +25,7 @@ SELECT DISTINCT
     , hic.update_serialid as update_serialid_hic --更新シリアルID(保全履歴点検内容)
     , mc.machine_id                             --機番ID
     , eq.equipment_id                           --機器ID
+    , mc.location_factory_structure_id AS factory_id -- 工場ID
 FROM
     ma_history hi 
     INNER JOIN ma_history_machine hm 

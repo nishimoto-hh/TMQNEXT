@@ -565,6 +565,9 @@ namespace BusinessLogic_MS1130
             // 行単位エラー存在フラグ
             bool rowErrFlg = false;
 
+            // 変更前のデータを取得
+            IList<TMQUtil.CommonExcelPortMasterList> beforeResultList = TMQUtil.getExcelPortMasterAllList(structureGroupId, this.db, this.LanguageId);
+
             // 入力されたデータの処理
             foreach (TMQUtil.CommonExcelPortMasterList result in resultList)
             {
@@ -573,6 +576,9 @@ namespace BusinessLogic_MS1130
                 {
                     continue;
                 }
+
+                // 非表示列の変更前の情報を再取得
+                TMQUtil.setBeforeData(result, beforeResultList);
 
                 // 工場IDがnullの場合は0にする
                 result.FactoryId = result.FactoryId == null ? TMQConst.CommonFactoryId : result.FactoryId;

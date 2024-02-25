@@ -890,8 +890,6 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
                 setValue(FormRegist.FailureIndividualTab.List2.Id, FormRegist.FailureIndividualTab.List2.FailureAnalyze, 1, CtrlFlag.Label, "", false);
             }
 
-            //依頼情報　発行日にブランク設定
-            setValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.IssueDate, 1, CtrlFlag.Input, "", false);
             //依頼情報　着手希望日にブランク設定
             setValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.DesiredStartDate, 1, CtrlFlag.Input, "", false);
             //依頼情報　完了希望日にブランク設定
@@ -1575,24 +1573,24 @@ function validDataPre(appPath, conductId, formNo, btn) {
             setRequiredItem(suddenDivision);
         }
 
-        //製造権限がある場合
-        if (manufacturingFlg) {
-            //保全依頼情報タブのいずれかの項目に入力がある場合、依頼内容を必須にする
-            tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Request + "']");
-            //依頼内容
-            var requestContent = getCtrl(FormRegist.RequestList.List1.Id, FormRegist.RequestList.List1.RequestContent, 1, CtrlFlag.TextBox);
-            setRequired(requestContent, tabs);
-        }
+        ////製造権限がある場合
+        //if (manufacturingFlg) {
+        //    //保全依頼情報タブのいずれかの項目に入力がある場合、依頼内容を必須にする
+        //    tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Request + "']");
+        //    //依頼内容
+        //    var requestContent = getCtrl(FormRegist.RequestList.List1.Id, FormRegist.RequestList.List1.RequestContent, 1, CtrlFlag.TextBox);
+        //    setRequired(requestContent, tabs);
+        //}
 
         //保全権限がある場合
         if (maintenanceFlg) {
-            //保全計画情報タブ、保全履歴情報タブ、保全履歴情報（個別工場）タブ、故障情報、故障分析情報タブ、故障分析情報（個別工場）タブのいずれかの項目に入力がある場合、作業計画・実施内容を必須にする
-            var tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Plan + "'],[data-tabno='" + FormRegist.TabNo.History
-                + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.HistoryIndividual + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.Failure + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.FailureIndividual
-                + "']:not(.hide)," + getGroupId(FormRegist.FailureList.GroupNo) + ":not(.hide)");
-            //作業計画・実施内容
-            var content = getCtrl(FormRegist.SummaryInfo.Id, FormRegist.SummaryInfo.Content, 1, CtrlFlag.Textarea);
-            setRequired(content, tabs);
+            ////保全計画情報タブ、保全履歴情報タブ、保全履歴情報（個別工場）タブ、故障情報、故障分析情報タブ、故障分析情報（個別工場）タブのいずれかの項目に入力がある場合、作業計画・実施内容を必須にする
+            //var tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Plan + "'],[data-tabno='" + FormRegist.TabNo.History
+            //    + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.HistoryIndividual + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.Failure + "']:not(.hide),[data-tabno='" + FormRegist.TabNo.FailureIndividual
+            //    + "']:not(.hide)," + getGroupId(FormRegist.FailureList.GroupNo) + ":not(.hide)");
+            ////作業計画・実施内容
+            //var content = getCtrl(FormRegist.SummaryInfo.Id, FormRegist.SummaryInfo.Content, 1, CtrlFlag.Textarea);
+            //setRequired(content, tabs);
 
             //保全履歴情報タブまたは保全履歴情報（個別工場）タブの完了日に入力がある場合、MQ分類を必須にする
             //履歴情報　完了日
@@ -1607,36 +1605,36 @@ function validDataPre(appPath, conductId, formNo, btn) {
                 setRequiredItem(mqClass);
             }
 
-            if (divisionId == DivisionIdDefine.Failure) {
-                //故障情報に対する入力が行われている場合、保全部位、保全内容を必須とする
-                //対象機器
-                var targetTable = P_listData["#" + FormRegist.MachineList.Id + getAddFormNo()];
-                //保全部位
-                var inspectionSite = getCtrl(FormRegist.FailureList.List1.Id, FormRegist.FailureList.List1.InspectionSite, 1, CtrlFlag.TextBox);
-                //保全内容
-                var inspectionContent = getCtrl(FormRegist.FailureList.List1.Id, FormRegist.FailureList.List1.InspectionContent, 1, CtrlFlag.TextBox);
-                if (targetTable.getDataCount() > 0) {
-                    //保全部位、保全内容を必須
-                    setRequiredItem(inspectionSite);
-                    setRequiredItem(inspectionContent);
-                } else {
-                    //必須を外す
-                    $(inspectionSite).rules("remove", "required");
-                    $(inspectionContent).rules("remove", "required");
-                }
-            }
+            //if (divisionId == DivisionIdDefine.Failure) {
+            //    //故障情報に対する入力が行われている場合、保全部位、保全内容を必須とする
+            //    //対象機器
+            //    var targetTable = P_listData["#" + FormRegist.MachineList.Id + getAddFormNo()];
+            //    //保全部位
+            //    var inspectionSite = getCtrl(FormRegist.FailureList.List1.Id, FormRegist.FailureList.List1.InspectionSite, 1, CtrlFlag.TextBox);
+            //    //保全内容
+            //    var inspectionContent = getCtrl(FormRegist.FailureList.List1.Id, FormRegist.FailureList.List1.InspectionContent, 1, CtrlFlag.TextBox);
+            //    if (targetTable.getDataCount() > 0) {
+            //        //保全部位、保全内容を必須
+            //        setRequiredItem(inspectionSite);
+            //        setRequiredItem(inspectionContent);
+            //    } else {
+            //        //必須を外す
+            //        $(inspectionSite).rules("remove", "required");
+            //        $(inspectionContent).rules("remove", "required");
+            //    }
+            //}
 
-            //保全計画情報タブのいずれかの項目に入力がある場合、実施件名、着工予定日、完了予定日を必須にする
-            tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Plan + "']");
-            //実施件名
-            var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.Subject, 1, CtrlFlag.TextBox);
-            setRequired(subject, tabs);
-            //着工予定日
-            var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.ExpectedConstructionDate, 1, CtrlFlag.Input);
-            setRequired(subject, tabs);
-            //完了予定日
-            var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.ExpectedCompletionDate, 1, CtrlFlag.Input);
-            setRequired(subject, tabs);
+            ////保全計画情報タブのいずれかの項目に入力がある場合、実施件名、着工予定日、完了予定日を必須にする
+            //tabs = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Plan + "']");
+            ////実施件名
+            //var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.Subject, 1, CtrlFlag.TextBox);
+            //setRequired(subject, tabs);
+            ////着工予定日
+            //var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.ExpectedConstructionDate, 1, CtrlFlag.Input);
+            //setRequired(subject, tabs);
+            ////完了予定日
+            //var subject = getCtrl(FormRegist.PlanList.Id, FormRegist.PlanList.ExpectedCompletionDate, 1, CtrlFlag.Input);
+            //setRequired(subject, tabs);
         }
 
     }

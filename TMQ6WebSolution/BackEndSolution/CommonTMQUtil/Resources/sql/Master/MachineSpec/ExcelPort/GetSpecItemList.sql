@@ -106,7 +106,9 @@ FROM
 WHERE
     ms.structure_group_id = 1340 
 AND EXISTS(SELECT * FROM #temp_structure_selected temp WHERE temp.structure_group_id = 1000 AND re.factory_id = temp.structure_id)
+/*@DeleteFlg
 AND ms.delete_flg = 0
+@DeleteFlg*/
 ORDER BY
     re.factory_id,
     COALESCE(relation_order.display_order, 0),

@@ -1620,7 +1620,7 @@ namespace BusinessLogic_LN0001
                     {
                         GroupId.Location, GroupId.Job, GroupId.Season, GroupId.BudgetPersonality, GroupId.Purpose,
                         GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind,
-                        GroupId.WorkItem, GroupId.BudgetManagement
+                        GroupId.WorkItem, GroupId.BudgetManagement, GroupId.LongPlanDivisionName, GroupId.LongPlanGroupName
                     };
             if (!isList)
             {

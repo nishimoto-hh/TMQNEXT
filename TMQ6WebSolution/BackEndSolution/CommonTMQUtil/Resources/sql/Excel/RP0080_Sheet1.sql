@@ -17,6 +17,8 @@ CREATE TABLE #temp_rep(
 	work_class_name          nvarchar(800), -- 作業区分
 	treatment_name           nvarchar(800), -- 処置区分
 	facility_division_name   nvarchar(800), -- 設備区分
+    long_plan_division_name  nvarchar(800), -- 長計区分
+    long_plan_group_name     nvarchar(800), -- 長計グループ
 	subject_note             nvarchar(800), -- 件名メモ欄
 	machine_no               nvarchar(800), -- 機器番号
 	machine_name             nvarchar(800), -- 機器名称

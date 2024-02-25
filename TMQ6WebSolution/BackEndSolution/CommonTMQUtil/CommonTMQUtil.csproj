@@ -747,6 +747,7 @@
     <None Remove="Resources\sql\Master\ExcelPort\DeleteExcelPortItemUnUseList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortItemOrderList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortItemUnUseList.sql" />
+    <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterDepartmentList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterDistrictList.sql" />
     <None Remove="Resources\sql\Master\ExcelPort\GetExcelPortMasterFacilityList.sql" />
@@ -1007,6 +1008,7 @@
     <EmbeddedResource Include="Resources\sql\Machine\UpdateScheduleDateByDetailIdAndSameKind.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\WITH_GetExcelPortManagementStandard.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>

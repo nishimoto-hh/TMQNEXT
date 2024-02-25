@@ -1,7 +1,7 @@
 UPDATE
     pt_parts
 SET
-    [parts_no] = @PartsNo,                                          --予備品No
+    --[parts_no] = @PartsNo,                                          --予備品No
     [parts_name] = @PartsName,                                      --予備品名
     [manufacturer_structure_id] = @ManufacturerStructureId,         --メーカー
     [materials] = @Materials,                                       --材質

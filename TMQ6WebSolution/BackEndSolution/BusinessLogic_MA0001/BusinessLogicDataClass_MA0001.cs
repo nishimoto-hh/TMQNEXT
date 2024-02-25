@@ -591,6 +591,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 機種小分類名称</summary>
             /// <value>機種小分類名称</value>
             public string SmallClassficationName { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
             /// <summary>Gets or sets 部位ID</summary>
             /// <value>部位ID</value>
             public int? InspectionSiteStructureId { get; set; }

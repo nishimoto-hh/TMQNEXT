@@ -302,6 +302,10 @@
                 OutputItem = 2150,
                 // ExcelPort保全活動完了区分
                 CompletionDivision = 2170,
+                // 長期計画 長計区分
+                LongPlanDivisionName = 2210,
+                // 長計グループ
+                LongPlanGroupName = 2220,
                 // RFIDタグ紐付け
                 RfRelation = 2250,
                 // 権限

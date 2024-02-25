@@ -2055,13 +2055,13 @@ namespace BusinessLogic_MA0001
                         }
                     }
 
-                    //保全計画情報、保全履歴情報、保全履歴情報（個別工場）、故障情報、故障分析情報、故障分析情報（個別工場）のいずれかの項目に入力がある場合、件名情報の「作業計画・実施内容」は必須
-                    if (role.Maintenance && (Convert.ToBoolean(result.PlanInputFlg) || Convert.ToBoolean(result.HistoryInputFlg)) && result.PlanImplementationContent == null)
-                    {
-                        // 入力してください。
-                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.PlanImplementationContent, GetResMessage("111110014"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                        errFlg = false;
-                    }
+                    ////保全計画情報、保全履歴情報、保全履歴情報（個別工場）、故障情報、故障分析情報、故障分析情報（個別工場）のいずれかの項目に入力がある場合、件名情報の「作業計画・実施内容」は必須
+                    //if (role.Maintenance && (Convert.ToBoolean(result.PlanInputFlg) || Convert.ToBoolean(result.HistoryInputFlg)) && result.PlanImplementationContent == null)
+                    //{
+                    //    // 入力してください。
+                    //    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.PlanImplementationContent, GetResMessage("111110014"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    //    errFlg = false;
+                    //}
 
                     //保全履歴情報または保全履歴情報（個別工場）の完了日に入力がある場合、「MQ分類」は必須
                     if (role.Maintenance && (result.CompletionDate != null || result.CompletionDateIndividual != null) && result.MqClassStructureId == null)
@@ -2071,13 +2071,13 @@ namespace BusinessLogic_MA0001
                         errFlg = false;
                     }
 
-                    //保全依頼情報に対する入力が行われている場合、「依頼内容」は必須
-                    if (role.Manufacturing && Convert.ToBoolean(result.RequestInputFlg) && result.RequestContent == null)
-                    {
-                        // 入力してください。
-                        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.RequestContent, GetResMessage("111020001"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                        errFlg = false;
-                    }
+                    ////保全依頼情報に対する入力が行われている場合、「依頼内容」は必須
+                    //if (role.Manufacturing && Convert.ToBoolean(result.RequestInputFlg) && result.RequestContent == null)
+                    //{
+                    //    // 入力してください。
+                    //    errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.Maintenance.RequestContent, GetResMessage("111020001"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    //    errFlg = false;
+                    //}
                     //保全計画情報に対する入力が行われている場合、「実施件名」「着工予定日」「完了予定日」は必須
                     /*                    if (role.Maintenance && Convert.ToBoolean(result.PlanInputFlg))
                                         {
@@ -2198,23 +2198,23 @@ namespace BusinessLogic_MA0001
                         errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.HistoryFailure.Process, GetResMessage("111150019"), GetResMessage(ComRes.ID.ID141090006), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
                         errFlg = false;
                     }
-                    else if (result.ProcessId == Const.SendProcessId.Update)
-                    {
-                        //機器の入力がある場合、「保全部位」は必須
-                        if (result.MachineId != null && result.MaintenanceSite == null)
-                        {
-                            // 入力してください。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.HistoryFailure.MaintenanceSite, GetResMessage("111300003"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = false;
-                        }
-                        //機器の入力がある場合、「保全内容」は必須
-                        if (result.MachineId != null && result.MaintenanceContent == null)
-                        {
-                            // 入力してください。
-                            errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.HistoryFailure.MaintenanceContent, GetResMessage("111300023"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
-                            errFlg = false;
-                        }
-                    }
+                    //else if (result.ProcessId == Const.SendProcessId.Update)
+                    //{
+                    //    //機器の入力がある場合、「保全部位」は必須
+                    //    if (result.MachineId != null && result.MaintenanceSite == null)
+                    //    {
+                    //        // 入力してください。
+                    //        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.HistoryFailure.MaintenanceSite, GetResMessage("111300003"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    //        errFlg = false;
+                    //    }
+                    //    //機器の入力がある場合、「保全内容」は必須
+                    //    if (result.MachineId != null && result.MaintenanceContent == null)
+                    //    {
+                    //        // 入力してください。
+                    //        errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.HistoryFailure.MaintenanceContent, GetResMessage("111300023"), GetResMessage(ComRes.ID.ID941220009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
+                    //        errFlg = false;
+                    //    }
+                    //}
                 }
             }
 
@@ -2282,8 +2282,9 @@ namespace BusinessLogic_MA0001
                 else if (result.ProcessId == Const.SendProcessId.Update)
                 {
                     //更新
-
-                    if (result.OldSummaryId != result.SummaryId)
+                    ComDao.MaHistoryMachineEntity historyMachine = new ComDao.MaHistoryMachineEntity().GetEntity(result.HistoryMachineId ?? -1, this.db);
+                    ComDao.MaHistoryEntity history = new ComDao.MaHistoryEntity().GetEntity(historyMachine.HistoryId ?? -1, this.db);
+                    if (history.SummaryId != result.SummaryId)
                     {
                         //保全活動件名は変更できません。
                         errorInfoList.Add(TMQUtil.setTmpErrorInfo((int)result.RowNo, ConductInfo.ExcelPort.ColumnNo.InspectionMachine.Subject, GetResMessage("111300033"), GetResMessage(ComRes.ID.ID141300009), TMQUtil.ComReport.LongitudinalDirection, result.ProcessId.ToString()));
@@ -2376,9 +2377,10 @@ namespace BusinessLogic_MA0001
                 return false;
             }
 
+            ComDao.MaHistoryMachineEntity historyMachine = new ComDao.MaHistoryMachineEntity().GetEntity(result.HistoryMachineId ?? -1, this.db);
             // ①自身のレコードと保全活動件名ID、機番IDが同一で、バックエンドに渡ってきた保全履歴点検内容IDリストを作成(削除対象行は除く)
             List<long?> contentIdList = resultList.Where(x => x.SummaryId == result.SummaryId &&
-                                                        (x.MachineId == result.MachineId || x.MachineIdBefore == result.MachineId) &&
+                                                        (x.MachineId == result.MachineId || (historyMachine != null && historyMachine.MachineId == result.MachineId)) &&
                                                          x.ProcessId != Const.SendProcessId.Delete &&
                                                          x.HistoryInspectionContentId != null)
                                                          .Select(x => x.HistoryInspectionContentId).ToList();
@@ -2958,16 +2960,14 @@ namespace BusinessLogic_MA0001
             bool chkUpd = int.TryParse(this.UserId, out int userId);
             setExecuteConditionByDataClassCommon<Dao.excelPortHistoryFailure>(ref result, now, userId, userId);
 
-            //故障情報個別工場フラグ
-            string historyFailureIndividualFlg = IndividualDivision.Hide;
-            if (historyFailureIndividualList != null)
-            {
-                //対象工場の故障情報個別工場フラグを取得
-                historyFailureIndividualFlg = historyFailureIndividualList.Where(x => x.FactoryId == result.FactoryId).Select(x => x.ExData).FirstOrDefault() ?? IndividualDivision.Hide;
-            }
-
             //保全活動件名の情報を取得
-            ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(result.SummaryId, this.db);
+            ComDao.MaHistoryFailureEntity historyFailure = new ComDao.MaHistoryFailureEntity().GetEntity(result.HistoryFailureId, this.db);
+            if (historyFailure == null)
+            {
+                return false;
+            }
+            ComDao.MaHistoryEntity history = new ComDao.MaHistoryEntity().GetEntity(historyFailure.HistoryId ?? -1, this.db);
+            ComDao.MaSummaryEntity summary = new ComDao.MaSummaryEntity().GetEntity(history.SummaryId ?? -1, this.db);
 
             //機器使用期間の設定
             int days = setUsedDaysMachine(summary.CompletionDate, result.MachineId ?? -1, result.UsedDaysMachine);
@@ -2976,6 +2976,13 @@ namespace BusinessLogic_MA0001
                 result.UsedDaysMachine = days;
             }
 
+            //故障情報個別工場フラグ
+            string historyFailureIndividualFlg = IndividualDivision.Hide;
+            if (historyFailureIndividualList != null)
+            {
+                //対象工場の故障情報個別工場フラグを取得
+                historyFailureIndividualFlg = historyFailureIndividualList.Where(x => x.FactoryId == summary.LocationFactoryStructureId).Select(x => x.ExData).FirstOrDefault() ?? IndividualDivision.Hide;
+            }
             if (historyFailureIndividualFlg == IndividualDivision.Hide)
             {
                 //一般工場の場合、故障情報の列に設定された値のみを登録する（個別工場の列に設定された値は登録しない）
@@ -3012,9 +3019,8 @@ namespace BusinessLogic_MA0001
             }
 
             //保全履歴のフォロー有無を更新
-            ComDao.MaHistoryFailureEntity entity = new ComDao.MaHistoryFailureEntity().GetEntity(result.HistoryFailureId, this.db);
-            setExecuteConditionByDataClassCommon<ComDao.MaHistoryFailureEntity>(ref entity, now, userId, -1);
-            returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.ExcelPort.UpdateHistoryFollowFlg, SqlName.SubDir, entity, this.db);
+            setExecuteConditionByDataClassCommon<ComDao.MaHistoryFailureEntity>(ref historyFailure, now, userId, -1);
+            returnFlag = TMQUtil.SqlExecuteClass.Regist(SqlName.ExcelPort.UpdateHistoryFollowFlg, SqlName.SubDir, historyFailure, this.db);
             if (!returnFlag)
             {
                 return false;

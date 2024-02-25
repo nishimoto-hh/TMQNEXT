@@ -1056,7 +1056,7 @@ namespace BusinessLogic_HM0002
             var structuregroupList = new List<GroupId>
                     {
                         GroupId.Location, GroupId.Job, GroupId.Season, GroupId.BudgetPersonality, GroupId.Purpose, GroupId.WorkItem, GroupId.BudgetManagement,
-                        GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind, GroupId.ApplicationStatus, GroupId.ApplicationDivision
+                        GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind, GroupId.ApplicationStatus, GroupId.ApplicationDivision, GroupId.LongPlanDivisionName, GroupId.LongPlanGroupName
                     };
             if (!isList)
             {

@@ -1447,7 +1447,10 @@ namespace CommonTMQUtil
                 if (selectItemList.Count() > 0)
                 {
                     var factoryIdList = new List<int>();
-                    factoryIdList.AddRange(this.TargetFactoryIdList);
+                    // 2024/02/22 mod start ATTS ExcelPort利用可能工場のすべてのアイテムを取得する
+                    //factoryIdList.AddRange(this.TargetFactoryIdList);
+                    factoryIdList.AddRange(this.TargetFactoryIdListAll);
+                    // 2024/02/22 mod end   ATTS ExcelPort利用可能工場のすべてのアイテムを取得する
                     //システム共通の階層も併せて取得する
                     if (!factoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
                     {
@@ -2852,9 +2855,19 @@ namespace CommonTMQUtil
                         var key = getCellValueBySheetNo(sheetNo, define.StartColumnNo, rowNo);
                         if (!string.IsNullOrEmpty(key))
                         {
-                            // キー列値をデータクラスへセット
-                            setCellValueToDataClass<T>(define, properites, tmpResult, key);
-                            keys.Add(key);
+                            try
+                            {
+                                // キー列値をデータクラスへセット
+                                setCellValueToDataClass<T>(define, properites, tmpResult, key);
+                                keys.Add(key);
+                            }
+                            catch(Exception ex)
+                            {
+                                // 不正な値が入力されている場合、処理を戻す
+                                // 「入力内容が不正です。再ダウンロードしてください。」
+                                errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                return errorInfo;
+                            }
                         }
                     }
                     if (string.IsNullOrEmpty(sendProcIdStr))
@@ -2921,7 +2934,7 @@ namespace CommonTMQUtil
                             }
                         }
 
-                        if (string.IsNullOrEmpty(factoryIdStr) && factoryIdDefine.EpSelectLinkColumnNo > 0 && factoryIdDefine.EpAutoExtentionColumnNo != null)
+                        if ((string.IsNullOrEmpty(factoryIdStr) || !int.TryParse(factoryIdStr, out int result)) && factoryIdDefine.EpSelectLinkColumnNo > 0 && factoryIdDefine.EpAutoExtentionColumnNo != null)
                         {
                             //工場IDが取得出来ていないかつ他の列の拡張により工場IDが決まる場合、そのアイテムデータから工場IDを取得する
 
@@ -3020,7 +3033,13 @@ namespace CommonTMQUtil
                                 var unuseFactoryIdList = factoryIdStr.Split("|", StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string unuseFactoryId in unuseFactoryIdList)
                                 {
-                                    var factoryId = Convert.ToInt32(unuseFactoryId);
+                                    if(!int.TryParse(unuseFactoryId, out int factoryId))
+                                    {
+                                        // 不正な値が入力されている場合、処理を戻す
+                                        // 「入力内容が不正です。再ダウンロードしてください。」
+                                        errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                        return errorInfo;
+                                    }
                                     if (this.ApprovalFactoryIdList.Count > 0 && this.ApprovalFactoryIdList.Contains(factoryId))
                                     {
                                         // 変更履歴管理対象工場の場合
@@ -3048,7 +3067,13 @@ namespace CommonTMQUtil
                             else
                             {
                                 // 工場IDが取得できた場合のみ以下のチェックを実行
-                                var factoryId = Convert.ToInt32(factoryIdStr);
+                                if (!int.TryParse(factoryIdStr, out int factoryId))
+                                {
+                                    // 不正な値が入力されている場合、処理を戻す
+                                    // 「入力内容が不正です。再ダウンロードしてください。」
+                                    errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                    return errorInfo;
+                                }
                                 if (this.ApprovalFactoryIdList.Count > 0 && this.ApprovalFactoryIdList.Contains(factoryId))
                                 {
                                     // 変更履歴管理対象工場の場合
@@ -3190,6 +3215,13 @@ namespace CommonTMQUtil
                                 // アップロード共通チェック実行
                                 if (!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, this.db, tmpErrorInfo))
                                 {
+                                    if (reportInfo.StartColumnNo < sendProcIdDefine.StartColumnNo)
+                                    {
+                                        // 送信時処理ID列より前の列（非表示列）でエラーがある場合、処理を戻す
+                                        // 「入力内容が不正です。再ダウンロードしてください。」
+                                        errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                        return errorInfo;
+                                    }
                                     tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDiv = sendProcIdStr;
                                     tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDivName = sendProcIdName;
                                     continue;
@@ -3597,11 +3629,21 @@ namespace CommonTMQUtil
                             }
                         }
 
-                        // 値をデータクラスに設定
-                        setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+                        try
+                        {
+                            // 値をデータクラスに設定
+                            setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
 
-                        //拡張項目の値をデータクラスに設定
-                        setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
+                            //拡張項目の値をデータクラスに設定
+                            setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
+                        }
+                        catch (Exception ex)
+                        {
+                            // 不正な値が入力されている場合、処理を戻す
+                            // 「入力内容が不正です。再ダウンロードしてください。」
+                            errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                            return errorInfo;
+                        }
                     }
 
                     if (scheduleInfoList != null && scheduleInfoList.Count > 0)

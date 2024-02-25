@@ -274,6 +274,9 @@ Public Const SendName_Update = "内容更新"
 '送信時処理「削除」
 Public Const SendName_Delete = "削除"
 
+'標準アイテム未使用設定のシート名
+Public Const Master_Unuse_SheetName As String = "マスタ標準アイテム未使用設定"
+
 
 '***************************************
 ' 定義値の取得
@@ -2276,6 +2279,11 @@ ContinueDefine:
                         End If
                     End If
                     
+                    '工場IDが空の場合は再度取得する(CheckType実行時に連動項目で工場IDがセルに設定されるかもしれないため)
+                    If sFactoryId = "" And FactoryIdNo > 0 Then
+                        sFactoryId = visibleRow.Cells(1, FactoryIdNo)
+                    End If
+                    
                     If sType = CellType_Text Or sType = CellType_Text Then
                         If sValueOrg <> sValue Then
                             '改行コード消去後置換
@@ -2524,6 +2532,11 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
     Dim sType As String                   'Sheet_Define：列タイプ
     Dim arrDt As Variant
     Dim sValueOrg As String
+    Dim bMinMaxFlg As Boolean
+    Dim sWhValue As String
+    Dim dMinValue As Double
+    Dim dMaxValue As Double
+    Dim dCheckValue As Double
 
     lErrorCnt = 0
     lLoopCnt = 0
@@ -2608,6 +2621,9 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 GoTo CONTINUE1:
             End If
             
+            '末尾の空白を除く
+            sValue = RTrim(sValue)
+            
             'コンボボックスの項目の場合以下の入力チェックを実施
             If sType = CellType_ComboBox And lCol > (idColno + 1) And sValue > "" Then
             
@@ -2660,6 +2676,8 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
                 End If
 
             End If
+            
+            bMinMaxFlg = True
 
             '-----------------------------------------------
             '数値　チェック
@@ -2709,6 +2727,72 @@ Function GetInputSheetCheck_Keta(ByVal SheetNo As Integer _
 
                 End If
 
+            End If
+            
+            '-----------------------------------------------
+            '最小値　チェック
+            '-----------------------------------------------
+            If WhereData(lLoopCnt, Define_Min_Value) <> "" Then
+
+                '最小値自体が数値ならばチェック
+                sWhValue = WhereData(lLoopCnt, Define_Min_Value)
+                If IsNumeric(sWhValue) = True Then
+                    
+                    '最小値
+                    dMinValue = StringToDouble(sWhValue)
+                    If sValue <> "" Then
+                        '入力値の取得
+                        dCheckValue = StringToDouble(sValue)
+
+                        If dCheckValue < dMinValue Then
+                            '最小値エラー
+                            bMinMaxFlg = False
+                        End If
+                    End If
+                End If
+            End If
+            
+    
+            '-----------------------------------------------
+            '最大値　チェック
+            '-----------------------------------------------
+            If WhereData(lLoopCnt, Define_Max_Value) <> "" Then
+
+                '最大値自体が数値ならばチェック
+                sWhValue = WhereData(lLoopCnt, Define_Max_Value)
+                If IsNumeric(sWhValue) = True Then
+
+                    dMaxValue = StringToDouble(sWhValue)
+                    If sValue <> "" Then
+                        '入力値の取得
+                        dCheckValue = StringToDouble(sValue)
+
+                        If dCheckValue > dMaxValue Then
+                            '最大値エラー
+                            bMinMaxFlg = False
+                        End If
+                    End If
+                End If
+            End If
+            
+            If bMinMaxFlg = False Then
+
+                '範囲エラー
+                lErrorCnt = lErrorCnt + 1
+                lSubErrorCnt = lSubErrorCnt + 1
+                'エラー情報格納
+                With tErrorInfo
+                    .lErrRow = lCheckRowNo
+                    .sErrRange = GetColNum2Txt(lCol) & lCheckRowNo
+                    .sErrKubun = dataWs.Cells(lCheckRowNo, (idColno + 1))
+                    .lOutRow = (ErrorInfo_RowNo_Start - 1) + lErrorStartCnt + lSubErrorCnt
+                    .sErrMsg = GetMessage("941060015", CStr(dMinValue), CStr(dMaxValue)) '{0}から{1}の範囲で入力して下さい。
+                End With
+
+                'エラー情報表示
+                If SetErrorInfo(tErrorInfo, dataWs, ErrorUmuNo) = False Then
+                    GoTo CONTINUE2:
+                End If
             End If
                     
 CONTINUE1:
@@ -3017,9 +3101,13 @@ On Error GoTo ErrHandler
                         , Operator:=xlFilterValues
                 End If
             Else
-                '共通工場=0でフィルターを掛ける
-                itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
-                    , Operator:=xlFilterValues
+                '「標準アイテム未使用設定」シートの場合は何もしない
+                '※工場が複数選択になっているため、共通工場ID=0でフィルタをかけることができないため
+                If Not Worksheets(1).Name = Master_Unuse_SheetName Then
+                    '共通工場=0でフィルターを掛ける
+                    itemWs.Range("A1").AutoFilter Field:=Item_ColNo_FactoryId, Criteria1:=Array("0", "=") _
+                            , Operator:=xlFilterValues
+                End If
             End If
             '選択名称でフィルターを掛ける
             'itemWs.Range("A1").AutoFilter Item_ColNo_Text, sValue
@@ -3032,7 +3120,7 @@ On Error GoTo ErrHandler
     End Select
     
     ' 入力チェック開始時のIDの値を取得
-    Dim selectedItemId As Long
+    Dim selectedItemId As Variant
     selectedItemId = Worksheets(SheetNo).Cells(Target.row, valColNo).Value
     ' 入力チェック開始時に選択されているアイテムの行番号
     Dim selectedItemRowNo As Long
@@ -3808,6 +3896,10 @@ On Error GoTo ErrHandler
     arrData = Split(sValue, "/")
     iCntData = UBound(arrData)
     
+    '指定された書式に変換される前の入力値
+    Dim tempValue As String
+    tempValue = sValue
+    
     If iCntFormat = iCntData Then
         CheckFormatDate = True
     Else
@@ -3824,11 +3916,21 @@ On Error GoTo ErrHandler
             arrData = Split(sValue, "/")
             iCntData = UBound(arrData)
             If iCntFormat = iCntData Then
-                CheckFormatDate = True
+                '指定された書式に変換される前の入力値もチェックする
+                arrData = Split(tempValue, "/")
+                iCntData = UBound(arrData)
+                If iCntFormat = iCntData Then
+                    CheckFormatDate = True
+                Else
+                    '日付：書式エラー
+                    CheckFormatDate = False
+                End If
             Else
                 '日付：書式エラー
                 CheckFormatDate = False
             End If
+            
+            
         Else
             '日付：書式エラー
             CheckFormatDate = False
@@ -3921,8 +4023,8 @@ On Error GoTo ErrHandler
         Exit Sub
     End If
 
-    With Application
-        If .CutCopyMode = xlCopy Then
+    'With Application
+        'If .CutCopyMode = xlCopy Then 'コピー行と貼り付け行が重なる場合、この判定がFALSEとなるためコメントアウト
             'ペースト後、ここにくる
             '行が選択されているか判定
             rng_addr = Selection.Address(False, False)
@@ -3933,8 +4035,8 @@ On Error GoTo ErrHandler
                 Call SetKeyColNoClear(SheetNo, Target)
                 
             End If
-        End If
-    End With
+        'End If
+    'End With
 
     Exit Sub
 
@@ -3958,12 +4060,12 @@ On Error GoTo ErrHandler
     lRowNo = Target.row
     
     '列区分でフィルターを掛ける
-    defineWs.Range("A1").AutoFilter Define_ColNo_SheetNo, SheetNo
-    defineWs.Range("A1").AutoFilter Define_ColNo_ColumnDivision, ColumnDivision_Key
+    defineWs.Range("A" & Define_RowNo_Start).AutoFilter Define_ColNo_SheetNo, SheetNo
+    defineWs.Range("A" & Define_RowNo_Start).AutoFilter Define_ColNo_ColumnDivision, ColumnDivision_Key
     
     '可視セルの行数を取得
     Dim rowCnt As Long
-    rowCnt = defineWs.Range("A1").CurrentRegion.Resize(, 1).SpecialCells(xlCellTypeVisible).Count
+    rowCnt = defineWs.Range("A" & Define_RowNo_Start).CurrentRegion.Resize(, 1).SpecialCells(xlCellTypeVisible).Count
     Dim filteredData
     ReDim filteredData(1 To rowCnt - 1, 1 To 4)
     
@@ -3973,14 +4075,20 @@ On Error GoTo ErrHandler
     Dim RowNo As Long, ColNo As Long
     RowNo = 0
     Dim visibleRow As Range
+    Dim targetRow As Range
     '可視セルの行をループ
-    For Each visibleRow In defineWs.Range("A1").CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
+    For Each visibleRow In defineWs.Range("A" & Define_RowNo_Start).CurrentRegion.SpecialCells(xlCellTypeVisible).Rows
         If visibleRow.row < Define_RowNo_Start Then
             'ヘッダー行はスキップ
             GoTo CONTINUE1:
         End If
-
-        inputWs.Cells(lRowNo, visibleRow.Cells(1, Define_ColNo_ColNo)) = ""
+        
+        For Each targetRow In Target.Rows
+        'inputWs.Cells(lRowNo, visibleRow.Cells(1, Define_ColNo_ColNo)) = ""
+        '貼り付け行数分、値をクリア
+        inputWs.Cells(targetRow.row, visibleRow.Cells(1, Define_ColNo_ColNo)) = ""
+        Next
+        
 CONTINUE1:
     Next
     
@@ -4859,5 +4967,7 @@ Function GetSendProcIdByName(sendProcName) As String
         GetSendProcIdByName = SendId_Error
     End If
 End Function
+
+
 
 

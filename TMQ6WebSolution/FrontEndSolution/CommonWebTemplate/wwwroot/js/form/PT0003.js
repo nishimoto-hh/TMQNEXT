@@ -477,14 +477,14 @@ function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, va
     }
 
     // 予備品倉庫コンボボックスが変更された場合
-    if (ctrlId == FormList.Condition.Id && valNo == FormList.Condition.StorageLocation) {
-        //非表示の工場コンボボックスの値を取得
-        var factory = getValue(FormList.Condition.Id, FormList.Condition.Factory, 1, CtrlFlag.Combo);
-        if (selected && selected.EXPARAM1 && selected.EXPARAM1 != factory) {
-            // 予備品倉庫で選択されたデータに紐づく工場を非表示の工場コンボにセット→部門が工場で絞り込まれる
-            setValueAndTrigger(FormList.Condition.Id, FormList.Condition.Factory, 1, CtrlFlag.Combo, selected.EXPARAM1, false, false);
-        }
-    }
+    //if (ctrlId == FormList.Condition.Id && valNo == FormList.Condition.StorageLocation) {
+    //    //非表示の工場コンボボックスの値を取得
+    //    var factory = getValue(FormList.Condition.Id, FormList.Condition.Factory, 1, CtrlFlag.Combo);
+    //    if (selected && selected.EXPARAM1 && selected.EXPARAM1 != factory) {
+    //        // 予備品倉庫で選択されたデータに紐づく工場を非表示の工場コンボにセット→部門が工場で絞り込まれる
+    //        setValueAndTrigger(FormList.Condition.Id, FormList.Condition.Factory, 1, CtrlFlag.Combo, selected.EXPARAM1, false, false);
+    //    }
+    //}
 }
 
 /**

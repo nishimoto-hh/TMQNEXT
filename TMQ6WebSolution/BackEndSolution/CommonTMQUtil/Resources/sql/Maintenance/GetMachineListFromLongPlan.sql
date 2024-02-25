@@ -91,8 +91,9 @@ GROUP BY
     content_a.management_standards_content_id; 
 
 -- リンク遷移元のデータと同一長期計画件名に含まれる同年月のデータ
-SELECT
+SELECT DISTINCT
     machine.job_structure_id,                      -- 職種
+    machine.location_factory_structure_id AS factory_id, -- 工場ID
     machine.machine_no,                            -- 機器番号
     machine.machine_name,                          -- 機器名称
     machine.equipment_level_structure_id,          -- 機器レベル

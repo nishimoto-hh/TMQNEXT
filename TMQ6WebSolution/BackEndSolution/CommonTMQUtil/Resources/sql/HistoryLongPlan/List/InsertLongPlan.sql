@@ -28,7 +28,9 @@ INSERT INTO ln_long_plan(
     insert_datetime,
     insert_user_id,
     update_datetime,
-    update_user_id
+    update_user_id,
+    long_plan_division_structure_id,
+    long_plan_group_structure_id
 )
 VALUES(
     @LongPlanId,
@@ -60,5 +62,7 @@ VALUES(
     @InsertDatetime,
     @InsertUserId,
     @UpdateDatetime,
-    @UpdateUserId
+    @UpdateUserId,
+    @LongPlanDivisionStructureId,
+    @LongPlanGroupStructureId
 )

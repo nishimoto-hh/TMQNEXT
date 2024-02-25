@@ -37,6 +37,8 @@ SET
     facility_structure_id = @FacilityStructureId,
     update_serialid = update_serialid + 1,
     update_datetime = @UpdateDatetime,
-    update_user_id = @UpdateUserId
+    update_user_id = @UpdateUserId,
+    long_plan_division_structure_id = @LongPlanDivisionStructureId,
+    long_plan_group_structure_id = @LongPlanGroupStructureId
 WHERE
     history_management_id = @HistoryManagementId

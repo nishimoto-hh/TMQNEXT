@@ -170,6 +170,22 @@ WITH target AS(
                 , lp.facility_structure_id
             ) 
             END AS facility_structure_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.long_plan_division_structure_id 
+            ELSE COALESCE( 
+                hmlp.long_plan_division_structure_id
+                , lp.long_plan_division_structure_id
+            ) 
+            END AS long_plan_division_structure_id
+        , CASE 
+            WHEN division_ex.extension_data = '20' AND hmlp.hm_long_plan_id IS NOT NULL
+                THEN hmlp.long_plan_group_structure_id 
+            ELSE COALESCE( 
+                hmlp.long_plan_group_structure_id
+                , lp.long_plan_group_structure_id
+            ) 
+            END AS long_plan_group_structure_id
         ,
         -- 参照画面の排他処理で用いる項目
         max_dt.long_plan_id_dt
@@ -218,6 +234,8 @@ WITH target AS(
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.work_class_structure_id ELSE lp.work_class_structure_id END), lp.work_class_structure_id, 'WorkClass') + -- 作業区分
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.treatment_structure_id ELSE lp.treatment_structure_id END), lp.treatment_structure_id, 'Treatment') + -- 処置区分
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.facility_structure_id ELSE lp.facility_structure_id END), lp.facility_structure_id, 'FacilityDivision') + -- 設備区分
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.long_plan_division_structure_id ELSE lp.long_plan_division_structure_id END), lp.long_plan_division_structure_id, 'LongPlanDivision') + -- 長計区分
+                       dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.long_plan_group_structure_id ELSE lp.long_plan_group_structure_id END), lp.long_plan_group_structure_id, 'LongPlanGroup') + -- 長計グループ
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_district_structure_id ELSE lp.location_district_structure_id END), lp.location_district_structure_id, 'District') +                                -- 地区
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_factory_structure_id ELSE lp.location_factory_structure_id END), lp.location_factory_structure_id, 'Factory') +                                   -- 工場
                        dbo.compare_newId_with_oldId((CASE WHEN hmlp.hm_long_plan_id IS NOT NULL THEN hmlp.location_plant_structure_id ELSE lp.location_plant_structure_id END), lp.location_plant_structure_id, 'Plant') +                                         -- プラント
