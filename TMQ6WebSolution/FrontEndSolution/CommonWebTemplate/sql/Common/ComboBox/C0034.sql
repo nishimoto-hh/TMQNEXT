@@ -145,6 +145,8 @@ WHERE
 ORDER BY
     ms.structure_group_id
     , ms.structure_layer_no                     
+    -- 工場IDの表示順追加 20240227
+    , ms.factory_id
     -- 工場ID毎の表示順
     , row_number() OVER ( 
         PARTITION BY
