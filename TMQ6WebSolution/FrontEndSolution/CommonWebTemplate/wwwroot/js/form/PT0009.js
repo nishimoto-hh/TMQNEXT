@@ -49,39 +49,41 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
 
     //関連チェック
     //帳票名が会計提出表で、対象年月が未入力の場合、エラーとする
-    var tdOutputReport = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + PT0009_FormCondition.OutputReport + "']");
-    var selectOutputReport = $(tdOutputReport).find("select");
-    if (selectOutputReport != null && selectOutputReport.length > 0) {
-        var selVal = getCellVal(tdOutputReport);
-        if (selVal == PT0009_FormCondition.ReportIdRP0270)
-        {
-            var tdTargetMonth = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + PT0009_FormCondition.TargetMonth + "']");
-            if (tdTargetMonth != null)
-            {
-                selVal = getCellVal(tdTargetMonth);
-                if (selVal == "")
-                {
-                    // 帳票コンボの選択名称を取得
-                    var selectValueName = getCellVal(tdOutputReport, 1);
-                    // 対象年月の見出しを取得
-                    var thTargetMonth = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("th[data-name='VAL" + PT0009_FormCondition.TargetMonth + "']");
-                    var titleName = getCellVal(thTargetMonth);
 
-                    //入力ｴﾗｰ
-                    // {0}の場合、{1}を入力してください。
-                    var arrayParam = [2];
-                    arrayParam[0] = selectValueName;
-                    arrayParam[1] = titleName;
-                    strMessage = getMessageParam(P_ComMsgTranslated[941250003], arrayParam);
-                    setMessage(strMessage, procStatus.Error);
-                    // 入力してください。
-                    var element = $(tdTargetMonth).find("input");
-                    dispErrorDetailDetail(element, P_ComMsgTranslated[941220009], null, false)
-                    return false;
-                }
-            }
-        }
-    }
+    //2024/03/07 一時的に会計提出表の場合の対象年月の必須を解除する 後で元に戻すこと
+    //var tdOutputReport = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + PT0009_FormCondition.OutputReport + "']");
+    //var selectOutputReport = $(tdOutputReport).find("select");
+    //if (selectOutputReport != null && selectOutputReport.length > 0) {
+    //    var selVal = getCellVal(tdOutputReport);
+    //    if (selVal == PT0009_FormCondition.ReportIdRP0270)
+    //    {
+    //        var tdTargetMonth = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + PT0009_FormCondition.TargetMonth + "']");
+    //        if (tdTargetMonth != null)
+    //        {
+    //            selVal = getCellVal(tdTargetMonth);
+    //            if (selVal == "")
+    //            {
+    //                // 帳票コンボの選択名称を取得
+    //                var selectValueName = getCellVal(tdOutputReport, 1);
+    //                // 対象年月の見出しを取得
+    //                var thTargetMonth = $(P_Article).find("#" + PT0009_FormCondition.Id + getAddFormNo()).find("th[data-name='VAL" + PT0009_FormCondition.TargetMonth + "']");
+    //                var titleName = getCellVal(thTargetMonth);
+
+    //                //入力ｴﾗｰ
+    //                // {0}の場合、{1}を入力してください。
+    //                var arrayParam = [2];
+    //                arrayParam[0] = selectValueName;
+    //                arrayParam[1] = titleName;
+    //                strMessage = getMessageParam(P_ComMsgTranslated[941250003], arrayParam);
+    //                setMessage(strMessage, procStatus.Error);
+    //                // 入力してください。
+    //                var element = $(tdTargetMonth).find("input");
+    //                dispErrorDetailDetail(element, P_ComMsgTranslated[941220009], null, false)
+    //                return false;
+    //            }
+    //        }
+    //    }
+    //}
 
 
     return true;

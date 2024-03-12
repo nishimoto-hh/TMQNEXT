@@ -377,6 +377,13 @@ namespace BusinessLogic_PT0009
                 condAccountReport.TargetYearMonth = condition.TargetYearMonth;
                 listUnComment.Add(nameof(condition.TargetYearMonth));
             }
+            else
+            {
+                // 対象年月が入力されていない場合は"TargetYearMonthNull"をアンコメントリストに格納
+                // "TargetYearMonthNull"が使用されるのは会計提出表の出力で対象年月が未入力の場合のみ
+                listUnComment.Add("TargetYearMonthNull");
+            }
+
             // 工場
             if (condition.FactoryIdList != null && condition.FactoryIdList.Count > 0)
             {

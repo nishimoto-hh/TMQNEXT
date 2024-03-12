@@ -62,8 +62,15 @@ FROM (
 
 -- メイン部
 SELECT 
+    /*@TargetYearMonthNull
+    FORMAT(GETDATE(),'yyyy') as year,
+    FORMAT(GETDATE(),'MM') as month,
+    @TargetYearMonthNull*/
+
+    /*@TargetYearMonth
     YEAR(CONVERT(date,@TargetYearMonth + '/01')) as year,
     MONTH(CONVERT(date,@TargetYearMonth + '/01')) as month,
+    @TargetYearMonth*/
 
     pl.account_structure_id, -- 勘定項目
     -- [dbo].[get_v_structure_item](pl.account_structure_id, pp.factory_id, @LanguageId) AS account_nm,
@@ -180,11 +187,23 @@ SELECT
         AND tra.structure_id = pp.unit_structure_id
     ) AS unit_name,
 
-    ISNULL(pfs.inventory_quantity, 0) AS stock_quantity, -- 在庫数
     ISNULL(pl.unit_price, 0) AS unit_price, -- 単価
+
+    -- 対象年月が未入力の場合は在庫データテーブルの値を使用
+    /*@TargetYearMonthNull
+    ISNULL(pls.stock_quantity, 0) AS stock_quantity,
+    FORMAT(dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
+    dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
+    @TargetYearMonthNull*/
+
+
+    -- 対象年月が入力されている場合は確定在庫データテーブルの値を使用
+    /*@TargetYearMonth
+    ISNULL(pfs.inventory_quantity, 0) AS stock_quantity, -- 在庫数
     FORMAT(dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
     dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
-    
+    @TargetYearMonth*/
+     
     pl.old_new_structure_id, -- 新旧区分
     --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_nm,
     --新旧区分(翻訳)
@@ -448,7 +467,15 @@ GROUP BY
     pp.model_type, -- 規格・寸法
     pp.standard_size,
     pp.unit_structure_id, -- 数量管理単位id
+
+    /*@TargetYearMonthNull
+    pls.stock_quantity,
+    @TargetYearMonthNull*/
+
+    /*@TargetYearMonth
     pfs.inventory_quantity, -- 在庫数
+    @TargetYearMonth*/
+
     pl.unit_price, -- 単価
     pl.old_new_structure_id, -- 新旧区分
     pl.receiving_datetime,  -- 入庫日
