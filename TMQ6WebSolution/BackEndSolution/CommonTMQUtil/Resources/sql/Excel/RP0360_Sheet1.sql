@@ -251,9 +251,8 @@ AND
         SELECT structure_id 
         FROM ms_structure 
         WHERE structure_group_id = 1040 
-        AND structure_layer_no = 3 
+        AND structure_layer_no = 3
         AND parent_structure_id = @StorageLocationId 
-        AND factory_id = pp.factory_id
     )
 @StorageLocationId*/
 

@@ -166,12 +166,10 @@ AND
 AND
     pls.parts_location_id IN ( 
         SELECT structure_id 
-        FROM v_structure_item_all 
+        FROM ms_structure 
         WHERE structure_group_id = 1040 
-        AND structure_layer_no = 1 
+        AND structure_layer_no = 3
         AND parent_structure_id = @StorageLocationId 
-        AND factory_id = pp.factory_id
-        AND language_id =  @LanguageId
     )
 @StorageLocationId*/
 

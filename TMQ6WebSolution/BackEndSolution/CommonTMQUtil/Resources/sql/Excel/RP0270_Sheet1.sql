@@ -99,6 +99,7 @@ SELECT
     pl.department_structure_id, -- 部門ID
     -- [dbo].[get_v_structure_item](pl.department_structure_id, pp.factory_id, @LanguageId) AS department_nm,
     --部門(翻訳)
+    COALESCE(
     (
         SELECT
             tra.translation_text
@@ -116,6 +117,25 @@ SELECT
                 AND st_f.factory_id IN(0, pp.factory_id)
             )
         AND tra.structure_id = pl.department_structure_id
+    ),
+    (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                SELECT
+                    MIN(st_f.factory_id)
+                FROM
+                    #temp_structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = pl.department_structure_id
+                AND st_f.factory_id NOT IN(0, pp.factory_id)
+            )
+        AND tra.structure_id = pl.department_structure_id
+    )
     ) AS department_nm,
     [dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, @LanguageId, 1) AS department_id,
 
@@ -370,12 +390,10 @@ AND
 AND
     pls.parts_location_id IN ( 
         SELECT structure_id 
-        FROM v_structure_item_all 
+        FROM ms_structure 
         WHERE structure_group_id = 1040 
-        AND structure_layer_no = 1 
+        AND structure_layer_no = 3
         AND parent_structure_id = @StorageLocationId 
-        AND factory_id = pp.factory_id
-        AND language_id =  @LanguageId
     )
 @StorageLocationId*/
 

@@ -158,6 +158,7 @@
     <None Remove="sql\Common\AutoComplete\A0011.sql" />
     <None Remove="sql\Common\AutoComplete\A0012.sql" />
     <None Remove="sql\Common\AutoComplete\A0013.sql" />
+    <None Remove="sql\Common\AutoComplete\A0014.sql" />
     <None Remove="sql\Common\BtnAuthInfo_GetList.sql" />
     <None Remove="sql\Common\CheckBtnAuthority.sql" />
     <None Remove="sql\Common\CheckBtnAuthorityForBatch.sql" />
@@ -453,6 +454,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="sql\Common\AutoComplete\A0013.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\AutoComplete\A0014.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="sql\Common\BtnAuthInfo_GetList.sql">
