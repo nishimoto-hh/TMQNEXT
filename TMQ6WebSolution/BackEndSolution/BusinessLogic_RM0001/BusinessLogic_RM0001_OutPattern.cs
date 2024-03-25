@@ -26,10 +26,14 @@ namespace BusinessLogic_RM0001
         /// <summary>
         /// 編集画面　登録処理
         /// </summary>
-        /// <param name="ctrlId">コントロールID</param>
+        /// <param name="ctrlId">ボタンコントロールID</param>
+        /// <param name="programId">機能ID</param>
+        /// <param name="patternIdForReSearch">新規登録後のパターンID(再検索で使用)</param>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistEdit(string ctrlId, string programId)
+        private bool executeRegistEdit(string ctrlId, string programId, out int? patternIdForReSearch)
         {
+            patternIdForReSearch = null;
+
             // 編集、削除の場合
             if (ctrlId.Equals(ConductInfo.FormList.ButtonCtrlId.Regist))
             {
@@ -155,7 +159,7 @@ namespace BusinessLogic_RM0001
 
                 // 出力パターン登録時、べた表の場合のみ
                 // 出力順から、セル行、セル列を決定する
-                if(resultDefine.OutputItemType == 3)
+                if (resultDefine.OutputItemType == 3)
                 {
                     if (dicDefaultCellInfo.ContainsKey(displayOrder))
                     {
@@ -194,6 +198,12 @@ namespace BusinessLogic_RM0001
             SetGlobalData(GlobalListKeyRM0001.RegistTemplateId, registPattern.TemplateId);
             SetGlobalData(GlobalListKeyRM0001.RegistPatternId, outputPatternId == 0 ? condition.OutputPatternId : outputPatternId);
 
+            // パターンの新規登録の場合は登録したパターンIDで再検索を行うため返り値に設定する
+            if (ctrlId.Equals(ConductInfo.FormOutPattern.ButtonCtrlId.Regist))
+            {
+                patternIdForReSearch = outputPatternId;
+            }
+
             return true;
 
             /// <summary>
@@ -226,7 +236,7 @@ namespace BusinessLogic_RM0001
                 // SQL実行
                 var maxOutputPatternId = db.GetEntity(outSql, getMaxOutputPatternIdParam);
                 // パターンがない場合は最大値を０で返す
-                if(maxOutputPatternId.max_output_pattern_id == null)
+                if (maxOutputPatternId.max_output_pattern_id == null)
                 {
                     return 0;
                 }
@@ -304,7 +314,7 @@ namespace BusinessLogic_RM0001
                     List<int> lstDefaultCellInfo = new List<int>();
 
                     // システム共通の項目IDは対象外とする
-                    if(listExItemCd.Contains(outputItem.ItemId) == true)
+                    if (listExItemCd.Contains(outputItem.ItemId) == true)
                     {
                         continue;
                     }
@@ -498,7 +508,7 @@ namespace BusinessLogic_RM0001
             {
                 // delete-insertの為、既存データ１件の更新日時で排他チェックを実施する
                 int outputItemCd = int.Parse(dic["VAL8"].ToString());
-                if(outputItemCd > 0)
+                if (outputItemCd > 0)
                 {
                     if (!CheckExclusiveStatus(dic, lockValMaps, lockKeyMaps))
                     {

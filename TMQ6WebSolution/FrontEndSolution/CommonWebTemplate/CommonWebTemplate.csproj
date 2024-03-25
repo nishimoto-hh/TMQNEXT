@@ -281,6 +281,7 @@
     <None Remove="Template\0\RP0430\1\template_RP0430.xlsx" />
     <None Remove="Template\0\RP0440\1\template_RP0440.xlsx" />
     <None Remove="Template\0\RP0450\1\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0460\1\template_RP0460.xlsx" />
     <None Remove="Template\0\RP1000\1\template_RP1000.xlsm" />
   </ItemGroup>
 
@@ -817,6 +818,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\0\RP0450\1\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0460\1\template_RP0460.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\0\RP1000\1\template_RP1000.xlsm">

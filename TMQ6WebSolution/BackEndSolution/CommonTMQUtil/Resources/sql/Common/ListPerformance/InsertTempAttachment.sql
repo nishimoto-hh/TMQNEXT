@@ -17,3 +17,8 @@ FROM
     ON  item.structure_item_id = ex.item_id
     AND ex.sequence_no = 1
 WHERE ac.function_type_id IN @FunctionTypeIdList;
+
+CREATE nonclustered INDEX [idxtemp_attachment_01] 
+    ON [#temp_attachment] ([key_id], [function_type_id]); 
+
+UPDATE statistics #temp_attachment;

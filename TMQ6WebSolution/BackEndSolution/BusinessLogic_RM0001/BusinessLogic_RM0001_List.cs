@@ -29,8 +29,9 @@ namespace BusinessLogic_RM0001
         /// <summary>
         /// 一覧検索処理
         /// </summary>
+        /// <param name="patternId">パターンID(パターン新規登録後に格納されている)</param>
         /// <returns>エラーの場合False</returns>
-        private bool searchList()
+        private bool searchList(int? patternId = null)
         {
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
@@ -45,7 +46,7 @@ namespace BusinessLogic_RM0001
             SetSearchCondition(this.searchConditionDictionary, ConductInfo.FormList.ControlId.Condition, conditionObj, pageInfo);
 
             // 検索条件にテンプレートが選択されていればコメントを外す
-            if(conditionObj.TemplateId != null && string.IsNullOrEmpty(conditionObj.TemplateId) == false)
+            if (conditionObj.TemplateId != null && string.IsNullOrEmpty(conditionObj.TemplateId) == false)
             {
                 listUnComment.Add("TemplateId");
             }
@@ -63,6 +64,24 @@ namespace BusinessLogic_RM0001
             else
             {
                 listUnComment.Add("NoConditionOutputPatternId");
+            }
+
+            // パターンの登録後の再検索の場合
+            if (patternId != null)
+            {
+                // 検索条件の値を登録後のパターンIDで上書きする
+                conditionObj.OutputPatternId = patternId;
+
+                // 登録後のパターンIDを使用するのでアンコメントリストも変更する
+                // 検索条件のパターンが選択されている状態にする
+                if (!listUnComment.Contains("OutputPatternId"))
+                {
+                    listUnComment.Add("OutputPatternId");
+                }
+                if (listUnComment.Contains("NoConditionOutputPatternId"))
+                {
+                    listUnComment.Remove("NoConditionOutputPatternId");
+                }
             }
 
             // 検索SQLの取得
@@ -100,7 +119,7 @@ namespace BusinessLogic_RM0001
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
 
-            changeFormListBtnEnabled(PageStatus.Search);
+            changeFormListBtnEnabled(PageStatus.Search, patternId);
 
             return true;
         }
@@ -283,7 +302,7 @@ namespace BusinessLogic_RM0001
                         option.EndDate = cond.ScheduleEnd;
                     }
 
-                    if(parentPgmId == "LN0002")
+                    if (parentPgmId == "LN0002")
                     {
                         // 出力方式 1:件名別、2:機番別、3:予算別
                         option.OutputMode = TMQUtil.ComReport.OutputMode2;
@@ -376,10 +395,10 @@ namespace BusinessLogic_RM0001
             string keyParam1 = string.Empty;
             string keyParam2 = string.Empty;
             string keyParam3 = string.Empty;
-            if(targetSqlParams != null && string.IsNullOrEmpty(targetSqlParams) == false)
+            if (targetSqlParams != null && string.IsNullOrEmpty(targetSqlParams) == false)
             {
                 string[] sqlParams = targetSqlParams.Split("|");
-                for(int i = 0; i < sqlParams.Length; i++)
+                for (int i = 0; i < sqlParams.Length; i++)
                 {
                     if (i == 0)
                     {
@@ -408,7 +427,7 @@ namespace BusinessLogic_RM0001
             var typeReportId = typeof(UseOptionReportIdList);
             foreach (var field in typeReportId.GetFields())
             {
-                if(reportId.Equals(field.GetValue(typeReportId)))
+                if (reportId.Equals(field.GetValue(typeReportId)))
                 {
                     return true;
                 }

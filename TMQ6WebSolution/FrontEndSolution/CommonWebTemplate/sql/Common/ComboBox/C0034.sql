@@ -142,6 +142,11 @@ WHERE
             unused.factory_id = uf.location_structure_id 
             AND unused.structure_id = ms.structure_id
     ) 
+-- 工場による絞り込み追加 20240315
+/*IF param1 != null && param1 != '' && param1 != 'null'*/
+   AND (ms.factory_id = 0
+     OR ms.factory_id IN (SELECT * FROM STRING_SPLIT(/*param1*/'5|6', '|')))
+/*END*/
 ORDER BY
     ms.structure_group_id
     , ms.structure_layer_no                     

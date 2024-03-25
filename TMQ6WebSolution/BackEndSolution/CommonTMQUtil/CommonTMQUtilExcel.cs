@@ -352,6 +352,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 対象年月</summary>
             /// <value>対象年月</value>
             public string TargetYearMonth { get; set; }
+            /// <summary>Gets or sets 対象年月(仮確定在庫用会計提出表用)</summary>
+            /// <value>対象年月(仮確定在庫用会計提出表用)</value>
+            public DateTime? TargetMaxDate { get; set; }
             /// <summary>Gets or sets 工場</summary>
             /// <value>工場</value>
             public List<int> FactoryIdList { get; set; }
@@ -468,6 +471,8 @@ namespace CommonTMQUtil
         {
             /// <summary>帳票ID</summary>
             public const string ReportId = "RP0270";
+            /// <summary>仮確定在庫用会計提出表の帳票ID</summary>
+            public const string ReportIdForTemp = "RP0460";
             /// <summary>帳票シート定義基本シートNo</summary>
             public const int BaseSheetNo = 1;
             /// <summary>テンプレートシート名_開始</summary>
@@ -1132,10 +1137,10 @@ namespace CommonTMQUtil
                 new { FactoryId = factoryId, ReportId = reportId },
                 db);
 
-            // 個別処理（RP0270：会計提出表）
-            if (reportId.Equals(ReportRP0270.ReportId))
+            // 個別処理（RP0270：会計提出表、RP0460：仮確定在庫用会計提出表）
+            if (reportId.Equals(ReportRP0270.ReportId) || reportId.Equals(ReportRP0270.ReportIdForTemp))
             {
-                // RP0270：会計提出表シート定義作成、コマンド設定
+                // RP0270：会計提出表シート、RP0460：仮確定在庫用会計提出表定義作成、コマンド設定
                 SetSheetDefineForRP0270(out sheetDefineList, out cmdInfoList);
             }
 
@@ -1223,8 +1228,9 @@ namespace CommonTMQUtil
                     if (condAccountReport != null)
                     {
                         // 会計帳票データを取得
-                        if (condAccountReport.ReportId == ReportRP0270.ReportId)
+                        if (condAccountReport.ReportId == ReportRP0270.ReportId || condAccountReport.ReportId == ReportRP0270.ReportIdForTemp)
                         {
+                            // 会計提出表または仮確定在庫用会計提出表の場合
                             dataList = GetAccountReportDataEveryAccountAndDepartment(targetSql, db, condAccountReport, sheetDefine.TargetSqlParams);
                         }
                         else
@@ -1616,12 +1622,18 @@ namespace CommonTMQUtil
 
 
             /// <summary>
-            /// RP0270：会計提出表シート定義作成、コマンド設定
+            /// RP0270：会計提出表、RP0460：仮確定在庫用会計提出表 シート定義作成、コマンド設定
             /// </summary>
             /// <param name="sheetDefineList">シート定義リスト</param>
             /// <param name="cmdInfoList">Excelコマンドリスト</param>
             void SetSheetDefineForRP0270(out List<ReportDao.MsOutputReportSheetDefineEntity> sheetDefineList, out List<CommonExcelCmdInfo> cmdInfoList)
             {
+                // RP0270：会計提出表
+                // RP0460：仮確定在庫用会計提出表
+                /*
+                 * 上記の２つの帳票は出力データの取得先が異なるだけでフォーマットは
+                 * 同一のため同じ処理を行う
+                 */
                 sheetDefineList = new List<ReportDao.MsOutputReportSheetDefineEntity>();
                 cmdInfoList = new List<CommonExcelCmdInfo>();
 
@@ -4595,7 +4607,7 @@ namespace CommonTMQUtil
 
             // シート定義を取得
             var sheetDefine = new ReportDao.MsOutputReportSheetDefineEntity().GetEntity(factoryId, reportId, sheetNo, db);
-            if (reportId == ReportRP0270.ReportId)
+            if (reportId == ReportRP0270.ReportId || reportId == ReportRP0270.ReportIdForTemp)
             {
                 // 会計提出表の場合、帳票定義１つの為、シートNoは固定で取得
                 sheetDefine = new ReportDao.MsOutputReportSheetDefineEntity().GetEntity(factoryId, reportId, ReportRP0270.BaseSheetNo, db);
@@ -4614,7 +4626,7 @@ namespace CommonTMQUtil
             IList<Dao.InoutDefine> reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
                 baseSql,
                 new { FactoryId = factoryId, LanguageId = languageId, ReportId = reportId, SheetNo = sheetNo, TemplateId = templateId, OutputPatternId = outputPattenId });
-            if (reportId == ReportRP0270.ReportId)
+            if (reportId == ReportRP0270.ReportId || reportId == ReportRP0270.ReportIdForTemp)
             {
                 // 会計提出表の場合、帳票定義１つの為、シートNoは固定で取得
                 reportInfoList = db.GetListByDataClass<Dao.InoutDefine>(
@@ -4632,7 +4644,7 @@ namespace CommonTMQUtil
             //var properites = typeof(T).GetProperties();
 
             // 対象テンプレートファイルシートのデータを読込み、開始行番号と開始列番号を設定
-            if (reportId == ReportRP0270.ReportId)
+            if (reportId == ReportRP0270.ReportId || reportId == ReportRP0270.ReportIdForTemp)
             {
                 // 会計提出表の場合、帳票定義１つの為、シートNoは固定で取得
                 SetStartInfo(ref reportInfoList, templateFileName, templateFilePath, ReportRP0270.BaseSheetNo, sheetDefine.SheetDefineMaxRow, sheetDefine.SheetDefineMaxColumn, reportDefine.OutputItemType);

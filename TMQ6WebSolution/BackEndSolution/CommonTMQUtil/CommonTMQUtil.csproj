@@ -224,6 +224,9 @@
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
+    <None Remove="Resources\sql\Excel\RP0460\CreateTableTempReport.sql" />
+    <None Remove="Resources\sql\Excel\RP0460\InsertTempReport.sql" />
+    <None Remove="Resources\sql\Excel\RP0460_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet10.sql" />
     <None Remove="Resources\sql\Excel\RP1000_Sheet12.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\Detail\DeleteHmContent.sql" />
@@ -991,6 +994,9 @@
     <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0460\CreateTableTempReport.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0460\InsertTempReport.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0460_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\UpdateScheduleDateByDetailId.sql" />
   </ItemGroup>
 

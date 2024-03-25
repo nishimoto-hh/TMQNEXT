@@ -2930,7 +2930,10 @@ function getParamVal(param, selector) {
  *  @param {number} ：1:先頭に「全て」の項目を追加する / 0:追加しない
  *  @param {number} ：1:必須 / 0:任意
  */
-function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList) {
+// 2024/03/15 upd 連動処理追加 by ATTS start
+//function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList) {
+function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, changeColNo = -1, changeVal = null) {
+// 2024/03/15 upd 連動処理追加 by ATTS end
     //複数選択ｺﾝﾎﾞ(ﾘｽﾄ)の場合、ﾁｪｯｸﾎﾞｯｸｽ付きﾘｽﾄ<li><input type="checkbox">
 
     var isInitallize = !factoryIdList;
@@ -3014,6 +3017,30 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
             setMutiSelectCheckOnText(td);
         });
     }
+    // 2024/03/15 add 連動処理追加 by ATTS start
+    else if (changeColNo > 0) {
+        //※ｺﾝﾄﾛｰﾙchangedｲﾍﾞﾝﾄ時
+
+        //変更値でﾊﾟﾗﾒｰﾀを書き換え
+        //※文字列指定でないﾊﾟﾗﾒｰﾀの場合、ﾊﾟﾗﾒｰﾀ値未設定の場合は「null」を設定
+        if (changeVal == null || changeVal.length <= 0) {
+            //※ﾊﾟﾗﾒｰﾀ値未設定の場合
+
+            //文字列指定でないﾊﾟﾗﾒｰﾀか？
+            var pos = param.indexOf('@' + changeColNo);
+            if (pos == 0) {
+                changeVal = "null";
+            }
+            else if (pos > 0) {
+                //「@」直近文字列が「'」でないか？
+                if (param.substr(pos - 1, 1) != "'") {
+                    changeVal = "null";
+                }
+            }
+        }
+        param = param.replace('@' + changeColNo, changeVal);    //「@3」⇒「ｾﾙの値」で置き換え
+    }
+    // 2024/03/15 add 連動処理追加 by ATTS end
 
     if (option == "1") {
         //選択値の反映
@@ -3111,6 +3138,215 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
         }
     }
 
+    // 2024/03/15 add 連動処理追加 by ATTS start
+    //SQLパラメータの成形(例：'C01','@3')
+    var paramStr = param + '';
+    var params = (param + '').split(',');   //ｶﾝﾏで分解
+
+    //対象行：trを取得する
+    var { tr, isHorizontalTbl } = getDataTr(selector);
+
+    //列指定ﾊﾟﾗﾒｰﾀ（「@」で始まる引数）の値の置き換えと変更時ｲﾍﾞﾝﾄ処理を付与
+    var isDynamic = false;  //動的コントロールか？
+    $.each(params, function () {
+        var colNo = -1;
+        var paramVal = "";
+
+        if (this.indexOf("@") >= 0) {
+            //列指定ﾊﾟﾗﾒｰﾀ（「@」で始まる引数）の場合
+
+            isDynamic = true;
+
+            //列番号を取得
+            colNo = parseInt(this.replace("'", "").replace("@", ""), 10);  //先頭の「@」を除去してcolNoとする
+
+            //対象列の値を取得
+            //入力項目の場合、変更時ｲﾍﾞﾝﾄ処理を付与
+            // ⇒ｺﾝﾎﾞﾎﾞｯｸｽ一覧を再作成する
+
+            //対象ｾﾙ
+            var td = getDataTd(tr, colNo);
+            if (!td || td.length == 0) {
+                // 対象セルが存在しない場合
+                return true;    // continue;
+            }
+
+            if ($(td).data('type') == 'treeLabel') {
+                //ツリー選択ラベル
+                if (changeColNo < 0) {
+                    paramVal = $(td).data('structureid');
+
+                    //ｲﾍﾞﾝﾄ付与
+                    $(td).get(0).addEventListener('change', function () {
+                        // 工場コントロールのchangeイベント
+                        var factoryId = $(this).data('structureid');
+                        var cmbFactoryId = $(selector).data('factoryid');
+                        if (cmbFactoryId == null || factoryId != cmbFactoryId) {
+                            // 工場IDが変更されたらコントロールの初期化処理を実行する
+                            initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, $(this).data('structureid'));
+                        }
+                        // コントロールに工場IDをセットする
+                        setAttrByNativeJs(selector, 'data-factoryid', factoryId);
+                    }, false);
+                }
+                else {
+                    paramVal = $(td).data('structureid');
+                }
+
+            } else {
+                //複数選択ﾘｽﾄ（※inputﾀｸﾞと間違わないように先に実施）
+                var msul = $(td).find("ul.multiSelect");
+                if (msul.length > 0) {
+                    if (changeColNo < 0) {
+                        paramVal = $(msul).data("value");
+                        // ※連動先にchangeイベントが正しく追加できないため、clickイベントを使用する
+                        // ※念のためイベント名に名前空間を付加して他の処理にイベント解除/追加の影響を与えないようにする
+                        $(msul).find(":checkbox").off('click.link');
+                        $(msul).find(":checkbox").on('click.link', function () {
+                            var valW = "";
+                            var checkes = $(this).closest("ul").find("li:not(.hide) :checkbox:checked");
+                            if (checkes != null && checkes.length > 0) {
+                                var vals = [];
+                                $.each(checkes, function () {
+                                    vals.push($(this).val());
+                                });
+                                valW = vals.join('|');
+                            }
+                            initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, valW);
+                        });
+                    }
+                    else {
+                        var checkes = $(msul).find("> li:not(.hide) :checkbox:checked");
+                        if (checkes != null && checkes.length > 0) {
+                            var vals = [];
+                            $.each(checkes, function () {
+                                vals.push($(this).val());
+                            });
+                            paramVal = vals.join('|');
+                        }
+                    }
+                }
+                else {
+                    //ｺﾝﾎﾞﾎﾞｯｸｽ
+                    var select = $(td).find("select");
+                    if (select.length > 0) {
+                        if (changeColNo < 0) {
+                            paramVal = $(select).data("value");
+
+                            //ｲﾍﾞﾝﾄ付与
+                            //$(select).off('change');
+                            $(select).on('change', function () {
+                                initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, $(this).val());
+                            });
+                        }
+                        else {
+                            paramVal = $(select).val();
+                        }
+                    }
+                    else {
+                        //ﾁｪｯｸﾎﾞｯｸｽ
+                        var checkbox = $(td).find(":checkbox");
+                        if (checkbox.length > 0) {
+                            paramVal = $(checkbox).prop("checked") ? 1 : 0;
+
+                            if (changeColNo < 0) {
+                                //ｲﾍﾞﾝﾄ付与
+                                //$(checkbox).off('change');
+                                $(checkbox).on('change', function () {
+                                    var valW = $(this).prop("checked") ? 1 : 0;
+                                    initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, valW);
+                                });
+                            }
+
+                        } else {
+
+                            //ﾃｷｽﾄ、数値、ﾃｷｽﾄｴﾘｱ、ｺｰﾄﾞ＋翻訳、日付、時刻、日時
+                            var input = $(td).find("input[type='text'], input[type='hidden'], textarea");
+                            if (input.length > 0) {
+                                paramVal = $(input).val();
+
+                                if (changeColNo < 0) {
+                                    //ｲﾍﾞﾝﾄ付与
+                                    //$(input).off('change');
+                                    $(input).on('change', function () {
+                                        initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, $(this).val());
+                                    });
+                                }
+
+                            }
+                            else {
+
+                                //日付(ブラウザ標準)、時刻(ブラウザ標準)、日時(ブラウザ標準)
+                                var dateTime = $(td).find("input[type='date'], input[type='time'], input[type='datetime-local']");
+                                if (dateTime.length > 0) {
+                                    paramVal = $(dateTime).val().replace(/-/g, "/").replace("T", " ");
+                                    if (dateTime.length > 1) {
+                                        paramVal = paramVal + '|' + $(dateTime[1]).val().replace(/-/g, "/").replace("T", " ");
+                                    }
+
+                                    if (changeColNo < 0) {
+                                        //ｲﾍﾞﾝﾄ付与
+                                        //$(dateTime).off('change');
+                                        $(dateTime).on('change', function () {
+                                            var td = $(this).closest("td");
+                                            var inputs = $(td).find("input[type='date'], input[type='time'], input[type='datetime-local']");
+                                            var valW = $(inputs).val().replace(/-/g, "/").replace("T", " ");
+                                            if (inputs.length > 1) {
+                                                valW = valW + '|' + $(inputs[1]).val().replace(/-/g, "/").replace("T", " ");
+                                            }
+                                            initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, factoryIdList, colNo, valW);
+                                        });
+                                    }
+                                }
+                                else {
+                                    //ﾗﾍﾞﾙ
+                                    paramVal = $(td).text();
+                                }
+                                dateTime = null;
+                            }
+                            input = null;
+                        }
+                        checkbox = null;
+
+                    }
+                    select = null;
+                }
+                msul = null;
+            }
+            td = null;
+
+            //SQLパラメータに現時点の値を設定
+            //※文字列指定でないﾊﾟﾗﾒｰﾀの場合、ﾊﾟﾗﾒｰﾀ値未設定の場合は「null」を設定
+            if (paramVal == null || paramVal.length <= 0) {
+                //※ﾊﾟﾗﾒｰﾀ値未設定の場合
+
+                //文字列指定でないﾊﾟﾗﾒｰﾀか？
+                var pos = paramStr.indexOf('@' + colNo);
+                if (pos == 0) {
+                    paramVal = "null";
+                }
+                else if (pos > 0) {
+                    //「@」直近文字列が「'」でないか？
+                    if (paramStr.substr(pos - 1, 1) != "'") {
+                        paramVal = "null";
+                    }
+                }
+            }
+            paramStr = paramStr.replace('@' + colNo, paramVal);    //「@3」⇒「ｾﾙの値」で置き換え
+        }
+    });
+    if (changeColNo < 0) {
+        if (isDynamic) {
+            //一覧再表示後の連動ｺﾝﾎﾞの選択ﾘｽﾄ再生成時用の設定を付与しておく
+            $(selector).addClass("dynamic");
+        }
+        setAttrByNativeJs(selector, "data-sqlid", sqlId);
+        setAttrByNativeJs(selector, "data-param", param);
+        setAttrByNativeJs(selector, "data-option", option);
+        setAttrByNativeJs(selector, "data-nullcheck", nullCheck);
+    }
+    // 2024/03/15 add 連動処理追加 by ATTS end
+
     const paramKey = sqlId + "," + param;
     // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
     //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
@@ -3206,7 +3442,7 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
         P_GettingComboBoxDataList.push(paramKey);
 
         // コンボデータ取得処理実行
-        var url = encodeURI(appPath + "api/CommonSqlKanriApi/" + sqlId + "?param=" + param);// 手動URLエンコード
+        var url = encodeURI(appPath + "api/CommonSqlKanriApi/" + sqlId + "?param=" + paramStr);// 手動URLエンコード
         $.ajax({
             url: url,
             type: 'GET',

@@ -38,10 +38,10 @@ SELECT
     CASE WHEN temp.old_new_cd = '1' THEN @CheckChar ELSE '' END AS used,    -- 中古品
     -- [対象年月末日の２年前の日付]＜[入庫日]≦[対象年月末日の１年前の日付]
     CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -1, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) 
-            AND temp.receiving_datetime >= DATEADD(YEAR, -2, CONVERT(date,@TargetYearMonth + '/01')) THEN @CheckChar ELSE '' END AS one_year,
+            AND temp.receiving_datetime >= DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS one_year,
     -- [対象年月末日の３年前の日付]＜[入庫日]≦[対象年月末日の２年前の日付]
     CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) 
-            AND temp.receiving_datetime >= DATEADD(YEAR, -3, CONVERT(date,@TargetYearMonth + '/01')) THEN @CheckChar ELSE '' END AS two_years,
+            AND temp.receiving_datetime >= DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS two_years,
     -- [入庫日]≦[対象年月末日の３年前の日付]
     CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS over_three_years,
     temp.parts_location_id, 
@@ -61,16 +61,9 @@ FROM (
 @GetEveryAccountAndDepartment*/
 
 -- メイン部
-SELECT 
-    /*@TargetYearMonthNull
-    FORMAT(GETDATE(),'yyyy') as year,
-    FORMAT(GETDATE(),'MM') as month,
-    @TargetYearMonthNull*/
-
-    /*@TargetYearMonth
+SELECT
     YEAR(CONVERT(date,@TargetYearMonth + '/01')) as year,
     MONTH(CONVERT(date,@TargetYearMonth + '/01')) as month,
-    @TargetYearMonth*/
 
     pl.account_structure_id, -- 勘定項目
     -- [dbo].[get_v_structure_item](pl.account_structure_id, pp.factory_id, @LanguageId) AS account_nm,
@@ -180,7 +173,9 @@ SELECT
                             AND st_f.factory_id IN(0, pp.factory_id)
                         )
                     AND tra.structure_id = pls.parts_location_id
-                )) AS row_no,
+                )
+                , pls.parts_location_detail_no
+                ) AS row_no,
 
     pp.parts_name as parts_name, -- 品名
     ISNULL(pp.model_type,'') + ISNULL(pp.standard_size,'') AS dimensions, -- 規格・寸法
@@ -207,22 +202,10 @@ SELECT
         AND tra.structure_id = pp.unit_structure_id
     ) AS unit_name,
 
-    ISNULL(pl.unit_price, 0) AS unit_price, -- 単価
-
-    -- 対象年月が未入力の場合は在庫データテーブルの値を使用
-    /*@TargetYearMonthNull
-    ISNULL(pls.stock_quantity, 0) AS stock_quantity,
-    FORMAT(dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
-    dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
-    @TargetYearMonthNull*/
-
-
-    -- 対象年月が入力されている場合は確定在庫データテーブルの値を使用
-    /*@TargetYearMonth
     ISNULL(pfs.inventory_quantity, 0) AS stock_quantity, -- 在庫数
+    ISNULL(pl.unit_price, 0) AS unit_price, -- 単価    
     FORMAT(dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) AS amount, -- 金額
     dbo.get_rep_rounding_value(ISNULL(pfs.inventory_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) AS amount_value, -- 金額
-    @TargetYearMonth*/
      
     pl.old_new_structure_id, -- 新旧区分
     --[dbo].[get_v_structure_item](pl.old_new_structure_id, pp.factory_id, @LanguageId) AS old_new_nm,
@@ -339,6 +322,9 @@ AND
     pfs.target_month >= CONVERT(date,@TargetYearMonth + '/01')
 AND
     pfs.target_month < DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))
+AND
+    -- 在庫が0より大きいものを対象にする
+    ISNULL(pfs.inventory_quantity, 0) > 0
 @TargetYearMonth*/
 
 /*@FactoryIdList
@@ -485,15 +471,7 @@ GROUP BY
     pp.model_type, -- 規格・寸法
     pp.standard_size,
     pp.unit_structure_id, -- 数量管理単位id
-
-    /*@TargetYearMonthNull
-    pls.stock_quantity,
-    @TargetYearMonthNull*/
-
-    /*@TargetYearMonth
     pfs.inventory_quantity, -- 在庫数
-    @TargetYearMonth*/
-
     pl.unit_price, -- 単価
     pl.old_new_structure_id, -- 新旧区分
     pl.receiving_datetime,  -- 入庫日

@@ -17,6 +17,7 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using CommonTMQUtil;
+using static CommonTMQUtil.CommonTMQUtil;
 
 /// <summary>
 /// 会計帳票出力
@@ -58,6 +59,23 @@ namespace BusinessLogic_PT0009
         {
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"Parts";
+        }
+
+        /// <summary>
+        /// SQLファイル名称(仮確定在庫用会計提出表用)
+        /// </summary>
+        private static class SqlNameForTemp
+        {
+            /// <summary>SQL格納先サブディレクトリ名</summary>
+            public const string SubDir = @"Excel\RP0460";
+            /// <summary>
+            /// 一時テーブル作成SQL
+            /// </summary>
+            public const string CreateTableTempReport = "CreateTableTempReport";
+            /// <summary>
+            /// 一時テーブル作成SQL
+            /// </summary>
+            public const string InsertTempReport = "InsertTempReport";
         }
 
         /// <summary>
@@ -115,6 +133,11 @@ namespace BusinessLogic_PT0009
             /// </summary>
             public const int OutputPatternId = 1;
         }
+
+        /// <summary>
+        /// 仮確定在庫用会計提出表の帳票ID
+        /// </summary>
+        private const string TempReportId = "RP0460";
         #endregion
 
         #region コンストラクタ
@@ -255,6 +278,12 @@ namespace BusinessLogic_PT0009
                     listPf.GetInsertTranslationAll(new List<GroupId>(), true); // 各グループ
                     listPf.RegistTempTable(); // 登録
 
+                    // 仮確定在庫用会計提出表(RP0460)の場合、データを集計するため一時テーブルに出力データを格納する
+                    if (condition.ReportId == TempReportId)
+                    {
+                        registTempReportData(condAccountReport);
+                    }
+
                     IList<dynamic> dataList = TMQUtil.GetAccountReportData(sheetDefine.TargetSql, db, condAccountReport);
                     if (dataList.Count > 0)
                     {
@@ -374,14 +403,16 @@ namespace BusinessLogic_PT0009
             // 対象年月
             if (condition.TargetYearMonth != null && string.IsNullOrEmpty(condition.TargetYearMonth) == false)
             {
+                // 仮確定在庫用会計提出表の場合は対象年月の値を 年月 → 年月末日に変更
+                if(condition.ReportId == TempReportId)
+                {
+                    condAccountReport.TargetMaxDate = DateTime.Parse(condition.TargetYearMonth).AddMonths(1);
+                    listUnComment.Add(nameof(condition.TargetMaxDate));
+                }
+
+                // 会計提出表の場合は入力された値をそのまま使用
                 condAccountReport.TargetYearMonth = condition.TargetYearMonth;
                 listUnComment.Add(nameof(condition.TargetYearMonth));
-            }
-            else
-            {
-                // 対象年月が入力されていない場合は"TargetYearMonthNull"をアンコメントリストに格納
-                // "TargetYearMonthNull"が使用されるのは会計提出表の出力で対象年月が未入力の場合のみ
-                listUnComment.Add("TargetYearMonthNull");
             }
 
             // 工場
@@ -584,6 +615,23 @@ namespace BusinessLogic_PT0009
             }
             // 取得できない場合、0を返す
             return 0;
+        }
+
+        /// <summary>
+        /// 仮確定在庫用会計提出表を出力するための一時テーブルを作成する
+        /// </summary>
+        /// <returns>エラーの場合はFalse</returns>
+        private bool registTempReportData(TMQUtil.CondAccountReport condAccountReport)
+        {
+            // 一時テーブルを作成SQLを取得し、実行する
+            string createSql = SqlExecuteClass.GetExecuteSql(SqlNameForTemp.CreateTableTempReport, SqlNameForTemp.SubDir, string.Empty);
+            this.db.Regist(createSql);
+
+            // 一時テーブルに集計データを登録するSQLを取得し、実行する
+            string insertSql = SqlExecuteClass.GetExecuteSql(SqlNameForTemp.InsertTempReport, SqlNameForTemp.SubDir, string.Empty, condAccountReport.ListUnComment);
+            this.db.Regist(insertSql, condAccountReport);
+
+            return true;
         }
         #endregion
 

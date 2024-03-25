@@ -21,6 +21,9 @@ namespace BusinessLogic_PT0009
             /// <summary>Gets or sets 対象年月</summary>
             /// <value>対象年月</value>
             public string TargetYearMonth { get; set; }
+            /// <summary>Gets or sets 対象年月(仮確定在庫用会計提出表用)</summary>
+            /// <value>対象年月(仮確定在庫用会計提出表用)</value>
+            public DateTime? TargetMaxDate { get; set; }
             /// <summary>Gets or sets 工場</summary>
             /// <value>工場</value>
             public List<int> FactoryIdList { get; set; }

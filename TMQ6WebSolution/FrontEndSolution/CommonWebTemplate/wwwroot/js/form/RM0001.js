@@ -82,7 +82,7 @@ const RM0001_FormList = {
     TemplateFileName: 11,                           // テンプレートファイル名
     BtnOutput: "RM0001_Output",                     // 出力ボタン
     SearchArea: "search_divid_switch_RM0001",       // 検索条件エリア
-    OutputItemTypePatternExists : "3"               // 出力項目種別出力パターン指定あり
+    OutputItemTypePatternExists: "3"               // 出力項目種別出力パターン指定あり
 }
 
 // 帳票出力項目一覧 ボタングループ上部 コントロール項目番号
@@ -206,7 +206,7 @@ function changeComboValues(appPath, ctrlId, valNo) {
         var tdOutputReport = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputReport + "']");
         var changeVal = getCellVal(tdOutputReport);
         // 値が取れない場合、終了する
-        if (changeVal == ""){ return; }
+        if (changeVal == "") { return; }
         param = param.replace("@1", changeVal);
 
         var tdAuthority = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.AuthorityLevel + "']");
@@ -218,7 +218,7 @@ function changeComboValues(appPath, ctrlId, valNo) {
         else {
             param = param.replace("@3", "1");
         }
-        
+
         // 工場コンボボックスの再設定
         var ctrlOption = 0; // 空白なし
         // var ctrlOption = 2; // 空白なし
@@ -229,7 +229,7 @@ function changeComboValues(appPath, ctrlId, valNo) {
         // 工場コンボボックスのセッションストレージ上の情報をクリア
         const paramKey = sqlId + "," + param;
         removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
-        
+
         initComboBox(appPath, $(selectFactory), sqlId, param, ctrlOption, isNullCheck, -1);
 
         setTimeout(function () {
@@ -293,14 +293,12 @@ function changeComboValues(appPath, ctrlId, valNo) {
 
             // 登録処理後の場合、グローバル変数に登録値を保持している為、そちらを選択する
             var registTemplateId = P_dicIndividual[RM0001_GlobalListKey.RegistTemplateId];
-            if (registTemplateId != null && $(registTemplateId).length > 0)
-            {
+            if (registTemplateId != null && $(registTemplateId).length > 0) {
                 $(selectOutputTemplate).val(registTemplateId);
                 // 設定後、値をクリアする
                 operatePdicIndividual(RM0001_GlobalListKey.RegistTemplateId, true, "");
             }
-            else
-            {
+            else {
                 selectComboIdx($(selectOutputTemplate), 1); // 空白ありのため、先頭の次を選択
             }
             setTimeout(function () {
@@ -531,8 +529,7 @@ function changeRowControlForRM0001(ctrlId, isDisplay) {
  */
 function RM0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom, transPtn) {
 
-    if (btnCtrlId == RM0001_FormListBtnGrp.BtnBack)
-    {
+    if (btnCtrlId == RM0001_FormListBtnGrp.BtnBack) {
         // グローバルリストのキーを消す
         operatePdicIndividual(RM0001_GlobalListKey.TargetCtrlId, true, "");         // 呼び元画面の対象のコントロールID
         operatePdicIndividual(RM0001_GlobalListKey.ParentConductId, true, "");      // 呼び元画面の機能ID
@@ -686,6 +683,10 @@ function RM0001_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conduc
 
     // 削除ボタンクリックの場合の個別処理
     if ($(btn).attr("name") == RM0001_FormOutItemList.BtnDelete) {
+
+        // パターンコンボボックスの再作成
+        RM0001_initPatternComb(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, false);
+
         var selects = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputPattern + "'] select.dynamic");
         //連動ｺﾝﾎﾞの選択ﾘｽﾄを再生成
         resetComboBox(appPath, selects);
@@ -723,31 +724,20 @@ function RM0001_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conduc
         // 雛形ファイル登録画面を非表示にする
         changeDispFormUploadTemp(false);
 
-        // 実行中フラグOFF
-        P_ProcExecuting = false;
+        //// 実行中フラグOFF
+        //P_ProcExecuting = false;
 
-        // コンボボックスの再作成
-        RM0001_setPageStatusEx(pageStatus.INIT, null, null, null);
-
-        // 実行中フラグON
-        P_ProcExecuting = true;
-
-        setTimeout(function () {
-
-            // 実行中フラグOFF
-            P_ProcExecuting = false;
-
-            // 検索ボタンのイベント実行
-            var backRegist = $(P_Article).find("input:button[data-actionkbn='" + actionkbn.Search + "']");
-            $(backRegist).click();
-
-            // 実行中フラグON
-            P_ProcExecuting = true;
-
-            strMessage = getMessageParam(P_ComMsgTranslated[941220001], [P_ComMsgTranslated[911200003]]);
-            setMessage(strMessage, procStatus.Valid);
-
-        }, RM0001_FormCondition.WaitTime * 10); //3000ミリ秒
+        // 登録ボタンがクリックされた画面に応じてコンボボックスを再生成する
+        if ($(btn).attr("name") == RM0001_FormOutPattern.BtnRegistOutPattern) {
+            // パターン登録画面
+            // パターンコンボボックスの再作成
+            RM0001_initPatternComb(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, true);
+        }
+        else {
+            // テンプレートファイルアップロード画面
+            // テンプレートコンボボックスの再作成
+            RM0001_initTemplateComb(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+        }
 
         return;
 
@@ -821,7 +811,7 @@ function RM0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataLis
             // 一覧の対象コントロールIDの設定
             var listCtrlId = "BODY_020_00_LST_0";
             operatePdicIndividual(RM0001_GlobalListKey.TargetCtrlId, false, listCtrlId);           // 呼び元画面の対象のコントロールID
-        //    operatePdicIndividual(RM0001_GlobalListKey.TargetSqlParamName1, false, "MachineId");   // 対象SQLパラメータ項目No１
+            //    operatePdicIndividual(RM0001_GlobalListKey.TargetSqlParamName1, false, "MachineId");   // 対象SQLパラメータ項目No１
         }
 
         // 件名別長期計画用個別設定
@@ -1235,3 +1225,137 @@ function removeSucMessage() {
     }
 }
 
+/**
+ * テンプレートコンボボックスの再作成
+ */
+function RM0001_initTemplateComb(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+
+    var sqlId = RM0001_FormCondition.SqlId.OutputTemplate;
+    var param = RM0001_FormCondition.Param.OutputTemplate; // "@1,@2"
+
+    // テンプレートコンボボックスの初期化
+    var tdOutputTemplate = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputTemplate + "']");
+    var selectOutputTemplate = $(tdOutputTemplate).find("select");
+    //ｺﾝﾎﾞ一覧の初期化
+    $(selectOutputTemplate).children().remove();
+    $(selectOutputTemplate).off('change');
+
+    // 工場コンボボックスの値をパラメータに埋め込み
+    var tdFactory = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.Factory + "']");
+    var changeVal = getCellVal(tdFactory);
+    // 値が取れない場合、終了する
+    if (changeVal == "") { return; }
+    param = param.replace("@2", changeVal);
+
+    // 帳票コンボボックスの値をパラメータに埋め込み
+    var tdOutputReport = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputReport + "']");
+    changeVal = getCellVal(tdOutputReport);
+    // 値が取れない場合、終了する
+    if (changeVal == "") { return; }
+    param = param.replace("@1", changeVal);
+
+    // テンプレートコンボボックスの再設定
+    var ctrlOption = 2; // 空白あり
+    var isNullCheck = $(selectOutputTemplate).hasClass("validate_required");
+
+    // 工場コンボボックスのセッションストレージ上の情報をクリア
+    const paramKey = sqlId + "," + param;
+    removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+
+    // グローバル変数に格納されているコンボボックスデータを削除する(このあとのinitComboBoxで再取得したデータをセットするため)
+    if (P_ComboBoxJsonList[paramKey]) {
+        delete P_ComboBoxJsonList[paramKey];
+    }
+    // コンボボックスの初期化
+    initComboBox(appPath, $(selectOutputTemplate), sqlId, param, ctrlOption, isNullCheck, -1);
+
+    setTimeout(function () {
+        // テンプレートコンボの先頭を選択して、設定イベントを行う
+
+        // 登録処理後の場合、グローバル変数に登録値を保持している為、そちらを選択する
+        var registTemplateId = P_dicIndividual[RM0001_GlobalListKey.RegistTemplateId];
+        if (registTemplateId != null && $(registTemplateId).length > 0) {
+            $(selectOutputTemplate).val(registTemplateId);
+            // 設定後、値をクリアする
+            operatePdicIndividual(RM0001_GlobalListKey.RegistTemplateId, true, "");
+        }
+        else {
+            selectComboIdx($(selectOutputTemplate), 1); // 空白ありのため、先頭の次を選択
+        }
+    }, RM0001_FormCondition.WaitTime); //150ミリ秒
+
+}
+
+/**
+ * パターンコンボボックスの再作成
+ * @param {any} isSelectItem コンボボックス再作成後にアイテムを選択する場合はTrue、選択しない場合はFalse
+ * パターンの削除を行った場合は全コンボボックス初期化されアイテムを選択する必要がタイのでFalseが渡ってくる
+ * @returns
+ */
+function RM0001_initPatternComb(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, isSelectItem) {
+    // 出力パターンコンボボックスの再設定
+    var sqlId = RM0001_FormCondition.SqlId.OutputPattern;
+    var param = RM0001_FormCondition.Param.OutputPattern; // "@1,@2,@3";
+
+    // パターンコンボボックスの初期化
+    var tdOutputPattern = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputPattern + "']");
+    var selectOutputPattern = $(tdOutputPattern).find("select");
+    //ｺﾝﾎﾞ一覧の初期化
+    $(selectOutputPattern).children().remove();
+    $(selectOutputPattern).off('change');
+
+    // テンプレートコンボボックスの値をパラメータに埋め込み
+    var tdOutputTemplate = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputTemplate + "']");
+    var changeVal = getCellVal(tdOutputTemplate);
+    // 値が取れない場合、終了する
+    if (changeVal == "") { return; }
+    param = param.replace("@3", changeVal);
+
+    // 工場コンボボックスの値をパラメータに埋め込み
+    var tdFactory = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.Factory + "']");
+    changeVal = getCellVal(tdFactory);
+    // 値が取れない場合、終了する
+    if (changeVal == "") { return; }
+    param = param.replace("@2", changeVal);
+
+    // 帳票コンボボックスの値をパラメータに埋め込み
+    var tdOutputReport = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputReport + "']");
+    changeVal = getCellVal(tdOutputReport);
+    // 値が取れない場合、終了する
+    if (changeVal == "") { return; }
+    param = param.replace("@1", changeVal);
+
+    // パターンコンボボックスの再設定
+    var ctrlOption = 2; // 空白あり
+    var tdOutputPattern = $(P_Article).find("#" + RM0001_FormCondition.Id + getAddFormNo()).find("td[data-name='VAL" + RM0001_FormCondition.OutputPattern + "']");
+    var selectOutputPattern = $(tdOutputPattern).find("select");
+    var isNullCheck = $(selectOutputPattern).hasClass("validate_required");
+
+    // 工場コンボボックスのセッションストレージ上の情報をクリア
+    const paramKey = sqlId + "," + param;
+    removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
+
+    // グローバル変数に格納されているコンボボックスデータを削除する(このあとのinitComboBoxで再取得したデータをセットするため)
+    if (P_ComboBoxJsonList[paramKey]) {
+        delete P_ComboBoxJsonList[paramKey];
+    }
+
+    // コンボボックスの初期化
+    initComboBox(appPath, $(selectOutputPattern), sqlId, param, ctrlOption, isNullCheck, -1);
+
+    if (isSelectItem) {
+        // 出力パターンコンボの先頭を選択
+        setTimeout(function () {
+            // 登録処理後の場合、グローバル変数に登録値を保持している為、そちらを選択する
+            var registPatternId = P_dicIndividual[RM0001_GlobalListKey.RegistPatternId];
+            if (registPatternId != null && $(registPatternId).length > 0) {
+                $(selectOutputPattern).val(registPatternId);
+                // 設定後、値をクリアする
+                operatePdicIndividual(RM0001_GlobalListKey.RegistPatternId, true, "");
+            }
+            else {
+                selectComboIdx($(selectOutputPattern), 1); // 空白ありのため、先頭の次を選択
+            }
+        }, RM0001_FormCondition.WaitTime); //150ミリ秒
+    }
+}

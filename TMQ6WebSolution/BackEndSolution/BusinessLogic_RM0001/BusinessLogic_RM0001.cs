@@ -418,6 +418,9 @@ namespace BusinessLogic_RM0001
         {
             bool resultRegist = false;  // 登録処理戻り値、エラーならFalse
 
+            // パターン新規登録後のID(登録したパターンIDで再検索をするための値)
+            int? patternIdForReSearch = null;
+
             switch (this.CtrlId)
             {
                 case ConductInfo.FormList.ButtonCtrlId.Regist: // 一覧画面_更新
@@ -425,7 +428,7 @@ namespace BusinessLogic_RM0001
                     setReportImplDataByCondition(out int factoryId, out string reportId, out int templateId,
                                                 out int outputPatternId, out string programId,
                                                 out string templateFilePath, out string templateFileName);
-                    resultRegist = executeRegistEdit(this.CtrlId, programId);
+                    resultRegist = executeRegistEdit(this.CtrlId, programId, out patternIdForReSearch);
                     break;
                 default:
                     // 処理が想定される場合は、分岐に条件を追加して処理を記載すること
@@ -440,7 +443,7 @@ namespace BusinessLogic_RM0001
             }
 
             // 一覧画面再検索処理
-            if (!searchList())
+            if (!searchList(patternIdForReSearch))
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
@@ -557,7 +560,7 @@ namespace BusinessLogic_RM0001
         /// ボタン制御
         /// </summary>
         /// <param name="status">ﾍﾟｰｼﾞ状態　0：初期状態、1：検索後、2：明細表示後ｱｸｼｮﾝ、3：ｱｯﾌﾟﾛｰﾄﾞ後</param>
-        private void changeFormListBtnEnabled(int status)
+        private void changeFormListBtnEnabled(int status, int? patternId = null)
         {
             // 初期表示
             // 検索ボタン以外は非活性
@@ -635,8 +638,17 @@ namespace BusinessLogic_RM0001
                 }
                 else
                 {
-                    BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Regist);
-                    BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Delete);
+                    // 引数にパターンIDが渡ってきているかどうか判定
+                    if (patternId != null)
+                    {
+                        BtnActive(ConductInfo.FormList.ButtonCtrlId.Regist);
+                        BtnActive(ConductInfo.FormList.ButtonCtrlId.Delete);
+                    }
+                    else
+                    {
+                        BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Regist);
+                        BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Delete);
+                    }
                 }
 
                 // 出力
@@ -649,7 +661,17 @@ namespace BusinessLogic_RM0001
                 }
                 else
                 {
-                    BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Output);
+                    // 引数にパターンIDが渡ってきているかどうか判定
+                    if (patternId != null)
+                    {
+                        // 活性
+                        BtnActive(ConductInfo.FormList.ButtonCtrlId.Output);
+                    }
+                    else
+                    {
+                        // 非活性
+                        BtnDisabled(ConductInfo.FormList.ButtonCtrlId.Output);
+                    }
                 }
 
             }

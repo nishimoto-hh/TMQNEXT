@@ -20,6 +20,12 @@ factory AS(
 )
 ,
 /*END*/
+/*IF param2 != null && param2 != ''*/
+ex_new as
+(
+select dbo.get_rep_extension_data( /*param2*/375, /*param3*/5, /*languageId*/'ja', /*param4*/1) as extension_data
+),
+/*END*/
 main AS(
     SELECT
         -- 工場ID
@@ -72,12 +78,24 @@ main AS(
         st.structure_group_id = /*param1*/1770
     AND st.language_id = /*languageId*/'ja'
     /*IF param2 != null && param2 != ''*/
-    -- 新旧区分を指定
-    AND ISNULL(ex2.extension_data, '') = dbo.get_rep_extension_data( 
-            /*param2*/375
-            , /*param3*/5
-            , /*languageId*/'ja'
-            , /*param4*/1
+    -- 新旧区分を指定(新品・中古品の場合は拡張項目を参照し、循環予備品などの拡張項目がない項目は全て取得対象とする)
+        AND ( 
+            ex2.extension_data = ( 
+                CASE 
+                    WHEN (SELECT extension_data FROM ex_new) = '0' 
+                    OR (SELECT extension_data FROM ex_new) = '1' 
+                        THEN (SELECT extension_data FROM ex_new) 
+                    ELSE '0' 
+                    END
+            ) 
+            OR ex2.extension_data = ( 
+                CASE 
+                    WHEN (SELECT extension_data FROM ex_new) = '0' 
+                    OR (SELECT extension_data FROM ex_new) = '1' 
+                        THEN (SELECT extension_data FROM ex_new) 
+                    ELSE '1' 
+                    END
+            )
         )
     /*END*/
     /*IF factoryIdList != null && factoryIdList.Count > 0*/

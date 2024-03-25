@@ -90,7 +90,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = plt.old_new_structure_id
-                    AND st_f.factory_id = 0
+                    AND st_f.factory_id IN (0, pps.factory_id)
             ) 
             AND tra.structure_id = plt.old_new_structure_id
     ) AS old_new_structure_name,

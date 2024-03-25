@@ -75,18 +75,18 @@ select
     , su.subject_note                           -- メモ
     , su.maintenance_count                      -- カウント件数
     , su.summary_id                             -- 保全管理NO
-    , machine.machine_no                        -- 機器番号
-    , machine.machine_name                      -- 機器名称
-    , machine.installation_location             -- 設置場所
-    , machine.number_of_installation            -- 設置台数
-    , machine.date_of_installation              -- 設置年月
-    , machine.machine_note                      -- 機番メモ
-    , equipment.fixed_asset_no                  -- 固定資産番号
-    , equipment.manufacturer_type               -- メーカー型式
-    , equipment.model_no                        -- 型式コード
-    , equipment.serial_no                       -- 製造番号
-    , equipment.date_of_manufacture             -- 製造年月
-    , equipment.equipment_note                  -- 機器メモ
+    , coalesce(machine.machine_no, machinefail.machine_no) machine_no -- 機器番号
+    , coalesce(machine.machine_name, machinefail.machine_name) machine_name -- 機器名称
+    , coalesce(machine.installation_location, machinefail.installation_location) installation_location -- 設置場所
+    , coalesce(machine.number_of_installation, machinefail.number_of_installation) number_of_installation -- 設置台数
+    , coalesce(machine.date_of_installation, machinefail.date_of_installation) date_of_installation -- 設置年月
+    , coalesce(machine.machine_note, machinefail.machine_note) machine_note -- 機番メモ
+    , coalesce(equipment.fixed_asset_no, equipmentfail.fixed_asset_no) fixed_asset_no -- 固定資産番号
+    , coalesce(equipment.manufacturer_type, equipmentfail.manufacturer_type) manufacturer_type -- メーカー型式
+    , coalesce(equipment.model_no, equipmentfail.model_no) model_no -- 型式コード
+    , coalesce(equipment.serial_no, equipmentfail.serial_no) serial_no -- 製造番号
+    , coalesce(equipment.date_of_manufacture, equipmentfail.date_of_manufacture) date_of_manufacture -- 製造年月
+    , coalesce(equipment.equipment_note, equipmentfail.equipment_note) equipment_note -- 機器メモ
     , '' as work_division                       -- 作業目的(空のデータを出力)
     , '' as construction_personnel_name2        -- 担当者2(空のデータを出力)
     , '' as working_item                        -- 作業項目(空のデータを出力)
@@ -377,10 +377,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.location_factory_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.location_factory_structure_id
+            and tra.structure_id = coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
     ) as machine_factory_name                   -- 工場(機器)
     , ( 
         select
@@ -395,10 +395,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.location_plant_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.location_plant_structure_id, machinefail.location_plant_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.location_plant_structure_id
+            and tra.structure_id = coalesce(machine.location_plant_structure_id, machinefail.location_plant_structure_id)
     ) as machine_plant_name                     -- 工程(機器)
     , ( 
         select
@@ -413,10 +413,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.location_series_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.location_series_structure_id, machinefail.location_series_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.location_series_structure_id
+            and tra.structure_id = coalesce(machine.location_series_structure_id, machinefail.location_series_structure_id)
     ) as machine_series_name                    -- 系列(機器)
     , ( 
         select
@@ -431,10 +431,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.location_stroke_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.location_stroke_structure_id, machinefail.location_stroke_structure_id) 
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.location_stroke_structure_id
+            and tra.structure_id = coalesce(machine.location_stroke_structure_id, machinefail.location_stroke_structure_id)
     ) as machine_stroke_name                    -- 設備(機器)
     , ( 
         select
@@ -449,10 +449,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.location_facility_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.location_facility_structure_id, machinefail.location_facility_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.location_facility_structure_id
+            and tra.structure_id = coalesce(machine.location_facility_structure_id, machinefail.location_facility_structure_id)
     ) as machine_facility_name                  -- 場所5(機器)
     , ( 
         select
@@ -467,10 +467,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.job_kind_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.job_kind_structure_id, machinefail.job_kind_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.job_kind_structure_id
+            and tra.structure_id = coalesce(machine.job_kind_structure_id, machinefail.job_kind_structure_id)
     ) as machine_job_name                       -- 職種(機器)
     , ( 
         select
@@ -485,10 +485,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.equipment_level_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.equipment_level_structure_id, machinefail.equipment_level_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.equipment_level_structure_id
+            and tra.structure_id = coalesce(machine.equipment_level_structure_id, machinefail.equipment_level_structure_id)
     ) as equipment_level_name                   -- 機器レベル
     , ( 
         select
@@ -503,10 +503,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.importance_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.importance_structure_id, machinefail.importance_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.importance_structure_id
+            and tra.structure_id = coalesce(machine.importance_structure_id, machinefail.importance_structure_id)
     ) as importance_name                        -- 重要度
     , ( 
         select
@@ -521,43 +521,43 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.conservation_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.conservation_structure_id, machinefail.conservation_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.conservation_structure_id
+            and tra.structure_id = coalesce(machine.conservation_structure_id, machinefail.conservation_structure_id)
     ) as conservation_name                      -- 保全方式
     , [dbo].[get_applicable_laws]( 
-        machine.machine_id
+        coalesce(machine.machine_id, machinefail.machine_id)
         , 1
-        , machine.location_factory_structure_id
+        , coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
         , @LanguageId
     ) as applicable_laws_name1
     ,                                           -- 適用法規１
     [dbo].[get_applicable_laws]( 
-        machine.machine_id
+        coalesce(machine.machine_id, machinefail.machine_id)
         , 2
-        , machine.location_factory_structure_id
+        , coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
         , @LanguageId
     ) as applicable_laws_name2
     ,                                           -- 適用法規２
     [dbo].[get_applicable_laws]( 
-        machine.machine_id
+        coalesce(machine.machine_id, machinefail.machine_id)
         , 3
-        , machine.location_factory_structure_id
+        , coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
         , @LanguageId
     ) as applicable_laws_name3
     ,                                           -- 適用法規３
     [dbo].[get_applicable_laws]( 
-        machine.machine_id
+        coalesce(machine.machine_id, machinefail.machine_id)
         , 4
-        , machine.location_factory_structure_id
+        , coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
         , @LanguageId
     ) as applicable_laws_name4
     ,                                           -- 適用法規４
     [dbo].[get_applicable_laws]( 
-        machine.machine_id
+        coalesce(machine.machine_id, machinefail.machine_id)
         , 5
-        , machine.location_factory_structure_id
+        , coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id)
         , @LanguageId
     ) as applicable_laws_name5                  -- 適用法規５
     , ( 
@@ -573,10 +573,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.job_large_classfication_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.job_large_classfication_structure_id, machinefail.job_large_classfication_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.job_large_classfication_structure_id
+            and tra.structure_id = coalesce(machine.job_large_classfication_structure_id, machinefail.job_large_classfication_structure_id)
     ) as job_large_name                         -- 機種大分類
     , ( 
         select
@@ -591,10 +591,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.job_middle_classfication_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.job_middle_classfication_structure_id, machinefail.job_middle_classfication_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.job_middle_classfication_structure_id
+            and tra.structure_id = coalesce(machine.job_middle_classfication_structure_id, machinefail.job_middle_classfication_structure_id)
     ) as job_middle_name                        -- 機種中分類
     , ( 
         select
@@ -609,10 +609,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = machine.job_small_classfication_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(machine.job_small_classfication_structure_id, machinefail.job_small_classfication_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = machine.job_small_classfication_structure_id
+            and tra.structure_id = coalesce(machine.job_small_classfication_structure_id, machinefail.job_small_classfication_structure_id)
     ) as job_small_name                         -- 機種小分類
     , ( 
         select
@@ -627,13 +627,13 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = equipment.use_segment_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(equipment.use_segment_structure_id, equipmentfail.use_segment_structure_id)
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = equipment.use_segment_structure_id
+            and tra.structure_id = coalesce(equipment.use_segment_structure_id, equipmentfail.use_segment_structure_id)
     ) as use_segment_name                       -- 使用区分
     ,case 
-        when equipment.circulation_target_flg = 1 then
+        when coalesce(equipment.circulation_target_flg, equipmentfail.circulation_target_flg) = 1 then
             (select name from circulation where division = 1) 
         else
             (select name from circulation where division = 2)
@@ -651,10 +651,10 @@ select
                 from
                     #temp_structure_factory as st_f 
                 where
-                    st_f.structure_id = equipment.manufacturer_structure_id 
-                    and st_f.factory_id in (0, machine.location_factory_structure_id)
+                    st_f.structure_id = coalesce(equipment.manufacturer_structure_id, equipmentfail.manufacturer_structure_id) 
+                    and st_f.factory_id in (0, coalesce(machine.location_factory_structure_id, machinefail.location_factory_structure_id))
             ) 
-            and tra.structure_id = equipment.manufacturer_structure_id
+            and tra.structure_id = coalesce(equipment.manufacturer_structure_id, equipmentfail.manufacturer_structure_id)
     ) as manufacture_name                       -- メーカー
     , ( 
         select
@@ -796,10 +796,11 @@ from
         on hi.history_id = failure.history_id 
     left join ma_request re                     -- 保全依頼
         on su.summary_id = re.summary_id 
-    left join mc_machine machine                -- 機番情報
+    left join mc_machine machine                -- 機番情報(点検)
         on hm.machine_id = machine.machine_id 
-    left join mc_equipment equipment            -- 機器情報
-        on machine.machine_id = equipment.machine_id    -- 場所階層ツリーで選択されている項目を抽出条件とするため、ツリーで選択された項目の構成IDが格納されている一時テーブルと内部結合をする
+    left join mc_equipment equipment            -- 機器情報(点検)
+        on machine.machine_id = equipment.machine_id    left join mc_machine machinefail            -- 機番情報(故障)        on failure.machine_id = machinefail.machine_id    left join mc_equipment equipmentfail            -- 機器情報(故障)
+        on machinefail.machine_id = equipmentfail.machine_id    -- 場所階層ツリーで選択されている項目を抽出条件とするため、ツリーで選択された項目の構成IDが格納されている一時テーブルと内部結合をする
     inner join #temp_location tl
         on su.location_structure_id = tl.structure_id
 
