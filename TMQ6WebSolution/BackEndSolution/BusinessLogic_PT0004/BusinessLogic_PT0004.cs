@@ -434,11 +434,11 @@ namespace BusinessLogic_PT0004
                 Dao.flgList flg = new();
                 flg.TargetMonth = targetMonth;
 
-                // 対象年月 >= 当月の場合は警告メッセージを表示
-                if (DateTime.Parse(getSearchCondition(true)) >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1))
+                // 対象年月 > 当月の場合は警告メッセージを表示
+                if (DateTime.Parse(getSearchCondition(true)) > new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1))
                 {
                     flg.FlgJudgeTargetMonth = FlgJudgeTargetMonth;
-                    //「当月以降の在庫確定は実行できません。在庫確定を行う場合は前月以前の年月を指定してください。」
+                    //「翌月以降の在庫確定は実行できません。在庫確定を行う場合は当月以前の年月を指定してください。」
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141200004 });
                     // 警告
                     this.Status = CommonProcReturn.ProcStatus.Warning;

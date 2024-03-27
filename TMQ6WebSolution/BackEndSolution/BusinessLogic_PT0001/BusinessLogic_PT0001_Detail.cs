@@ -388,7 +388,7 @@ namespace BusinessLogic_PT0001
             else
             {
                 // 画面で入力された年の年度末の日付を設定
-                condition.DispYearTo = new DateTime(int.Parse(condition.YearTo), int.Parse(startMonth), 1).AddYears(1).AddDays(-1).ToString();
+                condition.DispYearTo = new DateTime(int.Parse(condition.YearTo), int.Parse(startMonth), 1, 23, 59, 59).AddYears(1).AddDays(-1).ToString();
             }
 
             return true;
