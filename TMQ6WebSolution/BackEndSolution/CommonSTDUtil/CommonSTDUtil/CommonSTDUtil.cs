@@ -1001,7 +1001,8 @@ namespace CommonSTDUtil.CommonSTDUtil
                     "C0017",
                     "C0022",
                     "C0028",
-                    "C0030"
+                    "C0030",
+                    "C0035"
                 };
 
                 if (notExecuteSqlIdList.Contains(ctrlSQLId) && paramNullCnt > 0)
