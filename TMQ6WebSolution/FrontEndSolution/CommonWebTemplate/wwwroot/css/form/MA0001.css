@@ -22,3 +22,15 @@
 #formDetail_3 > .detail_div > .tbl_title {
     display: none;
 }
+
+
+/*背景調整*/
+.TextAreaResize {
+    /*テキストエリアの高さ調整*/
+    height: 80px;
+    /*1行の高さ*/
+    line-height: 1;
+}
+
+
+
