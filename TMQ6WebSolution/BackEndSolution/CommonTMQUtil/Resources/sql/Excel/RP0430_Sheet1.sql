@@ -180,6 +180,8 @@ CREATE TABLE #temp_history_data(
     , work_class_name nvarchar(400) COLLATE Japanese_CI_AS_KS
     , treatment_name nvarchar(400) COLLATE Japanese_CI_AS_KS
     , facility_division_name nvarchar(400) COLLATE Japanese_CI_AS_KS
+    , long_plan_division_name nvarchar(400) COLLATE Japanese_CI_AS_KS
+    , long_plan_group_name nvarchar(400) COLLATE Japanese_CI_AS_KS
     , application_reason nvarchar(400) COLLATE Japanese_CI_AS_KS
     , application_user_name nvarchar(400) COLLATE Japanese_CI_AS_KS
     , application_date DATE
@@ -251,6 +253,8 @@ SELECT
     , hlp.work_class_structure_id AS work_class_name
     , hlp.treatment_structure_id AS treatment_name
     , hlp.facility_structure_id AS facility_division_name
+    , hlp.long_plan_division_structure_id AS long_plan_division_name
+    , hlp.long_plan_group_structure_id AS long_plan_group_name
     @GetCount*/
     /*@GetData
     , ( 
@@ -577,6 +581,42 @@ SELECT
             ) 
             AND tra.structure_id = hlp.facility_structure_id
     ) AS facility_division_name             --設備区分(翻訳)
+    , ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId 
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = hlp.long_plan_division_structure_id 
+                    AND st_f.factory_id IN (0, hlp.location_factory_structure_id)
+            ) 
+            AND tra.structure_id = hlp.long_plan_division_structure_id
+    ) AS long_plan_division_name            --長計区分(翻訳)
+    , ( 
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId 
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = hlp.long_plan_group_structure_id 
+                    AND st_f.factory_id IN (0, hlp.location_factory_structure_id)
+            ) 
+            AND tra.structure_id = hlp.long_plan_group_structure_id
+    ) AS long_plan_group_name               --長計グループ(翻訳)
     @GetData*/
     , hm.application_reason
     , hm.application_user_name
