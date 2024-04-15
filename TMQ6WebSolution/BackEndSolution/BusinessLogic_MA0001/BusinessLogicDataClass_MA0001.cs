@@ -337,7 +337,7 @@ namespace BusinessLogic_MA0001
             public long SummaryId { get; set; }
             /// <summary>Gets or sets 発行日</summary>
             /// <value>発行日</value>
-            public DateTime IssueDate { get; set; }
+            public DateTime? IssueDate { get; set; }
 
 
 

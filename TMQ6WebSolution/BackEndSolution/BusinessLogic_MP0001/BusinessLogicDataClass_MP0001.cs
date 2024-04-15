@@ -99,6 +99,9 @@ namespace BusinessLogic_MP0001
             /// <summary>Gets or sets 表示順</summary>
             /// <value>表示順</value>
             public int DisplayOrder { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? FactoryId { get; set; }
         }
 
         /// <summary>

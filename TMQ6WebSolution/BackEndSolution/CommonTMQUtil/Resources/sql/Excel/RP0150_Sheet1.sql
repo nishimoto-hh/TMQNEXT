@@ -15,7 +15,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.location_factory_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.location_factory_structure_id
     ) AS factory_name
@@ -34,7 +34,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.location_plant_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.location_plant_structure_id
     ) AS plant_name
@@ -53,7 +53,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.location_series_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.location_series_structure_id
     ) AS series_name
@@ -72,7 +72,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.location_stroke_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.location_stroke_structure_id
     ) AS stroke_name
@@ -91,7 +91,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.location_facility_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.location_facility_structure_id
     ) AS facility_name
@@ -112,7 +112,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = ms.job_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, ms.location_factory_structure_id)
             )
         AND tra.structure_id = ms.job_structure_id
     ) AS job_name
@@ -135,7 +135,7 @@ SELECT
 --                    #temp_structure_factory AS st_f 
 --                WHERE
 --                    st_f.structure_id = mh.work_failure_division_structure_id
---                    AND st_f.factory_id IN (0, temp.factoryId)
+--                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
 --            )
 --            AND tra.structure_id = mh.work_failure_division_structure_id
 --      ) AS work_purpose_name                        -- 作業目的名称
@@ -153,7 +153,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mh.maintenance_season_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
             )
             AND tra.structure_id = mh.maintenance_season_structure_id
       ) AS maintenance_season_name                        -- 保全時期名称
@@ -191,7 +191,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = ms.sudden_division_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
             )
             AND tra.structure_id = ms.sudden_division_structure_id
       ) AS sudden_division_name                        -- 突発区分名称
@@ -209,7 +209,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = ms.mq_class_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
             )
             AND tra.structure_id = ms.mq_class_structure_id
       ) AS mq_class_name                        -- MQ分類名称
@@ -227,7 +227,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = ms.budget_management_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
             )
             AND tra.structure_id = ms.budget_management_structure_id
       ) AS budget_management_name                        -- 予算管理区分名称
@@ -245,7 +245,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = ms.budget_personality_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, ms.location_factory_structure_id)
             )
             AND tra.structure_id = ms.budget_personality_structure_id
       ) AS budget_personality_name                              -- 予算性格区分名称

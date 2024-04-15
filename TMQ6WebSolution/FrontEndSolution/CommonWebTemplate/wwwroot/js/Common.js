@@ -834,7 +834,7 @@ function setEventForEditFlg(on, trs, areaId) {
         if (on) {
             $.each($(trs), function (i, tr) {
                 $(tr).on("change.flg",
-                    ":text, :checkbox, [type='date'], [type='time'], [type='datetime-local'], select, ul, textarea, :radio",
+                    ":text, :checkbox, [type='date'], [type='time'], [type='datetime-local'], select:not('.DispCount'), ul, textarea, :radio",
                     function (event, param) {
                         //changeイベントのparamが設定されている場合は行編集フラグを変更しない
                         if (!param) {

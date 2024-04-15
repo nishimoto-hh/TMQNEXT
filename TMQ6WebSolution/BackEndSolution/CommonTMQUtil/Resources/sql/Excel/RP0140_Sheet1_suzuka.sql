@@ -62,7 +62,8 @@ CREATE TABLE #temp_rep(
 			factory_name	nvarchar(800)	,--	工場
 			machine_no	nvarchar(800)	,--	機器番号
 			call_count	int	,--	呼出
-		    seq                         int             -- 一時テーブル連番
+		    seq                         int             ,-- 一時テーブル連番
+			order_id                    int IDENTITY(1,1) -- 登録順（ソート用）
 )
 
 -- カーソル定義
@@ -95,6 +96,7 @@ SELECT *
     , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
     , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM #temp_rep
+ORDER BY order_id
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep

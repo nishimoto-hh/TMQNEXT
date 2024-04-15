@@ -199,6 +199,7 @@
     <None Remove="sql\Common\ComboBox\C0035.sql" />
     <None Remove="sql\Common\ComboBox\C0036.sql" />
     <None Remove="sql\Common\ComboBox\C0037.sql" />
+    <None Remove="sql\Common\ComboBox\C0038.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0003.sql" />
@@ -578,6 +579,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="sql\Common\ComboBox\C0037.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\ComboBox\C0038.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="sql\Common\ExcelPort\EPC0001.sql">

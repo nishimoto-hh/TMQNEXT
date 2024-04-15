@@ -3178,7 +3178,7 @@ On Error GoTo ErrHandler
         End If
         
         ' IDの値が入力チェック開始時に選択されているアイテムのIDと同一の場合
-        If ColNo = 2 And selectedItemId = visibleRow.Cells(1, ColNo) Then
+        If ColNo = 2 And CStr(selectedItemId) = CStr(visibleRow.Cells(1, ColNo)) Then
             selectedItemRowNo = RowNo
         End If
       Next

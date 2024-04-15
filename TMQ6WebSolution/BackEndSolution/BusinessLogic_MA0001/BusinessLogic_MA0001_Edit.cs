@@ -1275,7 +1275,7 @@ namespace BusinessLogic_MA0001
         /// <returns>エラーの場合False</returns>
         private bool updateSchedule(bool isRegist, DateTime? completionDate, long summaryId, DateTime now)
         {
-            if (isRegist || completionDate == null)
+            if (completionDate == null)
             {
                 //完了日が設定されていない場合、更新なし
                 return true;

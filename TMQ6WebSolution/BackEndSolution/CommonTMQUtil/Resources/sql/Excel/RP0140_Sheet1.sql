@@ -14,7 +14,6 @@ CREATE TABLE #temp_rep(
 	call_count_name             nvarchar(800),  -- 呼出
     sudden_division_name        nvarchar(800),  -- 突発区分
     stop_count_name             nvarchar(800),  -- 系停止
-	work_purpose_name           nvarchar(800),  -- 目的区分
 	maintenance_season_name     nvarchar(800),  -- 時期
 	expected_construction_date  date,           -- 着工予定日
 	expected_completion_date    date,           -- 終了予定日
@@ -66,7 +65,8 @@ CREATE TABLE #temp_rep(
     large_classfication_name2   nvarchar(800),  -- 大分類(機器)
     middle_classfication_name2  nvarchar(800),  -- 中分類(機器)
     small_classfication_name2   nvarchar(800),  -- 小分類(機器)
-	seq                         int             -- 一時テーブル連番
+	seq                         int,            -- 一時テーブル連番
+    order_id                    int IDENTITY(1,1) -- 登録順（ソート用）
 )
 
 -- カーソル定義
@@ -99,6 +99,7 @@ SELECT *
     , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
     , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM #temp_rep
+ORDER BY order_id
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep

@@ -21,14 +21,33 @@ WITH number_unit AS (
         ms.factory_id,
         ex.extension_data AS round_division
     FROM
-        ms_structure ms
+        (
+            SELECT
+                ms.factory_id,
+                MAX(ms.structure_id) AS structure_id
+            FROM
+                ms_structure ms
+            WHERE
+                ms.structure_group_id = 2050
+                AND ms.delete_flg = 0
+            GROUP BY
+                ms.factory_id
+        ) ms
         LEFT JOIN
-            ms_item_extension ex
-        ON  ms.structure_item_id = ex.item_id
-        AND ex.sequence_no = 1
-    WHERE
-        ms.structure_group_id = 2050
-        AND ms.delete_flg = 0
+            (
+                SELECT
+                    ms.structure_id,
+                    ex.extension_data
+                FROM
+                    ms_structure ms
+                    LEFT JOIN
+                        ms_item_extension ex
+                    ON  ms.structure_item_id = ex.item_id
+                    AND ex.sequence_no = 1
+                WHERE
+                    ms.structure_group_id = 2050
+            ) ex
+        ON  ms.structure_id = ex.structure_id
 ) 
 , currency_unit AS ( 
     --金額管理単位

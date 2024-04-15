@@ -403,8 +403,8 @@ namespace BusinessLogic_PT0009
             // 対象年月
             if (condition.TargetYearMonth != null && string.IsNullOrEmpty(condition.TargetYearMonth) == false)
             {
-                // 仮確定在庫用会計提出表の場合は対象年月の値を 年月 → 年月末日に変更
-                if(condition.ReportId == TempReportId)
+                // 会計提出表(未確定)の場合は対象年月の値を 年月 → 年月末日に変更
+                if (condition.ReportId == TempReportId)
                 {
                     condAccountReport.TargetMaxDate = DateTime.Parse(condition.TargetYearMonth).AddMonths(1);
                     listUnComment.Add(nameof(condition.TargetMaxDate));
@@ -413,6 +413,15 @@ namespace BusinessLogic_PT0009
                 // 会計提出表の場合は入力された値をそのまま使用
                 condAccountReport.TargetYearMonth = condition.TargetYearMonth;
                 listUnComment.Add(nameof(condition.TargetYearMonth));
+
+                // 会計提出表(未確定)で滞留日数を算出するための日付を設定
+                condAccountReport.TargetYearMonthForLongStay = condition.TargetYearMonth;
+            }
+            else
+            {
+                // 会計提出表(未確定)で滞留日数を算出するための日付を設定
+                // 抽出条件の 対象年月が未入力の場合はシステム日付の年月を使用
+                condAccountReport.TargetYearMonthForLongStay = DateTime.Now.ToString("yyyy/MM");
             }
 
             // 工場

@@ -51,5 +51,6 @@ AND item_ex1.extension_data IN (
             ms_user_conduct_authority 
          WHERE 
             user_id = @UserId)
+AND item.delete_flg = 0
 ORDER BY 
 	ms_structure_order.display_order

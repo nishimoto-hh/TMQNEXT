@@ -16,11 +16,11 @@ SELECT
     , '''' + FORMAT(ma_request.issue_date, DateFormat.translation_text) AS drafting                        -- 起票
     , '''' + FORMAT(ma_request.desired_start_date, DateFormat.translation_text) AS construction            -- 着工
     , ma_summary.location_structure_id                                                          -- 機能場所階層id(工程取得用)
-    , [dbo].[get_v_structure_item](ma_summary.location_stroke_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS stroke_name                            -- 工場
+    , [dbo].[get_v_structure_item](ma_summary.location_stroke_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS stroke_name                            -- 工程
     , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS factory_name                          -- 工場
     , [dbo].[get_v_structure_item](ma_summary.location_plant_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS plant_name                              -- プラント
     , [dbo].[get_v_structure_item](ma_summary.location_series_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS series_name                            -- 系列
-    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS facility_name                         -- 設備
+    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS facility_name                        -- 設備
     , ma_summary.subject AS subject                                                             -- 件名
 FROM
     ma_summary                                                          -- 保全依頼

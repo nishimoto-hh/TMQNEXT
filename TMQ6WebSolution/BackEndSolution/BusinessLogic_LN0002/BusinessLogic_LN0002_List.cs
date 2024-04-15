@@ -83,6 +83,7 @@ namespace BusinessLogic_LN0002
                     this.Status = CommonProcReturn.ProcStatus.Warning;
                     // 「該当データがありません。」
                     this.MsgId = GetResMessage(ComRes.ID.ID941060001);
+                    SetSearchResultsByDataClass<Dao.FormList.List>(pageInfo, null, 0, isDetailConditionApplied);
                     return false;
                 }
                 // ヘッダにスケジュール集計を付与するのでヘッダ行を追加

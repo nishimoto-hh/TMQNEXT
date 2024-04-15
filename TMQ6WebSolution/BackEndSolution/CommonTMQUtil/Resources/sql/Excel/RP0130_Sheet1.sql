@@ -16,7 +16,7 @@ SELECT
     , FORMAT(ma_request.issue_date, DateFormat.translation_text) AS drafting                                   -- 起票（マスタのデータタイプが文字列なのでそのまま）
     , '''' + FORMAT(ma_request.desired_start_date, DateFormat.translation_text) AS construction                -- 着工
     , ma_summary.location_structure_id                                                              -- 機能場所階層id(工程取得用)
-    , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS stroke_name  -- 工程
+    , [dbo].[get_v_structure_item](ma_summary.location_stroke_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS stroke_name  -- 工程
     , ma_summary.subject AS subject                                                                 -- 件名
     , SUBSTRING(ma_request.request_content,  1, 50) AS request_content_1                            -- 依頼内容１
     , SUBSTRING(ma_request.request_content, 51,50) AS request_content_2                            -- 依頼内容２
@@ -47,7 +47,7 @@ SELECT
     , [dbo].[get_v_structure_item](ma_summary.location_factory_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS factory_name                          -- 工場
     , [dbo].[get_v_structure_item](ma_summary.location_plant_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS plant_name                              -- プラント
     , [dbo].[get_v_structure_item](ma_summary.location_series_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS series_name                            -- 系列
-    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_stroke_structure_id, temp.languageId) AS facility_name                         -- 設備
+    , [dbo].[get_v_structure_item](ma_summary.location_facility_structure_id, ma_summary.location_factory_structure_id, temp.languageId) AS facility_name                        -- 設備
     , ma_request.request_no AS request_no                                                 -- 依頼内容
     , ma_request.request_personnel_tel AS request_personnel_tel --PHS
     , ma_request.desired_start_date AS desired_start_date --希望日

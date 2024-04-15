@@ -563,6 +563,9 @@ namespace CommonTMQUtil
                 /// <summary>Gets or sets 職種機種階層ID</summary>
                 /// <value>職種機種階層ID</value>
                 public int JobStructureId { get; set; }
+                /// <summary>Gets or sets 工場ID</summary>
+                /// <value>工場ID</value>
+                public int? FactoryId { get; set; }
 
             }
 

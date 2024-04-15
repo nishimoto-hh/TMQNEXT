@@ -3,34 +3,34 @@ SELECT
 
     pls.parts_location_id, -- 棚番
     pls.parts_location_detail_no, 
-    temp.factoryId as factory_id,
+    pp.factory_id as factory_id,
     -- 棚番、棚番枝Noを画面側で設定
-    -- [dbo].[get_v_structure_item](pls.parts_location_id, temp.factoryId, temp.languageId) AS parts_location_name,
+    -- [dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, temp.languageId) AS parts_location_name,
     '' AS parts_location_name,
 
     pp.manufacturer_structure_id, -- メーカー
-    [dbo].[get_v_structure_item](pp.manufacturer_structure_id, temp.factoryId, temp.languageId) AS manufacturer_name,
+    [dbo].[get_v_structure_item](pp.manufacturer_structure_id, pp.factory_id, temp.languageId) AS manufacturer_name,
 
     pp.parts_no, -- 予備品ｺｰﾄﾞNo.
     pp.parts_name, -- 品名
     ISNULL(pp.model_type,'') + ISNULL(pp.standard_size,'') AS model_type, -- 型式(仕様)
 
     pp.manufacturer_structure_id, -- メーカー
-    [dbo].[get_v_structure_item](pp.manufacturer_structure_id, temp.factoryId, temp.languageId) AS manufacturer_name,
+    [dbo].[get_v_structure_item](pp.manufacturer_structure_id, pp.factory_id, temp.languageId) AS manufacturer_name,
 
     pi.old_new_structure_id, -- 新旧区分
-    [dbo].[get_v_structure_item](pi.old_new_structure_id, temp.factoryId, temp.languageId)  AS old_new_name,
+    [dbo].[get_v_structure_item](pi.old_new_structure_id, pp.factory_id, temp.languageId)  AS old_new_name,
     
     -- 在庫金額 
     FORMAT(dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pp.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision), 'F' + CAST(@CurrencyDigit AS VARCHAR)) as stock_amount, -- 出庫金額
 
     pl.account_structure_id, -- 勘定項目
-    [dbo].[get_v_structure_item](pl.account_structure_id, temp.factoryId, temp.languageId)  AS account_name,
-    [dbo].[get_rep_extension_data](pl.account_structure_id, temp.factoryId, temp.languageId, 1) AS account_cd,
+    [dbo].[get_v_structure_item](pl.account_structure_id, pp.factory_id, temp.languageId)  AS account_name,
+    [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, temp.languageId, 1) AS account_cd,
     
     pl.department_structure_id, -- 部門ID
-    [dbo].[get_v_structure_item](pl.department_structure_id, temp.factoryId, temp.languageId)  AS department_name,
-    [dbo].[get_rep_extension_data](pl.department_structure_id, temp.factoryId, temp.languageId, 1) AS department_cd,
+    [dbo].[get_v_structure_item](pl.department_structure_id, pp.factory_id, temp.languageId)  AS department_name,
+    [dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, temp.languageId, 1) AS department_cd,
 
     -- 在庫数
     pi.stock_quantity AS stock_quantity,
@@ -110,9 +110,9 @@ FROM
 WHERE 
     pi.delete_flg = 0
 ORDER BY
-    [dbo].[get_v_structure_item](pls.parts_location_id, temp.factoryId, temp.languageId), -- 棚番
+    [dbo].[get_v_structure_item](pls.parts_location_id, pp.factory_id, temp.languageId), -- 棚番
     pls.parts_location_detail_no, 
     pp.parts_no, -- 予備品ｺｰﾄﾞNo.
-    [dbo].[get_v_structure_item](pi.old_new_structure_id, temp.factoryId, temp.languageId), -- 新旧区分
-    [dbo].[get_rep_extension_data](pl.department_structure_id, temp.factoryId, temp.languageId, 1), -- 部門コード
-    [dbo].[get_rep_extension_data](pl.account_structure_id, temp.factoryId, temp.languageId, 1) -- 勘定科目コード
+    [dbo].[get_v_structure_item](pi.old_new_structure_id, pp.factory_id, temp.languageId), -- 新旧区分
+    [dbo].[get_rep_extension_data](pl.department_structure_id, pp.factory_id, temp.languageId, 1), -- 部門コード
+    [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, temp.languageId, 1) -- 勘定科目コード
