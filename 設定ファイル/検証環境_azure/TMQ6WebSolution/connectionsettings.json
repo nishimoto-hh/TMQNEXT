@@ -4,7 +4,7 @@
     "ConnectionStringSettings": [
       {
         "Name": "SqlServer",
-        "ConnectionString": "data source=tmq-akg-dev.database.windows.net;initial catalog=TMQ;persist security info=True;user id=ADMINDBTMQ88;password=w5AGmUBZ;MultipleActiveResultSets=True;App=EntityFramework",
+        "ConnectionString": "data source=tmq-akg-dev.database.windows.net;initial catalog=TMQ_AFTER;persist security info=True;user id=ADMINDBTMQ88;password=w5AGmUBZ;MultipleActiveResultSets=True;App=EntityFramework",
         "ProviderName": "System.Data.SqlClient"
       },
       {
