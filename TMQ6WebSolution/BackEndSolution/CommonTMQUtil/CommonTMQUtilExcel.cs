@@ -26,6 +26,7 @@ using static CommonTMQUtil.CommonTMQUtil.ComExcelPort;
 using static CommonTMQUtil.CommonTMQUtil.ReportRP0450;
 using DocumentFormat.OpenXml.EMMA;
 using System.Net;
+using Jint.Parser.Ast;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -352,9 +353,12 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 対象年月</summary>
             /// <value>対象年月</value>
             public string TargetYearMonth { get; set; }
-            /// <summary>Gets or sets 対象年月(仮確定在庫用会計提出表用)</summary>
-            /// <value>対象年月(仮確定在庫用会計提出表用)</value>
+            /// <summary>Gets or sets 対象年月(会計提出表(未確定)用)</summary>
+            /// <value>対象年月(会計提出表(未確定)用)</value>
             public DateTime? TargetMaxDate { get; set; }
+            /// <summary>Gets or sets 対象年月(会計提出表(未確定)で滞留日数を算出するためのもの)</summary>
+            /// <value>対象年月(会計提出表(未確定)で滞留日数を算出するためのもの)</value>
+            public string TargetYearMonthForLongStay { get; set; }
             /// <summary>Gets or sets 工場</summary>
             /// <value>工場</value>
             public List<int> FactoryIdList { get; set; }
@@ -1063,6 +1067,7 @@ namespace CommonTMQUtil
         /// <param name="dicFixedValueForOutput">固定値出力用データ</param>
         /// <param name="condHistoryManagementReport">RP0420・RP0430 変更履歴一覧 出力条件のデータクラス</param>
         /// <param name="msgResources">メッセージリソース管理クラス</param>
+        /// <param name="changedTargetSqlId">検索SQLを個別に変更する場合に指定する</param>
         /// <returns>true:正常　false:エラー</returns>
         public static bool CommonOutputExcel(
         int factoryId,
@@ -1088,7 +1093,8 @@ namespace CommonTMQUtil
         Dictionary<int, IList<dynamic>> dicSummaryDataList = null,
         Dictionary<string, string> dicFixedValueForOutput = null,
         HistoryCondition condHistoryManagementReport = null,
-        ComUtil.MessageResources msgResources = null)
+        ComUtil.MessageResources msgResources = null,
+        string changedTargetSqlId = null)
         {
 
             //==========
@@ -1223,6 +1229,21 @@ namespace CommonTMQUtil
 
                     // 対象SQLファイルにてSQLを実行し、エクセルを作成する
                     string targetSql = sheetDefine.TargetSql;
+
+                    /*
+                     * 機器台帳の詳細画面 機器別管理基準タブから出力されるスケジューリング一覧
+                     * フォーマットは長期計画から出力されつ帳票と同一だが、SQLは異なるのでここでSQL名を指定
+                     * 長期スケジュール表(RP0090)と年度スケジュール表(RP0100)が対象
+                     */
+                    if (reportId == ReportRP0090.ReportId || reportId == ReportRP0100.ReportId)
+                    {
+                        // 引数に検索対象SQLが指定されている場合
+                        if (!string.IsNullOrEmpty(changedTargetSqlId))
+                        {
+                            targetSql = changedTargetSqlId;
+                        }
+                    }
+
                     IList<dynamic> dataList = null;
                     // 会計帳票出力条件が設定されている場合、会計帳票用のデータ取得処理を実行する
                     if (condAccountReport != null)
@@ -1259,7 +1280,6 @@ namespace CommonTMQUtil
                     else
                     {
                         // 帳票データを取得
-                        // var dataList = GetReportData(dicSelectKeyDataList[sheetDefine.SheetNo], targetSql, db, userId, languageId, option);
                         dataList = GetReportData(dicSelectKeyDataList[sheetDefine.SheetNo], targetSql, db, userId, languageId, option);
 
                         // 帳票IDごとの個別処理
@@ -1430,6 +1450,21 @@ namespace CommonTMQUtil
                     if (option != null)
                     {
                         string targetSqlSchedule = sheetDefine.TargetSql + ComReport.Option;
+
+                        /*
+                         * 機器台帳の詳細画面 機器別管理基準タブから出力されるスケジューリング一覧
+                         * フォーマットは長期計画から出力されつ帳票と同一だが、SQLは異なるのでここでSQL名を指定
+                         * 長期スケジュール表(RP0090)と年度スケジュール表(RP0100)が対象
+                         */
+                        if (reportId == ReportRP0090.ReportId || reportId == ReportRP0100.ReportId)
+                        {
+                            // 引数に検索対象SQLが指定されている場合
+                            if (!string.IsNullOrEmpty(changedTargetSqlId))
+                            {
+                                targetSqlSchedule = changedTargetSqlId + ComReport.Option;
+                            }
+                        }
+
                         TMQUtil.GetFixedSqlStatement(ExcelPath, targetSqlSchedule, out string selectSql);
                         // 機器別の場合、上位ランクの場合の処理を行わないスケジュール変換クラス
                         if (sheetDefine.SheetNo == 2)
@@ -1552,6 +1587,13 @@ namespace CommonTMQUtil
                             deleteSheetNo2 = 2;
                             break;
                     }
+
+                    // 検索条件シートは削除しないためここでスキップ
+                    if ((reportId == ReportRP0090.ReportId || reportId == ReportRP0100.ReportId) && sheetDefine.SheetNo == 4)
+                    {
+                        continue;
+                    }
+
                     // 削除用シート名を取得
                     deleteSheetNameNo1 = GetSheetName(factoryId, reportId, deleteSheetNo1, languageId, db);
                     deleteSheetNameNo2 = GetSheetName(factoryId, reportId, deleteSheetNo2, languageId, db);
@@ -5708,6 +5750,7 @@ namespace CommonTMQUtil
                         {
                             TMQUtil.StructureLayerInfo.StructureJobInfoEx temp = new();
                             temp.JobStructureId = structureGetInfo2.OrgStructureId;
+                            temp.FactoryId = structureGetInfo2.LocationStructureId;
                             bottomLayerAll2.Add(temp);
                         }
 

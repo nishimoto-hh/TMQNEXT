@@ -530,6 +530,7 @@ SELECT
         AND tra.structure_id = summary.failure_cause_personality2_structure_id
     ) AS failure_cause_personality2_structure_name
     ,summary.issue_date--20230911 shiraishi add
+    ,summary.call_count
 FROM
     join_summary AS summary
     LEFT JOIN

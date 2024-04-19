@@ -31,7 +31,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = com.inspection_site_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
             )
         AND tra.structure_id = com.inspection_site_structure_id
     ) AS site,
@@ -51,7 +51,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = con.inspection_site_importance_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
             )
         AND tra.structure_id = con.inspection_site_importance_structure_id
     ) AS site_importance,
@@ -71,7 +71,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = con.inspection_site_conservation_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
             )
         AND tra.structure_id = con.inspection_site_conservation_structure_id
     ) AS conservation,
@@ -91,7 +91,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = con.inspection_content_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
             )
         AND tra.structure_id = con.inspection_content_structure_id
     ) AS inspection_content_name,
@@ -119,7 +119,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = lplan.budget_personality_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, lplan.location_factory_structure_id)
             )
         AND tra.structure_id = lplan.budget_personality_structure_id
     ) AS budget_personality,

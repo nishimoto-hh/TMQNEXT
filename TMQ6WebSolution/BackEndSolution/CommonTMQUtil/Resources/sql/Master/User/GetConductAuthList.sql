@@ -31,6 +31,7 @@ FROM
                     (ccd.program_id IS NOT NULL AND ccd.program_id <> '')
                     AND (ccd.menu_division = 1 OR (ccd.conduct_id LIKE '%MS%'))
                     AND ccd.conduct_id NOT IN ('CM00001','MS0001')
+                    AND ccd.delete_flg = 0
             ) grp
             , ( 
                --機能IDの情報を取得
@@ -43,6 +44,8 @@ FROM
                     LEFT JOIN ms_translation mtl 
                         ON ccd.conduct_name = mtl.translation_id 
                         AND mtl.language_id = @LanguageId 
+                WHERE
+                    ccd.delete_flg = 0
             ) cdc 
         WHERE
             grp.conduct_group_id = cdc.conduct_id
@@ -77,6 +80,7 @@ FROM
                     AND (ccd.menu_division = 1 OR (ccd.conduct_id LIKE '%MS%'))
                     AND ccd.conduct_id NOT IN ('CM00001','MS0001')
                     AND uca.user_id = @UserId
+                    AND ccd.delete_flg = 0
             ) grp
             , ( 
                --権限がある機能IDの情報を取得
@@ -93,6 +97,7 @@ FROM
                         ON ccd.conduct_id = uca.conduct_id 
                 WHERE
                     uca.user_id = @UserId
+                    AND ccd.delete_flg = 0
             ) cdc 
         WHERE
             grp.conduct_group_id = cdc.conduct_id

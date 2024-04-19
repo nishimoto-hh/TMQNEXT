@@ -1390,6 +1390,19 @@ function setHideButton(name, flg) {
 }
 
 /**
+ * ボタンコントロールIDを指定して表示/非表示を切り替える
+ * @param {any} name ボタンのコントロール
+ * @param {any} flg true(非表示)、false(表示)
+ */
+function setHideButtonExcludeModal(name, flg) {
+    //ボタン要素取得（モーダル画面の閉じるボタンは対象外とする）
+    var button = $(P_Article).find("input[type='button'][name='" + name + "']:not([data-dismiss='modal'])");
+    //ボタン要素の親（td）
+    var ele = $(button).parent();
+    setHide(ele, flg);
+}
+
+/**
  * 一覧の上部にあるボタン（行追加、行削除、全選択、全解除等）の表示/非表示を切り替える
  * @param {any} ctrlId 一覧のコントロールID
  * @param {any} buttonType ボタンのアクション区分（actionkbn）
@@ -2461,8 +2474,8 @@ function setDisplayCloseBtn(transPtn) {
     var isDisplayCloseBtn = transPtn == transPtnDef.OtherTab;
     if (isDisplayCloseBtn) {
         // 新しいタブで開いた場合、戻るボタンを非表示にする
-        setHideButton("Back", true);
-        setHideButton("Close", false);
+        setHideButtonExcludeModal("Back", true);
+        setHideButtonExcludeModal("Close", false);
         return;
     }
     // 戻るボタンと閉じるボタンの表示状態を取得
@@ -2470,7 +2483,7 @@ function setDisplayCloseBtn(transPtn) {
     var isUnAvaibleClose = isUnAvailableButton("Close");
     if (!isUnAvaibleBack && !isUnAvaibleClose) {
         // どちらも表示されているとき、一覧→参照画面に遷移なので、閉じるボタンを非表示にする
-        setHideButton("Close", true);
+        setHideButtonExcludeModal("Close", true);
     }
     // ポップアップ→削除→一覧へ戻る→参照画面の場合の制御は？
 }
@@ -3500,7 +3513,7 @@ function getParamToMA0001WorkPersonality(startDate, endDate, jobCode, mqClass) {
 function getParamToMA0001Other(startDate, endDate, jobCode) {
     //MQ分類：拡張データ2(「設備工事」または「撤去工事」を除く)
     var mqClass = '10|20|30|40';
-    return getParamToMA0001FromMP0001(startDate + '|' + endDate, jobCode, mqClass, "", "");
+    return getParamToMA0001FromMP0001(startDate + '|' + endDate, jobCode, mqClass, "", "", "1|");
 }
 
 /**
@@ -3510,8 +3523,9 @@ function getParamToMA0001Other(startDate, endDate, jobCode) {
  * @param {string} MQ分類 「|」と「||」区切りで指定(拡張データ2、拡張データ4)
  * @param {string} stopSystem 系停止(10：保全要因、20：製造要因、10|20：保全要因と製造要因両方)
  * @param {string} sudden 突発区分(10：計画、20：計画外、30：突発)
+ * @param {string} callCount 呼出回数
  */
-function getParamToMA0001FromMP0001(date, jobCode, mqClass, stopSystem, sudden) {
+function getParamToMA0001FromMP0001(date, jobCode, mqClass, stopSystem, sudden, callCount) {
     var conditionDataList = [];
     //下記VAL値は保全活動の一覧（BODY_020_00_LST_0）と対応
     var conditionData = {};
@@ -3526,6 +3540,8 @@ function getParamToMA0001FromMP0001(date, jobCode, mqClass, stopSystem, sudden) 
     conditionData['VAL17_checked'] = stopSystem ? true : false;
     conditionData['VAL20'] = sudden; //突発区分
     conditionData['VAL20_checked'] = sudden ? true : false;
+    conditionData['VAL81'] = callCount; //呼出回数
+    conditionData['VAL81_checked'] = callCount ? true : false;
     conditionDataList.push(conditionData);
     return conditionDataList;
 }

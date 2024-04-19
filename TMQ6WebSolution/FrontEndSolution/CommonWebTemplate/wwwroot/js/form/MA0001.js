@@ -1761,6 +1761,12 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
                 var id = $(table).attr("id");
                 // 検索結果をクリア
                 clearSearchResult(id);
+
+                //日付の初期値が設定されている項目にブランクを設定する（「SysDate」が表示されないよう対応）
+                var date = $(table).find("input[data-def='SysDate']");
+                $.each(date, function (idx, input) {
+                    $(input).val("");
+                });
             });
             //明細エリアのエラー状態を初期化
             clearMessage();

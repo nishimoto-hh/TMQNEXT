@@ -19,7 +19,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mac.job_kind_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mac.location_factory_structure_id)
             )
         AND tra.structure_id = mac.job_kind_structure_id
     ) AS job_name,
@@ -37,7 +37,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = use_segment_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mac.location_factory_structure_id)
             )
             AND tra.structure_id = use_segment_structure_id
     ) AS management_division,              -- 管理区分
@@ -56,7 +56,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = pt.manufacturer_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mac.location_factory_structure_id)
             )
             AND tra.structure_id = pt.manufacturer_structure_id
     ) AS maker,                            -- メーカー
@@ -86,18 +86,18 @@ SELECT
                                  #temp_structure_factory AS st_f 
                              WHERE
                                  st_f.structure_id = inspection_site_structure_id
-                             AND st_f.factory_id IN (0, temp.factoryId)
+                             AND st_f.factory_id IN (0, tbl1.location_factory_structure_id)
                          )
                          AND tra.structure_id = inspection_site_structure_id
                         ) AS inspection_site_name
                 FROM (
-                    SELECT mc_machine.machine_id, inspection_site_structure_id, temp.factoryId, temp.languageId
+                    SELECT mc_machine.machine_id, inspection_site_structure_id, mc_machine.location_factory_structure_id, temp.languageId
                     FROM mc_machine
                     INNER JOIN #temp temp
                         ON mc_machine.machine_id = temp.Key1
                     INNER JOIN mc_management_standards_component
                         ON mc_machine.machine_id = mc_management_standards_component.machine_id
-                    GROUP BY mc_machine.machine_id, inspection_site_structure_id, temp.factoryId, temp.languageId
+                    GROUP BY mc_machine.machine_id, inspection_site_structure_id, mc_machine.location_factory_structure_id, temp.languageId
                 ) tbl1
             ) tbl2
             WHERE tbl2.machine_id = mac.machine_id

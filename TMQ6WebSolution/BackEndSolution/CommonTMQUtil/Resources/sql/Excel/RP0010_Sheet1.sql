@@ -1,7 +1,11 @@
 DECLARE @TranslationIdCirculationTargetTrue int;
 DECLARE @TranslationIdCirculationTargetFalse int;
+DECLARE @TranslationTextCirculationTargetTrue nvarchar(800);
+DECLARE @TranslationTextCirculationTargetFalse nvarchar(800);
 SET @TranslationIdCirculationTargetTrue = 111160071;    -- 対象
 SET @TranslationIdCirculationTargetFalse = 111270034;   -- 非対象
+SELECT @TranslationTextCirculationTargetTrue = [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetTrue, temp.languageId) FROM #temp temp;
+SELECT @TranslationTextCirculationTargetFalse = [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetFalse, temp.languageId) FROM #temp temp;
 
 SELECT
     mc.machine_no                                       -- 機器番号
@@ -23,7 +27,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.location_factory_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.location_factory_structure_id
     ) AS factory_name
@@ -42,7 +46,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.location_plant_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.location_plant_structure_id
     ) AS plant_name
@@ -61,7 +65,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.location_series_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.location_series_structure_id
     ) AS series_name
@@ -80,7 +84,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.location_stroke_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.location_stroke_structure_id
     ) AS stroke_name
@@ -99,7 +103,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.location_facility_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.location_facility_structure_id
     ) AS facility_name
@@ -118,7 +122,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.job_kind_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.job_kind_structure_id
     ) AS job_name
@@ -136,7 +140,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mc.importance_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = mc.importance_structure_id
       ) AS importance_name                              -- 重要度名称
@@ -154,7 +158,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mc.conservation_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = mc.conservation_structure_id
       ) AS conservation_name                            -- 保全方式名称
@@ -172,7 +176,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = mc.equipment_level_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = mc.equipment_level_structure_id
       ) AS equipment_level_name                         -- 機器レベル名称
@@ -196,13 +200,13 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = eq.use_segment_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = eq.use_segment_structure_id
       ) AS use_segment_name                             -- 使用区分名称
     , CASE
-        WHEN eq.circulation_target_flg = 1 THEN [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetTrue, temp.languageId)
-        WHEN eq.circulation_target_flg = 0 THEN [dbo].[get_rep_translation_text](temp.factoryId, @TranslationIdCirculationTargetFalse, temp.languageId)
+        WHEN eq.circulation_target_flg = 1 THEN @TranslationTextCirculationTargetTrue
+        WHEN eq.circulation_target_flg = 0 THEN @TranslationTextCirculationTargetFalse
         ELSE ''
     END AS circulation_target                           -- 循環対象
     , eq.fixed_asset_no                                 -- 固定資産番号
@@ -220,7 +224,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = app1.applicable_laws_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = app1.applicable_laws_structure_id
       ) AS applicable_laws_name1                        -- 適用法規１
@@ -238,7 +242,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = app2.applicable_laws_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = app2.applicable_laws_structure_id
       ) AS applicable_laws_name2                        -- 適用法規２
@@ -256,7 +260,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = app3.applicable_laws_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = app3.applicable_laws_structure_id
       ) AS applicable_laws_name3                        -- 適用法規３
@@ -274,7 +278,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = app4.applicable_laws_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = app4.applicable_laws_structure_id
       ) AS applicable_laws_name4                        -- 適用法規４
@@ -292,7 +296,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = app5.applicable_laws_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = app5.applicable_laws_structure_id
       ) AS applicable_laws_name5                        -- 適用法規５
@@ -312,7 +316,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.job_large_classfication_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.job_large_classfication_structure_id
     ) AS large_classfication_name
@@ -331,7 +335,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.job_middle_classfication_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.job_middle_classfication_structure_id
     ) AS middle_classfication_name
@@ -350,7 +354,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = mc.job_small_classfication_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, mc.location_factory_structure_id)
             )
         AND tra.structure_id = mc.job_small_classfication_structure_id
     ) AS small_classfication_name
@@ -368,7 +372,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = eq.manufacturer_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
             )
             AND tra.structure_id = eq.manufacturer_structure_id
       ) AS manufacturer_name                            -- メーカー名称

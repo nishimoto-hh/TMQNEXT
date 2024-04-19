@@ -9,7 +9,7 @@ WITH base AS(
         machine.machine_id,                                     -- 機番ID
         man_com.management_standards_component_id,              -- 機器別管理基準部位ID
         man_con.management_standards_content_id                 -- 機器別管理基準内容ID
-        ,temp.factoryId
+        ,machine.location_factory_structure_id AS factoryId
         ,temp.languageId
         FROM
         mc_management_standards_content AS man_con              -- 機器別管理基準内容
@@ -241,7 +241,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = lp.work_item_structure_id
-                AND st_f.factory_id IN(0, base.factoryId)
+                AND st_f.factory_id IN(0, lp.location_factory_structure_id)
             )
         AND tra.structure_id = lp.work_item_structure_id
     ) AS work_item_name,

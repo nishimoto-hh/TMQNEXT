@@ -181,6 +181,8 @@
     <None Remove="Resources\sql\Excel\RP0090_Sheet1_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0090_Sheet1_Schedule.sql" />
     <None Remove="Resources\sql\Excel\RP0090_Sheet2.sql" />
+    <None Remove="Resources\sql\Excel\RP0090_Sheet2ByMachine.sql" />
+    <None Remove="Resources\sql\Excel\RP0090_Sheet2ByMachine_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0090_Sheet2_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0090_Sheet3.sql" />
     <None Remove="Resources\sql\Excel\RP0090_Sheet3_Option.sql" />
@@ -188,6 +190,8 @@
     <None Remove="Resources\sql\Excel\RP0100_Sheet1_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0100_Sheet1_Schedule.sql" />
     <None Remove="Resources\sql\Excel\RP0100_Sheet2.sql" />
+    <None Remove="Resources\sql\Excel\RP0100_Sheet2ByMachine.sql" />
+    <None Remove="Resources\sql\Excel\RP0100_Sheet2ByMachine_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0100_Sheet2_Option.sql" />
     <None Remove="Resources\sql\Excel\RP0100_Sheet3.sql" />
     <None Remove="Resources\sql\Excel\RP0100_Sheet3_Option.sql" />
@@ -980,6 +984,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0090_Sheet2ByMachine.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0090_Sheet2ByMachine_Option.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0100_Sheet2ByMachine.sql">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0100_Sheet2ByMachine_Option.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0140_Sheet1_suzuka.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0440_Sheet1.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0450\CreateJobIdData.sql" />

@@ -53,7 +53,8 @@ SELECT DISTINCT
     ) AS old_new_name, -- 新旧区分(翻訳)
     ISNULL(pls.stock_quantity, 0) as stock_quantity, -- 在庫数
     dbo.get_rep_rounding_value(ISNULL(pls.stock_quantity, 0) * ISNULL(pl.unit_price, 0), @CurrencyDigit, @CurrencyRoundDivision) as stock_amount, -- 購入金額
-    FORMAT(pl.receiving_datetime,'yyyy/MM') as receiving_datetime, -- 入庫日
+    --FORMAT(pl.receiving_datetime,'yyyy/MM') as receiving_datetime, -- 入庫日
+    pl.receiving_datetime, -- 入庫日(フォーマットはテンプレート側で行う)
 
     pl.account_structure_id, -- 勘定項目
     [dbo].[get_rep_extension_data](pl.account_structure_id, pp.factory_id, @LanguageId, 1) AS account_cd,
@@ -83,7 +84,8 @@ SELECT DISTINCT
                 AND st_f.factory_id IN(0, pp.factory_id)
             )
         AND tra.structure_id = pls.parts_location_id
-    ) as parts_location_name_for_order
+    ) as parts_location_name_for_order,
+    pl.lot_control_id -- ロット単位で出力
 FROM pt_lot pl -- ロット情報
     -- 予備品仕様マスタ
     INNER JOIN pt_parts pp 

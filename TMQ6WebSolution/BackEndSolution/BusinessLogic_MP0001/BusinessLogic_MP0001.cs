@@ -522,6 +522,7 @@ namespace BusinessLogic_MP0001
                                     {
                                         StructureJobInfoEx temp = new();
                                         temp.JobStructureId = data.StructureId;
+                                        temp.FactoryId = data.FactoryId;
                                         jobBottomLayerAll.Add(temp);
                                     }
                                 }
@@ -1262,7 +1263,7 @@ namespace BusinessLogic_MP0001
             repairsResults[RowNo.Zero].Cause = GetResMessage(new string[] { ComRes.ID.ID111190023 });              //TBM故障
             repairsResults[RowNo.Three].Cause = GetResMessage(new string[] { ComRes.ID.ID111120099 });             //CBM想定外故障
             repairsResults[RowNo.Six].Cause = GetResMessage(new string[] { ComRes.ID.ID111090047 });               //計
-            repairsResults[RowNo.Nine].Cause = GetResMessage(new string[] { ComRes.ID.ID111120099 });              //CBM想定外故障
+            repairsResults[RowNo.Nine].Cause = GetResMessage(new string[] { ComRes.ID.ID111120269 });              //CBM想定内故障
             repairsResults[RowNo.Twelve].Cause = GetResMessage(new string[] { ComRes.ID.ID111270019 });            //BDM故障
             repairsResults[RowNo.Fifteen].Cause = GetResMessage(new string[] { ComRes.ID.ID111090047 });           //計
             repairsResults[RowNo.TwentyOne].Cause = GetResMessage(new string[] { ComRes.ID.ID111040010 });         //(a+b+c)

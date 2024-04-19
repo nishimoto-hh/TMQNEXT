@@ -37,13 +37,13 @@ SELECT
     CASE WHEN temp.old_new_cd = '0' THEN @CheckChar ELSE '' END AS brand_new, -- 新品
     CASE WHEN temp.old_new_cd = '1' THEN @CheckChar ELSE '' END AS used,    -- 中古品
     -- [対象年月末日の２年前の日付]＜[入庫日]≦[対象年月末日の１年前の日付]
-    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -1, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) 
-            AND temp.receiving_datetime >= DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS one_year,
+    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -1, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonthForLongStay + '/01'))) 
+            AND temp.receiving_datetime >= DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonthForLongStay + '/01'))) THEN @CheckChar ELSE '' END AS one_year,
     -- [対象年月末日の３年前の日付]＜[入庫日]≦[対象年月末日の２年前の日付]
-    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) 
-            AND temp.receiving_datetime >= DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS two_years,
+    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -2, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonthForLongStay + '/01'))) 
+            AND temp.receiving_datetime >= DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonthForLongStay + '/01'))) THEN @CheckChar ELSE '' END AS two_years,
     -- [入庫日]≦[対象年月末日の３年前の日付]
-    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonth + '/01'))) THEN @CheckChar ELSE '' END AS over_three_years,
+    CASE WHEN temp.receiving_datetime < DATEADD(YEAR, -3, DATEADD(MONTH, 1, CONVERT(date,@TargetYearMonthForLongStay + '/01'))) THEN @CheckChar ELSE '' END AS over_three_years,
     temp.parts_location_id, 
     temp.parts_location_detail_no, 
     temp.parts_location_name, 

@@ -17,8 +17,42 @@ SELECT
 	, '' AS model_name                                              -- 機種名称
     , ma.machine_no AS machine_no                                   -- 機器番号
     , ma.machine_name AS machine_name                               -- 機器名称
-    , [dbo].[get_v_structure_item](ma.importance_structure_id, temp.factoryId, temp.languageId) AS importance_name            -- 重要度名称
-    , [dbo].[get_v_structure_item](ma.conservation_structure_id, temp.factoryId, temp.languageId) AS conservation_name        -- 保全方式名称
+    ,(
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ma.importance_structure_id
+                    AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+            )
+            AND tra.structure_id = ma.importance_structure_id
+    ) AS importance_name -- 重要度名称   
+    ,(
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = ma.conservation_structure_id
+                    AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+            )
+            AND tra.structure_id = ma.conservation_structure_id
+    ) AS conservation_name -- 保全方式名称 
     , ROW_NUMBER() OVER(
         ORDER BY
 		    msc.order_no
@@ -27,36 +61,177 @@ SELECT
       ) AS number_name                                              -- NO
     , ma.machine_no AS inspection_site_machine_no                   -- 部位機器番号
     , ma.machine_name AS inspection_site_machine_name               -- 部位機器名称
-    , [dbo].[get_v_structure_item](mcp.inspection_site_structure_id, temp.factoryId, temp.languageId) AS inspection_site_name                              -- 部位名称
-    , [dbo].[get_v_structure_item](msc.inspection_site_importance_structure_id, temp.factoryId, temp.languageId) AS inspection_site_importance_name        -- 部位重要度名称
-    , [dbo].[get_v_structure_item](msc.inspection_site_conservation_structure_id, temp.factoryId, temp.languageId) AS inspection_site_conservation_name    -- 点検グレード名称
-	, CASE WHEN ex.extension_data = '1' THEN [dbo].[get_v_structure_item](msc.inspection_content_structure_id, temp.factoryId, temp.languageId)
+    ,(
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mcp.inspection_site_structure_id
+                    AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+            )
+            AND tra.structure_id = mcp.inspection_site_structure_id
+    ) AS inspection_site_name -- 部位名称 
+    ,(
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = msc.inspection_site_importance_structure_id
+                    AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+            )
+            AND tra.structure_id = msc.inspection_site_importance_structure_id
+    ) AS inspection_site_importance_name -- 部位重要度名称 
+    ,(
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = temp.languageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    #temp_structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = msc.inspection_site_conservation_structure_id
+                    AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+            )
+            AND tra.structure_id = msc.inspection_site_conservation_structure_id
+    ) AS inspection_site_conservation_name -- 点検グレード名称
+	, CASE WHEN ex.extension_data = '1' THEN
+            (
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = msc.inspection_content_structure_id
+                            AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+                    )
+                    AND tra.structure_id = msc.inspection_content_structure_id
+            )
 		   ELSE null
 	  END AS diagnosis_content                                      -- 定期検査・診断 内容
 	, CASE WHEN ex.extension_data = '1' THEN FORMAT(msc.budget_amount, 'N0') 
 		   ELSE null
 	  END AS diagnosis_budget_amount                                -- 定期検査・診断 予算金額
-	, CASE WHEN ex.extension_data = '1' THEN [dbo].[get_v_structure_item](msc.maintainance_kind_structure_id, temp.factoryId, temp.languageId)
+	, CASE WHEN ex.extension_data = '1' THEN
+            (
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = msc.maintainance_kind_structure_id
+                            AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+                    )
+                    AND tra.structure_id = msc.maintainance_kind_structure_id
+            )
 		   ELSE null
 	  END AS diagnosis_inspection_type                              -- 定期検査・診断 検査種別
     , '' AS  diagnosis_legal_division                               -- 定期検査・診断 法定区分
 	, CASE WHEN ex.extension_data = '1' THEN ms.disp_cycle
 		   ELSE null
 	  END AS diagnosis_cycle                                        -- 定期検査・診断 周期
-	, CASE WHEN ex.extension_data = '2' THEN [dbo].[get_v_structure_item](msc.inspection_content_structure_id, temp.factoryId, temp.languageId)
+	, CASE WHEN ex.extension_data = '2' THEN
+            (
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = msc.inspection_content_structure_id
+                            AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+                    )
+                    AND tra.structure_id = msc.inspection_content_structure_id
+            )
 		   ELSE null
 	  END AS maintenance_contents                                   -- 定期修理・整備 内容
 	, CASE WHEN ex.extension_data = '2' THEN FORMAT(msc.budget_amount, 'N0') 
 		   ELSE null
 	  END AS maintenance_budget_amount                              -- 定期修理・整備 予算金額
-	, CASE WHEN ex.extension_data = '2' THEN [dbo].[get_v_structure_item](msc.maintainance_kind_structure_id, temp.factoryId, temp.languageId)
+	, CASE WHEN ex.extension_data = '2' THEN
+            (
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = msc.maintainance_kind_structure_id
+                            AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+                    )
+                    AND tra.structure_id = msc.maintainance_kind_structure_id
+            )
 		   ELSE null
 	  END AS maintenance_inspection_type                            -- 定期修理・整備 検査種別
     , '' AS  maintenance_legal_division                             -- 定期検査・診断 法定区分
 	, CASE WHEN ex.extension_data = '2' THEN ms.disp_cycle
 		   ELSE null
 	  END AS maintenance_cycle                                      -- 定期修理・整備 周期
-	, CASE WHEN ex.extension_data = '3' THEN [dbo].[get_v_structure_item](msc.inspection_content_structure_id, temp.factoryId, temp.languageId)
+	, CASE WHEN ex.extension_data = '3' THEN
+            (
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = msc.inspection_content_structure_id
+                            AND st_f.factory_id IN (0, ma.location_factory_structure_id)
+                    )
+                    AND tra.structure_id = msc.inspection_content_structure_id
+            )
 		   ELSE null
 	  END AS daily_contents                                         -- 日常点検Co-Mo 内容
 	, CASE WHEN ex.extension_data = '3' THEN ms.disp_cycle

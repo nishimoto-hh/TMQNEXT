@@ -22,7 +22,7 @@ SELECT
     sm.location_structure_id,                           -- 機能場所階層ID
     mc.job_structure_id AS job_structure_id2,           -- 職種機種階層ID(機器)
 	mc.location_structure_id AS location_structure_id2, -- 機能場所階層ID(機器)
-    [dbo].[get_v_structure_item](importance_structure_id, tmp.factoryId, tmp.languageId) AS importance_name,      -- 重要度
+    [dbo].[get_v_structure_item](mc.importance_structure_id, mc.location_factory_structure_id, tmp.languageId) AS importance_name,      -- 重要度
     sm.subject,                          -- 故障件名
     (SELECT family_name from ms_user where hi.construction_personnel_id = user_id) AS  construction,  -- 対策実施
     (SELECT family_name from ms_user where rq.request_department_manager_id = user_id) AS  manager,   -- 課長
@@ -96,11 +96,11 @@ SELECT
     sm.completion_date,                -- 完了日
     CASE WHEN ISNULL(hi.stop_count, 0) >= 1 THEN TraExists.translation_text ELSE TraNotExists.translation_text END AS stop_count_name,  -- P停
     CASE WHEN ISNULL(hi.call_count, 0) >= 1 THEN TraExists.translation_text ELSE TraNotExists.translation_text END AS call_count_name,  -- 呼出          
-    [dbo].[get_v_structure_item](rq.discovery_methods_structure_id, tmp.factoryId, tmp.languageId) AS discovery_methods_name,                  -- 発見方法
-    [dbo].[get_v_structure_item](phenomenon_structure_id, tmp.factoryId, tmp.languageId) AS phenomenon_name,                                   -- 現象
-    [dbo].[get_v_structure_item](hf.failure_cause_structure_id, tmp.factoryId, tmp.languageId) AS failure_cause_addition_note,                 -- 故障原因
-    [dbo].[get_v_structure_item](hf.failure_cause_personality_structure_id, tmp.factoryId, tmp.languageId) AS failure_cause_personality_note,  -- 原因性格
-	[dbo].[get_v_structure_item](hf.treatment_measure_structure_id, tmp.factoryId, tmp.languageId) AS treatment_measure_name,                  -- 処置・対策   
+    [dbo].[get_v_structure_item](rq.discovery_methods_structure_id, sm.location_factory_structure_id, tmp.languageId) AS discovery_methods_name,                  -- 発見方法
+    [dbo].[get_v_structure_item](phenomenon_structure_id, sm.location_factory_structure_id, tmp.languageId) AS phenomenon_name,                                   -- 現象
+    [dbo].[get_v_structure_item](hf.failure_cause_structure_id, sm.location_factory_structure_id, tmp.languageId) AS failure_cause_addition_note,                 -- 故障原因
+    [dbo].[get_v_structure_item](hf.failure_cause_personality_structure_id, sm.location_factory_structure_id, tmp.languageId) AS failure_cause_personality_note,  -- 原因性格
+	[dbo].[get_v_structure_item](hf.treatment_measure_structure_id, sm.location_factory_structure_id, tmp.languageId) AS treatment_measure_name,                  -- 処置・対策   
     
     SUBSTRING(hf.failure_note,   1, 12) AS failure_note_1,                        -- 特記(メモ)１
     SUBSTRING(hf.failure_note,  13, 12) AS failure_note_2,                        -- 特記(メモ)２

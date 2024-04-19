@@ -758,6 +758,9 @@ namespace BusinessLogic_MC0001
             // 長期スケジュール用オプションの設定
             TMQUtil.Option option = null;
 
+            // 長期スケジュール表と年度スケジュール表で使用するSQLファイル名
+            string changedTargetSqlId = string.Empty;
+
             switch (this.CtrlId)
             {
                 // エクセル出力テスト
@@ -848,6 +851,17 @@ namespace BusinessLogic_MC0001
                     // 固定で機器別長期計画のプログラムIDを指定
                     pgmId = ReportScheduleInfo.PgmIdLN0002;
 
+                    /*
+                     * 機器台帳-詳細画面-機器別管理基準タブから出力されるスケジューリング一覧は
+                     * 長期計画から出力されるスケジューリング一覧(機器別)と同一のフォーマットだが、
+                     * 検索SQLは異なるため使用するSQLファイルの名称をここで設定する
+                     * 設定したSQLファイルは共通側で呼び出すようにする
+                     */
+                    changedTargetSqlId = reportId + "_Sheet2ByMachine";
+
+                    // 検索条件データ取得
+                    getSearchConditionByTargetCtrlIdForReport(string.Empty, out searchCondition);
+
                     break;
             }
 
@@ -908,7 +922,13 @@ namespace BusinessLogic_MC0001
                 out MemoryStream memStream,  // メモリストリーム
                 out string message,          // メッセージ
                 db,
-                option);
+                option,
+                null,
+                null,
+                null,
+                null,
+                null,
+                changedTargetSqlId);
 
             // OUTPUTパラメータに設定
             this.OutputFileType = fileType;

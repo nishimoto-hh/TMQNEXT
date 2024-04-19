@@ -214,6 +214,8 @@ narrow_summary AS(
         --保全活動件名ID(非表示)
         ,su.summary_id
         ,re.issue_date
+        --呼出回数
+        ,hi.call_count
     FROM
         narrow_summary su
         LEFT JOIN

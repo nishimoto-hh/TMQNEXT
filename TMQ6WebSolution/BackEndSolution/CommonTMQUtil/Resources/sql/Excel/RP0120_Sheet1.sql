@@ -1,77 +1,11 @@
-WITH st_com( 
-    structure_layer_no
-    , structure_id
-    , parent_structure_id
-    , org_structure_id
-) AS ( 
-    SELECT
-        st.structure_layer_no
-        , st.structure_id
-        , st.parent_structure_id
-        , st.structure_id 
-    FROM
-        ms_structure AS st 
-    WHERE
-        st.structure_group_id = 1000
-) 
-, tmp_top1 (languageId, factoryId
-) AS (
-    SELECT TOP 1 languageId, factoryId FROM #temp
-)
-, rec_up( 
-    structure_layer_no
-    , structure_id
-    , parent_structure_id
-    , org_structure_id
-) AS ( 
-    SELECT
-        st.structure_layer_no
-        , st.structure_id
-        , st.parent_structure_id
-        , st.structure_id 
-    FROM
-        st_com AS st 
-    UNION ALL 
-    SELECT
-        b.structure_layer_no
-        , b.structure_id
-        , b.parent_structure_id
-        , a.org_structure_id 
-    FROM
-        rec_up a 
-        INNER JOIN ms_structure b 
-            ON (b.structure_id = a.parent_structure_id)
-) 
-, get_factory AS ( 
-    --機能場所階層IDから工場の故障分析個別工場フラグを取得
-    SELECT TOP 1
-        vs.structure_id
-        , vs.translation_text
-        , vs.structure_group_id
-        , vs.structure_layer_no
-        , up.org_structure_id
-        , mie.extension_data 
-    FROM
-        rec_up AS up 
-        LEFT OUTER JOIN v_structure_item_all AS vs 
-            ON (up.structure_id = vs.structure_id) 
-        LEFT OUTER JOIN ms_item_extension mie 
-            ON vs.structure_item_id = mie.item_id 
-        ,tmp_top1
-    WHERE
-            vs.language_id = tmp_top1.languageId COLLATE Japanese_CI_AS
-        AND vs.location_structure_id = tmp_top1.factoryId
-        AND vs.structure_layer_no = 1           --工場
-        AND mie.sequence_no = 2                 --故障分析個別工場フラグ
-        AND mie.extension_data IS NOT NULL
-    ORDER BY vs.location_structure_id DESC
-) 
-, summary_list AS ( 
+WITH summary_list AS ( 
     SELECT
         pl.occurrence_date                      --発生日
         , su.completion_date                    --完了日
         , su.subject                            --件名
         , su.mq_class_structure_id              --MQ分類
+        , CASE WHEN su.activity_division = 2 THEN mc.machine_no ELSE NULL END AS machine_no -- 機器番号 故障のみ表示
+        , CASE WHEN su.activity_division = 2 THEN mc.machine_name ELSE NULL END AS machine_name -- 機器名称 故障のみ表示
         , su.location_structure_id              --地区～設備
         , su.job_structure_id                   --職種
         , su.location_district_structure_id AS district_id      -- 機能場所階層id（地区）
@@ -146,8 +80,9 @@ WITH st_com(
             ON hi.construction_personnel_id = mu.user_id 
         LEFT JOIN ms_user mu_request 
             ON re.request_personnel_id = mu_request.user_id 
-        LEFT JOIN get_factory 
-            ON su.location_structure_id = get_factory.org_structure_id
+        LEFT JOIN mc_machine mc
+            ON hf.machine_id = mc.machine_id
+
 ) 
 , TraFinish AS (-- 「完了済」の翻訳を取得
     SELECT
@@ -210,10 +145,12 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.mq_class_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.mq_class_structure_id
       ) AS mq_class_name                        --MQ分類
+    , summary.machine_no -- 機器番号
+    , summary.machine_name -- 機器名称
     , summary.location_structure_id             --地区～設備
     , summary.job_structure_id                  --職種～機種小分類
     --地区(翻訳)
@@ -231,7 +168,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.district_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.district_id
     ) AS district_name
@@ -250,7 +187,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.factory_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.factory_id
     ) AS factory_name
@@ -269,7 +206,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.plant_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.plant_id
     ) AS plant_name
@@ -288,7 +225,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.series_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.series_id
     ) AS series_name
@@ -307,7 +244,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.stroke_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.stroke_id
     ) AS stroke_name
@@ -326,7 +263,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.facility_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.facility_id
     ) AS facility_name
@@ -345,7 +282,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = summary.job_structure_id
-                AND st_f.factory_id IN(0, temp.factoryId)
+                AND st_f.factory_id IN(0, summary.factory_id)
             )
         AND tra.structure_id = summary.job_structure_id
     ) AS job_name
@@ -363,7 +300,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.stop_system_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.stop_system_structure_id
       ) AS stop_system_name                     --系停止
@@ -383,7 +320,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.sudden_division_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.sudden_division_structure_id
       ) AS sudden_division_name                 --突発区分
@@ -402,7 +339,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.budget_management_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.budget_management_structure_id
       ) AS budget_management_name               --予算管理区分
@@ -420,7 +357,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.budget_personality_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.budget_personality_structure_id
       ) AS budget_personality_name              --予算性格区分
@@ -439,7 +376,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.maintenance_season_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.maintenance_season_structure_id
       ) AS maintenance_season_name              --保全時期
@@ -461,7 +398,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.discovery_methods_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.discovery_methods_structure_id
       ) AS discovery_methods_name               --発見方法
@@ -479,7 +416,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.actual_result_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.actual_result_structure_id
       ) AS actual_result_name                        ---実績結果
@@ -504,7 +441,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.phenomenon_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.phenomenon_structure_id
       ) AS phenomenon_name                      --現象
@@ -523,13 +460,13 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.failure_cause_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.failure_cause_structure_id
       ) AS failure_cause_name                   --原因
     , summary.failure_cause_note                --原因補足
-    , [dbo].[get_failure_cause_personality](summary.failure_cause_personality_structure_id, 1, temp.factoryId, temp.languageId) AS failure_cause_personality_name1    --原因性格1
-    , [dbo].[get_failure_cause_personality](summary.failure_cause_personality_structure_id, 2, temp.factoryId, temp.languageId) AS failure_cause_personality_name2    --原因性格2
+    , [dbo].[get_failure_cause_personality](summary.failure_cause_personality_structure_id, 1, summary.factory_id, temp.languageId) AS failure_cause_personality_name1    --原因性格1
+    , [dbo].[get_failure_cause_personality](summary.failure_cause_personality_structure_id, 2, summary.factory_id, temp.languageId) AS failure_cause_personality_name2    --原因性格2
     , summary.failure_cause_personality_note    --性格補足
     , (
         SELECT
@@ -545,7 +482,7 @@ SELECT
                     #temp_structure_factory AS st_f 
                 WHERE
                     st_f.structure_id = summary.treatment_measure_structure_id
-                    AND st_f.factory_id IN (0, temp.factoryId)
+                    AND st_f.factory_id IN (0, summary.factory_id)
             )
             AND tra.structure_id = summary.treatment_measure_structure_id
       ) AS treatment_measure_name               --処置対策

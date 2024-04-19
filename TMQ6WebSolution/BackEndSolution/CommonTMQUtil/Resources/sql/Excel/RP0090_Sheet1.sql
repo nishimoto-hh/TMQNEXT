@@ -71,7 +71,8 @@ machine AS(
                     )
             WHERE
                 eq.machine_id = machine.machine_id              -- 機番ID
-        ) AS attachment_update_datetime
+        ) AS attachment_update_datetime,
+        location_factory_structure_id AS factory_id
     FROM
         mc_machine AS machine                                   -- 機番情報
 ),
@@ -241,7 +242,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = lp.work_item_structure_id
-                AND st_f.factory_id IN(0, base.factoryId)
+                AND st_f.factory_id IN(0, lp.location_factory_structure_id)
             )
         AND tra.structure_id = lp.work_item_structure_id
     ) AS work_item_name,
@@ -261,7 +262,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = man_com.inspection_site_structure_id
-                AND st_f.factory_id IN(0, base.factoryId)
+                AND st_f.factory_id IN(0, machine.factory_id)
             )
         AND tra.structure_id = man_com.inspection_site_structure_id
     ) AS inspection_site_name,
@@ -281,7 +282,7 @@ SELECT
                     #temp_structure_factory AS st_f
                 WHERE
                     st_f.structure_id = man_con.inspection_content_structure_id
-                AND st_f.factory_id IN(0, base.factoryId)
+                AND st_f.factory_id IN(0, machine.factory_id)
             )
         AND tra.structure_id = man_con.inspection_content_structure_id
     ) AS inspection_content_name,
