@@ -1,0 +1,7 @@
+DELETE ma_history_inspection_site 
+FROM
+    ma_history_machine hm 
+    INNER JOIN ma_history_inspection_site his 
+        ON hm.history_machine_id = his.history_machine_id 
+WHERE
+    hm.history_id = @HistoryId

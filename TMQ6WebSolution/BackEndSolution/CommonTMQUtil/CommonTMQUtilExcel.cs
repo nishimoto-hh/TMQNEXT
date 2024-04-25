@@ -2586,9 +2586,9 @@ namespace CommonTMQUtil
                 /// </summary>
                 public const int MqNameStartColumn = 1;
                 /// <summary>
-                /// MQ分類名のマッピングを開始する行
+                /// MQ分類名のマッピングを開始する行(DBより取得)
                 /// </summary>
-                public const int MqNameStartRow = 13;
+                public static int MqNameStartRow;
 
                 /// <summary>
                 /// 職種名のマッピングを開始する列
@@ -2600,47 +2600,52 @@ namespace CommonTMQUtil
                 public const int JobNameStartRow = 6;
 
                 /// <summary>
-                /// 系停止時間表示するための数式を設定する行
-                /// </summary
-                public const int StopTimeRow = 8;
-                /// <summary>
-                /// 工程停止時間表示するための数式を設定する行
-                /// </summary
-                public const int ProcessStopTimeRow = 10;
-
-                /// <summary>
-                /// 突発作業率(%) を表示するための数式を設定する行
-                /// </summary
-                public const int FuncPerSuddenRow = 38;
-                /// <summary>
-                /// 突発作業率(%) を表示するための数式の範囲(分母)
-                /// </summary
-                public const int FuncPerSuddenAllRow = 34;
-                /// <summary>
-                /// 突発作業率(%) を表示するための数式の範囲(分子)
-                /// </summary
-                public const int FuncPerSuddenTargetRow = 35;
-
-                /// <summary>
                 /// 検索したデータのマッピングを開始する列
                 /// </summary>
                 public const int DataStartColumn = 2;
                 /// <summary>
-                /// 系停止回数～総作業件数のデータをマッピングする開始行
+                /// 系停止回数～総作業件数のデータをマッピングする開始行(DBより取得)
                 /// </summary>
-                public const int DataStartRowStopAndMaintenance = 7;
+                public static int DataStartRowStopAndMaintenance;
                 /// <summary>
-                /// MQ分類ごとの集計値のデータをマッピングする開始行
+                /// MQ分類ごとの集計値のデータをマッピングする開始行(DBより取得)
                 /// </summary>
-                public const int DataStartRowMq = 12;
+                public static int DataStartRowMq;
                 /// <summary>
-                /// 小累計のデータをマッピングする行
+                /// 小累計のデータをマッピングする行(DBより取得)
                 /// </summary>
-                public const int DataStartRowTotal = 34;
+                public static int DataStartRowTotal;
                 /// <summary>
-                /// 突発作業件数～呼出回数のデータをマッピングする開始行
+                /// 突発作業件数～呼出回数のデータをマッピングする開始行(DBより取得)
                 /// </summary>
-                public const int DataStartRowSuddenAndCall = 35;
+                public static int DataStartRowSuddenAndCall;
+            }
+
+            /// <summary>
+            /// マッピング開始行
+            /// </summary>
+            public enum MappingStartRow
+            {
+                /// <summary>
+                /// 系停止回数～総作業件数
+                /// </summary>
+                StopTime,
+                /// <summary>
+                /// MQ分類名
+                /// </summary>
+                MqName,
+                /// <summary>
+                /// MQ分類ごとの集計値
+                /// </summary>
+                MqData,
+                /// <summary>
+                /// 小累計
+                /// </summary>
+                Total,
+                /// <summary>
+                /// 突発作業件数～呼出回数
+                /// </summary>
+                Sudden
             }
         }
 
@@ -2719,13 +2724,52 @@ namespace CommonTMQUtil
             int optionRowCount = 0;
             int optionColomnCount = 0;
 
-            // テンプレート情報を取得
-            var template = new ReportDao.MsOutputTemplateEntity().GetEntity(factoryId, reportId, templateId, db);
+            // ユーザーの本務工場のIDを取得
+            int userDutyFactoryId = GetUserFactoryId(userId, db);
+
+            // データを取得するためのSQLの工場ID
+            // 共通のテンプレートで出力する際は値は空で、工場個別のテンプレートの場合は工場IDが格納される
+            string reportTargetFactoryId = "_" + userDutyFactoryId.ToString();
+
+            // ユーザーの本務工場のテンプレート情報を取得
+            var template = new ReportDao.MsOutputTemplateEntity().GetEntity(userDutyFactoryId, reportId, templateId, db);
             if (template == null)
             {
-                // 取得できない場合、処理を戻す
+                // ユーザーの本務工場のテンプレート情報が取得できない場合、共通のテンプレート情報を取得
+                template = new ReportDao.MsOutputTemplateEntity().GetEntity(factoryId, reportId, templateId, db);
+                if (template == null)
+                {
+                    // 共通のテンプレートも取得できていない場合はここで終了
+                    return false;
+                }
+                reportTargetFactoryId = string.Empty;
+            }
+
+            // 出力帳票項目定義テーブル(ms_output_report_sheet_define)より、「件数」～「自係＋外注」シートに出力する項目のマッピング開始行を取得
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "GetReportSheetItem", out string getReportSheetItemSql);
+            IList<ReportDao.MsOutputReportItemDefineEntity> mappingRowList = db.GetListByDataClass<ReportDao.MsOutputReportItemDefineEntity>(getReportSheetItemSql, new { ReportTargetFactoryId = string.IsNullOrEmpty(reportTargetFactoryId) ? 0 : userDutyFactoryId, ColumnName = "mapping_row" });
+
+            // 取得できない場合は終了
+            if(mappingRowList == null || mappingRowList.Count == 0)
+            {
                 return false;
             }
+
+            // 系停止回数～総作業件数のデータをマッピングする開始行6
+            ReportRP0450.CommonSheet.DataStartRowStopAndMaintenance = (int)mappingRowList[(int)ReportRP0450.MappingStartRow.StopTime].DefaultCellRowNo;
+
+            // MQ分類名をマッピングする開始行
+            ReportRP0450.CommonSheet.MqNameStartRow = (int)mappingRowList[(int)ReportRP0450.MappingStartRow.MqName].DefaultCellRowNo;
+
+            // MQ分類ごとの集計値のデータをマッピングする開始行
+            ReportRP0450.CommonSheet.DataStartRowMq = (int)mappingRowList[(int)ReportRP0450.MappingStartRow.MqData].DefaultCellRowNo;
+
+            // 小累計のデータをマッピングする開始行
+            ReportRP0450.CommonSheet.DataStartRowTotal = (int)mappingRowList[(int)ReportRP0450.MappingStartRow.Total].DefaultCellRowNo;
+
+            // 突発作業件数～呼出回数のデータをマッピングする開始行
+            ReportRP0450.CommonSheet.DataStartRowSuddenAndCall = (int)mappingRowList[(int)ReportRP0450.MappingStartRow.Sudden].DefaultCellRowNo;
+
             // テンプレートファイル名を設定
             string templateFileName = template.TemplateFileName;
             // テンプレートファイルパスを設定
@@ -2804,10 +2848,10 @@ namespace CommonTMQUtil
                 if (sheetDefine.SheetNo == ReportRP0450.SheetNo.CountByFactory)
                 {
                     // 件数～自係＋外注 シートの共通処理
-                    getOutDataForOldStyleCommon(db, searchCondition, jobNameToId, mqList, ref cmdInfoList, ref mappingInfoList);
+                    getOutDataForOldStyleCommon(db, searchCondition, jobNameToId, mqList, ref cmdInfoList, ref mappingInfoList, string.IsNullOrEmpty(reportTargetFactoryId) ? "0" : userDutyFactoryId.ToString());
 
                     // 件数～自係＋外注 シートの共通部分の検索処理
-                    getCommonDataForOldStyleCommon(db, searchCondition, jobNameToId, ref mappingInfoList);
+                    getCommonDataForOldStyleCommon(db, searchCondition, jobNameToId, ref mappingInfoList, reportTargetFactoryId);
 
                     continue;
                 }
@@ -3165,7 +3209,7 @@ namespace CommonTMQUtil
         /// <param name="mqList">MQ分類リスト</param>
         /// <param name="cmdInfoList">コマンド情報リスト</param>
         /// <param name="mappingInfoList">マッピング情報リスト</param>
-        public static void getOutDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, IList<dynamic> mqList, ref List<CommonExcelCmdInfo> cmdInfoList, ref List<CommonExcelPrtInfo> mappingInfoList)
+        public static void getOutDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, IList<dynamic> mqList, ref List<CommonExcelCmdInfo> cmdInfoList, ref List<CommonExcelPrtInfo> mappingInfoList, string reportTargetFactoryId)
         {
             CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
             string[] param;
@@ -3181,6 +3225,9 @@ namespace CommonTMQUtil
             object comDate = DateTime.Now.ToString("dddd, MMM d yyyy", new System.Globalization.CultureInfo("en-US"));
             object comTime = DateTime.Now.ToString("HH:mm:ss");
 
+            // 出力帳票項目定義テーブル(ms_output_report_sheet_define)より、条件付き書式を設定するセルの行番号を取得する
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "GetReportSheetItem", out string getReportSheetItemSql);
+            IList<ReportDao.MsOutputReportItemDefineEntity> mappingFormatList = db.GetListByDataClass<ReportDao.MsOutputReportItemDefineEntity>(getReportSheetItemSql, new { ReportTargetFactoryId = reportTargetFactoryId, ColumnName = "stop_time" });
 
             // 共通処理を適用させるシートごとに繰り返し処理を行う
             foreach (int sheetNo in ReportRP0450.CommonSheetNo)
@@ -3275,9 +3322,15 @@ namespace CommonTMQUtil
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeCompany ||
                     sheetNo == ReportRP0450.SheetNo.WorkingTimeSelfAndCompany)
                 {
-                    // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間)
-                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.StopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.StopTimeRow.ToString());
-                    setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString() + ":" + ToAlphabet(jobNameStartColYear) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + ReportRP0450.CommonSheet.ProcessStopTimeRow.ToString());
+                    // 条件付き書式を設定するセルの行番号が取得できている場合
+                    if (mappingFormatList != null || mappingFormatList.Count > 0)
+                    {
+                        foreach(ReportDao.MsOutputReportItemDefineEntity item in mappingFormatList)
+                        {
+                            // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間など、ma_summary.stop_timeを集約している項目)
+                            setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + item.DefaultCellRowNo.ToString() + ":" + ToAlphabet(jobNameStartColYear) + item.DefaultCellRowNo.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + item.DefaultCellRowNo.ToString());
+                        }
+                    }
                 }
 
                 // 「自社時間」「外注時間」「自係＋外注」シートの場合
@@ -3372,13 +3425,24 @@ namespace CommonTMQUtil
                 cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
                 cmdInfoList.Add(cmdInfo);
 
-                // 条件付き書式を設定(3桁区切り小数1桁の場合)
+                // 条件付き書式を設定(3桁区切り小数2桁の場合)
                 cmdInfo = new CommonExcelCmdInfo();
                 param = new string[5];
                 param[0] = address;
                 param[1] = "IsTrue";
                 param[2] = "=IFERROR(LEN(" + targetCell + ")-FIND(\".\"," + targetCell + "),0)=2";                                                              // [2]：罫線の太さ　デフォルトは細線
                 param[3] = "#,##0.##";
+                param[4] = sheetNo.ToString();
+                cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
+                cmdInfoList.Add(cmdInfo);
+
+                // 条件付き書式を設定(3桁区切り小数3桁の場合)
+                cmdInfo = new CommonExcelCmdInfo();
+                param = new string[5];
+                param[0] = address;
+                param[1] = "IsTrue";
+                param[2] = "=IFERROR(LEN(" + targetCell + ")-FIND(\".\"," + targetCell + "),0)=3";                                                              // [2]：罫線の太さ　デフォルトは細線
+                param[3] = "#,##0.###";
                 param[4] = sheetNo.ToString();
                 cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdContionFormat, param);
                 cmdInfoList.Add(cmdInfo);
@@ -3392,7 +3456,8 @@ namespace CommonTMQUtil
         /// <param name="searchCondition">検索条件</param>
         /// <param name="jobNameToId">職種リスト</param>
         /// <param name="mappingInfoList">マッピング情報リスト</param>
-        public static void getCommonDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, ref List<CommonExcelPrtInfo> mappingInfoList)
+        /// <param name="reportTargetFactoryId">出力対象のテンプレートの工場ID(共通テンプレートなら値は空で、工場個別の場合は工場ID)</param>
+        public static void getCommonDataForOldStyleCommon(ComDB db, dynamic searchCondition, Dictionary<string, List<int>> jobNameToId, ref List<CommonExcelPrtInfo> mappingInfoList, string reportTargetFactoryId)
         {
             // 検索データ種類
             List<int> dataTypeList = new()
@@ -3435,7 +3500,7 @@ namespace CommonTMQUtil
                 }
 
                 // SQLを取得(系停止回数～総作業件数)
-                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonStopAndMaintenance", out string selectStopAndMaintenanceSql, new List<string>() { unCommentRange });
+                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonStopAndMaintenance" + reportTargetFactoryId, out string selectStopAndMaintenanceSql, new List<string>() { unCommentRange });
 
                 // SQLを取得(突発作業件数～呼出回数)
                 TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, "RP0450_CommonSuddenAndCall", out string selectSuddenAndCallSql, new List<string>() { unCommentRange });

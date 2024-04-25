@@ -1857,6 +1857,10 @@
             /// CBM想定内故障
             /// </summary>
             public const string ID111120269 = "111120269";
+            /// <summary>
+            /// 対象機器が複数設定されています。１件に絞り込んでください。
+            /// </summary>
+            public const string ID141160023 = "141160023";
         }
     }
 }

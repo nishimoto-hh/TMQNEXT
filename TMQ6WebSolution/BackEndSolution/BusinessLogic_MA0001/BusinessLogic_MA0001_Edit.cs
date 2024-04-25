@@ -19,7 +19,6 @@ using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
-using static CommonWebTemplate.Models.Common.TMPTBL_CONSTANTS;
 
 namespace BusinessLogic_MA0001
 {
@@ -39,15 +38,22 @@ namespace BusinessLogic_MA0001
             //新規登録時、保全活動件名IDは-1
             result.SummaryId = newSummaryId;
             //活動区分ID（点検or故障）
-            if (ctrlId.IsStartId(ConductInfo.FormList.Button.NewFailure))
+            //if (ctrlId.IsStartId(ConductInfo.FormList.Button.NewFailure))
+            //{
+            //    //故障情報登録
+            //    result.ActivityDivision = MaintenanceDivision.Failure;
+            //}
+            //else if (ctrlId.IsStartId(ConductInfo.FormList.Button.NewInspection) || ctrlId.IsNew())
+            //{
+            //    //点検情報登録、新規登録
+            //    result.ActivityDivision = MaintenanceDivision.Inspection;
+            //}
+            if (ctrlId.IsNew())
             {
-                //故障情報登録
-                result.ActivityDivision = MaintenanceDivision.Failure;
-            }
-            else if (ctrlId.IsStartId(ConductInfo.FormList.Button.NewInspection) || ctrlId.IsNew())
-            {
-                //点検情報登録、新規登録
+                // 新規登録
                 result.ActivityDivision = MaintenanceDivision.Inspection;
+                // 点検の構成IDを取得
+                result.ActivityDivisionId = getActivityDivisionId(MaintenanceDivision.Inspection);
             }
 
             if (ctrlId.IsStartId(ConductInfo.FormDetail.Button.Follow))
@@ -170,6 +176,8 @@ namespace BusinessLogic_MA0001
                 result.FollowPlanKeyId = condition.SummaryId;
                 //活動区分ID（フォロー計画元の活動区分IDを設定）
                 result.ActivityDivision = condition.ActivityDivision;
+                // 故障・点検区分の構成IDを設定
+                result.ActivityDivisionId = getActivityDivisionId(condition.ActivityDivision ?? MaintenanceDivision.Inspection);
             }
 
             // ツリーの階層IDの値が単一の場合その値を返す処理
@@ -208,6 +216,27 @@ namespace BusinessLogic_MA0001
         }
 
         /// <summary>
+        /// 故障・点検区分の構成IDを取得
+        /// </summary>
+        /// <param name="activityDivision">拡張データ（点検:1、故障:2）</param>
+        /// <returns>故障・点検区分の構成ID</returns>
+        private int getActivityDivisionId(int activityDivision)
+        {
+            //構成アイテムを取得するパラメータ設定
+            TMQUtil.StructureItemEx.StructureItemExInfo param = new TMQUtil.StructureItemEx.StructureItemExInfo();
+            //構成グループID
+            param.StructureGroupId = (int)Const.MsStructure.GroupId.ActivityDivision;
+            //連番
+            param.Seq = MaintenanceDivision.Seq;
+            //拡張データ
+            param.ExData = activityDivision.ToString();
+
+            // 故障・点検区分IDを取得
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, this.db);
+            return list[0].StructureId;
+        }
+
+        /// <summary>
         /// 編集画面　登録処理
         /// </summary>
         /// <returns>エラーの場合False</returns>
@@ -223,12 +252,6 @@ namespace BusinessLogic_MA0001
 
             // 排他チェック
             if (isErrorExclusive(manufacturingFlg, maintenanceFlg, historyIndividualFlg))
-            {
-                return false;
-            }
-
-            // 入力チェック
-            if (isErrorRegist())
             {
                 return false;
             }
@@ -250,6 +273,12 @@ namespace BusinessLogic_MA0001
                 grpNoList.Add(ConductInfo.FormRegist.GroupNo.HistoryIndividualInfo);
             }
             Dao.detailSummaryInfo registSummaryInfo = getRegistInfo<Dao.detailSummaryInfo>(grpNoList, now);
+
+            // 入力チェック
+            if (isErrorRegist(registSummaryInfo.ActivityDivision))
+            {
+                return false;
+            }
 
             // 排他チェック(長期計画の白丸「○」リンクから遷移してきた場合)
             if (isErrorExclusiveFromLongPlan(registSummaryInfo.MaxUpdateDatetimeSchedule, registSummaryInfo.MaintainanceScheduleDetailId))
@@ -290,6 +319,16 @@ namespace BusinessLogic_MA0001
             // 保全活動件名登録
             long val = newSummaryId;
 
+            //点検・故障を変更した場合、true
+            bool changeActivityDivisionFlg = false;
+            if (!isRegist)
+            {
+                //変更前の活動区分IDを取得
+                ComDao.MaSummaryEntity old = new ComDao.MaSummaryEntity().GetEntity(registSummaryInfo.SummaryId, this.db);
+                //点検・故障を変更した場合、true
+                changeActivityDivisionFlg = old.ActivityDivision != registSummaryInfo.ActivityDivision;
+            }
+
             // 保全スケジュール詳細IDがnullでない(長期計画の白丸「○」リンクから遷移してきた)場合
             if (!string.IsNullOrEmpty(registSummaryInfo.MaintainanceScheduleDetailId))
             {
@@ -315,14 +354,14 @@ namespace BusinessLogic_MA0001
             {
                 case MaintenanceDivision.Inspection:
                     //保全履歴、保全履歴機器、保全履歴機器部位、保全履歴点検内容
-                    if (!registInspectionData(summaryId, isRegist, maintenanceFlg, registSummaryInfo, now))
+                    if (!registInspectionData(summaryId, isRegist, maintenanceFlg, registSummaryInfo, now, changeActivityDivisionFlg))
                     {
                         return false;
                     }
                     break;
                 case MaintenanceDivision.Failure:
                     //保全履歴、保全履歴故障情報
-                    if (!registFailureData(summaryId, isRegist, maintenanceFlg, registSummaryInfo, now))
+                    if (!registFailureData(summaryId, isRegist, maintenanceFlg, registSummaryInfo, now, changeActivityDivisionFlg))
                     {
                         return false;
                     }
@@ -508,8 +547,9 @@ namespace BusinessLogic_MA0001
         /// <summary>
         /// 入力チェック
         /// </summary>
+        /// <param name="activityDivision">活動区分</param>
         /// <returns>エラーの場合True</returns>
-        private bool isErrorRegist()
+        private bool isErrorRegist(int? activityDivision)
         {
             //対象機器のデータ取得（削除行は含まない）
             List<Dictionary<string, object>> machineDicList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormRegist.ControlId.MachineList);
@@ -517,6 +557,14 @@ namespace BusinessLogic_MA0001
             {
                 //データがない場合、終了
                 return false;
+            }
+
+            // 故障かつ対象機器が複数件設定されている場合、エラー
+            if (activityDivision == MaintenanceDivision.Failure && machineDicList.Count > 1)
+            {
+                // 対象機器が複数設定されています。１件に絞り込んでください。
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141160023 });
+                return true;
             }
 
             bool error = false;
@@ -875,8 +923,9 @@ namespace BusinessLogic_MA0001
         /// <param name="maintenanceFlg">保全権限がある場合True</param>
         /// <param name="registSummaryInfo">保全活動件名情報</param>
         /// <param name="now">システム日時</param>
+        /// <param name="changeActivityDivisionFlg">点検・故障を変更した場合、true</param>
         /// <returns>エラーの場合False</returns>
-        private bool registInspectionData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now)
+        private bool registInspectionData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now, bool changeActivityDivisionFlg)
         {
             // 保全履歴登録
             (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now, isInspection(registSummaryInfo.ActivityDivision));
@@ -915,7 +964,9 @@ namespace BusinessLogic_MA0001
                 }
 
                 // MaintainanceScheduleDetailIdがnullでないのは長期計画のリンクから遷移してきた場合の新規登録
-                if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New) || (registSummaryInfo.MaintainanceScheduleDetailId != null && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit)))
+                // 故障→点検に変更した場合、既存行は追加行として登録する
+                if (ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.New) || (registSummaryInfo.MaintainanceScheduleDetailId != null && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit))
+                    || (changeActivityDivisionFlg && ComUtil.IsEqualRowStatus(machineDic, TMPTBL_CONSTANTS.ROWSTATUS.Edit)))
                 {
                     //追加行の登録
                     if (!registAddRow(machine))
@@ -944,6 +995,9 @@ namespace BusinessLogic_MA0001
                     continue;
                 }
             }
+
+            // 保全履歴故障情報を削除（故障・点検区分を変更した場合）
+            deleteFailureInfo();
 
             // 保全スケジュール詳細の保全活動件名IDを更新
             if (!updateScheduleInfo(summaryId, registSummaryInfo.MaintainanceScheduleDetailId))
@@ -1185,6 +1239,18 @@ namespace BusinessLogic_MA0001
 
                 return true;
             }
+
+            //保全履歴故障情報の削除
+            void deleteFailureInfo()
+            {
+                if (isRegist || !changeActivityDivisionFlg)
+                {
+                    return;
+                }
+
+                //保全履歴故障情報の削除
+                TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.DeleteHistoryFailureForHistoryId, SqlName.SubDir, new { HistoryId = resultHistory.val }, this.db);
+            }
         }
 
         /// <summary>
@@ -1194,8 +1260,9 @@ namespace BusinessLogic_MA0001
         /// <param name="isRegist">新規登録の場合True</param>
         /// <param name="maintenanceFlg">保全権限がある場合True</param>
         /// <param name="now">システム日時</param>
+        /// <param name="changeActivityDivisionFlg">点検・故障を変更した場合、true</param>
         /// <returns>エラーの場合False</returns>
-        private bool registFailureData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now)
+        private bool registFailureData(long summaryId, bool isRegist, bool maintenanceFlg, Dao.detailSummaryInfo registSummaryInfo, DateTime now, bool changeActivityDivisionFlg)
         {
             // 保全履歴登録
             (bool returnFlag, long val) resultHistory = registHistory(summaryId, isRegist, maintenanceFlg, registSummaryInfo.HistoryIndividualFlg, now, isInspection(registSummaryInfo.ActivityDivision));
@@ -1262,7 +1329,34 @@ namespace BusinessLogic_MA0001
                 return false;
             }
 
+            //保全履歴機器、保全履歴機器部位、保全履歴点検内容削除（故障・点検区分を変更した場合）
+            deleteHistoryMachine();
+
+            // 保全スケジュール詳細の保全活動件名IDを更新
+            if (!updateScheduleInfo(summaryId, registSummaryInfo.MaintainanceScheduleDetailId))
+            {
+                return false;
+            }
             return true;
+
+            //保全履歴機器、保全履歴機器部位、保全履歴点検内容削除
+            void deleteHistoryMachine()
+            {
+                if (isRegist || !changeActivityDivisionFlg)
+                {
+                    return;
+                }
+
+                // 履歴IDに紐づく機器データを削除する
+
+                //保全履歴点検内容削除
+                TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.DeleteHistoryInspectionContentForHistoryId, SqlName.SubDir, registFailureInfo, this.db);
+                //保全履歴機器部位削除
+                TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.DeleteHistoryInspectionSiteForHistoryId, SqlName.SubDir, registFailureInfo, this.db);
+                //保全履歴機器削除
+                TMQUtil.SqlExecuteClass.Regist(SqlName.Regist.DeleteHistoryMachineForHistoryId, SqlName.SubDir, registFailureInfo, this.db);
+
+            }
         }
 
         /// <summary>

@@ -166,6 +166,8 @@ namespace BusinessLogic_MA0001
                 // 階層情報を設定
                 TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailSummaryInfo>(ref results, setStructureType, this.db, this.LanguageId, true);
             }
+            // 故障・点検区分IDを取得
+            result.ActivityDivisionId = getActivityDivisionId(result.ActivityDivision ?? MaintenanceDivision.Inspection);
 
             //完了日を非表示項目に設定
             result.HideCompletionDate = result.CompletionDate;

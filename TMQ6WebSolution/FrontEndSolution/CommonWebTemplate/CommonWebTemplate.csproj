@@ -7,9 +7,13 @@
 
   <ItemGroup>
     <Compile Remove="logs\**" />
+    <Compile Remove="Template\0\RP0450\4081\**" />
     <Content Remove="logs\**" />
+    <Content Remove="Template\0\RP0450\4081\**" />
     <EmbeddedResource Remove="logs\**" />
+    <EmbeddedResource Remove="Template\0\RP0450\4081\**" />
     <None Remove="logs\**" />
+    <None Remove="Template\0\RP0450\4081\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -200,6 +204,7 @@
     <None Remove="sql\Common\ComboBox\C0036.sql" />
     <None Remove="sql\Common\ComboBox\C0037.sql" />
     <None Remove="sql\Common\ComboBox\C0038.sql" />
+    <None Remove="sql\Common\ComboBox\C0039.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0003.sql" />
@@ -285,8 +290,20 @@
     <None Remove="Template\0\RP0430\1\template_RP0430.xlsx" />
     <None Remove="Template\0\RP0440\1\template_RP0440.xlsx" />
     <None Remove="Template\0\RP0450\1\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4111\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4112\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4113\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4114\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4115\template_RP0450.xlsx" />
+    <None Remove="Template\0\RP0450\4116\template_RP0450.xlsx" />
     <None Remove="Template\0\RP0460\1\template_RP0460.xlsx" />
     <None Remove="Template\0\RP1000\1\template_RP1000.xlsm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Template\0\RP0450\4114\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -584,6 +601,9 @@
     <Content Include="sql\Common\ComboBox\C0038.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="sql\Common\ComboBox\C0039.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="sql\Common\ExcelPort\EPC0001.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -834,6 +854,21 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\0\RP0450\1\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\4111\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\4112\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\4113\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\4115\template_RP0450.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\0\RP0450\4116\template_RP0450.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\0\RP0460\1\template_RP0460.xlsx">

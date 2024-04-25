@@ -488,6 +488,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 依頼No.</summary>
             /// <value>依頼No.</value>
             public string RequestNo { get; set; }
+            /// <summary>Gets or sets 故障・点検区分ID</summary>
+            /// <value>故障・点検区分ID</value>
+            public int ActivityDivisionId { get; set; }
             /// <summary>Gets or sets 完了日(非表示)</summary>
             /// <value>完了日(非表示)</value>
             public DateTime? HideCompletionDate { get; set; }

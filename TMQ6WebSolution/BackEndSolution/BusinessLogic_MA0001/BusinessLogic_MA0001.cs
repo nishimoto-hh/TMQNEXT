@@ -190,6 +190,14 @@ namespace BusinessLogic_MA0001
                 public const string GetLongPlanIdByScheduleDetailId = "GetLongPlanIdByScheduleDetailId";
                 /// <summary>SQL名：保全スケジュール詳細IDより最大更新日時を取得</summary>
                 public const string GetMaxUpdateDateByScheduleDetailId = "GetMaxUpdateDateByScheduleDetailId";
+                /// <summary>SQL名：保全履歴機器削除（履歴ID指定）</summary>
+                public const string DeleteHistoryMachineForHistoryId = "DeleteHistoryMachineForHistoryId";
+                /// <summary>SQL名：保全履歴機器部位削除（履歴ID指定）</summary>
+                public const string DeleteHistoryInspectionSiteForHistoryId = "DeleteHistoryInspectionSiteForHistoryId";
+                /// <summary>SQL名：保全履歴点検内容削除（履歴ID指定）</summary>
+                public const string DeleteHistoryInspectionContentForHistoryId = "DeleteHistoryInspectionContentForHistoryId";
+                /// <summary>SQL名：保全履歴故障情報削除（履歴ID指定）</summary>
+                public const string DeleteHistoryFailureForHistoryId = "DeleteHistoryFailureForHistoryId";
             }
 
             /// <summary>
@@ -721,6 +729,8 @@ namespace BusinessLogic_MA0001
             public const short Inspection = 1;
             /// <summary>故障情報</summary>
             public const short Failure = 2;
+            /// <summary>連番</summary>
+            public const short Seq = 1;
         }
 
         /// <summary>

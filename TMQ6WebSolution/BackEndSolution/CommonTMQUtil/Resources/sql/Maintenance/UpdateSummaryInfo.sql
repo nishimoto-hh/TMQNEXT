@@ -1,6 +1,7 @@
 UPDATE ma_summary 
 SET
-    [subject] = @Subject
+    [activity_division] = @ActivityDivision
+    , [subject] = @Subject
     , [plan_implementation_content] = @PlanImplementationContent
     , [subject_note] = @SubjectNote
     , [location_structure_id] = @LocationStructureId

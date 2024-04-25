@@ -27,6 +27,7 @@ FROM
                     LEFT JOIN ms_translation mtl 
                         ON ccd.conduct_name = mtl.translation_id 
                         AND mtl.language_id = @LanguageId 
+                        AND mtl.location_structure_id = 0
                 WHERE
                     (ccd.program_id IS NOT NULL AND ccd.program_id <> '')
                     AND (ccd.menu_division = 1 OR (ccd.conduct_id LIKE '%MS%'))
@@ -44,6 +45,7 @@ FROM
                     LEFT JOIN ms_translation mtl 
                         ON ccd.conduct_name = mtl.translation_id 
                         AND mtl.language_id = @LanguageId 
+                        AND mtl.location_structure_id = 0
                 WHERE
                     ccd.delete_flg = 0
             ) cdc 
@@ -73,6 +75,7 @@ FROM
                     LEFT JOIN ms_translation mtl 
                         ON ccd.conduct_name = mtl.translation_id 
                         AND mtl.language_id = @LanguageId 
+                        AND mtl.location_structure_id = 0
                     LEFT JOIN ms_user_conduct_authority uca 
                         ON ccd.conduct_id = uca.conduct_id 
                 WHERE
@@ -93,6 +96,7 @@ FROM
                     LEFT JOIN ms_translation mtl 
                         ON ccd.conduct_name = mtl.translation_id 
                         AND mtl.language_id = @LanguageId 
+                        AND mtl.location_structure_id = 0
                     LEFT JOIN ms_user_conduct_authority uca 
                         ON ccd.conduct_id = uca.conduct_id 
                 WHERE

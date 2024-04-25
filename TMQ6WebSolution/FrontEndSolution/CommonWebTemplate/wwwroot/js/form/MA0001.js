@@ -264,6 +264,8 @@ const FormRegist = {
         FailureIndividualFlg: 11,
         //保全履歴個別工場表示フラグ
         HistoryIndividualFlg: 12,
+        // 故障・点検区分
+        DivisionCombo: 16,
     },
     //件名情報
     SummaryInfo: {
@@ -661,25 +663,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         //保全権限フラグの値取得
         var maintenanceStr = getValue(FormList.HideInfo.Id, FormList.HideInfo.Maintenance, 1, CtrlFlag.Label);
         var maintenanceFlg = convertStrToBool(maintenanceStr);
-        if (!maintenanceFlg) {
-            //ユーザの役割に「保全権限」が含まれない場合は点検情報登録、故障情報登録を非表示とする
-
-            //点検情報登録ボタン非表示
-            setHideButton(FormList.ButtonId.NewInspection, true);
-            //故障情報登録ボタン非表示
-            setHideButton(FormList.ButtonId.NewFailure, true);
-
-            //フォーカス設定
-            var isUnAvailable = isUnAvailableButton(FormList.ButtonId.New);
-            if (isUnAvailable) {
-                setFocusButton(FormList.ButtonId.Output);
-            } else {
-                setFocusButton(FormList.ButtonId.New);
-            }
-        }
-        if (!manufacturingFlg || (manufacturingFlg && maintenanceFlg)) {
-            //ユーザの役割に「製造権限」が含まれない場合は新規登録を非表示とする
-            //ユーザの役割に「製造権限」「保全権限」の両方が含まれる場合は、新規登録を非表示とする
+        if (!manufacturingFlg && !maintenanceFlg) {
+            //ユーザの役割に「製造権限」「保全権限」のどちらも含まれない場合は、新規登録を非表示とする
 
             //新規登録ボタン非表示
             setHideButton(FormList.ButtonId.New, true);
@@ -691,6 +676,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             } else {
                 setFocusButton(FormList.ButtonId.NewInspection);
             }
+        } else {
+            //フォーカス設定
+            setFocusButton(FormList.ButtonId.New);
         }
 
         //日報出力ボタンの表示制御
@@ -831,7 +819,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
             //故障情報を非表示
             toggleHideGroup(FormRegist.FailureList.GroupNo, true);
-            //故障分析情報タブ、故障分析情報(個別工場)タブをを非表示
+            //故障分析情報タブ、故障分析情報(個別工場)タブを非表示
             setHideTab(FormRegist.FailureTab.Id, formNo, true);
             setHideTab(FormRegist.FailureIndividualTab.List1.Id, formNo, true);
         } else if (divisionId == DivisionIdDefine.Failure) {
@@ -1209,6 +1197,61 @@ function setComboOtherValues(appPath, combo, datas, selected, formNo, ctrlId, va
             //系停止時間を活性
             var stomTimeEle = getCtrl(FormRegist.WorkInfo.Id, FormRegist.WorkInfo.StopTime, 1, CtrlFlag.TextBox);
             changeInputControl(stomTimeEle, true);
+        }
+    }
+
+    // 故障・点検区分コンボボックス変更時
+    if (formNo == FormRegist.No && ctrlId == FormRegist.HideInfo.Id && valNo == FormRegist.HideInfo.DivisionCombo) {
+        // 選択された要素で、設定したい拡張項目の値を取得(空白選択時は空白)
+        var setValue = selected == null ? '' : selected.EXPARAM1;
+        // 非表示の活動区分IDに値を設定
+        setValueAndTriggerNoChange(FormRegist.HideInfo.Id, FormRegist.HideInfo.DivisionId, 0, CtrlFlag.Label, setValue);
+
+        //対象機器一覧の全行
+        var rows = P_listData['#' + FormRegist.MachineList.Id + getAddFormNo()].getRows();
+
+        //保全権限フラグの値取得
+        var maintenanceStr = getValue(FormRegist.HideInfo.Id, FormRegist.HideInfo.Maintenance, 1, CtrlFlag.Label);
+        var maintenanceFlg = convertStrToBool(maintenanceStr);
+        if (setValue == DivisionIdDefine.Inspection) {
+            //点検の場合
+
+            //故障情報を非表示
+            toggleHideGroup(FormRegist.FailureList.GroupNo, true);
+            //故障分析情報タブ、故障分析情報(個別工場)タブを非表示
+            setHideTab(FormRegist.FailureTab.Id, formNo, true);
+            setHideTab(FormRegist.FailureIndividualTab.List1.Id, formNo, true);
+
+            //対象機器一覧の一部列を表示に戻す
+            $.each(FormDetail.MachineList.HideCol, function (key, val) {
+                changeTabulatorColumnDisplay(FormRegist.MachineList.Id, val, true);
+            });
+
+            //行追加ボタンを表示する
+            setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, false);
+
+            // 機器使用期間の入力可能レコードを制限する
+            // 同一機器に対する先頭行のレコードのみ入力可能とする
+            unEnableUseDays(rows);
+        } else if (setValue == DivisionIdDefine.Failure) {
+            //故障の場合
+
+            if (maintenanceFlg) {
+                //故障情報を表示
+                toggleHideGroup(FormRegist.FailureList.GroupNo, false);
+                //故障分析情報タブ、故障分析情報（個別工場）タブの表示切り替え
+                changeDisplayFailureTab(formNo);
+            }
+
+            //対象機器一覧の一部列を非表示
+            $.each(FormDetail.MachineList.HideCol, function (key, val) {
+                changeTabulatorColumnDisplay(FormRegist.MachineList.Id, val, false);
+            });
+
+            if (rows.length > 0) {
+                //対象機器は１件のみの為、行追加ボタンを非表示にする
+                setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, true);
+            }
         }
     }
 }
@@ -1876,17 +1919,19 @@ function changeManagement(flg) {
  *  @id         {string}    ：行削除ﾘﾝｸの対象一覧のCTRLID
  */
 function postDeleteRow(appPath, btn, id) {
-    //保全活動区分（非表示）の値取得
-    var divisionId = getValue(FormRegist.HideInfo.Id, FormRegist.HideInfo.DivisionId, 1, CtrlFlag.Label);
-    if (divisionId == DivisionIdDefine.Failure) {
-        //故障情報の場合
-
-        //行追加ボタンを表示する
-        setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, false);
-    }
 
     // 対象機器一覧で行削除された場合
     if (id == FormRegist.MachineList.Id + getAddFormNo()) {
+        //保全活動区分（非表示）の値取得
+        var divisionId = getValue(FormRegist.HideInfo.Id, FormRegist.HideInfo.DivisionId, 1, CtrlFlag.Label);
+        if (divisionId == DivisionIdDefine.Failure) {
+            //故障情報の場合
+            var count = P_listData["#" + FormRegist.MachineList.Id + getAddFormNo()].getDataCount();
+            if (count == 0) {
+                //行追加ボタンを表示する
+                setHideButtonTopForList(FormRegist.MachineList.Id, actionkbn.AddNewRow, false);
+            }
+        }
 
         // 機器使用期間の入力可能レコードを制限する
         // 同一機器に対する先頭行のレコードのみ入力可能とする

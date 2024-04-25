@@ -202,7 +202,7 @@ SELECT
         PARTITION BY
             hlp.long_plan_id 
         ORDER BY
-            hlp.history_management_id
+            ISNULL(hm.application_date,GETDATE()), hlp.history_management_id
     ) AS history_order                      -- 件名ごとに何番目の変更管理かを採番、変更前後の比較に使用
     , div.division_cd                       -- 申請区分のコード
     /*@GetCount
@@ -748,7 +748,7 @@ SELECT
         PARTITION BY
             hmcon.management_standards_content_id, hm.key_id 
         ORDER BY
-            hm.history_management_id
+            ISNULL(hm.application_date,GETDATE()), hm.history_management_id
     ) AS history_order -- 件名ごとに何番目の変更管理かを採番、変更前後の比較に使用
     , div.division_cd -- 申請区分のコード
     /*@GetCount
