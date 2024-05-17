@@ -1123,6 +1123,7 @@ WITH history_data_vertical AS (
             COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
             OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
         )
+        AND a.division_cd <> '0' -- 帳票出力対象外のデータを除去
         /*@ApplicationStatusIdList
         AND a.application_status_id IN @ApplicationStatusIdList
         @ApplicationStatusIdList*/
@@ -1308,6 +1309,7 @@ WITH history_data_vertical AS (
             OR a.division_cd IN ('10', '30')            -- または新規or削除申請のもの
             OR a.execution_division IN (4, 5) -- 保全項目の追加または削除
         )
+        AND a.division_cd <> '0' -- 帳票出力対象外のデータを除去
         /*@ApplicationStatusIdList
         AND a.application_status_id IN @ApplicationStatusIdList
         @ApplicationStatusIdList*/
