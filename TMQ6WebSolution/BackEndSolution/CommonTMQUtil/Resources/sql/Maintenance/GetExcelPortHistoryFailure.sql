@@ -627,6 +627,7 @@ SELECT
             ) 
             AND tra.structure_id = hf.measure_class2_structure_id
     ) AS measure_class2_name 
+    , hf.work_record
 FROM
     ( 
         SELECT

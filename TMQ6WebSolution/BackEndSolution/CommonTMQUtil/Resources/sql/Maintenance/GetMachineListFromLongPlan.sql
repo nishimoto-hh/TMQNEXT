@@ -135,3 +135,29 @@ FROM
     ON  detail.maintainance_schedule_detail_id = content_id_list.maintainance_schedule_detail_id
 WHERE
     detail.summary_id IS NULL
+
+    /*@NotMaintainanceKindManage
+    -- ○リンククリック時の確認メッセージで「NO」がクリックかつ、○リンクの機器が点検種別毎管理ではない場合
+    -- クリックされた○リンクの保全項目のみ対象とする
+    AND content.management_standards_content_id = ( 
+        SELECT
+            schedule.management_standards_content_id 
+        FROM
+            mc_maintainance_schedule schedule 
+        WHERE
+            schedule.maintainance_schedule_id = ( 
+                SELECT
+                    detail.maintainance_schedule_id 
+                FROM
+                    mc_maintainance_schedule_detail detail 
+                WHERE
+                    detail.maintainance_schedule_detail_id = @MaintainanceScheduleDetailId
+            )
+    )
+    @NotMaintainanceKindManage*/
+
+    /*@MaintainanceKindManage
+    -- ○リンククリック時の確認メッセージで「NO」がクリックかつ、○リンクの機器が点検種別毎管理の場合
+    -- クリックされた○リンクの機器のみ対象とする(点検種別毎管理の場合は機器のスケジュールマークは最上位の1つのみリンク表示となっているため)
+    AND machine.machine_id = @MachineId
+    @MaintainanceKindManage*/

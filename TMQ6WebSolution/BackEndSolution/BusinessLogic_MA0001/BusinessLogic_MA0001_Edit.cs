@@ -3,6 +3,7 @@ using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using DocumentFormat.OpenXml.Office.PowerPoint.Y2021.M06.Main;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,13 +13,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using Dao = BusinessLogic_MA0001.BusinessLogicDataClass_MA0001;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
+using Dao = BusinessLogic_MA0001.BusinessLogicDataClass_MA0001;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
+using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_MA0001
 {
@@ -878,7 +880,7 @@ namespace BusinessLogic_MA0001
 
             if (strLocationStructureId.Length > 2)
             {
-                strLocationStructureId = strLocationStructureId.Substring(strLocationStructureId.Length -2 , 2);
+                strLocationStructureId = strLocationStructureId.Substring(strLocationStructureId.Length - 2, 2);
             }
 
             switch (pattern)
@@ -1301,6 +1303,7 @@ namespace BusinessLogic_MA0001
             registFailureInfo.HistoryId = resultHistory.val;
             registFailureInfo.MachineId = registMachine.MachineId;
             registFailureInfo.EquipmentId = registMachine.EquipmentId;
+            registFailureInfo.WorkRecord = registMachine.WorkRecord;
 
             //機器使用期間の設定
             int days = setUsedDaysMachine(registSummaryInfo.CompletionDate, registMachine.MachineId, registMachine.UsedDaysMachine);
@@ -1620,9 +1623,54 @@ namespace BusinessLogic_MA0001
                 }
             }
 
+            // 対象機器一覧を検索するSQL
+            string sql = string.Empty;
+
+            // アンコメントリスト(クリックされた○リンクのデータのみか、○リンクと同一年月のデータのみ表示するか判断するもの)
+            List<string> listUnComment = new();
+
+            // ○リンククリック後に確認メッセージでどのボタンがクリックされたかどうかを取得する
+            if (this.IndividualDictionary.ContainsKey(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink) &&
+                this.IndividualDictionary[ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink].ToString() == ConductInfo.FormList.ParamFromLongPlan.MsgClickedBtn.Cancel)
+            {
+                // 確認メッセージで「NO」がクリックされている
+                // →クリックされた○リンクのデータのみ表示する
+
+                // 保全スケジュール詳細IDから機器情報を取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetEquipmentInfoByScheduleDetailId, out sql);
+                ComDao.McEquipmentEntity equipment = db.GetEntity<ComDao.McEquipmentEntity>(sql, new { MaintainanceScheduleDetailId = result.MaintainanceScheduleDetailId });
+
+                // クリックされた○リンクの機器の工場が点検種別毎管理の対象工場かどうか取得
+                ComDao.McMachineEntity machine = new ComDao.McMachineEntity().GetEntity((long)equipment.MachineId, this.db);
+                var list = new ComDao.MsStructureEntity().GetGroupList(TMQConst.MsStructure.GroupId.MaintainanceKindManageFactory, this.db);
+                bool maintainanceKindManageFactory = list.Count(x => !x.DeleteFlg && x.FactoryId == machine.LocationFactoryStructureId) > 0;
+
+                // 機器が点検種別毎管理かどうかでSQLの集約方法が少し異なる
+                if (equipment.MaintainanceKindManage && maintainanceKindManageFactory)
+                {
+                    // 機器が点検種別毎管理の場合
+                    listUnComment.Add("MaintainanceKindManage");
+
+                    // クリックされた○リンクの機器を対象とするため、検索条件に機番IDを設定する
+                    // 機器が点検種別毎管理のかつ、機器の工場が点検種別毎管理の場合
+                    result.MachineId = equipment.MachineId;
+                }
+                else
+                {
+                    // 機器が点検種別毎管理のかつ、機器の工場が点検種別毎管理　ではない場合
+                    listUnComment.Add("NotMaintainanceKindManage");
+                }
+            }
+
+            // 確認メッセージでどのボタンがクリックされたか情報がグローバルリストに格納されている場合は削除する
+            if(this.IndividualDictionary.ContainsKey(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink))
+            {
+                this.IndividualDictionary.Remove(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink);
+            }
+
             // 対象機器一覧検索
             // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMachineListFromLongPlan, out string sql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.GetMachineListFromLongPlan, out sql, listUnComment);
 
             // SQL実行
             IList<Dao.detailMachine> resultMachineList = db.GetListByDataClass<Dao.detailMachine>(sql, result);

@@ -645,6 +645,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 保全スケジュール詳細ID</summary>
             /// <value>保全スケジュール詳細ID</value>
             public string MaintainanceScheduleDetailId { get; set; }
+            /// <summary>Gets or sets 作業記録</summary>
+            /// <value>作業記録</value>
+            public string WorkRecord { get; set; }
         }
 
         /// <summary>
@@ -1200,6 +1203,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 最大更新日時</summary>
             /// <value>最大更新日時</value>
             public DateTime? MaxUpdateDatetimeSchedule { get; set; }
+            /// <summary>Gets or sets 機番ID</summary>
+            /// <value>機番ID</value>
+            public long? MachineId { get; set; }
 
             #region 場所・職種情報
             /// <summary>Gets or sets 機能場所階層ID</summary>
@@ -2055,6 +2061,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 個別工場制御用フラグ</summary>
             /// <value>個別工場制御用フラグ</value>
             public string ControlFlag { get; set; }
+            /// <summary>Gets or sets 作業記録</summary>
+            /// <value>作業記録</value>
+            public string WorkRecord { get; set; }
         }
 
         /// <summary>
@@ -2276,6 +2285,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 機番ID(変更前)</summary>
             /// <value>機番ID(変更前)</value>
             public long? MachineIdBefore { get; set; }
+            /// <summary>Gets or sets 作業記録</summary>
+            /// <value>作業記録</value>
+            public string WorkRecord { get; set; }
         }
     }
 }

@@ -27,6 +27,13 @@ using static CommonTMQUtil.CommonTMQUtil.ReportRP0450;
 using DocumentFormat.OpenXml.EMMA;
 using System.Net;
 using Jint.Parser.Ast;
+using static CommonTMQUtil.CommonTMQUtil.ReportRP0020;
+using System.Security.Cryptography.Xml;
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using static CommonExcelUtil.CommonExcelCmd;
+using DocumentFormat.OpenXml.Wordprocessing;
+using static CommonSTDUtil.CommonConstants;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -684,6 +691,85 @@ namespace CommonTMQUtil
             /// <summary>検索時のアンコメントキー</summary>
             public static string UnCommentSelect = "GetData";
         }
+        #endregion
+
+        #region RP0020機器台帳詳細(機種仕様)用 のクラス
+        /// <summary>
+        /// RP0020機器台帳詳細(機種仕様)用 のクラス
+        /// </summary>
+        public class ReportRP0020
+        {
+            public class SqlName
+            {
+                /// <summary>帳票ID</summary>
+                public const string ReportId = "RP0020";
+                /// <summary>サブディレクトリ名</summary>
+                public const string SubDir = "RP0020";
+                /// <summary>ヘッダー部に出力される仕様項目名を取得</summary>
+                public const string GetHeaderSpecInfo = "GetHeaderSpecInfo";
+                /// <summary>データ部に出力される仕様項目に紐付く値を取得</summary>
+                public const string GetDataSpecInfo = "GetDataSpecInfo";
+                /// <summary>検索対象の仕様項目IDを格納する一時テーブルを作成</summary>
+                public const string CreateSpecIdData = "CreateSpecIdData";
+                /// <summary>検索対象の仕様項目を一時テーブルに登録</summary>
+                public const string InsertSpecIdData = "InsertSpecIdData";
+            }
+
+            /// <summary>
+            /// 仕様項目名の取得用(ヘッダー部)
+            /// </summary>
+            public class HeaderSpecInfo
+            {
+                /// <summary>Gets or sets 仕様項目ID</summary>
+                /// <value>仕様項目ID</value>
+                public long SpecId { get; set; }
+                /// <summary>Gets or sets 仕様項目名(単位付き)</summary>
+                /// <value>仕様項目名(単位付き)</value>
+                public string SpecName { get; set; }
+                /// <summary>Gets or sets 入力形式 「1：テキスト」「2：数値」「3：数値(範囲)」「4：選択」</summary>
+                /// <value>入力形式 「1：テキスト」「2：数値」「3：数値(範囲)」「4：選択」</value>
+                public string SpecType { get; set; }
+            }
+
+            /// <summary>
+            /// 仕様項目に紐付く値(データ部)
+            /// </summary>
+            public class DataSpecInfo
+            {
+                /// <summary>Gets or sets 仕様項目に紐付く値</summary>
+                /// <value>仕様項目に紐付く値</value>
+                public string SpecValue { get; set; }
+            }
+            
+            /// <summary>
+            /// 仕様項目の入力形式
+            /// </summary>
+            public class SpecType
+            {
+                /// <summary>Gets or sets テキスト</summary>
+                /// <value>テキスト</value>
+                public const string Text = "1";
+                /// <summary>Gets or sets 数値</summary>
+                /// <value>数値</value>
+                public const string Num = "2";
+                /// <summary>Gets or sets 数値(範囲)</summary>
+                /// <value>数値(範囲)</value>
+                public const string NumMinMax = "3";
+                /// <summary>Gets or sets 選択</summary>
+                /// <value>選択</value>
+                public const string Select = "4";
+            }
+
+            /// <summary>
+            /// 機種仕様のマッピングを開始する列
+            /// </summary>
+            public static int specStartColumn = 0;
+            /// <summary>
+            /// 機種仕様のマッピングを開始する行
+            /// </summary>
+            public static int specStartRow = 0;
+        }
+
         #endregion
 
         #region エクセル入出力共通処理
@@ -1657,6 +1743,21 @@ namespace CommonTMQUtil
                 }
 
             }
+
+            // 出力対象の帳票が機器台帳詳細(RP0020)の場合
+            if (reportId.Equals(ReportRP0020.SqlName.ReportId))
+            {
+                // 機番情報・機器情報に加え、機種仕様も出力する
+                outputMachineSpecInfo0020(db,
+                                          languageId,
+                                          factoryId,
+                                          reportId,
+                                          sheetDefineList.Where(x => x.ListFlg).Select(x => x.SheetNo).FirstOrDefault(),
+                                          out List<CommonExcelPrtInfo> mappingDataList,
+                                          ref cmdInfoList);
+                mappingInfoList.AddRange(mappingDataList);
+            }
+
             // エクセルファイル作成
             ExcelUtil.CreateExcelFile(templateFileName, templateFilePath, userId, mappingInfoList, cmdInfoList, ref memoryStream, ref message);
 
@@ -2750,7 +2851,7 @@ namespace CommonTMQUtil
             IList<ReportDao.MsOutputReportItemDefineEntity> mappingRowList = db.GetListByDataClass<ReportDao.MsOutputReportItemDefineEntity>(getReportSheetItemSql, new { ReportTargetFactoryId = string.IsNullOrEmpty(reportTargetFactoryId) ? 0 : userDutyFactoryId, ColumnName = "mapping_row" });
 
             // 取得できない場合は終了
-            if(mappingRowList == null || mappingRowList.Count == 0)
+            if (mappingRowList == null || mappingRowList.Count == 0)
             {
                 return false;
             }
@@ -3325,7 +3426,7 @@ namespace CommonTMQUtil
                     // 条件付き書式を設定するセルの行番号が取得できている場合
                     if (mappingFormatList != null || mappingFormatList.Count > 0)
                     {
-                        foreach(ReportDao.MsOutputReportItemDefineEntity item in mappingFormatList)
+                        foreach (ReportDao.MsOutputReportItemDefineEntity item in mappingFormatList)
                         {
                             // 条件付き書式を追加するコマンドを作成(系停止時間、工程停止時間など、ma_summary.stop_timeを集約している項目)
                             setCmdCondition(ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + item.DefaultCellRowNo.ToString() + ":" + ToAlphabet(jobNameStartColYear) + item.DefaultCellRowNo.ToString(), sheetNo, ref cmdInfoList, ToAlphabet(ReportRP0450.CommonSheet.JobNameStartColumn) + item.DefaultCellRowNo.ToString());
@@ -3904,6 +4005,176 @@ namespace CommonTMQUtil
 
         }
 
+        #endregion
+
+        #region RP0020機器台帳詳細 専用メソッド
+        /// <summary>
+        /// 機種仕様出力処理
+        /// </summary>
+        static bool outputMachineSpecInfo0020(ComDB db, string languageId, int factoryId, string reportId, int sheetNo, out List<CommonExcelPrtInfo> mappingList, ref List<CommonExcelCmdInfo> cmdInfoList)
+        {
+            // 取得結果のマッピング情報の格納用
+            mappingList = new();
+
+            // 出力対象のシート名を取得
+            string sheetName = GetSheetName(factoryId, reportId, sheetNo, languageId, db);
+
+            // 初期化
+            var info = new CommonExcelPrtInfo();
+            info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+            info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
+
+            // SQLを取得(ヘッダー部に出力される仕様項目名)
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.GetHeaderSpecInfo, out string sql);
+
+            // ヘッダー部に出力される仕様項目名と仕様項目IDを取得
+            IList<ReportRP0020.HeaderSpecInfo> headerSpecInfoList = db.GetList<ReportRP0020.HeaderSpecInfo>(sql, new { LanguageId = languageId });
+
+            // マッピングに使用するセル番地
+            string address = string.Empty;
+
+            // ヘッダーにマッピングする列番号
+            int headerColumnNo = specStartColumn;
+
+            // 仕様項目名と仕様項目IDを紐付けるためのディクショナリ
+            // ※1つの仕様項目名に複数の仕様項目IDが紐付く可能性もあるのでList型
+            Dictionary<string, List<long>> specNameToId = new();
+
+            // 仕様項目名と入力形式を紐付けるためのディクショナリ(列単位で左寄せにするのか右寄せにするのか判断するためのもの)
+            Dictionary<string, string> specNameToType = new();
+
+            // 取得結果より、仕様項目名に対する仕様項目IDをディクショナリに格納
+            foreach (ReportRP0020.HeaderSpecInfo headerSpecInfo in headerSpecInfoList)
+            {
+                // 仕様項目名リストに自身の仕様項目名が含まれているか判定
+                if (specNameToId.ContainsKey(headerSpecInfo.SpecName))
+                {
+                    // 含まれている場合
+                    // 仕様項目名に対する仕様項目IDリストに自身の仕様項目IDを追加
+                    // ※仕様項目名に対して同じ仕様項目IDが格納されないように制御(同じIDが格納されるとデータが重複して取得されてしまう)
+                    if (!specNameToId[headerSpecInfo.SpecName].Contains(headerSpecInfo.SpecId))
+                    {
+                        specNameToId[headerSpecInfo.SpecName].Add(headerSpecInfo.SpecId);
+                    }
+                }
+                else
+                {
+                    // 仕様項目名から仕様項目IDを紐付けるためのディクショナリに自身の仕様項目名と仕様項目IDを追加
+                    specNameToId.Add(headerSpecInfo.SpecName, new List<long>() { headerSpecInfo.SpecId });
+
+                    // 仕様項目名をマッピングするセルを取得
+                    address = ToAlphabet(headerColumnNo) + (specStartRow - 1).ToString();
+
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, headerSpecInfo.SpecName, ComReport.StrFormat);
+
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+
+                    // マッピング列を加算
+                    headerColumnNo++;
+                }
+
+                // 仕様項目と入力形式をディクショナリに格納
+                if(!specNameToType.ContainsKey(headerSpecInfo.SpecName))
+                {
+                    specNameToType.Add(headerSpecInfo.SpecName, headerSpecInfo.SpecType);
+                }
+            }
+
+            // 機種仕様のヘッダー部は全て左揃えとする
+            address = ToAlphabet(specStartColumn) + (specStartRow - 1).ToString() + ":" + ToAlphabet(headerColumnNo - 1) + (specStartRow - 1).ToString();
+            setAlignmentForRP0020(address, sheetName, true, ref cmdInfoList);
+
+            int dataRowNo = specStartRow;       // データ部のマッピングを行う行番号
+            int dataColumnNo = specStartColumn; // データ部のマッピングを行う列番号
+
+            // データ部のデータ件数(何行分データが存在するかどうか)
+            // ※罫線を引くのに使用
+            int dataCount = 0;
+
+            // 仕様項目ごとにデータを取得する
+            TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.GetDataSpecInfo, out string sqlGetSpecData);
+            foreach (KeyValuePair<string, List<long>> specName in specNameToId)
+            {
+                // 検索対象の仕様項目IDが格納される一時テーブルを作成する
+                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.CreateSpecIdData, out string createJobIdTblSql);
+                db.Regist(createJobIdTblSql);
+
+                // 検索対象の仕様項目IDを一時テーブルに登録
+                TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.InsertSpecIdData, out string insertJobIdTblSql);
+                db.Regist(insertJobIdTblSql, new { SpecIdList = string.Join(',', specName.Value) });
+
+                // データ部に出力される仕様項目に紐付く値取得
+                IList<ReportRP0020.DataSpecInfo> dataSpecInfoList = db.GetList<ReportRP0020.DataSpecInfo>(sqlGetSpecData, new { LanguageId = languageId });
+                
+                // 罫線を引くためにデータ件数(何行存在するか)を格納
+                if(dataCount < dataSpecInfoList.Count)
+                {
+                    dataCount = dataSpecInfoList.Count;
+                }
+
+                // 取得したデータをマッピングする
+                foreach(ReportRP0020.DataSpecInfo dataSpecInfo in dataSpecInfoList)
+                {
+                    // セル番地を取得
+                    address = ToAlphabet(dataColumnNo) + dataRowNo.ToString();
+
+                    // マッピング情報設定
+                    info.SetExlSetValueByAddress(address, dataSpecInfo.SpecValue, ComReport.StrFormat);
+                    // マッピングリストに追加
+                    mappingList.Add(info);
+
+                    // マッピング行を加算
+                    dataRowNo++;
+                }
+
+                // 入力形式に応じて左寄せ・右寄せを設定する
+                // 「1：テキスト」「4：選択」の場合は左寄せ、「2：数値」「3：数値(範囲)」の場合は右寄せ
+                address = ToAlphabet(dataColumnNo) + specStartRow.ToString() + ":" + ToAlphabet(dataColumnNo) + (dataRowNo - 1).ToString();
+                setAlignmentForRP0020(address,
+                                      sheetName,
+                                      (specNameToType[specName.Key] == ReportRP0020.SpecType.Text ||
+                                       specNameToType[specName.Key] == ReportRP0020.SpecType.Select),
+                                      ref cmdInfoList);
+
+                // マッピング開始行を初期値に戻す
+                dataRowNo = specStartRow;
+
+                // マッピング列を加算
+                dataColumnNo++;
+            }
+
+            // 罫線を引くコマンドを作成
+            string range = ToAlphabet(specStartColumn) + (specStartRow - 1).ToString() + ":" + ToAlphabet(dataColumnNo - 1) + (specStartRow + dataCount - 1).ToString();
+            cmdInfoList.AddRange(CommandLineBox(range, sheetName));
+
+            return true;
+        }
+
+        /// <summary>
+        /// 文字位置の指定
+        /// </summary>
+        /// <param name="address">対象のセル範囲</param>
+        /// <param name="sheetName">対象のシート名</param>
+        /// <param name="isAlignLeft">左寄せにする場合はtrue、右寄せにする場合はfalse</param>
+        /// <param name="cmdInfoList">コマンド情報リスト</param>
+        static void setAlignmentForRP0020(string address, string sheetName, bool isAlignLeft,  ref List<CommonExcelCmdInfo> cmdInfoList)
+        {
+            // パラメータ作成
+            string[] param =
+            {
+                address,              // 対象のセル範囲
+                isAlignLeft? "L":"R", // 左寄せまたは右寄せ
+                "C",                  // 上下の位置は中央固定のため「C」
+                sheetName             // 対象のシート名
+            };
+
+            // 作成したコマンド情報をコマンド情報リストに追加
+            CommonExcelCmdInfo cmdInfo = new CommonExcelCmdInfo();
+            cmdInfo.SetExlCmdInfo(CommonExcelCmdInfo.CExecTmgAfter, CommonExcelCmdInfo.CExecCmdAlignment, param);
+            cmdInfoList.Add(cmdInfo);
+        }
         #endregion
 
         /// <summary>
@@ -5576,6 +5847,16 @@ namespace CommonTMQUtil
                         }
                     }
                 }
+            }
+
+            // 出力対象の帳票が機器台帳詳細(RP0020)の場合、機種仕様をマッピングする最初の行・列を取得
+            if(reportId == ReportRP0020.SqlName.ReportId)
+            {
+                // 機種仕様のマッピングを開始する列
+                specStartColumn = reportInfoList.Where(x => !ColumnName.IsCommonColumn(x.ColumnName)).Count() + 1;
+
+                // 機種仕様のマッピングを開始する行(機器の情報と同じになる)
+                specStartRow = (int)reportInfoList.Where(x => !ColumnName.IsCommonColumn(x.ColumnName)).Min(x => x.DefaultCellRowNo);
             }
 
             // マッピング情報リストを返却

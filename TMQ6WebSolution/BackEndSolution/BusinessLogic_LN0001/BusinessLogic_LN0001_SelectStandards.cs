@@ -59,6 +59,13 @@ namespace BusinessLogic_LN0001
             TMQUtil.GetFixedSqlStatementWith(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string withSql, listUnComment);
             condition.LanguageId = this.LanguageId;
 
+            /*
+             * 場所階層・職種機種階層の構成IDをカンマ区切りにする(パラメータ数が2100個以上だとエラーになるため)
+             * カンマ区切りしたものを検索SQL内で一時テーブルに格納する
+             */
+            condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
+            condition.StrJobStcuctureIdList = string.Join(',', condition.JobStructureIdList);
+
             // 総件数取得SQL文の取得
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, string.Empty, withSql);
             // 総件数を取得
@@ -210,7 +217,7 @@ namespace BusinessLogic_LN0001
                     // 点検種別毎一覧表示工場
                     var list = new ComDao.MsStructureEntity().GetGroupList(TMQConst.MsStructure.GroupId.MaintainanceKindManageFactory, this.db);
                     // この結果の工場IDと一致するかを判定
-                    var isMaintainanceKindFactory = list.Count(x => x.FactoryId == factoryId) > 0;
+                    var isMaintainanceKindFactory = list.Count(x => !x.DeleteFlg && x.FactoryId == factoryId) > 0;
                     return isMaintainanceKindFactory;
                 }
 

@@ -12,5 +12,6 @@ SET
     , [update_serialid] = update_serialid + 1
     , [update_datetime] = @UpdateDatetime
     , [update_user_id] = @UpdateUserId 
+    , [work_record] = @WorkRecord
 WHERE
     [history_inspection_content_id] = @HistoryInspectionContentId

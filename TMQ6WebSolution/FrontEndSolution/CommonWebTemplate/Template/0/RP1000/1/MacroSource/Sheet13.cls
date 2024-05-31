@@ -18,9 +18,9 @@ Dim SelectedRange As Range
 '故障分析情報表示切替フラグ
 Private Const Cell_ControlFlag As String = "A1"
 '故障分析情報
-Private Const Col_HistoryFailure As String = "BD:BK"
+Private Const Col_HistoryFailure As String = "BE:BL"
 '故障分析情報（個別工場）
-Private Const Col_HistoryFailureIndividual As String = "BL:CG"
+Private Const Col_HistoryFailureIndividual As String = "BM:CH"
 
 '***************************************
 ' 入力チェックボタン_クリック

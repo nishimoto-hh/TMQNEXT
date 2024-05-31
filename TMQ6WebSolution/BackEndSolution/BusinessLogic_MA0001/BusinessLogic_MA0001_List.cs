@@ -191,6 +191,24 @@ namespace BusinessLogic_MA0001
                 isFromScheduleLink = true;
                 // グルーバル変数に値を格納(遷移時は「SummaryId」に保全スケジュール詳細IDが入っている)
                 SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.GlobalKey, conditionObj.SummaryId);
+
+                // ○リンククリック時の確認メッセージでクリックされたボタンの値をグローバルリストに格納する
+                dic = this.searchConditionDictionary.Where(x => x.ContainsKey(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink)).FirstOrDefault();
+                if (dic == null || dic[ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink].ToString() == ConductInfo.FormList.ParamFromLongPlan.MsgClickedBtn.OK)
+                {
+                    // グローバルリストに何も格納されていない(○リンクと同一年月にデータが存在しない場合は確認メッセージが表示されないため何も格納されてこない)
+                    // または確認メッセージで「OK」をクリック
+                    // クリックされた○リンクと同一年月のデータを表示
+                    SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink, ConductInfo.FormList.ParamFromLongPlan.MsgClickedBtn.OK);
+                }
+                else
+                {
+                    // 確認メッセージで「NO」をクリック
+                    // クリックされた○リンクのデータのみ表示
+                    SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink, ConductInfo.FormList.ParamFromLongPlan.MsgClickedBtn.Cancel);
+                }
+
+                return;
             }
         }
 
@@ -235,7 +253,7 @@ namespace BusinessLogic_MA0001
             // ユーザがシステム管理者かどうか判定
             TMQUtil.HistoryManagement historyClass = new(this.db, this.UserId, this.LanguageId, DateTime.Now, Const.MsStructure.StructureId.ApplicationConduct.None);
             bool isAdmin = historyClass.isSystemAdministrator();
-            if(isAdmin)
+            if (isAdmin)
             {
                 //システム管理者の場合、ボタン表示
                 result.DailyReportBtnDispFlg = true;

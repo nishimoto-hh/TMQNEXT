@@ -13,6 +13,7 @@ SELECT DISTINCT
         END AS gray_out_flg                     --グレーアウトフラグ
     , mc.machine_id                             --機番ID
     , eq.equipment_id                           --機器ID
+    , hf.work_record                            --作業記録
 FROM
     ma_history hi 
     INNER JOIN ma_history_failure hf 

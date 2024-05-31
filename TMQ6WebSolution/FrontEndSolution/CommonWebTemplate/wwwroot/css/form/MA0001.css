@@ -8,6 +8,7 @@
 .tabulator-cell.not_readonly div.substance {
     display: inline-block !important;
 }
+
 .tabulator-cell.not_readonly span.labeling {
     display: none !important;
 }
@@ -23,14 +24,11 @@
     display: none;
 }
 
+/*対象機器一覧の作業記録列のレイアウト修正(詳細画面・詳細編集画面に適用される)*/
+.work_record_height {
+    /*テキストエリアの高さは自動調整*/
+    height: auto;
 
-/*背景調整*/
-.TextAreaResize {
-    /*テキストエリアの高さ調整*/
-    height: 80px;
     /*1行の高さ*/
     line-height: 1;
 }
-
-
-

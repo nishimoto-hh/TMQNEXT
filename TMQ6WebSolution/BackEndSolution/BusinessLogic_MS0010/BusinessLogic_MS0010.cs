@@ -1045,13 +1045,10 @@ namespace BusinessLogic_MS0010
             foreach (var list in authList)
             {
                 // 1つでもチェックが付いていればOK
-                if (list.ContainsKey("SELTAG"))
+                if(ComUtil.IsSelectedRowDictionary(list))
                 {
-                    if (list["SELTAG"].ToString() == "1")
-                    {
-                        isCheck = true;
-                        return false;
-                    }
+                    isCheck = true;
+                    return false;
                 }
             }
 
@@ -1561,14 +1558,7 @@ namespace BusinessLogic_MS0010
                     default:
 
                         // システム管理者でない場合はチェックしているもののみを登録
-                        if (list.ContainsKey("SELTAG"))
-                        {
-                            if (list["SELTAG"].ToString() == "0")
-                            {
-                                continue;
-                            }
-                        }
-                        else
+                        if(!ComUtil.IsSelectedRowDictionary(list))
                         {
                             continue;
                         }

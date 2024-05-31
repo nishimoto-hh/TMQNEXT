@@ -456,6 +456,7 @@ SELECT DISTINCT
     , hic.follow_content
     , hic.follow_completion_date
     , hm.used_days_machine
+    , hic.work_record
 FROM
     ( 
         SELECT

@@ -169,6 +169,11 @@
     <None Remove="Resources\sql\Excel\GetUploadFolder.sql" />
     <None Remove="Resources\sql\Excel\InsertTemp.sql" />
     <None Remove="Resources\sql\Excel\RP0010_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0020\CreateSpecIdData.sql" />
+    <None Remove="Resources\sql\Excel\RP0020\GetDataSpecInfo.sql" />
+    <None Remove="Resources\sql\Excel\RP0020\GetHeaderSpecInfo.sql" />
+    <None Remove="Resources\sql\Excel\RP0020\GetUnitName.sql" />
+    <None Remove="Resources\sql\Excel\RP0020\InsertSpecIdData.sql" />
     <None Remove="Resources\sql\Excel\RP0020_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0030_Sheet1.sql" />
     <None Remove="Resources\sql\Excel\RP0030_Sheet2.sql" />
@@ -426,6 +431,8 @@
     <None Remove="Resources\sql\IssueInput\Select_parts_location_by_parts_id.sql" />
     <None Remove="Resources\sql\IssueInput\Select_preIssueDayCount.sql" />
     <None Remove="Resources\sql\IssueInput\Select_where_by_inout_history_id.sql" />
+    <None Remove="Resources\sql\LongPlanMachine\GetEquipmentInfoByScheduleDetailId.sql" />
+    <None Remove="Resources\sql\LongPlanMachine\GetLinkCntForTrans.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetList.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetScheduleList.sql" />
     <None Remove="Resources\sql\LongPlanMachine\WITH_GetList.sql" />
@@ -464,6 +471,8 @@
     <None Remove="Resources\sql\LongPlan\From_GetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\GetLongPlanSchedule.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetContentInfoFromLongPlanId.sql" />
+    <None Remove="Resources\sql\LongPlan\InputCheck\GetEquipmentInfoByScheduleDetailId.sql" />
+    <None Remove="Resources\sql\LongPlan\InputCheck\GetLinkCntForTrans.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetLongPlanInfo.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetMachineIdFromLongPlanId.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetMaintainanceKindManageCount.sql" />
@@ -673,6 +682,7 @@
     <None Remove="Resources\sql\Maintenance\GetCountMaintainanceScheduleDetail.sql" />
     <None Remove="Resources\sql\Maintenance\GetCountRelationHistoryMachine.sql" />
     <None Remove="Resources\sql\Maintenance\GetCountTargetSchedule.sql" />
+    <None Remove="Resources\sql\Maintenance\GetEquipmentInfoByScheduleDetailId.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortHistoryFailure.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortInspectionMachine.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortMaintenance.sql" />
@@ -996,6 +1006,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0020\CreateSpecIdData.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0020\GetDataSpecInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0020\GetHeaderSpecInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\Excel\RP0020\InsertSpecIdData.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0090_Sheet2ByMachine.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0090_Sheet2ByMachine_Option.sql" />
     <EmbeddedResource Include="Resources\sql\Excel\RP0100_Sheet2ByMachine.sql">
@@ -1032,10 +1046,14 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\sql\HistoryMachine\GetNextScheduleDate.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryMachine\UpdateDispCycleOfMaintainanceSchedule.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlanMachine\GetEquipmentInfoByScheduleDetailId.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlanMachine\GetLinkCntForTrans.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\Detail\GetEquipInfoByMachineId.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\Detail\GetManagementStandardsContentIdByMyRecord.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailId.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\Detail\UpdateScheduleDateByDetailIdAndSameKind.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\InputCheck\GetEquipmentInfoByScheduleDetailId.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\InputCheck\GetLinkCntForTrans.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\InputCheck\GetNextScheduleDate.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\GetNextScheduleDate.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\UpdateDispCycleOfMaintainanceSchedule.sql" />
@@ -1046,6 +1064,7 @@
     <EmbeddedResource Include="Resources\sql\Maintenance\DeleteHistoryInspectionContentForHistoryId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\DeleteHistoryInspectionSiteForHistoryId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\DeleteHistoryMachineForHistoryId.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetEquipmentInfoByScheduleDetailId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />

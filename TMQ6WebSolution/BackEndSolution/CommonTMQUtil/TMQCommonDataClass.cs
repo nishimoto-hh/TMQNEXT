@@ -1280,6 +1280,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 機器使用日数</summary>
             /// <value>機器使用日数</value>
             public int? UsedDaysMachine { get; set; }
+            /// <summary>Gets or sets 作業記録</summary>
+            /// <value>作業記録</value>
+            public string WorkRecord { get; set; }
 
             /// <summary>
             /// プライマリーキー

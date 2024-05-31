@@ -989,10 +989,15 @@ namespace BusinessLogic_LN0001
                 /// <summary>Gets or sets 保全項目ID</summary>
                 /// <value>保全項目ID</value>
                 public int? InspectionContentStructureId { get; set; }
-
                 /// <summary>Gets or sets 言語ID</summary>
                 /// <value>言語ID</value>
                 public string LanguageId { get; set; }
+                /// <summary>Gets or sets 検索条件の場所階層IDをカンマ区切りにしたものを格納</summary>
+                /// <value>検索条件の場所階層IDをカンマ区切りにしたものを格納</value>
+                public string StrLocationStructureIdList { get; set; }
+                /// <summary>Gets or sets 検索条件の職種機種階層IDをカンマ区切りにしたものを格納</summary>
+                /// <value>検索条件の職種機種階層IDをカンマ区切りにしたものを格納</value>
+                public string StrJobStcuctureIdList { get; set; }
             }
         }
 

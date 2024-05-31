@@ -198,6 +198,8 @@ namespace BusinessLogic_MA0001
                 public const string DeleteHistoryInspectionContentForHistoryId = "DeleteHistoryInspectionContentForHistoryId";
                 /// <summary>SQL名：保全履歴故障情報削除（履歴ID指定）</summary>
                 public const string DeleteHistoryFailureForHistoryId = "DeleteHistoryFailureForHistoryId";
+                /// <summary>SQL名：○リンククリック時に保全スケジュール詳細IDから機器情報を取得</summary>
+                public const string GetEquipmentInfoByScheduleDetailId = "GetEquipmentInfoByScheduleDetailId";
             }
 
             /// <summary>
@@ -312,6 +314,24 @@ namespace BusinessLogic_MA0001
                     public const int TabNo = -1;
                     /// <summary>グローバル変数に格納する際のキー</summary>
                     public const string GlobalKey = "MakeScheduleFromLongPlan";
+                    /// <summary>グローバル変数に格納する際のキー(確認メッセージでどのボタンがクリックされたかの値が格納されている)</summary>
+                    public const string TransParamForMA0001ByLink = "TransParamForMA0001ByLink";
+
+                    /// <summary>
+                    /// 確認メッセージでクリックされたボタン
+                    /// </summary>
+                    public static class MsgClickedBtn
+                    {
+                        /// <summary>
+                        /// 「OK」ボタン→クリックされた○と同一年月のデータを対象機器一覧で表示
+                        /// </summary>
+                        public const string OK = "0";
+
+                        /// <summary>
+                        /// 「NO」ボタン→クリックされた○リンクのデータのみ対象機器一覧で表示
+                        /// </summary>
+                        public const string Cancel = "1";
+                    }
                 }
             }
 

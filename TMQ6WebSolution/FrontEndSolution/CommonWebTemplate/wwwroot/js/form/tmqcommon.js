@@ -225,6 +225,17 @@ const DispYearKeyName =
     YearTo: "YearTo"      // 表示年度(To)
 }
 
+// スケジュールの○リンクから保全活動に遷移したとき、対象機器一覧に表示するデータを決めるもの
+const TransParamForMA0001ByLink =
+{
+    KeyName : "TransParamForMA0001ByLink", // グローバルリストにパラメータを格納する際のキー名称
+    DispAll: "0",                          // クリックされた○リンクと同一年月のスケジュールを全て表示する
+    DispSelected: "1",                     // クリックされた○リンクのスケジュールのみを表示する
+    MaintainanceScheduleDetailId: "VAL60", // クリックされた○リンクの保全スケジュール詳細ID
+    ScheduleCtrlNo: "VAL62"                // 確認メッセージを表示するかどうか判定するためのもの(スケジュールアイコンの種類)
+}
+
+
 /**
  * 対象コントロールを取得し、返す。
  * @param ctrlId コントロールID

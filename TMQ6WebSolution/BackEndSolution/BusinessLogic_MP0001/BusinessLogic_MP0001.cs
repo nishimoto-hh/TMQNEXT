@@ -1667,7 +1667,7 @@ namespace BusinessLogic_MP0001
                 {
                     data.Other = "0"; // その他
                 }
-                int total = int.Parse(data.Machine.Replace(",", "")) + int.Parse(data.Electricity.Replace(",", "")) + int.Parse(data.Instrumentation.Replace(",", "")) + int.Parse(data.Other.Replace(",", ""));
+                double total = double.Parse(data.Machine.Replace(",", "")) + double.Parse(data.Electricity.Replace(",", "")) + double.Parse(data.Instrumentation.Replace(",", "")) + double.Parse(data.Other.Replace(",", ""));
                 if (total != 0)
                 {
                     return true;

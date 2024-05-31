@@ -39,6 +39,7 @@ INSERT INTO ma_history_failure(
     ,[insert_user_id]
     ,[update_datetime]
     ,[update_user_id]
+    ,[work_record]
 ) OUTPUT inserted.history_failure_id
 VALUES(
     NEXT VALUE FOR seq_ma_history_failure_history_failure_id
@@ -81,4 +82,5 @@ VALUES(
     ,@InsertUserId
     ,@UpdateDatetime
     ,@UpdateUserId
+    ,@WorkRecord
 );

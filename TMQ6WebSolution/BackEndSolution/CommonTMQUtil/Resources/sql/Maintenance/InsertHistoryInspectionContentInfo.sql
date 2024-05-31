@@ -11,6 +11,7 @@ INSERT INTO ma_history_inspection_content(
     ,[insert_user_id]
     ,[update_datetime]
     ,[update_user_id]
+    ,[work_record]
 )
 VALUES(
     NEXT VALUE FOR seq_ma_history_inspection_content_history_inspection_content_id
@@ -25,4 +26,5 @@ VALUES(
     ,@InsertUserId
     ,@UpdateDatetime
     ,@UpdateUserId
+    ,@WorkRecord
 )

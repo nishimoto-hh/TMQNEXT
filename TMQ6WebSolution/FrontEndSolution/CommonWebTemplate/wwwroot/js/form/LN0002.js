@@ -325,7 +325,64 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     if (isScheduleLink(btn_ctrlId)) {
         // スケジュールのリンクの場合
         var conditionDataList = getParamToMA0001BySchedule(transTarget);
-        return [true, conditionDataList];
+
+        /* 以下の場合は確認メッセージを表示せずに保全活動に遷移する
+         * ・クリックされたリンクが保全履歴が完了済み「●」
+         * ・クリックされたリンクの上位ランクが履歴完了済み「▲」
+         * ・クリックされたリンクが保全活動作成済み「◎」
+         */
+        if (conditionDataList[0][TransParamForMA0001ByLink.ScheduleCtrlNo] == ScheduleStatus.Complete ||
+            conditionDataList[0][TransParamForMA0001ByLink.ScheduleCtrlNo] == ScheduleStatus.UpperComplete ||
+            conditionDataList[0][TransParamForMA0001ByLink.ScheduleCtrlNo] == ScheduleStatus.Created) {
+
+            // 処理を終了して保全活動に遷移する
+            return [true, conditionDataList];
+        }
+
+        // グローバルリストにキー「LinkCntCheckedForMA0001」が格納されているかチェックするのは件数チェックを何度も行わないため
+        if (!P_dicIndividual["LinkCntCheckedForMA0001"]) {
+
+            // クリックされた○以外で、同一年月に○が存在するかどうかチェックする(バックエンド側でチェック)
+            operatePdicIndividual("MaintainanceScheduleDetailId", false, conditionDataList[0][TransParamForMA0001ByLink.MaintainanceScheduleDetailId]);
+
+            if (!checkTransitionForMA0001(appPath, formNo)) {
+                // 存在しない場合は処理を終了して保全活動に遷移する
+                operatePdicIndividual("LinkCntCheckedForMA0001", true);
+                return [true, conditionDataList];
+            }
+        }
+
+        // 確認メッセージで「OK」または「キャンセル」をクリックした場合の処理
+        var eventFunc = function (param) {
+
+            // 確認メッセージで選択された項目の値をグローバルリストに格納する
+            operatePdicIndividual(TransParamForMA0001ByLink.KeyName, false, param);
+
+            // 遷移処理をもう一度呼び出す
+            transForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element);
+        }
+
+        // グローバルリストに確認メッセージで選択された項目の値が格納されているかどうかを判定
+        if (P_dicIndividual[TransParamForMA0001ByLink.KeyName]) {
+
+            // 実際に画面に渡るパラメータに確認メッセージで選択された項目の値を格納する
+            conditionDataList[0][TransParamForMA0001ByLink.KeyName] = P_dicIndividual[TransParamForMA0001ByLink.KeyName];
+
+            // 確認メッセージで選択された項目の値をグローバルリストから削除する
+            operatePdicIndividual(TransParamForMA0001ByLink.KeyName, true);
+
+            // 処理を終了して保全活動に遷移する
+            operatePdicIndividual("LinkCntCheckedForMA0001", true);
+            return [true, conditionDataList];
+        }
+        else {
+
+            // 確認メッセージを表示「同じ件名内にて、対象年月が同じ機器が複数存在しますが同時に保全履歴を作成しますか？」
+            popupMessageForTransMA0001([P_ComMsgTranslated["141050002"]], eventFunc);
+        }
+
+        // 初回は確認メッセージの表示だけを行うため false を返して遷移は行わない
+        return [false, conditionDataList];
     }
 
     if (formNo == FormList.No) {
@@ -528,3 +585,109 @@ function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrl
 
 }
 
+/**
+ *  メッセージポップアップ表示(スケジュールの○リンクから保全活動に遷移する場合に使用)
+ *  @messageStr    {array} ：メッセージ文字列
+ *  @eventFuncOK     {eventHandler} ：メッセージで「OK」がクリックされた際のイベント
+ *  @eventFuncCancel     {eventHandler} ：メッセージで「キャンセル」が表示された際のイベント
+ */
+function popupMessageForTransMA0001(messageStr, eventFunc) {
+
+    var messageDiv = $("#ComMessage_div");
+
+    //表示ﾒｯｾｰｼﾞをｸﾘｱ⇒設定
+    $(messageDiv).children().remove();
+    $.each(messageStr, function () {
+        $('<div>').html(this.replace(/\r?\n/g, '<br />')).appendTo($(messageDiv));
+    });
+    messageDiv = null;
+
+    //「OK」ﾎﾞﾀﾝ制御
+    var btnOK = $("#ComMessageOK");
+    $(btnOK).off("click");
+    if (eventFunc != null) {
+        $(btnOK).on("click", function () {
+            setTimeout(eventFunc(TransParamForMA0001ByLink.DispAll), 1000);
+        });
+    }
+    btnOK = null;
+
+    //「キャンセル」ﾎﾞﾀﾝ制御
+    var btnCancel = $("#ComMessageCancel");
+
+    // 文言を「キャンセル」→「N O」に変更
+    btnCancel[0].value = P_ComMsgTranslated["141250001"];
+
+    $(btnCancel).off("click");
+    if (eventFunc != null) {
+        $(btnCancel).on("click", function () {
+            setTimeout(eventFunc(TransParamForMA0001ByLink.DispSelected), 1000);
+        });
+    }
+    btnCancel = null;
+
+
+    //ﾒｯｾｰｼﾞﾎﾟｯﾌﾟｱｯﾌﾟ表示
+    $('#messageModal').modal();
+    // 二重ﾎﾟｯﾌﾟｱｯﾌﾟの場合、z-index制御用クラスに変換
+    var backdrop = $('.modal-backdrop');
+    if ($(backdrop).length > 1) {
+        var backdrop2 = $('.modal-backdrop:last');
+        $(backdrop2).addClass("modal-backdrop2");
+        $(backdrop2).removeClass("modal-backdrop");
+        // モーダルがたくさんある場合があるのでzIndexを動的に取得
+        var zIndex = getMaxZindex();
+        $('#messageModal').css({ 'cssText': "z-index:" + zIndex + "!important;" });
+    }
+    backdrop = null;
+
+    var uploadModal = $("#fileUploadModal");
+    if (uploadModal.length <= 0) {
+        //※確認ﾒｯｾｰｼﾞを複数回表示する場合のおまじない
+        $('#messageModal').off('hidden.bs.modal');
+        $('#messageModal').on('hidden.bs.modal', function (e) {
+            //$('.modal-backdrop').remove();
+        });
+    }
+    uploadModal = null;
+}
+
+/**
+* クリックされた○リンクと同一年月の○リンクの件数を取得
+* @param {any} appPath アプリケーションルートパス
+* @param {any} formNo 画面No
+*/
+function checkTransitionForMA0001(appPath, formNo) {
+
+    var flg = false;
+    var eventFunc = function (status, data) {
+
+        // バックエンド側で取得した件数
+        var cnt = P_dicIndividual["LinkCountForMA0001"];
+
+        // グローバルリストから削除
+        operatePdicIndividual("LinkCountForMA0001", true);
+
+        // バックエンド側で取得した件数がグローバルリストに格納されている
+        // クリックされた○リンクの件数も含まれているため、1件分は関係なしとみなす
+        if (cnt > 1) {
+
+            // 件数が1件より多い場合
+            // 確認メッセージを表示する必要「あり」
+            flg = true;
+        }
+        else {
+
+            // 件数が1件のみの場合
+            // 確認メッセージを表示する必要「なし」
+            flg = false;
+        }
+
+        // 何度もこのチェックを行わないための制御としてグローバルリストに格納する
+        operatePdicIndividual("LinkCntCheckedForMA0001", false, "LinkCntCheckedForMA0001");
+    }
+    //Ajaxで件数を取得する
+    ajaxCommon("checkExistsOtherScheduleLink", appPath, formNo, ConductId_LN0002, false, null, eventFunc);
+
+    return flg;
+}

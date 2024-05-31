@@ -555,7 +555,7 @@ namespace BusinessLogic_MA0001
         {
             string sql;
             //キーより値を取得
-            string value = getValueByKeyName(ctrlId, key);
+            string value = getDictionaryKeyValue(deleteRow, key);
             if (value != null && value != "")
             {
                 //サロゲートキーが設定されている場合、削除実行する

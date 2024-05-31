@@ -17,6 +17,7 @@ using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 
 /// <summary>
 /// 機器別長期計画
@@ -47,6 +48,10 @@ namespace BusinessLogic_LN0002
             public const string SubExcelDir = @"Excel";
             /// <summary>SQL名：LongPlanId取得用SQL</summary>
             public const string GetLongPlanIdList = "GetLongPlanIdList";
+            /// <summary>SQL名：○リンククリック時に同一年月の○リンク件数を取得</summary>
+            public const string GetLinkCntForTrans = "GetLinkCntForTrans";
+            /// <summary>SQL名：○リンククリック時に保全スケジュール詳細IDから機器情報を取得</summary>
+            public const string GetEquipmentInfoByScheduleDetailId = "GetEquipmentInfoByScheduleDetailId";
         }
 
         /// <summary>
@@ -193,6 +198,14 @@ namespace BusinessLogic_LN0002
         /// <returns>実行成否：正常なら0以上、異常なら-1</returns>
         protected override int ExecuteImpl()
         {
+            CompareCtrlIdClass compareId = new CompareCtrlIdClass(this.CtrlId); // IDで判定
+
+            if (compareId.IsStartId("checkExistsOtherScheduleLink"))
+            {
+                // クリックされた○と同一年月の○リンクの件数を取得する
+                return checkExistsOtherScheduleLink();
+            }
+
             // 処理なし
             return ComConsts.RETURN_RESULT.NG;
         }
@@ -589,6 +602,57 @@ namespace BusinessLogic_LN0002
                 startMonth = TMQUtil.GetYearStartMonth(this.db, factoryId ?? -1);
             }
             return startMonth;
+        }
+
+        /// <summary>
+        /// 詳細画面の保全項目一覧・点検種別毎保全項目一覧で○リンクがクリックされた際のチェック
+        /// クリックされた○と同一年月に○リンクが存在するかチェックする
+        /// </summary>
+        /// <returns>存在する場合はTrue</returns>
+        private int checkExistsOtherScheduleLink()
+        {
+            // クリックされた○リンクの保全スケジュール詳細ID
+            string detailId = this.IndividualDictionary["MaintainanceScheduleDetailId"].ToString();
+
+            // 保全スケジュール詳細IDから遡って機器情報を取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetEquipmentInfoByScheduleDetailId, out string sql);
+            ComDao.McEquipmentEntity equipment = db.GetEntity<ComDao.McEquipmentEntity>(sql, new { MaintainanceScheduleDetailId = detailId });
+
+            // クリックされた○リンクの機器の工場が点検種別毎管理の対象工場かどうか取得
+            ComDao.McMachineEntity machine = new ComDao.McMachineEntity().GetEntity((long)equipment.MachineId, this.db);
+            var list = new ComDao.MsStructureEntity().GetGroupList(TMQConst.MsStructure.GroupId.MaintainanceKindManageFactory, this.db);
+            bool maintainanceKindManageFactory = list.Count(x => !x.DeleteFlg && x.FactoryId == machine.LocationFactoryStructureId) > 0;
+
+            // 機器が点検種別毎管理の場合は機器ごとの○リンクの件数を取得する
+            // →機器が点検種別毎管理かつ、機器の工場が点検種別毎管理の場合はスケジュールマークは1つにまとめられるため
+            // →同一機器内で点検種別が異なる場合は上位のスケジュールマークのみリンク表示となるため
+            List<string> listUnComment = new();
+
+            // 機器が点検種別毎管理かどうかでSQLの集約方法が少し異なる
+            if (equipment.MaintainanceKindManage && maintainanceKindManageFactory)
+            {
+                // 機器が点検種別毎管理のかつ、機器の工場が点検種別毎管理の場合
+                listUnComment.Add("MaintainanceKindManage");
+            }
+            else
+            {
+                // 機器が点検種別毎管理のかつ、機器の工場が点検種別毎管理　ではない場合
+                listUnComment.Add("NotMaintainanceKindManage");
+            }
+
+            // 件数を取得するためのSQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetLinkCntForTrans, out sql, listUnComment);
+
+            // 件数を取得
+            int cnt = db.GetCount(sql, new { MaintainanceScheduleDetailId = detailId });
+
+            // 取得した件数をグローバルリストに格納(削除はjavascript側で行う)
+            this.IndividualDictionary.Add("LinkCountForMA0001", cnt);
+
+            // javascript側から渡ってきた検索条件(保全スケジュール詳細ID)をグローバルリストから削除
+            this.IndividualDictionary.Remove("MaintainanceScheduleDetailId");
+
+            return ComConsts.RETURN_RESULT.OK;
         }
         #endregion
     }

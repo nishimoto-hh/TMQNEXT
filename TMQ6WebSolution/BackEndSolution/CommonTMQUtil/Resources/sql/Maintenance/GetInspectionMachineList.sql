@@ -26,6 +26,7 @@ SELECT DISTINCT
     , mc.machine_id                             --機番ID
     , eq.equipment_id                           --機器ID
     , mc.location_factory_structure_id AS factory_id -- 工場ID
+    , hic.work_record                                -- 作業記録
 FROM
     ma_history hi 
     INNER JOIN ma_history_machine hm 

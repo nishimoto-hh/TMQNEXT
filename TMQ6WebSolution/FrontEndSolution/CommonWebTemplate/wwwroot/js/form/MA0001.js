@@ -2303,6 +2303,9 @@ function postBuiltTabulator(tbl, id) {
             });
         }
 
+        // 作業記録列がラベル表示の場合は改行されているデータでも改行されずに表示されてしまうため、改行されるためのクラスを追加する
+        $("#" + FormDetail.MachineList.Id + getAddFormNo()).find(".work_record_height").find("span").addClass("word_break");
+
     }
     if (getFormNo() == FormRegist.No && id == '#' + FormRegist.MachineList.Id + getAddFormNo()) {
         //登録画面の対象機器一覧

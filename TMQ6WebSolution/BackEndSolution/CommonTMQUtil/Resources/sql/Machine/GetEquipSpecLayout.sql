@@ -28,6 +28,7 @@ AND vi.structure_item_id = ie.item_id
 AND mt.language_id = @LanguageId
 AND ie.sequence_no = 1
 AND msr.location_structure_id = @FactoryId -- 工場ID
+AND ms.delete_flg = 0
 --AND (msr.job_structure_id IN (@JobId)      -- 職種ID
 --     OR msr.job_structure_id IS NULL)
 --ORDER BY msr.job_structure_id,msr.display_order
