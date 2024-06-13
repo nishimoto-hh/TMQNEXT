@@ -46,6 +46,9 @@ namespace BusinessLogic_SP0001
             /// <summary>Gets or sets メーカー名称</summary>
             /// <value>メーカー名称</value>
             public string Maker { get; set; }
+            /// <summary>Gets or sets 予備品型式</summary>
+            /// <value>予備品型式</value>
+            public string ModelType { get; set; }
         }
     }
 }

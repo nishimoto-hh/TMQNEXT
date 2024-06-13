@@ -22,7 +22,8 @@ select distinct
 					AND st_f.factory_id IN (0, pt.factory_id)
 			) 
 			AND tra.structure_id = pt.manufacturer_structure_id
-		) AS maker -- メーカー
+		) AS maker, -- メーカー
+	model_type
 from
     pt_parts pt
     left join
