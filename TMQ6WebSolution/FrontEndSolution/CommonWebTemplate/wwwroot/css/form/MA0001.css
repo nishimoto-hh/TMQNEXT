@@ -31,4 +31,14 @@
 
     /*1行の高さ*/
     line-height: 1;
+
+
+}
+
+/*背景調整*/
+.TextAreaResize {
+    /*テキストエリアの高さ調整*/
+    height: 80px;
+    /*1行の高さ*/
+    line-height: 1;
 }
