@@ -220,6 +220,79 @@ schedule_updtime AS(
     GROUP BY
         sc_h.management_standards_content_id                    -- 機器別管理基準内容ID
 )
+,schedule_date_by_machine as (
+    -- スケジュール情報を取得
+    select
+	    sch.maintainance_schedule_id
+        , cont.management_standards_content_id
+        , sch.start_date
+        , det.complition
+        , det.schedule_date 
+    from
+        mc_management_standards_component comp 
+        left join mc_management_standards_content cont 
+            on comp.management_standards_component_id = cont.management_standards_component_id 
+        left join mc_maintainance_schedule sch 
+            on cont.management_standards_content_id = sch.management_standards_content_id 
+        left join mc_maintainance_schedule_detail det 
+            on sch.maintainance_schedule_id = det.maintainance_schedule_id
+        inner join #temp temp
+            on cont.long_plan_id = temp.Key1
+) 
+, max_schedule_date_by_content as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日を取得
+    select
+	    maintainance_schedule_id
+        , management_standards_content_id
+        , max(schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+    where
+        complition = 1 
+    group by
+        maintainance_schedule_id, management_standards_content_id
+) 
+, next_date_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日の次のスケジュール日を取得
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date
+    from
+        schedule_date_by_machine 
+        inner join max_schedule_date_by_content 
+            on schedule_date_by_machine.maintainance_schedule_id = max_schedule_date_by_content.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_schedule_date_by_content.management_standards_content_id
+    where
+        schedule_date_by_machine.schedule_date > max_schedule_date_by_content.schedule_date
+	group by
+	    schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+) 
+, next_date_not_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの開始日より後のスケジュール日を取得(保全活動が完了していない)
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+        left join ( 
+            select
+			    maintainance_schedule_id
+                , management_standards_content_id
+                , max(start_date) start_date 
+            from
+                schedule_date_by_machine 
+            group by
+                maintainance_schedule_id, management_standards_content_id
+        ) max_start_date 
+            on schedule_date_by_machine.maintainance_schedule_id = max_start_date.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_start_date.management_standards_content_id
+    where
+        schedule_date_by_machine.start_date >= max_start_date.start_date 
+    group by
+        schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+)
 SELECT
     lp.subject AS subject,                                      -- 件名
 --    vwki.translation_text AS work_item_name,                    -- 作業項目名称
@@ -311,7 +384,10 @@ SELECT
     schedule.cycle_day,                                         -- 周期(日)
 --    schedule.disp_cycle,                                        -- 表示周期
 --    schedule.schedule_date                                     -- 次回実施予定日（スケジュール日）
-    FORMAT(schedule.schedule_date, 'yyyy/MM/dd') AS schedule_date,  -- 次回実施予定日（スケジュール日）
+    coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date,  -- 次回実施予定日（スケジュール日）
     CONCAT_WS('|',man_con.long_plan_id, machine.machine_id, man_com.management_standards_component_id,man_con.management_standards_content_id) AS key_id -- スケジュールと同じ値
     -- スケジュール確定排他チェック用
 --    schedule_updtime.schedule_head_updtime,
@@ -359,6 +435,22 @@ FROM
         ln_long_plan lp
     ON  (
             lp.long_plan_id = man_con.long_plan_id              -- 長計件名ID
+        )
+    LEFT OUTER JOIN
+        next_date_exists_comp
+    ON  (
+            schedule.maintainance_schedule_id = next_date_exists_comp.maintainance_schedule_id
+        )
+    AND (
+            base.management_standards_content_id = next_date_exists_comp.management_standards_content_id
+        )
+    LEFT OUTER JOIN
+        next_date_not_exists_comp
+    ON  (
+            schedule.maintainance_schedule_id = next_date_not_exists_comp.maintainance_schedule_id 
+        )
+    AND (
+            base.management_standards_content_id = next_date_not_exists_comp.management_standards_content_id
         )
 --    LEFT OUTER JOIN
 --        v_structure_item vwki                                   -- 作業項目

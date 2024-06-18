@@ -1229,7 +1229,7 @@ namespace CommonTMQUtil
             /// <param name="linkInfo">マークの種類ごとのリンク先の情報　リンク無の場合は省略可、リンク有の場合は必須</param>
             /// <returns>変換した画面表示用の一覧</returns>
             public List<Dao.ScheduleList.Display> Execute(IList<Dao.ScheduleList.Get> dataList, Dao.ScheduleList.GetCondition condition, int monthStartNendo
-                , bool isLink, ComDB db, Dictionary<ScheduleStatus, Dao.ScheduleList.Display.LinkTargetInfo> linkInfo = null)
+                , bool isLink, ComDB db, Dictionary<ScheduleStatus, Dao.ScheduleList.Display.LinkTargetInfo> linkInfo = null, bool isNotContinue = false)
             {
                 // 年単位の場合はリンク無し
                 bool setIsLink = condition.IsYear() ? false : isLink;
@@ -1264,8 +1264,13 @@ namespace CommonTMQUtil
                     {
                         if (processedDateList.Contains(schedule.ScheduleDate))
                         {
-                            // この日付が既に処理済みなら終了
-                            continue;
+                            // 途中で処理を終了するかどうか
+                            // 長期スケジュール表(RP0090)と年度スケジュール表(RP0100)は途中で処理を終了しない
+                            if (!isNotContinue)
+                            {
+                                // この日付が既に処理済みなら終了
+                                continue;
+                            }
                         }
                         // 処理対象年月日を単位に合わせて集計
                         DateTime keyDate = convertDateByUnit(unit, schedule.ScheduleDate, monthStartNendo);
@@ -1273,9 +1278,14 @@ namespace CommonTMQUtil
                         // 同一のスケジュールマークとして扱うかどうか判定
                         if (isExecuteSameMark() && SameMark.IsExists(schedule.SameMarkKey, keyDate))
                         {
-                            // isExecuteSameMarkにより、点検種別ごとに表示しないクラスでは判定を行わないため、必ず扱わないようになる
-                            // 扱う場合、終了
-                            continue;
+                            // 途中で処理を終了するかどうか
+                            // 長期スケジュール表(RP0090)と年度スケジュール表(RP0100)は途中で処理を終了しない
+                            if (!isNotContinue)
+                            {
+                                // isExecuteSameMarkにより、点検種別ごとに表示しないクラスでは判定を行わないため、必ず扱わないようになる
+                                // 扱う場合、終了
+                                continue;
+                            }
                         }
 
                         // 年月日で抽出

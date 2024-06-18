@@ -1592,7 +1592,7 @@ namespace CommonTMQUtil
                             else
                             {
                                 // 予算以外（件名別、機器別）帳票データ取得
-                                var scheduleDisplayList = listSchedule.Execute(scheduleList, cond, option.MonthStartNendo, isLink, db, null);
+                                var scheduleDisplayList = listSchedule.Execute(scheduleList, cond, option.MonthStartNendo, isLink, db, null, (reportId == ReportRP0090.ReportId || reportId == ReportRP0100.ReportId));
                                 return scheduleDisplayList;
                             }
 
