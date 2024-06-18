@@ -160,6 +160,12 @@ namespace BusinessLogic_MA0001
                 this.Status = CommonProcReturn.ProcStatus.Error;
             }
 
+            // 施工担当者の初期値設定
+            Dao.historyInfo historyInfo = setDetailHistoryInfo(null, ConductInfo.FormRegist.ControlId.HistoryInfoIds.ToList(), string.Empty, false);
+
+            // 施工担当者(個別工場タブ)の初期値設定
+            Dao.historyInfo historyIndividualInfo = setDetailHistoryInfo(null, ConductInfo.FormRegist.ControlId.HistoryIndividualInfoIds.ToList(), string.Empty, false);
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
 

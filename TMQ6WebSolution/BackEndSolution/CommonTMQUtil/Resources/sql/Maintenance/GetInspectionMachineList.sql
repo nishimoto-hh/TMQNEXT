@@ -1,5 +1,87 @@
+WITH structure_factory AS(
+    SELECT
+        structure_id,
+        location_structure_id AS factory_id
+    FROM
+        v_structure_item_all
+    WHERE
+        structure_group_id IN(1010)
+    AND language_id = @LanguageId
+)
 SELECT DISTINCT
-    mc.job_structure_id                         --職種～機種小分類
+     mc.job_structure_id                         --職種～機種小分類
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mc.job_kind_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = mc.job_kind_structure_id
+      ) AS job_name
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mc.job_large_classfication_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = mc.job_large_classfication_structure_id
+      ) AS large_classfication_name
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mc.job_middle_classfication_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = mc.job_middle_classfication_structure_id
+      ) AS middle_classfication_name
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = mc.job_small_classfication_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = mc.job_small_classfication_structure_id
+      ) AS small_classfication_name
     , mc.machine_no                             --機器番号
     , mc.machine_name                           --機器名称
     , mc.equipment_level_structure_id           --機器レベル

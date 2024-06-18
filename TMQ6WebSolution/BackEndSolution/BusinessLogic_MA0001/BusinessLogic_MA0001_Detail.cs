@@ -4,23 +4,24 @@ using CommonSTDUtil.CommonBusinessLogic;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Reflection;
+using static BusinessLogic_MA0001.BusinessLogicDataClass_MA0001;
 using ComConsts = CommonSTDUtil.CommonConstants;
+using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
-using Dao = BusinessLogic_MA0001.BusinessLogicDataClass_MA0001;
-using TMQUtil = CommonTMQUtil.CommonTMQUtil;
-using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using Const = CommonTMQUtil.CommonTMQConstants;
+using Dao = BusinessLogic_MA0001.BusinessLogicDataClass_MA0001;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
-using System.Collections;
+using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 
 namespace BusinessLogic_MA0001
 {
@@ -125,13 +126,100 @@ namespace BusinessLogic_MA0001
             ComDao.MaPlanEntity planInfo = getDetailInfo<ComDao.MaPlanEntity>(conditionObj, new List<string> { planId }, SqlName.Detail.GetPlanInfo, null);
             //保全履歴情報の取得
             conditionObj.FactoryId = result.FactoryId;
-            Dao.historyInfo historyInfo = getDetailInfo<Dao.historyInfo>(conditionObj, historyInfoIdList, SqlName.Detail.GetHistoryInfo, null);
+            Dao.historyInfo historyInfo = setDetailHistoryInfo(conditionObj, historyInfoIdList, SqlName.Detail.GetHistoryInfo, true);
             //保全履歴情報（個別工場）の取得
-            Dao.historyInfo historyIndividualInfo = getDetailInfo<Dao.historyInfo>(conditionObj, historyIndividualInfoIdList, SqlName.Detail.GetHistoryIndividualInfo, null);
+            Dao.historyInfo historyIndividualInfo = setDetailHistoryInfo(conditionObj, historyIndividualInfoIdList, SqlName.Detail.GetHistoryIndividualInfo, true);
 
             // 画面定義の翻訳情報取得
             GetContorlDefineTransData(result.FactoryId ?? -1);
             return true;
+        }
+
+        /// <summary>
+        /// 保全履歴情報の取得
+        /// </summary>
+        /// <param name="condition">検索条件</param>
+        /// <param name="detailInfoIds">検索結果設定対象のコントロールID</param>
+        /// <param name="sqlFileName">検索SQLファイル名称</param>
+        /// <param name="isSearch">初期検索が必要の場合はTrue</param>
+        private Dao.historyInfo setDetailHistoryInfo(Dao.searchCondition condition, List<string> detailInfoIds, string sqlFileName, bool isSearch)
+        {
+            // ページ情報取得
+            Dictionary<string, PageInfo> pageInfos = new Dictionary<string, PageInfo>();
+            foreach (string id in detailInfoIds)
+            {
+                var pageInfo = GetPageInfo(id, this.pageInfoList);
+                pageInfos.Add(id, pageInfo);
+            }
+
+            Dao.historyInfo result = new();
+            if (isSearch)
+            {
+                // 検索実行
+                result = TMQUtil.SqlExecuteClass.SelectEntity<Dao.historyInfo>(sqlFileName, SqlName.SubDir, condition, this.db);
+                if (result == null)
+                {
+                    return result;
+                }
+            }
+
+            // 詳細編集画面の初期表示の場合
+            if(this.FormNo == ConductInfo.FormRegist.FormNo)
+            {
+                // 施工担当者の初期値を設定する
+                setConstructionPerson(ref result);
+            }
+
+            foreach (string id in detailInfoIds)
+            {
+                // 検索結果の設定
+                if (SetSearchResultsByDataClass<Dao.historyInfo>(pageInfos[id], new List<Dao.historyInfo> { result }, 1))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 施工担当者の初期値を設定する
+        /// </summary>
+        /// <param name="historyInfo">設定対象のデータクラス</param>
+        private void setConstructionPerson(ref Dao.historyInfo historyInfo)
+        {
+            // 施工担当者に初期値が設定されている場合は何もせずに終了
+            if(historyInfo.ConstructionPersonnelId != null &&
+                !string.IsNullOrEmpty(historyInfo.ConstructionPersonnelName))
+            {
+                return;
+            }
+
+            // ユーザーの役割を取得
+            List<ComDao.MsItemExtensionEntity> results = TMQUtil.SqlExecuteClass.SelectList<ComDao.MsItemExtensionEntity>(SqlName.List.GetUserRole, SqlName.SubDir, new { UserId = Convert.ToInt32(this.UserId) }, this.db);
+            if (results == null)
+            {
+                // 役割が取得できなければ何もせずに終了
+                return;
+            }
+
+            // 取得したユーザーの役割情報より、保全権限(20)のデータ件数を取得する
+            // →ユーザーに保全権限があれば1件取得できるはず
+            int cnt = results.Where(x => x.ExtensionData == "20").Count();
+
+            // 件数が1件未満(ユーザーに保全権限がない)の場合は何もせずに終了
+            if(cnt < 1)
+            {
+                return;
+            }
+
+            // ログインユーザの名称を取得
+            ComDao.MsUserEntity userInfo = new ComDao.MsUserEntity().GetEntity(Convert.ToInt32(this.UserId), this.db);
+
+            // 画面情報にログインユーザーIDと取得したユーザー名称を設定
+            historyInfo.ConstructionPersonnelId = Convert.ToInt32(this.UserId);
+            historyInfo.ConstructionPersonnelName = userInfo.DisplayName;
         }
 
         /// <summary>
@@ -324,7 +412,7 @@ namespace BusinessLogic_MA0001
             }
 
             // 職種～機種小分類を設定
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<T>(ref results, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
+            //TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<T>(ref results, new List<StructureType> { StructureType.Job }, this.db, this.LanguageId);
 
             // 検索結果の設定
             if (SetSearchResultsByDataClass<T>(pageInfo, results, 1))

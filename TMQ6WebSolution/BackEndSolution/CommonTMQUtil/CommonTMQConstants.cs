@@ -306,6 +306,8 @@
                 LongPlanDivisionName = 2210,
                 // 長計グループ
                 LongPlanGroupName = 2220,
+                // ランク
+                Rank = 2230,
                 // RFIDタグ紐付け
                 RfRelation = 2250,
                 // 権限
