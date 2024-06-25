@@ -7,8 +7,58 @@ WITH structure_factory AS (
     WHERE
         structure_group_id IN (1180,1220) 
         AND language_id = @LanguageId
-) 
-
+) ,
+-- 保全スケジュールを機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+schedule_start_date AS(
+    SELECT
+	    sc.maintainance_schedule_id,
+        sc.management_standards_content_id,
+        sc.cycle_year,
+        sc.cycle_month,
+        sc.cycle_day,
+        sc.start_date,
+		sc.is_cyclic,
+		sc.disp_cycle,
+		sc.update_datetime
+    FROM
+        mc_maintainance_schedule AS sc
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+        )
+),
+-- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule_content AS(
+    SELECT
+	    main.maintainance_schedule_id,
+        main.management_standards_content_id,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+		main.is_cyclic,
+		main.disp_cycle,
+		main.update_datetime
+    FROM
+        schedule_start_date AS main
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                schedule_start_date AS sub
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime < sub.update_datetime
+        )
+)
 SELECT row_number() over(order by mcp.inspection_site_structure_id,msc.inspection_content_structure_id ) as row_no,
 	   msc.management_standards_content_id AS key_id,  -- 機器別管理基準部位ID(スケジュール紐づけキー)
        lp.subject,                                   -- 件名
@@ -82,24 +132,7 @@ SELECT row_number() over(order by mcp.inspection_site_structure_id,msc.inspectio
        --dbo.get_file_link(1620,msc.management_standards_content_id) AS file_link_machine -- 添付ファイル
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
-    ,(SELECT a.*
-	 		FROM mc_maintainance_schedule AS a -- 保全スケジュール
-	 		INNER JOIN
-	 		-- 機器別管理基準内容IDごとの開始日最新データを取得
-	 		(SELECT management_standards_content_id,
-	 				MAX(start_date) AS start_date,
-					MAX(update_datetime) AS update_datetime
-	 		 FROM mc_maintainance_schedule
-	 		 GROUP BY management_standards_content_id
-	 		) b
-	 		ON a.management_standards_content_id = b.management_standards_content_id
-	 		AND (a.start_date = b.start_date 
-	 			 OR a.start_date IS NULL AND b.start_date IS NULL --null結合を考慮
-	 			)
-	 		AND (a.update_datetime = b.update_datetime 
-	 			 OR a.update_datetime IS NULL AND b.update_datetime IS NULL --null結合を考慮
-	 			)
-	 ) ms, -- 保全スケジュール
+    ,schedule_content ms, -- 保全スケジュール
 	 mc_machine ma,
 	 mc_equipment eq,
 	 ln_long_plan lp

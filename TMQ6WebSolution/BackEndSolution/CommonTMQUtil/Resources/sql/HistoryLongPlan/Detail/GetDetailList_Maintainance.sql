@@ -4,90 +4,89 @@
 -- WITH句の続き
 ,
 -- 保全スケジュール
-schedule AS ( 
+schedule_start_date AS ( 
     SELECT
-        schedule.maintainance_schedule_id
-        , schedule.management_standards_content_id AS management_standards_content_id_schedule
-        , schedule.start_date
-        , schedule.cycle_year
-        , schedule.cycle_month
-        , schedule.cycle_day
-        , schedule.disp_cycle
-        , schedule_detail_sum.schedule_date 
+        sc.maintainance_schedule_id
+        , sc.management_standards_content_id
+        , sc.cycle_year
+        , sc.cycle_month
+        , sc.cycle_day
+        , sc.start_date
+        , sc.disp_cycle
+        , sc.update_datetime 
     FROM
-        ( 
-            -- 機器別管理基準内容IDごとに最大の開始日時をもつものを取得
+        mc_maintainance_schedule AS sc 
+    WHERE
+        NOT EXISTS ( 
             SELECT
-                main.maintainance_schedule_id
-                , main.management_standards_content_id
-                , main.start_date
-                , main.cycle_year
-                , main.cycle_month
-                , main.cycle_day
-                , main.disp_cycle 
+                * 
             FROM
-                mc_maintainance_schedule AS main 
+                mc_maintainance_schedule AS sub 
             WHERE
-                NOT EXISTS ( 
+                sc.management_standards_content_id = sub.management_standards_content_id 
+                AND sc.start_date < sub.start_date
+        )
+) 
+,
+-- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule_content AS ( 
+    SELECT
+        main.maintainance_schedule_id
+        , main.management_standards_content_id
+        , main.cycle_year
+        , main.cycle_month
+        , main.cycle_day
+        , main.start_date
+        , main.disp_cycle
+        , main.update_datetime 
+    FROM
+        schedule_start_date AS main 
+    WHERE
+        NOT EXISTS ( 
+            SELECT
+                * 
+            FROM
+                schedule_start_date AS sub 
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id 
+                AND main.start_date = sub.start_date 
+                AND main.update_datetime < sub.update_datetime
+        )
+) 
+, schedule AS ( 
+    SELECT
+        main.maintainance_schedule_id
+        , main.management_standards_content_id AS management_standards_content_id_schedule
+        , main.cycle_year
+        , main.cycle_month
+        , main.cycle_day
+        , main.start_date
+        , main.disp_cycle
+        , main.update_datetime 
+    FROM
+        schedule_content main 
+    WHERE
+        EXISTS ( 
+            SELECT
+                * 
+            FROM
+                mc_management_standards_content AS con 
+                LEFT JOIN ( 
                     SELECT
                         * 
                     FROM
-                        mc_maintainance_schedule AS sub 
+                        hm_mc_management_standards_content 
                     WHERE
-                        main.management_standards_content_id = sub.management_standards_content_id 
-                        AND main.start_date < sub.start_date
-                )
-            AND EXISTS(
-                    SELECT
-                        * 
-                    FROM
-                        mc_management_standards_content AS con 
-                        LEFT JOIN ( 
-                            SELECT
-                                * 
-                            FROM
-                                hm_mc_management_standards_content 
-                            WHERE
-                                history_management_id = @HistoryManagementId
-                        ) hmcon 
-                            ON con.management_standards_content_id = hmcon.management_standards_content_id 
-                    WHERE
-                        main.management_standards_content_id = con.management_standards_content_id 
-                        AND ( 
-                            con.long_plan_id = @LongPlanId 
-                            OR hmcon.long_plan_id = @LongPlanId --保全項目一覧の追加を考慮
-                        )
-                )
-        ) AS schedule
-        -- スケジュール詳細から機器別管理基準内容IDごとに最小のスケジュール日を取得
-        LEFT OUTER JOIN
-            (
-            SELECT
-              schedule_header.management_standards_content_id
-              , MIN(schedule_detail.schedule_date) AS schedule_date 
-            FROM
-              mc_maintainance_schedule_detail AS schedule_detail 
-              INNER JOIN mc_maintainance_schedule AS schedule_header 
-                ON ( 
-                  schedule_detail.maintainance_schedule_id = schedule_header.maintainance_schedule_id
-                ) 
+                        history_management_id = @HistoryManagementId
+                ) hmcon 
+                    ON con.management_standards_content_id = hmcon.management_standards_content_id 
             WHERE
-              complition = 0 
-              AND EXISTS ( 
-                SELECT
-                  * 
-                FROM
-                  ma_summary AS summary 
-                WHERE
-                  schedule_detail.summary_id = summary.summary_id 
-                  AND summary.long_plan_id = @LongPlanId
-              ) 
-            GROUP BY
-              schedule_header.management_standards_content_id
-            ) AS schedule_detail_sum
-        ON  (
-                schedule.management_standards_content_id = schedule_detail_sum.management_standards_content_id
-            )
+                main.management_standards_content_id = con.management_standards_content_id 
+                AND ( 
+                    con.long_plan_id = @LongPlanId 
+                    OR hmcon.long_plan_id = @LongPlanId --保全項目一覧の追加を考慮
+                )
+        )
 ) 
 ,
 -- スケジュール確定排他チェック用更新日時
@@ -130,6 +129,77 @@ schedule_updtime AS (
         AND hm.history_management_id = @HistoryManagementId 
         AND status_ex.extension_data IN ('10', '20', '30') --「申請データ作成中」「承認依頼中」「差戻中」のデータのみ
 ) 
+,schedule_date_by_machine as (
+    -- 機IDに対するスケジュール情報を取得
+    select
+	    sch.maintainance_schedule_id
+        , cont.management_standards_content_id
+        , sch.start_date
+        , det.complition
+        , det.schedule_date 
+    from
+        mc_management_standards_component comp 
+        left join mc_management_standards_content cont 
+            on comp.management_standards_component_id = cont.management_standards_component_id 
+        left join mc_maintainance_schedule sch 
+            on cont.management_standards_content_id = sch.management_standards_content_id 
+        left join mc_maintainance_schedule_detail det 
+            on sch.maintainance_schedule_id = det.maintainance_schedule_id 
+) 
+, max_schedule_date_by_content as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日を取得
+    select
+	    maintainance_schedule_id
+        , management_standards_content_id
+        , max(schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+    where
+        complition = 1 
+    group by
+        maintainance_schedule_id, management_standards_content_id
+) 
+, next_date_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの保全活動が完了したデータの最大のスケジュール日の次のスケジュール日を取得
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date
+    from
+        schedule_date_by_machine 
+        inner join max_schedule_date_by_content 
+            on schedule_date_by_machine.maintainance_schedule_id = max_schedule_date_by_content.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_schedule_date_by_content.management_standards_content_id
+    where
+        schedule_date_by_machine.schedule_date > max_schedule_date_by_content.schedule_date
+	group by
+	    schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+) 
+, next_date_not_exists_comp as ( 
+    -- 保全スケジュールID・内容ごとの開始日より後のスケジュール日を取得(保全活動が完了していない)
+    select
+	    schedule_date_by_machine.maintainance_schedule_id
+        , schedule_date_by_machine.management_standards_content_id
+        , min(schedule_date_by_machine.schedule_date) schedule_date 
+    from
+        schedule_date_by_machine 
+        left join ( 
+            select
+			    maintainance_schedule_id
+                , management_standards_content_id
+                , max(start_date) start_date 
+            from
+                schedule_date_by_machine 
+            group by
+                maintainance_schedule_id, management_standards_content_id
+        ) max_start_date 
+            on schedule_date_by_machine.maintainance_schedule_id = max_start_date.maintainance_schedule_id
+			and schedule_date_by_machine.management_standards_content_id = max_start_date.management_standards_content_id
+    where
+        schedule_date_by_machine.start_date >= max_start_date.start_date 
+    group by
+        schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+)
 SELECT
     machine.machine_id
     , machine.machine_no
@@ -243,7 +313,12 @@ SELECT
     , schedule.cycle_month
     , schedule.cycle_day
     , schedule.disp_cycle
-    , schedule.schedule_date
+	-- ●(保全活動が完了したデータ)が存在する場合は、最新の●の次の○のデータの日付
+	-- ●が存在しない場合は開始日より後の○の日付
+    , coalesce( 
+        next_date_exists_comp.schedule_date
+        , next_date_not_exists_comp.schedule_date
+    ) schedule_date
     , CONCAT_WS( 
         '|'
         , machine.machine_id
@@ -284,7 +359,23 @@ FROM
     LEFT OUTER JOIN schedule_updtime 
         ON ( 
             schedule_updtime.management_standards_content_id = base.management_standards_content_id
-        ) 
+        )
+    LEFT OUTER JOIN
+        next_date_exists_comp
+    ON  (
+            schedule.maintainance_schedule_id = next_date_exists_comp.maintainance_schedule_id
+        )
+    AND (
+            base.management_standards_content_id = next_date_exists_comp.management_standards_content_id
+        )
+    LEFT OUTER JOIN
+        next_date_not_exists_comp
+    ON  (
+            schedule.maintainance_schedule_id = next_date_not_exists_comp.maintainance_schedule_id 
+        )
+    AND (
+            base.management_standards_content_id = next_date_not_exists_comp.management_standards_content_id
+        )
     LEFT JOIN ( 
         SELECT
             hmcon.* 

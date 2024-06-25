@@ -24,41 +24,41 @@ CREATE TABLE #temp_rep(
     plan_implementation_content nvarchar(800), -- 作業計画・実施内容
     subject_note nvarchar(1200),               -- 件名メモ
     activity_division_name nvarchar(800),      -- 故障・点検区分
-    repair_cost_name nvarchar(800),            -- 修繕費分類
-    change_management_name nvarchar(800),      -- 変更管理
-    env_safety_management_name nvarchar(800),  -- 環境安全管理区分
-    construction_date date,                    -- 着工日
-    completion_time datetime,                  -- 完了時刻
+    --repair_cost_name nvarchar(800),            -- 修繕費分類 20240624出力対象外に変更
+    --change_management_name nvarchar(800),      -- 変更管理 20240624出力対象外に変更
+    --env_safety_management_name nvarchar(800),  -- 環境安全管理区分 20240624出力対象外に変更
+    --construction_date date,                    -- 着工日 20240624出力対象外に変更
+    --completion_time datetime,                  -- 完了時刻 20240624出力対象外に変更
 
 -- ma_request
     request_personnel_name nvarchar(800),            -- 依頼担当
     discovery_methods_name nvarchar(800),            -- 発見方法
     request_no nvarchar(40),                         -- 依頼No.
     issue_date date,                                 -- 発行日
-    urgency_name nvarchar(800),                      -- 緊急度
-    desired_start_date date,                         -- 着工希望日
-    desired_end_date date,                           -- 完了希望日
-    request_content nvarchar(800),                   -- 依頼内容
-    request_department_clerk_name nvarchar(800),     -- 依頼部課係
-    request_personnel_tel nvarchar(200),             -- 依頼担当者tel
-    request_department_chief_name nvarchar(800),     -- 依頼係長
-    request_department_manager_name nvarchar(800),   -- 依頼課長
-    request_department_foreman_name nvarchar(800),   -- 依頼職長
-    maintenance_department_clerk_name nvarchar(800), -- 保全部課係
-    request_reason nvarchar(800),                    -- 依頼事由
-    examination_result nvarchar(800),                -- 件名検討結果
-    construction_division_name nvarchar(800),        -- 工事区分
-    construction_place nvarchar(800),                -- 場所
+    --urgency_name nvarchar(800),                      -- 緊急度 20240624出力対象外に変更
+    --desired_start_date date,                         -- 着工希望日 20240624出力対象外に変更
+    --desired_end_date date,                           -- 完了希望日 20240624出力対象外に変更
+    --request_content nvarchar(800),                   -- 依頼内容 20240624出力対象外に変更
+    --request_department_clerk_name nvarchar(800),     -- 依頼部課係 20240624出力対象外に変更
+    --request_personnel_tel nvarchar(200),             -- 依頼担当者tel 20240624出力対象外に変更
+    --request_department_chief_name nvarchar(800),     -- 依頼係長 20240624出力対象外に変更
+    --request_department_manager_name nvarchar(800),   -- 依頼課長 20240624出力対象外に変更
+    --request_department_foreman_name nvarchar(800),   -- 依頼職長 20240624出力対象外に変更
+    --maintenance_department_clerk_name nvarchar(800), -- 保全部課係 20240624出力対象外に変更
+    --request_reason nvarchar(800),                    -- 依頼事由 20240624出力対象外に変更
+    --examination_result nvarchar(800),                -- 件名検討結果 20240624出力対象外に変更
+    --construction_division_name nvarchar(800),        -- 工事区分 20240624出力対象外に変更
+    --construction_place nvarchar(800),                -- 場所 20240624出力対象外に変更
 
 -- ma_plan
 	occurrence_date date,              -- 発生日
     expected_construction_date date,   -- 着工予定日
     total_budget_cost decimal(13, 3),  -- 予算金額(k円)
-    subject_plan nvarchar(800),        -- 件名
-    expected_completion_date date,     -- 終了予定日
-    plan_man_hour decimal(13, 3),      -- 予定工数
-    responsibility_name nvarchar(800), -- 自・他責
-    failure_effect nvarchar(800),      -- 故障影響
+    --subject_plan nvarchar(800),        -- 件名 20240624出力対象外に変更
+    --expected_completion_date date,     -- 終了予定日 20240624出力対象外に変更
+    --plan_man_hour decimal(13, 3),      -- 予定工数 20240624出力対象外に変更
+    --responsibility_name nvarchar(800), -- 自・他責 20240624出力対象外に変更
+    --failure_effect nvarchar(800),      -- 故障影響 20240624出力対象外に変更
 
 -- ma_history
     cost_note nvarchar(800),                    -- 費用メモ
@@ -69,17 +69,17 @@ CREATE TABLE #temp_rep(
     actual_result_name nvarchar(800),           -- 実績結果
     construction_company nvarchar(800),         -- 施工会社
     expenditure decimal(13, 3),                 -- 実績金額(k円)
-    call_count nvarchar(800),                   -- 呼出
-    loss_absence int,                           -- 休損量
-    loss_absence_type_count decimal(13, 3),     -- 休損型数
+    --call_count nvarchar(800),                   -- 呼出 20240624出力対象外に変更
+    --loss_absence int,                           -- 休損量 20240624出力対象外に変更
+    --loss_absence_type_count decimal(13, 3),     -- 休損型数 20240624出力対象外に変更
     -- occurrence_time datetime,                   -- 発生時刻 ※個別工場でしか管理していないため不要
     -- discovery_personnel nvarchar(800),          -- 発見者 ※個別工場でしか管理していないため不要
     -- working_time_research decimal(13, 3),       -- 調査時間 ※個別工場でしか管理していないため不要
     -- working_time_procure decimal(13, 3),        -- 調達時間 ※個別工場でしか管理していないため不要
     -- working_time_repair decimal(13, 3),         -- 修復時間 ※個別工場でしか管理していないため不要
     -- working_time_test decimal(13, 3),           -- 試運転時間 ※個別工場でしか管理していないため不要
-    working_time_company decimal(13, 3),        -- 作業時間(施工会社)
-    maintenance_opinion nvarchar(800),          -- 保全見解
+    --working_time_company decimal(13, 3),        -- 作業時間(施工会社) 20240624出力対象外に変更
+    --maintenance_opinion nvarchar(800),          -- 保全見解 20240624出力対象外に変更
     -- manufacturing_personnel_name nvarchar(800), -- 製造担当者 ※個別工場でしか管理していないため不要
     -- work_failure_division_name nvarchar(800),   -- 作業・故障区分 ※個別工場でしか管理していないため不要
     -- stop_count nvarchar(800),                   -- 系停止 ※個別工場でしか管理していないため不要
@@ -87,8 +87,8 @@ CREATE TABLE #temp_rep(
     -- effect_quality_name nvarchar(800),          -- 品質への影響 ※個別工場でしか管理していないため不要
     -- failure_site nvarchar(800),                 -- 故障部位 ※個別工場でしか管理していないため不要
     -- parts_existence_flg nvarchar(800),          -- 予備品(有無) ※個別工場でしか管理していないため不要
-    follow_flg_history nvarchar(800),           -- フォロー有無
-    rank_name nvarchar(800),                    -- ランク
+    --follow_flg_history nvarchar(800),           -- フォロー有無 20240624出力対象外に変更
+    --rank_name nvarchar(800),                    -- ランク 20240624出力対象外に変更
     -- failure_equipment_model_name nvarchar(800), -- 故障機器 ※個別工場でしか管理していないため不要
     -- failure_time nvarchar(800),                 -- 故障時間 ※個別工場でしか管理していないため不要
     -- history_importance_name nvarchar(800),      -- 履歴重要度 ※個別工場でしか管理していないため不要
@@ -111,7 +111,7 @@ CREATE TABLE #temp_rep(
     system_feed_back nvarchar(800),                -- 保全システムのフィードバック
     lesson nvarchar(800),                          -- 教訓
     failure_note nvarchar(800),                    -- 特記(メモ)
-    treatment_measure_note nvarchar(800),          -- 処置・対策メモ
+    --treatment_measure_note nvarchar(800),          -- 処置・対策メモ 20240624出力対象外に変更
     -- failure_analysis_name nvarchar(800),           -- 故障分析 ※個別工場でしか管理していないため不要
     -- failure_personality_factor_name nvarchar(800), -- 故障性格要因 ※個別工場でしか管理していないため不要
     -- failure_personality_class_name nvarchar(800),  -- 故障性格分類 ※個別工場でしか管理していないため不要
@@ -122,52 +122,52 @@ CREATE TABLE #temp_rep(
     -- measure_class2_name nvarchar(800),             -- 対策分類２ ※個別工場でしか管理していないため不要
 
 -- ma_history_failureとma_history_machine・ma_history_inspection_site・ma_history_inspection_contentの共通部分
-    used_days_machine int,                 -- 機器使用日数
+    --used_days_machine int,                 -- 機器使用日数 20240624出力対象外に変更
     inspection_site_name nvarchar(800),    -- 保全部位
     inspection_content_name nvarchar(800), -- 保全内容
     follow_flg nvarchar(800),              -- フォロー有無
     follow_plan_date nvarchar(800),        -- フォロー予定日
     follow_content nvarchar(800),          -- フォロー内容
-    follow_completion_date date,           -- フォロー完了日
-    work_record nvarchar(800),             -- 作業記録
+    --follow_completion_date date,           -- フォロー完了日 20240624出力対象外に変更
+    --work_record nvarchar(800),             -- 作業記録 20240624出力対象外に変更
 
 -- mc_machine
     machine_no nvarchar(800),                 -- 機器番号
     machine_name nvarchar(800),               -- 機器名称
-    factory_name2 nvarchar(800),              -- 工場(機器)
-    plant_name2 nvarchar(800),                -- 工程(機器)
-    series_name2 nvarchar(800),               -- 系列(機器)
-    stroke_name2 nvarchar(800),               -- 設備(機器)
-    facility_name2 nvarchar(800),             -- 場所５(機器)
-    job_name2 nvarchar(800),                  -- 職種(機器)
-    equipment_level nvarchar(800),            -- 機器レベル
-    installation_location nvarchar(800),      -- 設置場所
-    number_of_installation decimal(18, 0),    -- 設置台数
-    date_of_installation date,                -- 設置年月
-    importance_name nvarchar(800),            -- 重要度
-    conservation_name nvarchar(800),          -- 保全方式
-    machine_note nvarchar(800),               -- 機番メモ
-    large_classfication_name2 nvarchar(800),  -- 機種大分類
-    middle_classfication_name2 nvarchar(800), -- 機種中分類
-    small_classfication_name2 nvarchar(800),  -- 機種小分類
+    --factory_name2 nvarchar(800),              -- 工場(機器) 20240624出力対象外に変更
+    --plant_name2 nvarchar(800),                -- 工程(機器) 20240624出力対象外に変更
+    --series_name2 nvarchar(800),               -- 系列(機器) 20240624出力対象外に変更
+    --stroke_name2 nvarchar(800),               -- 設備(機器) 20240624出力対象外に変更
+    --facility_name2 nvarchar(800),             -- 場所５(機器) 20240624出力対象外に変更
+    --job_name2 nvarchar(800),                  -- 職種(機器) 20240624出力対象外に変更
+    --equipment_level nvarchar(800),            -- 機器レベル 20240624出力対象外に変更
+    --installation_location nvarchar(800),      -- 設置場所 20240624出力対象外に変更
+    --number_of_installation decimal(18, 0),    -- 設置台数 20240624出力対象外に変更
+    --date_of_installation date,                -- 設置年月 20240624出力対象外に変更
+    --importance_name nvarchar(800),            -- 重要度 20240624出力対象外に変更
+    --conservation_name nvarchar(800),          -- 保全方式 20240624出力対象外に変更
+    --machine_note nvarchar(800),               -- 機番メモ 20240624出力対象外に変更
+    --large_classfication_name2 nvarchar(800),  -- 機種大分類 20240624出力対象外に変更
+    --middle_classfication_name2 nvarchar(800), -- 機種中分類 20240624出力対象外に変更
+    --small_classfication_name2 nvarchar(800),  -- 機種小分類 20240624出力対象外に変更
 
 -- mc_equipment
-    use_segment_name nvarchar(800),    -- 使用区分
-    circulation_target nvarchar(800),  -- 循環対象
-    fixed_asset_no nvarchar(200),      -- 固定資産番号
-    manufacturer_name nvarchar(800),   -- メーカー
-    manufacturer_type nvarchar(200),   -- メーカー型式
-    model_no nvarchar(200),            -- 型式コード
-    serial_no nvarchar(200),           -- シリアル番号
-    date_of_manufacture date,          -- 製造日
-    equipment_note nvarchar(800),      -- 機器メモ
+    --use_segment_name nvarchar(800),    -- 使用区分 20240624出力対象外に変更
+    --circulation_target nvarchar(800),  -- 循環対象 20240624出力対象外に変更
+    --fixed_asset_no nvarchar(200),      -- 固定資産番号 20240624出力対象外に変更
+    --manufacturer_name nvarchar(800),   -- メーカー 20240624出力対象外に変更
+    --manufacturer_type nvarchar(200),   -- メーカー型式 20240624出力対象外に変更
+    --model_no nvarchar(200),            -- 型式コード 20240624出力対象外に変更
+    --serial_no nvarchar(200),           -- シリアル番号 20240624出力対象外に変更
+    --date_of_manufacture date,          -- 製造日 20240624出力対象外に変更
+    --equipment_note nvarchar(800),      -- 機器メモ 20240624出力対象外に変更
 
 -- mc_applicable_laws
-    applicable_laws_name1 nvarchar(800), -- 適用法規1
-    applicable_laws_name2 nvarchar(800), -- 適用法規2
-    applicable_laws_name3 nvarchar(800), -- 適用法規3
-    applicable_laws_name4 nvarchar(800), -- 適用法規4
-    applicable_laws_name5 nvarchar(800), -- 適用法規5
+    --applicable_laws_name1 nvarchar(800), -- 適用法規1 20240624出力対象外に変更
+    --applicable_laws_name2 nvarchar(800), -- 適用法規2 20240624出力対象外に変更
+    --applicable_laws_name3 nvarchar(800), -- 適用法規3 20240624出力対象外に変更
+    --applicable_laws_name4 nvarchar(800), -- 適用法規4 20240624出力対象外に変更
+    --applicable_laws_name5 nvarchar(800), -- 適用法規5 20240624出力対象外に変更
 
 -- その他項目
   progress_name nvarchar(800),  -- 進捗状況

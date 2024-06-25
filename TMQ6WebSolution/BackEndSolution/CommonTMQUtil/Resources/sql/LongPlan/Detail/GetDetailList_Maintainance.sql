@@ -3,79 +3,54 @@
 */
 -- WITH句の続き
 ,
--- 保全スケジュール
+-- 保全スケジュールを機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+schedule_start_date AS(
+    SELECT
+        sc.maintainance_schedule_id,
+        sc.management_standards_content_id,
+        sc.cycle_year,
+        sc.cycle_month,
+        sc.cycle_day,
+        sc.start_date,
+        sc.disp_cycle,
+        sc.update_datetime
+    FROM
+        mc_maintainance_schedule AS sc
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+        )
+),
+-- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
 schedule AS(
     SELECT
-        schedule.maintainance_schedule_id,
-        schedule.management_standards_content_id AS management_standards_content_id_schedule,
-        schedule.start_date,
-        schedule.cycle_year,
-        schedule.cycle_month,
-        schedule.cycle_day,
-        schedule.disp_cycle,
-        schedule_detail_sum.schedule_date
+        main.maintainance_schedule_id,
+        main.management_standards_content_id AS management_standards_content_id_schedule,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+        main.disp_cycle,
+        main.update_datetime
     FROM
-        (
-            -- 機器別管理基準内容IDごとに最大の開始日時をもつものを取得
+        schedule_start_date AS main
+    WHERE
+        NOT EXISTS(
             SELECT
-                main.maintainance_schedule_id,
-                main.management_standards_content_id,
-                main.start_date,
-                main.cycle_year,
-                main.cycle_month,
-                main.cycle_day,
-                main.disp_cycle
+                *
             FROM
-                mc_maintainance_schedule AS main
+                schedule_start_date AS sub
             WHERE
-                NOT EXISTS(
-                    SELECT
-                        *
-                    FROM
-                        mc_maintainance_schedule AS sub
-                    WHERE
-                        main.management_standards_content_id = sub.management_standards_content_id
-                    AND main.start_date < sub.start_date
-                )
-            AND EXISTS(
-                    SELECT
-                        *
-                    FROM
-                        mc_management_standards_content AS con
-                    WHERE
-                        main.management_standards_content_id = con.management_standards_content_id
-                    AND con.long_plan_id = @LongPlanId
-                )
-        ) AS schedule
-        -- スケジュール詳細から機器別管理基準内容IDごとに最小のスケジュール日を取得
-        LEFT OUTER JOIN
-            (
-            SELECT
-              schedule_header.management_standards_content_id
-              , MIN(schedule_detail.schedule_date) AS schedule_date 
-            FROM
-              mc_maintainance_schedule_detail AS schedule_detail 
-              INNER JOIN mc_maintainance_schedule AS schedule_header 
-                ON ( 
-                  schedule_detail.maintainance_schedule_id = schedule_header.maintainance_schedule_id
-                ) 
-            WHERE
-              complition = 0 
-              AND EXISTS ( 
-                SELECT
-                  * 
-                FROM
-                  ma_summary AS summary 
-                WHERE
-                  schedule_detail.summary_id = summary.summary_id 
-                  AND summary.long_plan_id = @LongPlanId
-              ) 
-            GROUP BY
-              schedule_header.management_standards_content_id
-            ) AS schedule_detail_sum
-        ON  (
-                schedule.management_standards_content_id = schedule_detail_sum.management_standards_content_id
-            )
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime < sub.update_datetime
+        )
 ),
 -- スケジュール確定排他チェック用更新日時
 schedule_updtime AS(

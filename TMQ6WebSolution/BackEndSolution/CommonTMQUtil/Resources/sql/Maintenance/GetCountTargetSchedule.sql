@@ -2,7 +2,7 @@ WITH complition AS (
     --更新対象の保全スケジュールID取得
     SELECT
         maintainance_schedule_id
-        , MIN(sequence_count) AS sequence_count 
+        , MAX(sequence_count) AS sequence_count 
     FROM
         mc_maintainance_schedule_detail 
     WHERE

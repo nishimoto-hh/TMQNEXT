@@ -70,6 +70,150 @@ WITH schedule_date_by_machine as (
         schedule_date_by_machine.start_date >= max_start_date.start_date 
     group by
         schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+),
+-- 保全スケジュールを機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+schedule_start_date AS(
+    SELECT
+	    sc.maintainance_schedule_id,
+        sc.management_standards_content_id,
+        sc.cycle_year,
+        sc.cycle_month,
+        sc.cycle_day,
+        sc.start_date,
+		sc.is_cyclic,
+		sc.disp_cycle,
+		sc.update_datetime
+    FROM
+        mc_maintainance_schedule AS sc
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+        )
+),
+-- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule_content AS(
+    SELECT
+	    main.maintainance_schedule_id,
+        main.management_standards_content_id,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+		main.is_cyclic,
+		main.disp_cycle,
+		main.update_datetime
+    FROM
+        schedule_start_date AS main
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                schedule_start_date AS sub
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime < sub.update_datetime
+        )
+),
+-- 保全スケジュール(変更管理)を機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+schedule_start_date_history AS(
+    SELECT
+        sc.hm_maintainance_schedule_id,
+        sc.history_management_id,
+	    sc.maintainance_schedule_id,
+        sc.management_standards_content_id,
+        sc.cycle_year,
+        sc.cycle_month,
+        sc.cycle_day,
+        sc.start_date,
+		sc.is_cyclic,
+		sc.disp_cycle,
+		sc.update_datetime,
+        sc.next_schedule_date,
+        sc.is_update_schedule
+    FROM
+        hm_mc_maintainance_schedule AS sc
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                hm_mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+            AND sc.history_management_id = @HistoryManagementId
+        )
+        AND sc.history_management_id = @HistoryManagementId
+),
+-- 上で取得した保全スケジュール(変更管理)を機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule_content_history AS(
+    SELECT
+        main.hm_maintainance_schedule_id,
+        main.history_management_id,
+	    main.maintainance_schedule_id,
+        main.management_standards_content_id,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+		main.is_cyclic,
+		main.disp_cycle,
+		main.update_datetime,
+        main.next_schedule_date,
+        main.is_update_schedule
+    FROM
+        schedule_start_date_history AS main
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                schedule_start_date_history AS sub
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime < sub.update_datetime
+        )
+),
+-- 上で取得した保全スケジュール(変更管理)を機器別管理基準内容ID、開始日、更新日時ごとに取得(同じ値なら最大の保全スケジュール変更管理IDのレコード)
+-- 削除申請されたデータは開始日と更新日時が同一のデータが存在するため必要
+schedule AS(
+    SELECT
+        main.hm_maintainance_schedule_id,
+        main.history_management_id,
+	    main.maintainance_schedule_id,
+        main.management_standards_content_id,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+		main.is_cyclic,
+		main.disp_cycle,
+		main.update_datetime,
+        main.next_schedule_date,
+        main.is_update_schedule
+    FROM
+        schedule_content_history AS main
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                schedule_content_history AS sub
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime = sub.update_datetime
+            AND main.hm_maintainance_schedule_id < sub.hm_maintainance_schedule_id
+        )
 )
 , management_standards_transaction AS(
     SELECT
@@ -161,38 +305,7 @@ WITH schedule_date_by_machine as (
     FROM
         mc_management_standards_component mcp -- 機器別管理基準部位
         , mc_management_standards_content msc -- 機器別管理基準内容
-        ,
-        (
-            SELECT
-                a.*
-            FROM
-                mc_maintainance_schedule AS a -- 保全スケジュール
-                INNER JOIN
-                    -- 機器別管理基準内容IDごとの開始日最新データを取得
-                    (
-                        SELECT
-                            management_standards_content_id,
-                            MAX(start_date) AS start_date,
-                            MAX(update_datetime) AS update_datetime
-                        FROM
-                            mc_maintainance_schedule
-                        GROUP BY
-                            management_standards_content_id
-                    ) b
-                ON  a.management_standards_content_id = b.management_standards_content_id
-                AND (
-                        a.start_date = b.start_date
-                    OR  a.start_date IS NULL
-                    AND b.start_date IS NULL
-                        --null結合を考慮
-                    )
-                AND (
-                        a.update_datetime = b.update_datetime
-                    OR  a.update_datetime IS NULL
-                    AND b.update_datetime IS NULL
-                        --null結合を考慮
-                    )
-        ) ms, -- 保全スケジュール
+        , schedule_content ms, -- 保全スケジュール
         mc_machine ma,
         mc_equipment eq
     WHERE
@@ -325,39 +438,8 @@ from
         mc_management_standards_content content -- 機器別管理基準内容
     ON  hcontent.management_standards_content_id = content.management_standards_content_id
     LEFT JOIN
-    (
-        SELECT
-            a.*
-        FROM
-            hm_mc_maintainance_schedule AS a -- 保全スケジュール
-            INNER JOIN -- 機器別管理基準内容IDごとの開始日最新データを取得
-                (
-                    SELECT
-                        management_standards_content_id,
-                        MAX(start_date) AS start_date,
-                        MAX(update_datetime) AS update_datetime
-                    FROM
-                        hm_mc_maintainance_schedule
-                    WHERE
-                        history_management_id = @HistoryManagementId
-                    GROUP BY
-                        management_standards_content_id
-                ) b
-            ON  a.management_standards_content_id = b.management_standards_content_id
-            AND (
-                    a.start_date = b.start_date
-                OR  a.start_date IS NULL
-                AND b.start_date IS NULL
-                    --null結合を考慮
-                )
-            AND (
-                    a.update_datetime = b.update_datetime
-                OR  a.update_datetime IS NULL
-                AND b.update_datetime IS NULL
-                    --null結合を考慮
-                )
-    ) schedule -- 保全スケジュール
-ON  hcontent.management_standards_content_id = schedule.management_standards_content_id
+        schedule -- 保全スケジュール
+    ON  hcontent.management_standards_content_id = schedule.management_standards_content_id
 
     WHERE
         hcomponent.is_management_standard_conponent = 1

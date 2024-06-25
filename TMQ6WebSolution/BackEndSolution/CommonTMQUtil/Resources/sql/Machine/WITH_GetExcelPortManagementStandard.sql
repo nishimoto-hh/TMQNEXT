@@ -68,6 +68,57 @@ WITH schedule_date_by_machine as (
         schedule_date_by_machine.start_date >= max_start_date.start_date 
     group by
         schedule_date_by_machine.maintainance_schedule_id, schedule_date_by_machine.management_standards_content_id
+),
+-- 保全スケジュールを機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+schedule_start_date AS(
+    SELECT
+	    sc.maintainance_schedule_id,
+        sc.management_standards_content_id,
+        sc.cycle_year,
+        sc.cycle_month,
+        sc.cycle_day,
+        sc.start_date,
+		sc.is_cyclic,
+		sc.disp_cycle,
+		sc.update_datetime
+    FROM
+        mc_maintainance_schedule AS sc
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+        )
+),
+-- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule_content AS(
+    SELECT
+	    main.maintainance_schedule_id,
+        main.management_standards_content_id,
+        main.cycle_year,
+        main.cycle_month,
+        main.cycle_day,
+        main.start_date,
+		main.is_cyclic,
+		main.disp_cycle,
+		main.update_datetime
+    FROM
+        schedule_start_date AS main
+    WHERE
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                schedule_start_date AS sub
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id
+            AND main.start_date = sub.start_date
+            AND main.update_datetime < sub.update_datetime
+        )
 )
 , main as(
 SELECT 
@@ -480,24 +531,7 @@ SELECT
 	,mcp.remarks -- 備考
 FROM mc_management_standards_component mcp -- 機器別管理基準部位
     ,mc_management_standards_content msc   -- 機器別管理基準内容
-    ,(SELECT a.*
-	 		FROM mc_maintainance_schedule AS a -- 保全スケジュール
-	 		INNER JOIN
-	 		-- 機器別管理基準内容IDごとの開始日最新データを取得
-	 		(SELECT management_standards_content_id,
-	 				MAX(start_date) AS start_date,
-					MAX(update_datetime) AS update_datetime
-	 		 FROM mc_maintainance_schedule
-	 		 GROUP BY management_standards_content_id
-	 		) b
-	 		ON a.management_standards_content_id = b.management_standards_content_id
-	 		AND (a.start_date = b.start_date 
-	 			 OR a.start_date IS NULL AND b.start_date IS NULL --null結合を考慮
-	 			)
-	 		AND (a.update_datetime = b.update_datetime 
-	 			 OR a.update_datetime IS NULL AND b.update_datetime IS NULL --null結合を考慮
-	 			)
-	 ) ms, -- 保全スケジュール
+    ,schedule_content ms, -- 保全スケジュール
 	 (SELECT mc.*,location_factory_structure_id as factoryId FROM mc_machine mc)  ma,
 	 mc_equipment eq
 WHERE mcp.management_standards_component_id = msc.management_standards_component_id
