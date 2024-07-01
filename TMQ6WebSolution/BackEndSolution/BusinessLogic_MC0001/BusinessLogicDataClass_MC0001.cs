@@ -856,6 +856,9 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long? MachineId { get; set; }
+            /// <summary>Gets or sets 予備品型式</summary>
+            /// <value>予備品型式</value>
+            public string ModelType { get; set; }
         }
 
         /// <summary>

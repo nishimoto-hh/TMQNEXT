@@ -39,7 +39,8 @@ SELECT
 	 WHERE parts_id = mc.parts_id) AS stock,    -- 品目在庫数
     machine_use_parts_id,           -- 機番使用部品情報ID
     mc.update_serialid,             -- 更新シリアルID
-    @MachineId AS machine_id        -- 機番ID
+    @MachineId AS machine_id,       -- 機番ID
+    model_type                      -- 予備品型式
 FROM
     mc_machine_use_parts mc
 	JOIN
