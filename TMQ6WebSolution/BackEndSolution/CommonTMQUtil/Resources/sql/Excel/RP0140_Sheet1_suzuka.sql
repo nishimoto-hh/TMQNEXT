@@ -1,6 +1,25 @@
 declare @key2 as nvarchar(2) ='ja' ;
 declare @key3 as int =4080;
 
+DROP TABLE IF EXISTS #temp_structure_factory;
+CREATE TABLE #temp_structure_factory(
+    structure_id int
+    ,factory_id int
+);
+
+INSERT INTO #temp_structure_factory
+-- 使用する構成グループの構成IDを絞込、工場の指定に用いる
+SELECT
+    structure_id
+    ,location_structure_id AS factory_id
+FROM
+    v_structure_item_all
+WHERE
+    structure_group_id IN (1000,1010,1031,1050,1080,1110,1160,1170,1200,1470,1480,1490,1520,1550,1810,1820,1830,2240)
+AND factory_id IN(0,4068,4069,4070,4071,4072,4073,4074,4075,4076,4077,4078,4079,4080) 
+AND language_id = @key2;
+
+
         SELECT
 
 	hi.construction_personnel_name,	 --	1.担当者
@@ -141,9 +160,11 @@ declare @key3 as int =4080;
                     )
                 AND tra.structure_id = mc.job_small_classfication_structure_id
             ) AS job_small_classfication_structure_name,--機種小分類
-			         
-			hi.parts_existence_flg,--予備品有無
-			
+
+	        CASE
+		        WHEN hi.parts_existence_flg = 1 THEN 1
+		        ELSE 0
+	        END  as parts_existence_flg, --予備品有無
 
             (
                 SELECT
@@ -496,7 +517,7 @@ declare @key3 as int =4080;
                         AND st_f.factory_id IN(0, su.location_factory_structure_id)
                     )
                 AND tra.structure_id = su.location_factory_structure_id
-            ) AS machine_series_name,--工場
+            ) AS factory_name,--工場
 
 			mc.machine_no,--機器番号
 			hi.call_count,--呼出
