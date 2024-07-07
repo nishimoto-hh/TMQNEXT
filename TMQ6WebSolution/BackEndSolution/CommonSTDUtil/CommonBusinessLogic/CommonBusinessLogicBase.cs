@@ -16,6 +16,7 @@ using System.Text.RegularExpressions;
 using System.Text.Unicode;
 using static CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil;
 using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComOpt = CommonSTDUtil.CommonSTDUtil.OptimisticExclusive;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -3524,8 +3525,10 @@ namespace CommonSTDUtil.CommonBusinessLogic
         {
             if (list == null) { return false; }
 
-            // 画面表示情報に排他ロック用JSON文字列を設定 ※一時テーブル格納のため、ロック情報を設定
-            SetExclusiveInfo(list, pageInfo.CtrlId);
+            //★2024/06/14 TMQ応急対応 ループ処理統合 start
+            //// 画面表示情報に排他ロック用JSON文字列を設定 ※一時テーブル格納のため、ロック情報を設定
+            //SetExclusiveInfo(list, pageInfo.CtrlId);
+            //★2024/06/14 TMQ応急対応 ループ処理統合 end
 
             if (IsRequiredRegistTmpTable(pageInfo))
             {
@@ -3600,14 +3603,20 @@ namespace CommonSTDUtil.CommonBusinessLogic
             }
             list.Insert(0, pramObj);
 
-            if (totalCnt > 0)
-            {
-                // 画面表示情報に排他ロック用JSON文字列を設定
-                SetExclusiveInfo(list, pageInfo.CtrlId);
-            }
+            //★2024/06/14 TMQ応急対応 ループ処理統合 start
+            //if (totalCnt > 0)
+            //{
+            //    // 画面表示情報に排他ロック用JSON文字列を設定
+            //    SetExclusiveInfo(list, pageInfo.CtrlId);
+            //}
+            //★2024/06/14 TMQ応急対応 ループ処理統合 end
 
             // 検索結果の設定
             SetJsonResult(list);
+
+            //★2024/06/18 TMQ応急対応 メモリ解放処理追加 start
+            list = null;
+            //★2024/06/18 TMQ応急対応 メモリ解放処理追加 start
 
             return true;
         }
@@ -4039,6 +4048,13 @@ namespace CommonSTDUtil.CommonBusinessLogic
             // マッピング情報のパラメータ名をキーに、プロパティへアクセスするアクセッサーを値に持つディクショナリ
             var mapAccessorDic = new Dictionary<string, IAccessor>();
 
+            //★2024/06/14 TMQ応急対応 ループ処理統合 start
+            // マッピング情報から排他ロック情報を取得
+            var lockValMaps = mappingList.Where(x => x.LockTypeEnum == LockType.Value).ToList();
+            var lockKeyMaps = mappingList.Where(x => x.LockTypeEnum == LockType.Key).ToList();
+            var existsLockItem = lockKeyMaps.Count() > 0 && lockKeyMaps.Count() > 0;
+            //★2024/06/14 TMQ応急対応 ループ処理統合 end
+
             foreach (var result in results)
             {
                 paramObj = new ExpandoObject() as IDictionary<string, object>;
@@ -4054,7 +4070,13 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         SetKeyAndValueToTempTableLayout(ref paramObj, mapInfo, propValue);
                     }
                 }
-
+                //★2024/06/14 TMQ応急対応 ループ処理統合 start
+                if (existsLockItem)
+                {
+                    // 排他ロック用項目が存在する場合、ロック情報を設定
+                    setExclusiveInfo(paramObj, lockValMaps, lockKeyMaps);
+                }
+                //★2024/06/14 TMQ応急対応 ループ処理統合 end
                 list.Add(paramObj);
             }
             return list;
@@ -4119,17 +4141,33 @@ namespace CommonSTDUtil.CommonBusinessLogic
             // インタフェースにより一時テーブルレイアウトデータへの変換処理の実装を強制し、呼び出すことでリフレクションが不要となる
 
             if (results == null) { return null; }
-            var mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(pageInfo.CtrlId)).ToList();
+            // 項目カスタマイズで選択されている項目が対象
+            var mappingList = this.mapInfoList.Where(x => x.CtrlId.Equals(pageInfo.CtrlId) && x.DisplayFlg).ToList();
             var list = new List<ExpandoObject>();
             var rowNo = 1;
             var updateDate = DateTime.Now;
             // プロパティ名よりマッピング情報を取得するためにマッピング情報のパラメータ名のディクショナリを作成
             Dictionary<string, DBMappingInfo> mapDic = getMappingDictionary();
+
+            //★2024/06/14 TMQ応急対応 ループ処理統合 start
+            // マッピング情報から排他ロック情報を取得
+            var lockValMaps = mappingList.Where(x => x.LockTypeEnum == LockType.Value).ToList();
+            var lockKeyMaps = mappingList.Where(x => x.LockTypeEnum == LockType.Key).ToList();
+            var existsLockItem = lockKeyMaps.Count() > 0 && lockKeyMaps.Count() > 0;
+            //★2024/06/14 TMQ応急対応 ループ処理統合 end
+
             foreach (var result in results)
             {
                 // インタフェースにより実装を強制される変換処理を実行
                 var paramObj = result.GetTmpTableData(mapDic);
                 setParamObjCommon(ref paramObj);
+                //★2024/06/14 TMQ応急対応 ループ処理統合 start
+                if (existsLockItem)
+                {
+                    // 排他ロック用項目が存在する場合、ロック情報を設定
+                    setExclusiveInfo(paramObj, lockValMaps, lockKeyMaps);
+                }
+                //★2024/06/14 TMQ応急対応 ループ処理統合 end
                 list.Add(paramObj);
             }
             return list;
@@ -4164,6 +4202,42 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 return mapDic;
             }
         }
+
+        //★2024/06/14 TMQ応急対応 ループ処理統合 start
+        // 排他ロック情報を設定
+        private void setExclusiveInfo(dynamic data, IList<DBMappingInfo> lockValMaps, IList<DBMappingInfo> lockKeyMaps)
+        {
+            var lockDic = new Dictionary<string, object>();
+            var lockObject = new LockDataInfo();
+            var dic = data as IDictionary<string, object>;
+
+            // ロック値情報を設定
+            foreach (var val in lockValMaps)
+            {
+                if (dic.ContainsKey(val.ValName))
+                {
+                    lockObject.AddLockValue(val.ItemNo);
+                }
+            }
+
+            // ロックキー情報を設定
+            foreach (var key in lockKeyMaps)
+            {
+                if (dic.ContainsKey(key.ValName))
+                {
+                    lockObject.AddLockKey(key.ItemNo);
+                }
+            }
+
+            // ロック情報をJSON文字列へ変換
+            var jsonText = lockObject.GetJsonText();
+
+            if (!string.IsNullOrEmpty(jsonText))
+            {
+                dic.Add(LockDataKeyName, jsonText);
+            }
+        }
+        //★2024/06/14 TMQ応急対応 ループ処理統合 end
 
         /// <summary>
         /// 一時テーブルレイアウトデータにマッピング情報と値よりキー(VAL)と値を設定する
@@ -5504,7 +5578,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
             {
                 // マッピング情報リストが空、またはコントロールID未指定の場合、マッピング情報を取得
                 this.mapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(
-                SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = this.PgmId, LanguageId = this.LanguageId });
+                SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = this.PgmId, LanguageId = this.LanguageId, UserId = this.UserId });
             }
             if (this.mapInfoList == null || this.mapInfoList.Count == 0 || string.IsNullOrEmpty(ctrlId))
             { return null; }
@@ -6282,8 +6356,9 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="unUseLocation">予備品用の場所階層を使用する場合はTrue(デフォルトFalse)</param>
         /// <param name="isJobKindOnly">職種階層のみの検索画面の場合はTrue(デフォルトFalse)</param>
         /// <param name="isJobNullAble">職種がNullのデータも検索対象に入れる場合はTrue(デフォルトFalse) 予備品一覧の検索で使用</param>
+        /// <param name="isDetailConditionOnly">WHERE句文字列を詳細検索条件のみとする場合はTrue(デフォルトFalse)</param>
         /// <returns>WHERE句生成結果</returns>
-        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false, bool isJobKindOnly = false, bool isJobNullAble = false)
+        protected bool GetWhereClauseAndParam2(PageInfo pageInfo, string selectSql, out string sql, out dynamic param, out bool isDetailConditionApplied, bool unUseLocation = false, bool isJobKindOnly = false, bool isJobNullAble = false, bool isDetailConditionOnly = false)
         {
             sql = string.Empty;
             param = new ExpandoObject();
@@ -6477,6 +6552,12 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
             // 詳細検索条件辞書を取得
             var list = this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x.ContainsKey("CTRLID")).ToList();
+            if (isDetailConditionOnly)
+            {
+                //詳細検索条件のみでWHERE句を生成する場合
+                sbSql.Clear();
+                existsWhere = false;
+            }
             if (list != null && list.Count > 0)
             {
                 var dic = list.Where(x => x["IsDetailCondition"].Equals(true) && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault();
@@ -6669,6 +6750,17 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 return dic[keyName] as List<int>;
             }
             return null;
+        }
+
+        /// <summary>
+        /// 項目カスタマイズで選択されている項目を取得
+        /// </summary>
+        /// <param name="ctrlId">コントロールID</param>
+        /// <returns>項目カスタマイズで選択されている項目名のリスト</returns>
+        protected List<string> getDisplayCustomizeCol(string ctrlId)
+        {
+            List<DBMappingInfo> mappingList = mapInfoList.Where(x => x.CtrlId.Equals(ctrlId) && x.DisplayFlg).ToList();
+            return mappingList.Select(x => x.ParamName).ToList();
         }
         #endregion
 

@@ -12,6 +12,7 @@ narrow_summary AS(
         ma_summary
     -- 詳細条件
     WHERE
+    /*@GetList
         EXISTS(
             SELECT
                 *
@@ -28,6 +29,10 @@ narrow_summary AS(
             WHERE
                 job_structure_id = temp.structure_id
         )
+    @GetList*/
+    /*@GetDetail
+    summary_id = @SummaryId
+    @GetDetail*/
 )
 -- 保全活動に関連テーブルをJOIN
 ,join_summary AS(
@@ -68,6 +73,7 @@ narrow_summary AS(
         ,su.sudden_division_structure_id
         --着工予定日
         ,pl.expected_construction_date
+        /*@FileLinkFailure
         --故障原因分析書
         ,CASE
             WHEN get_factory.extension_data = '1' THEN
@@ -97,6 +103,7 @@ narrow_summary AS(
                         document_no FOR xml path('')
                 ), ' ', '')
         END AS file_link_failure
+        @FileLinkFailure*/
         --予算管理区分
         ,su.budget_management_structure_id
         --予算性格区分
@@ -131,6 +138,7 @@ narrow_summary AS(
         ,su.plan_implementation_content
         --件名メモ
         ,su.subject_note
+        /*@FileLinkSubject
         --件名添付有無(dbo.get_file_download_info(1650, su.summary_id))
         ,REPLACE((
                 SELECT
@@ -143,6 +151,7 @@ narrow_summary AS(
                 ORDER BY
                     document_no FOR xml path('')
             ), ' ', '') AS file_link_subject
+        @FileLinkSubject*/
         -- 保全部位(翻訳) 故障のみ表示
         ,CASE
             WHEN su.is_failure = 1 THEN hf.maintenance_site
@@ -206,11 +215,12 @@ narrow_summary AS(
         --依頼No.
         ,re.request_no
         --進捗状況
-        ,CASE
-            WHEN su.completion_date IS NOT NULL THEN '1'
-            WHEN hi.construction_personnel_id IS NOT NULL THEN '2'
-            ELSE '3'
-        END AS progress_no
+        --,CASE
+        --    WHEN su.completion_date IS NOT NULL THEN '1'
+        --    WHEN hi.construction_personnel_id IS NOT NULL THEN '2'
+        --    ELSE '3'
+        --END AS progress_no
+        ,ex.structure_id AS progress_id
         --保全活動件名ID(非表示)
         ,su.summary_id
         ,re.issue_date
@@ -239,4 +249,13 @@ narrow_summary AS(
         LEFT JOIN
             #get_factory get_factory
         ON  get_factory.structure_id = su.location_factory_structure_id
+        LEFT JOIN
+            #temp_progress ex
+        ON  ex.extension_data = (
+            CASE
+                WHEN su.completion_date IS NOT NULL THEN '1'
+                WHEN hi.construction_personnel_id IS NOT NULL THEN '2'
+                ELSE '3'
+            END
+        )
 )

@@ -50,6 +50,23 @@ namespace CommonWebTemplate.Models.Common
         /// <value>翻訳工場ID</value>
         /// <remarks>原因性格のみ工場個別の翻訳が必要</remarks>
         public int? LocationStructureId { get; set; }
+
+        //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Add start
+        /// <summary>Gets or sets 構成IDキー</summary>
+        /// <value>構成IDキー</value>
+        public string StructureIdKey { get; set; }
+        /// <summary>Gets or sets 親構成IDキー</summary>
+        /// <value>親構成IDキー</value>
+        public string ParentStructureIdKey { get; set; }
+        //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Add end
+        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+        /// <summary>Gets or sets 構成ID配列</summary>
+        /// <value>構成ID配列</value>
+        public int[] StructureIdList { get; set; }
+        /// <summary>Gets or sets 工場ID配列</summary>
+        /// <value>工場ID配列</value>
+        public int[] FactoryIdList { get; set; }
+        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
     }
 
     /// <summary>
@@ -102,8 +119,12 @@ namespace CommonWebTemplate.Models.Common
         /// <param name="prefix">接頭語</param>
         public CommonTreeViewInfo(CommonStructure structureInfo)
         {
-            this.Id = structureInfo.StructureId.ToString();
-            this.Parent = structureInfo.ParentStructureId.ToString();
+            //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Mod start
+            //this.Id = structureInfo.StructureId.ToString();
+            //this.Parent = structureInfo.ParentStructureId.ToString();
+            this.Id = string.IsNullOrEmpty(structureInfo.StructureIdKey) ? structureInfo.StructureId.ToString() : structureInfo.StructureIdKey;
+            this.Parent = string.IsNullOrEmpty(structureInfo.ParentStructureIdKey) ? structureInfo.ParentStructureId.ToString() : structureInfo.ParentStructureIdKey;
+            //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Mod end
             this.Text = structureInfo.TranslationText;
             //this.Icon = false;
             this.State = new CommonTreeViewState();
@@ -138,6 +159,22 @@ namespace CommonWebTemplate.Models.Common
         [JsonPropertyName("data-translatefactoryid")]
         public int LocationStructureId { get; set; }
 
+        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+        /// <summary>
+        /// マージ時工場ID配列
+        /// </summary>
+        [JsonPropertyName("data-mergefactory")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[] FactoryIdList { get; set; }
+
+        /// <summary>
+        /// マージ時構成ID配列
+        /// </summary>
+        [JsonPropertyName("data-mergeinfo")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[] StructureIdList { get; set; }
+        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
+
         #region === コンストラクタ ===
         /// <summary>
         /// コンストラクタ
@@ -148,6 +185,10 @@ namespace CommonWebTemplate.Models.Common
             this.FactoryId = 0;
             this.StructureId = null;
             this.LocationStructureId = 0;
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+            this.FactoryIdList = null;
+            this.StructureIdList = null;
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
         }
         public CommonTreeViewAttribute(CommonStructure structureInfo)
         {
@@ -155,6 +196,10 @@ namespace CommonWebTemplate.Models.Common
             this.FactoryId = structureInfo.FactoryId;
             this.StructureId = structureInfo.StructureId;
             this.LocationStructureId = structureInfo.LocationStructureId ?? 0;
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+            this.FactoryIdList = structureInfo.FactoryIdList;
+            this.StructureIdList = structureInfo.StructureIdList;
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
         }
         #endregion
 

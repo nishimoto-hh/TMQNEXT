@@ -1,3 +1,21 @@
+/*IF MergeStructureList*/
+--マージ処理を実行する場合
+DROP TABLE IF EXISTS #TEMP_STRUCTURE_ALL_LIST;
+
+CREATE TABLE #TEMP_STRUCTURE_ALL_LIST(
+        structureId int,
+        factoryId int,
+        locationStructureId int,
+        structureGroupId int,
+        structureLayerNo int,
+        parentStructureId int,
+        structureItemId int,
+        displayOrder int,
+        translationText  nvarchar(800),
+        factory_order int
+);
+/*END*/
+
 WITH st_com(structure_layer_no, structure_id, parent_structure_id) AS (
     SELECT
         structure_layer_no,
@@ -158,6 +176,11 @@ factory_order AS(
         0
 )
 , structure_list AS ( 
+/*END*/
+
+/*IF MergeStructureList*/
+--マージ処理を実行する場合
+INSERT INTO #TEMP_STRUCTURE_ALL_LIST 
 /*END*/
 SELECT
      vs.structure_id AS structureId
@@ -341,4 +364,278 @@ ORDER BY
     , structureLayerNo
     , displayOrder
     , structureId
+/*END*/
+
+/*IF MergeStructureList*/
+--マージ処理を実行する場合
+;
+DROP TABLE IF EXISTS #TEMP_TREE_BASE_STRUCTURE;
+
+CREATE TABLE #TEMP_TREE_BASE_STRUCTURE(
+        structureId int,
+        factoryId int,
+        structureGroupId int,
+        parentStructureId int,
+        parentTranslationText  nvarchar(800),
+        structureLayerNo int,
+        structureItemId int,
+        displayOrder int,
+        translationText  nvarchar(800),
+        locationStructureId int,
+        factory_order int
+);
+
+WITH baseStructure AS (
+    SELECT 
+        tmp.structureId
+        , tmp.factoryId
+        , tmp.locationStructureId
+        , tmp.structureGroupId
+        , tmp.structureLayerNo
+        , tmp.parentStructureId
+        , tmp.structureItemId
+        , tmp.displayOrder
+        , tmp.translationText
+        , tmp.factory_order
+        , tmp2.translationText as parenttranslationText
+        , ROW_NUMBER() OVER( PARTITION BY tmp.translationText , tmp2.translationText  , tmp.structureLayerNo
+                    ORDER BY tmp.structureGroupId, tmp.factory_order, tmp.structureLayerNo, tmp.displayOrder, tmp.structureId ) AS ranking
+    FROM 
+        #TEMP_STRUCTURE_ALL_LIST tmp
+    LEFT JOIN
+        #TEMP_STRUCTURE_ALL_LIST tmp2
+    ON
+        tmp.structureGroupId = tmp2.structureGroupId
+        AND tmp.structureLayerNo = tmp2.structureLayerNo + 1
+        AND tmp.parentStructureId = tmp2.structureId
+    WHERE
+        tmp.structureGroupId = '1010'
+)
+    INSERT INTO #TEMP_TREE_BASE_STRUCTURE
+    SELECT    
+            baseStructure.structureId
+            , null AS factoryId
+            , baseStructure.structureGroupId
+            , parentStructure.structureId AS parentStructureId
+            , parentStructure.translationText as parentTranslationText
+            , baseStructure.structureLayerNo
+            , baseStructure.structureItemId
+            , baseStructure.displayOrder
+            , baseStructure.translationText
+            , baseStructure.locationStructureId
+            , baseStructure.factory_order
+    FROM
+        baseStructure
+    LEFT JOIN
+        baseStructure parentStructure
+    ON
+        parentStructure.translationText = baseStructure.parenttranslationText
+        AND parentStructure.structureLayerNo + 1 = baseStructure.structureLayerNo 
+        AND CASE WHEN parentStructure.parentTranslationText IS NULL THEN 1 ELSE parentStructure.ranking END = 1
+    WHERE
+        baseStructure.ranking = 1;
+
+DROP TABLE IF EXISTS #TEMP_TREE_STRUCTURE;
+
+CREATE TABLE #TEMP_TREE_STRUCTURE(
+        structureId int,
+        structureIdKey nvarchar(800),
+        translationTextTree nvarchar(4000),
+        factoryId int,
+        structureGroupId int,
+        parentStructureId int,
+        parentStructureIdKey nvarchar(800),
+        structureLayerNo int,
+        structureItemId int,
+        displayOrder int,
+        translationText  nvarchar(800),
+        locationStructureId int,
+        factory_order int,
+        baseStructureId int,
+        baseParentStructureId int,
+        parentTranslationText  nvarchar(800)
+);
+
+CREATE nonclustered INDEX [idxtemp_TEMP_STRUCTURE_ALL_LIST_01] 
+    ON [#TEMP_STRUCTURE_ALL_LIST] ([structureGroupId],[structureLayerNo],[parentStructureId],[structureId]);
+
+UPDATE statistics #TEMP_STRUCTURE_ALL_LIST;
+
+DROP TABLE IF EXISTS #TEMP_STRUC_ID_TREE;
+
+CREATE TABLE #TEMP_STRUC_ID_TREE(
+        structureId int,
+        translationTextTree  nvarchar(4000)
+);
+
+WITH STRUC_ID_TREE AS (
+    SELECT 
+          0 AS structureId
+        , tmp.structureGroupId
+        , tmp.structureLayerNo
+        , tmp.translationText
+        , CAST( tmp.translationText AS VARCHAR(4000) ) AS translationTextTree
+    FROM #TEMP_STRUCTURE_ALL_LIST tmp
+    WHERE tmp.structureLayerNo = -1
+    AND tmp.structureGroupId = 1010
+    UNION ALL
+    SELECT 
+        tmp2.structureId
+        , tmp2.structureGroupId
+        , tmp2.structureLayerNo
+        , tmp2.translationText
+        , CAST( tmp.translationTextTree + '-' + tmp2.translationText AS VARCHAR(4000) ) 
+    FROM STRUC_ID_TREE tmp
+    INNER JOIN
+        #TEMP_STRUCTURE_ALL_LIST tmp2
+    ON
+        tmp2.structureGroupId = tmp.structureGroupId
+          AND tmp2.parentStructureId = tmp.structureId
+        AND tmp2.structureLayerNo  = tmp.structureLayerNo + 1
+)
+INSERT INTO #TEMP_STRUC_ID_TREE
+SELECT
+    structureId
+    , translationTextTree
+FROM
+    STRUC_ID_TREE;
+
+CREATE nonclustered INDEX [idxtemp_treeBaseStructure_01] 
+    ON [#TEMP_TREE_BASE_STRUCTURE] ([structureLayerNo],[parentStructureId],[structureId]);
+
+UPDATE statistics #TEMP_TREE_BASE_STRUCTURE;
+
+CREATE nonclustered INDEX [idxtemp_STRUC_ID_TREE_01] 
+    ON [#TEMP_STRUC_ID_TREE] ([structureId],[translationTextTree]);
+
+UPDATE statistics #TEMP_STRUC_ID_TREE;
+
+WITH treeStructure AS 
+(
+    SELECT
+          treeBaseStructure.structureId
+        , CAST( CONVERT(nvarchar,  treeBaseStructure.structureId ) AS VARCHAR(800) ) AS structureIdKey
+        , CAST( treeBaseStructure.translationText AS VARCHAR(4000) ) AS translationTextTree
+        , treeBaseStructure.factoryId
+        , treeBaseStructure.structureGroupId
+        , -1  AS parentStructureId
+        , CAST( '-1' AS VARCHAR(800) )  AS parentStructureIdKey
+        , treeBaseStructure.structureLayerNo
+        , treeBaseStructure.structureItemId
+        , treeBaseStructure.displayOrder
+        , treeBaseStructure.translationText
+        , treeBaseStructure.locationStructureId
+        , treeBaseStructure.factory_order 
+        , treeBaseStructure.structureId as baseStructureId
+        , -1 as baseParentStructureId
+        , treeBaseStructure.parentTranslationText
+    FROM
+        #TEMP_TREE_BASE_STRUCTURE treeBaseStructure
+    WHERE
+        structureLayerNo = -1
+    UNION ALL
+    SELECT
+          treeBaseStructure.structureId
+        , CAST(  treeStructure.structureIdKey + '-' + CONVERT(nvarchar , treeBaseStructure.structureId )  AS VARCHAR(800) )  AS structureIdKey
+        , CAST( treeStructure.translationTextTree + '-' + treeBaseStructure.translationText AS VARCHAR(4000) ) AS translationTextTree
+        , treeBaseStructure.factoryId
+        , treeBaseStructure.structureGroupId
+        , treeStructure.structureId AS parentStructureId
+        , treeStructure.structureIdKey AS parentStructureIdKey
+        , treeBaseStructure.structureLayerNo
+        , treeBaseStructure.structureItemId
+        , treeBaseStructure.displayOrder
+        , treeBaseStructure.translationText
+        , treeBaseStructure.locationStructureId
+        , treeBaseStructure.factory_order 
+        , treeBaseStructure.structureId as baseStructureId
+        , treeBaseStructure.parentStructureId as baseParentStructureId
+        , treeBaseStructure.parentTranslationText
+    FROM
+        treeStructure
+    INNER JOIN
+         #TEMP_TREE_BASE_STRUCTURE treeBaseStructure
+    ON
+        ( treeBaseStructure.parentStructureId = treeStructure.baseStructureId
+          OR ( treeBaseStructure.parentStructureId IS NULL AND treeStructure.baseStructureId = -1 ) )
+        AND treeBaseStructure.structureLayerNo = treeStructure.structureLayerNo + 1
+)
+INSERT INTO #TEMP_TREE_STRUCTURE
+SELECT
+          treeStructure.structureId
+        , treeStructure.structureIdKey
+        , treeStructure.translationTextTree
+        , treeStructure.factoryId
+        , treeStructure.structureGroupId
+        , treeStructure.parentStructureId
+        , treeStructure.parentStructureIdKey
+        , treeStructure.structureLayerNo
+        , treeStructure.structureItemId
+        , treeStructure.displayOrder
+        , treeStructure.translationText
+        , treeStructure.locationStructureId
+        , treeStructure.factory_order 
+        , treeStructure.baseStructureId
+        , treeStructure.baseParentStructureId
+        , treeStructure.parentTranslationText
+FROM
+    treeStructure
+WHERE
+    EXISTS( SELECT * FROM #TEMP_STRUC_ID_TREE AS idTree 
+            WHERE idTree.translationTextTree = treeStructure.translationTextTree
+                  AND idTree.structureId = treeStructure.baseStructureId )
+    OR treeStructure.structureLayerNo = -1;
+
+CREATE nonclustered INDEX [idxtemp_treeStructure_01] 
+    ON [#TEMP_TREE_STRUCTURE] ([translationText],[parenttranslationText]);
+
+UPDATE statistics #TEMP_STRUCTURE_ALL_LIST;
+
+WITH 
+    listStructure AS 
+(
+    SELECT 
+         tmp.translationText
+        , tmp2.translationText as parenttranslationText
+        , STRING_AGG( tmp.structureId , ',' )
+            WITHIN GROUP ( ORDER BY tmp.structureGroupId, tmp.factory_order, tmp.structureLayerNo, tmp.displayOrder, tmp.structureId )  AS StructureIdListText
+        , STRING_AGG( tmp.FactoryId , ',' )
+            WITHIN GROUP ( ORDER BY tmp.structureGroupId, tmp.factory_order, tmp.structureLayerNo, tmp.displayOrder, tmp.structureId )  AS FactoryIdListText
+    FROM 
+        #TEMP_STRUCTURE_ALL_LIST tmp
+    LEFT JOIN
+        #TEMP_STRUCTURE_ALL_LIST tmp2
+    ON
+        tmp.structureGroupId = tmp2.structureGroupId
+        AND tmp.parentStructureId = tmp2.structureId
+    WHERE
+        tmp.structureGroupId = '1010'
+    GROUP BY
+        tmp.translationText
+        , tmp2.translationText
+)
+SELECT
+          treeStructure.structureId
+        , treeStructure.structureIdKey
+        , treeStructure.factoryId
+        , treeStructure.structureGroupId
+        , treeStructure.parentStructureId
+        , treeStructure.parentStructureIdKey
+        , treeStructure.structureLayerNo
+        , treeStructure.structureItemId
+        , treeStructure.displayOrder
+        , treeStructure.translationText
+        , treeStructure.locationStructureId
+        , listStructure.StructureIdListText
+        , listStructure.FactoryIdListText
+FROM
+    #TEMP_TREE_STRUCTURE treeStructure
+LEFT JOIN
+    listStructure
+ON
+    listStructure.translationText = treeStructure.translationText
+    AND ( listStructure.parenttranslationText = treeStructure.parenttranslationText
+          OR ( listStructure.parenttranslationText IS NULL AND treeStructure.parenttranslationText IS NULL ) )
+ORDER BY 
+    treeStructure.factory_order, treeStructure.structureLayerNo, treeStructure.displayOrder, treeStructure.baseStructureId;
 /*END*/

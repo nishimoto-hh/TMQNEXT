@@ -32,6 +32,8 @@ const DM0002_FormDetail = {
     No: 0,                               // 画面番号
     Id: "CBODY_010_00_LST_0_DM0002",     // 検索結果一覧
     ModalId: "CBODY_010_00_LST_0_DM0002_0_edit",// 単票モーダル
+    DocumentNo: 14,                       // 文書番号
+    DownloadLink: 15,                    // ファイル／リンク
     Attachment: 20,                      // 添付種類
     File: 22,                            // ファイル選択コントロール
     Link: 23,                            // リンク
@@ -44,6 +46,7 @@ const DM0002_FormDetail = {
 const DM0002_Subject = {
     Id: "CBODY_000_00_LST_0_DM0002",     // 検索結果一覧
     FunctionTypeId: 2,                   // 機能タイプID
+    KeyId: 3,                            // キーID
     DocumentTypeValNo: 5,                // 文書種類コンボボックスの項目番号
     DispYearFrom: 6,                     // 表示年度(From) ※予備品詳細画面に戻った際に使用するための値を保持する場所
     DispYearTo: 7                        // 表示年度(To) ※予備品詳細画面に戻った際に使用するための値を保持する場所

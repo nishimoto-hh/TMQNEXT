@@ -85,6 +85,14 @@ const FormList = {
         StopSystem: 17,
         //突発区分
         Sudden: 20,
+        //故障原因分析書
+        HistoryFailureAnalyzeFile: 22,
+        //件名添付
+        SummaryFile: 36,
+        //保全活動件名ID
+        SummaryId: 60,
+        //発行日
+        IssueDate: 80,
     },
     ButtonId: {
         //点検情報登録
@@ -626,6 +634,14 @@ const MA0001_ExtensionData = "MA0001_ExtensionData";
 const MA0001_StructureId = "MA0001_StructureId";
 // グローバル変数のキー、職種
 const MA0001_JobId = "MA0001_JobId";
+// グローバル変数のキー、詳細検索条件の初期値
+const MA0001_InitDetailCondition = "MA0001_InitDetailCondition";
+// グローバル変数のキー、一覧画面の表示データを更新する用
+const MA0001_UpdateListData = "MA0001_UpdateListData";
+// グローバル変数のキー、文書管理画面で添付情報が更新された場合true
+const MA0001_UpdateAttachmentFlg = "MA0001_UpdateAttachmentFlg";
+// グローバル変数のキー、一覧画面用の総件数
+const MA0001_AllListCount = "MA0001_AllListCount";
 
 /**
  * 【オーバーライド用関数】
@@ -651,6 +667,21 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
     if (conductId != ConductId_MA0001) {
         // 共通画面の場合
+
+        if (conductId == DM0002_FormDetail.ConductId) {
+            //文書管理画面の場合
+            //機能タイプIDを取得
+            var typeId = getValue(DM0002_Subject.Id, DM0002_Subject.FunctionTypeId, 1, CtrlFlag.TextBox, false);
+            //保全活動件名IDを取得
+            var keyId = getValueByOtherForm(1, FormDetail.HideInfo.Id, FormDetail.HideInfo.SummaryId, 1, CtrlFlag.Label);
+            if (P_dicIndividual[MA0001_UpdateAttachmentFlg] && P_dicIndividual[MA0001_UpdateAttachmentFlg].TYPEID == typeId) {
+                //添付情報更新後は処理なし
+                return;
+            }
+            //文書管理画面の初期表示時に機能タイプID、保全活動件名IDを設定
+            P_dicIndividual[MA0001_UpdateAttachmentFlg] = { TYPEID: typeId, KEYID: keyId, UPDATE: false };
+
+        }
         return;
     }
 
@@ -692,6 +723,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
         //保全実績評価から遷移してきた場合、詳細検索条件を設定する
         setDetailSearchConditionFromMP0001();
+
+        //機能初期表示時、詳細検索条件の初期値を設定する
+        setInitDetailCondition();
 
         // 件名別長期計画・機器別長期計画で白丸「○」がクリックされて遷移してきた場合、新規登録画面(点検情報)を表示する
         dispFormEditFromScheduleLink();
@@ -753,6 +787,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
                 }
                 break;
         }
+
+        //一覧画面に反映する更新情報、添付情報をクリア
+        delete P_dicIndividual[MA0001_UpdateListData];
+        delete P_dicIndividual[MA0001_UpdateAttachmentFlg];
 
         //フォーカス設定
         setFocusButton(FormDetail.ForcusId);
@@ -1462,6 +1500,9 @@ function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
     } else if (getFormNo() == FormSelectMachine.No) {
         //登録画面へ戻る際、再描画は行わない
         return false;
+    } else if (getFormNo() == FormDetail.No) {
+        //一覧画面へ戻る際、再検索は行わない
+        return false;
     }
     return true;
 }
@@ -1517,6 +1558,117 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     // 共通-文書管理詳細画面の実行正常終了後処理
     DM0002_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
+    //更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+    setUpdateDataForList(appPath, conductId, pgmId, formNo);
+}
+
+/**
+ * 更新データを一覧画面に反映する
+ *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId   ：機能ID
+ *  @param pgmId       ：プログラムID
+ *  @param formNo      ：画面NO
+ */
+function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
+    if (!P_dicIndividual[MA0001_UpdateListData] || conductId != ConductId_MA0001) {
+        //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[MA0001_UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    //一覧画面のデータ
+    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
+    var list = table.getData();
+
+    switch (status) {
+        case rowStatusDef.New: //新規
+            //一覧画面のデータのROWNO最大値を取得
+            var maxRowNo = 0;
+            if (list && list.length > 0) {
+                var rowNoList = list.map(x => x.ROWNO);
+                //maxRowNo = Math.max.apply(null, rowNoList);
+                maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
+            }
+            //ROWNOに一覧データの最大値以降の値を設定
+            data.ROWNO = maxRowNo + 1;
+            //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
+            table.addRow(data, true, 1);
+            break;
+
+        case rowStatusDef.Edit: //更新
+            //データの保全活動件名IDを取得
+            var summaryId = data["VAL" + FormList.List.SummaryId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.List.SummaryId, "=", summaryId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        case rowStatusDef.Delete: //削除
+            //データの保全活動件名IDを取得
+            var summaryId = data["VAL" + FormList.List.SummaryId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.List.SummaryId, "=", summaryId);
+            if (oldData && oldData.length > 0) {
+                table.deleteRow(oldData[0].ROWNO);
+            }
+            break;
+
+        default:
+            break;
+    }
+    //詳細画面再描画時に復活するので、initFormOriginal内で消す
+    //delete P_dicIndividual[MA0001_UpdateListData];
+}
+
+/**
+ * 一覧画面のページングを再設定
+ *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId   ：機能ID
+ *  @param pgmId       ：プログラムID
+ *  @param status      ：実行処理結果ｽﾃｰﾀｽ
+ */
+function setListPagination(appPath, conductId, pgmId, status) {
+    // 読込件数エリアの総件数の設定
+    var div = $(P_Article).find('div[data-relation-id="' + FormList.List.Id + '"]');
+    var label = $(div).find('td[data-name="VAL3"]');
+    if (label != null && label.length > 0 && P_dicIndividual[MA0001_AllListCount]) {
+        var oldCount = $(label).text(); //「/123」のような先頭にスラッシュが付与された値
+        if (oldCount.slice(1) == P_dicIndividual[MA0001_AllListCount]) {
+            //件数の変更はないため処理なし
+            return;
+        }
+        $(label).text('/' + P_dicIndividual[MA0001_AllListCount]);
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
+    //ページャーの再設定
+    if (table) {
+        var count = getTotalRowCount(table);
+        setupPagination(appPath, conductId, pgmId, FormList.No, FormList.List.Id, count);
+    }
+    //ページャーの総ページ数が1件の場合、ページャーを非表示
+    setHidePagination("#" + FormList.List.Id + "_" + FormList.No, table);
+
+    //メッセージの設定
+    if (status != null && status.MESSAGE != null && status.MESSAGE.length > 0) {
+        // 削除時の成功メッセージ
+        addMessage(status.MESSAGE, status.STATUS);
+    }
 }
 
 /**
@@ -1554,6 +1706,10 @@ function reportCheckPre(appPath, conductId, formNo, btn) {
 function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
     // 共通-文書管理詳細画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
     if (IsExecDM0002_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+
+        // 添付情報が更新された場合（一覧データに反映用のフラグ）
+        P_dicIndividual[MA0001_UpdateAttachmentFlg].UPDATE = true;
+
         return DM0002_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
     }
 
@@ -1971,7 +2127,11 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     // 共通-担当者検索画面を閉じたとき
     SU0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
 
-    if (formNo == FormDetail.No) {
+    if (conductId == ConductId_MA0001 && formNo == FormList.No) {
+        //ページング再設定
+        setListPagination(appPath, conductId, pgmId, status);
+    }
+    else if (formNo == FormDetail.No) {
         //戻る・閉じるボタンの表示制御
         setDisplayCloseBtn(transPtn);
     }
@@ -1993,6 +2153,11 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
             setSelectMachineDataForTargetList(appPath, data);
         }
         delete P_dicIndividual[MA0001_SelectMachineList];
+    }
+
+    if (backFrom == DM0002_ConductId) { 
+        //文書管理画面を閉じた場合
+        setAttachmentForList();
     }
 }
 
@@ -2023,7 +2188,8 @@ function setSelectMachineDataForTargetList(appPath, machineData) {
         if (machineListData && machineListData.length > 0) {
             var rowNoList = machineListData.map(x => x.ROWNO);
             //対象機器のROWNO最大値を取得
-            maxRowNo = Math.max.apply(null, rowNoList);
+            //maxRowNo = Math.max.apply(null, rowNoList);
+            maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
         }
         //追加するデータのROWNO、ROWSTATUSを再設定
         $.each(addData, function (idx, rowData) {
@@ -2058,6 +2224,68 @@ function setSelectMachineDataForTargetList(appPath, machineData) {
 
     //ajax通信で選択した機器の情報を取得
     ajaxCommon("GetSelectMachineData", appPath, FormSelectMachine.No, ConductId_MA0001, true, machineData, eventFunc);
+}
+
+/**
+ * 添付情報を一覧画面のデータに反映する
+ */
+function setAttachmentForList() {
+    //添付情報が更新された場合、一覧画面のデータに反映する
+
+    if (!P_dicIndividual[MA0001_UpdateAttachmentFlg] || !P_dicIndividual[MA0001_UpdateAttachmentFlg].UPDATE) {
+        return;
+    }
+
+    //機能タイプIDを取得
+    var typeId = P_dicIndividual[MA0001_UpdateAttachmentFlg].TYPEID;
+    //保全活動件名IDを取得
+    var keyId = P_dicIndividual[MA0001_UpdateAttachmentFlg].KEYID;
+
+    //一覧の表示項目か
+    var col = 0;
+    switch (typeId.toString()) {
+        case AttachmentStructureGroupID.Summary.toString(): //件名添付
+            col = FormList.List.SummaryFile;
+            break;
+        case AttachmentStructureGroupID.HistoryFailureAnalyze.toString(): //故障原因分析書
+        case AttachmentStructureGroupID.HistoryFailureFactAnalyze.toString(): //故障原因分析書(個別工場)
+            col = FormList.List.HistoryFailureAnalyzeFile;
+            break;
+    }
+    if (col == 0) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+    var define = P_listData['#' + FormList.List.Id + '_' + FormList.No].getColumnDefinitions().find(x => x.field == "VAL" + col);
+    if (!define) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+
+    //添付情報文字列
+    var attachment = "";
+
+    //文書管理画面の添付情報を取得
+    var dm0002List = P_listData['#' + DM0002_FormDetail.Id + '_' + DM0002_FormDetail.No].getData();
+    if (dm0002List && dm0002List.length > 0) {
+        // 文書番号でソート
+        var list = dm0002List.sort((a, b) => a["VAL" + DM0002_FormDetail.DocumentNo] > b["VAL" + DM0002_FormDetail.DocumentNo] ? 1 : -1);
+        attachment = list.map(x => x["VAL" + DM0002_FormDetail.DownloadLink]).join("");
+    }
+
+    //更新前のデータを取得
+    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
+    var oldData = table.searchData("VAL" + FormList.List.SummaryId, "=", keyId);
+    if (oldData && oldData.length > 0) {
+        var updateData = {};
+        updateData.ROWNO = oldData[0].ROWNO;
+        updateData["VAL" + col] = attachment;
+        //添付情報を更新（ROWNOがキー）
+        table.updateRow(oldData[0].ROWNO, updateData);
+    }
+
+    //詳細画面再描画時に復活するので、initFormOriginal内で消す
+    //delete P_dicIndividual[MA0001_UpdateAttachmentFlg];
 }
 
 /**
@@ -2688,6 +2916,27 @@ function afterInitGetDetailConditionData(appPath, conductId, formNo, conditionDa
 
     if ((!data || data.length == 0) && !P_dicIndividual[MA0001_DetailSearchCondition]) {
         //保全実績評価からの遷移でない場合
+
+        //検索条件初期値を設定
+        //詳細検索条件が設定されているか
+        if (detailConditionDataList != null && detailConditionDataList.length > 0) {
+            if (detailConditionDataList[0]["VAL" + FormList.List.IssueDate]) {
+                //ローカルストレージに保存された検索条件を使用
+                return;
+            }
+            //発行日が設定されていなければ、初期値を設定する（値設定はバックエンド側）
+            detailConditionDataList[0]["VAL" + FormList.List.IssueDate] = "";
+        }
+        else {
+            //発行日に初期値を設定する（値設定はバックエンド側）
+            var info = {};
+            info['FORMNO'] = FormList.No;// 画面番号
+            info['ROWNO'] = 1;// 行番号
+            info['IsDetailCondition'] = true;// 詳細検索条件フラグ：ON
+            info['CTRLID'] = FormList.List.Id;// 一覧のctrlId
+            info["VAL" + FormList.List.IssueDate] = "";
+            detailConditionDataList.push(info);
+        }
         return;
     }
     if (data && data.length > 0) {
@@ -2803,21 +3052,47 @@ function setDetailSearchConditionFromMP0001() {
         setDetailSearchCondition(conditionData);
 
         //読込件数を「すべて」に更新し、非活性化
-        var define = $.grep(P_listDefines, function (define, idx) {
-            return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3 && define.CTRLID == FormList.List.Id);
-        });
-
-        // 読込件数コンボの取得
-        var select = getSelectCntCombo(FormList.List.Id);
-        // 詳細検索条件指定有りのため、読込件数を「すべて」に更新
-        var selectCnt = selectCntMaxDef.All;
-        $(select).find('option:selected').prop('selected', false);
-        $(select).find('option[exparam1="' + selectCnt + '"]').prop('selected', true);
-        define[0].VAL5 = selectCnt;
-
-        // 読込件数コンボとボタンの活性状態を設定
-        setSelectCntControlStatus(define[0].CTRLID, true);
+        setSelectCountCombo();
     }
+}
+
+/**
+ * 機能初期表示時、詳細検索条件に初期値を設定する
+ */
+function setInitDetailCondition() {
+    if (P_dicIndividual[MA0001_InitDetailCondition]) {
+        //詳細条件に値設定
+        var conditionData = {};
+        //発行日
+        conditionData['VAL' + FormList.List.IssueDate] = P_dicIndividual[MA0001_InitDetailCondition];
+        conditionData['VAL' + FormList.List.IssueDate + '_checked'] = true;
+        setDetailSearchCondition(conditionData);
+        delete P_dicIndividual[MA0001_InitDetailCondition];
+
+        //読込件数を「すべて」に更新し、非活性化
+        setSelectCountCombo();
+    }
+}
+
+/**
+ * 読込件数を「すべて」に更新し、非活性化
+ */
+function setSelectCountCombo() {
+    //読込件数を「すべて」に更新し、非活性化
+    var define = $.grep(P_listDefines, function (define, idx) {
+        return (define.CTRLTYPE == ctrlTypeDef.IchiranPtn3 && define.CTRLID == FormList.List.Id);
+    });
+
+    // 読込件数コンボの取得
+    var select = getSelectCntCombo(FormList.List.Id);
+    // 詳細検索条件指定有りのため、読込件数を「すべて」に更新
+    var selectCnt = selectCntMaxDef.All;
+    $(select).find('option:selected').prop('selected', false);
+    $(select).find('option[exparam1="' + selectCnt + '"]').prop('selected', true);
+    define[0].VAL5 = selectCnt;
+
+    // 読込件数コンボとボタンの活性状態を設定
+    setSelectCntControlStatus(define[0].CTRLID, true);
 }
 
 /**

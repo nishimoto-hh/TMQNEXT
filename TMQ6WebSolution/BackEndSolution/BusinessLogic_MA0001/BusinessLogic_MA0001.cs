@@ -57,6 +57,8 @@ namespace BusinessLogic_MA0001
                 public const string GetUserRole = "GetUserRole";
                 /// <summary>SQL名：ユーザ所属工場取得</summary>
                 public const string GetUserBelongingList = "UserBelonging_GetList";
+                /// <summary>SQL名：詳細検索条件（発行日）初期値取得</summary>
+                public const string GetStartUpParameters = "GetStartUpParameters";
 
                 /// <summary>SQL名：一時テーブル作成：一覧取得用</summary>
                 public const string CreateTempForGetList = "CreateTableTempGetMaintenanceList";
@@ -917,6 +919,12 @@ namespace BusinessLogic_MA0001
             public const string MA0001StructureId = "MA0001_StructureId";
             // グローバル変数のキー、職種ID
             public const string MA0001JobId = "MA0001_JobId";
+            // グローバル変数のキー、詳細検索条件の初期値
+            public const string MA0001InitDetailCondition = "MA0001_InitDetailCondition";
+            // グローバル変数のキー、一覧画面の表示データを更新する用
+            public const string MA0001UpdateListData = "MA0001_UpdateListData";
+            // グローバル変数のキー、一覧画面用の総件数
+            public const string MA0001AllListCount = "MA0001_AllListCount";
         }
 
         /// <summary>
@@ -1111,7 +1119,12 @@ namespace BusinessLogic_MA0001
             {
                 case ConductInfo.FormRegist.FormNo:
                     // 登録・更新処理
-                    resultRegist = executeRegistEdit();
+                    resultRegist = executeRegistEdit(out long summaryId, out bool isRegist);
+                    if (resultRegist)
+                    {
+                        // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+                        getListRowData(summaryId, isRegist);
+                    }
                     break;
                 case ConductInfo.FormReplaceMachine.FormNo:
                     // 機器交換の更新処理
@@ -3736,6 +3749,54 @@ namespace BusinessLogic_MA0001
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得
+        /// </summary>
+        /// <param name="summaryId">保全活動件名ID</param>
+        /// <param name="isRegist">新規登録の場合true</param>
+        private void getListRowData(long summaryId, bool isRegist)
+        {
+            // 項目カスタマイズで選択されている項目のみSELECTする
+            List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.SearchResult);
+            uncommentList.Add("GetDetail");
+
+            // SQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql, uncommentList);
+            // WITH句は別に取得
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
+
+            //一時テーブルの作成、登録
+            registTempTable(uncommentList);
+
+            StringBuilder selectSql = new StringBuilder(withSql);
+            selectSql.AppendLine(baseSql);
+
+            // 検索実行(取得は1件)
+            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), new { SummaryId = summaryId, LanguageId = this.LanguageId });
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.SearchResult;
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, results);
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.MA0001UpdateListData, dicList);
+            if (isRegist)
+            {
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.MA0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.MA0001AllListCount, count + 1);
+            }
         }
         #endregion
 

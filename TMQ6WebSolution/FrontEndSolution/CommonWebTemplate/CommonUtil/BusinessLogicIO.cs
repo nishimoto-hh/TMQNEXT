@@ -10,7 +10,9 @@ using System.Text.Json;
 using System.Text.Unicode;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using Microsoft.Extensions.PlatformAbstractions;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 
 namespace CommonWebTemplate.CommonUtil
 {
@@ -1005,8 +1007,16 @@ namespace CommonWebTemplate.CommonUtil
                         if (dicResult.ContainsKey("structureList") && dicResult["structureList"] != null)
                         {
                             // 一旦JSONのシリアライズ/デシリアライズを利用してフロント側用クラスへ変換する
-                            var json = JsonSerializer.Serialize(dicResult["structureList"]);
-                            var list = JsonSerializer.Deserialize<List<CommonStructure>>(json);
+                            //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod start
+                            //var json = JsonSerializer.Serialize(dicResult["structureList"]);
+                            //var list = JsonSerializer.Deserialize<List<CommonStructure>>(json);
+                            var options = new JsonSerializerOptions
+                            {
+                                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                            };
+                            var json = JsonSerializer.Serialize(dicResult["structureList"], options);
+                            var list = JsonSerializer.Deserialize<List<CommonStructure>>(json, options);
+                            //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod end
                             // 構成グループ毎に結果辞書に格納
                             foreach (var grpId in procData.StructureGroupList)
                             {
@@ -1017,6 +1027,16 @@ namespace CommonWebTemplate.CommonUtil
                                     listPerGrp.AddRange(list.Where(x => x.StructureGroupId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location).ToList());
                                     retStructureList.Add(grpId.ToString(), listPerGrp);
                                 }
+                                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod start
+                                //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+                                //else if (grpId == STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job)
+                                //{
+                                //    // 職種機種の場合、マージ処理を実行する
+                                //    var mergedList = mergeList(listPerGrp, 0);
+                                //    retStructureList.Add(grpId.ToString(), mergedList);
+                                //}
+                                //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
+                                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod start
                                 else
                                 {
                                     retStructureList.Add(grpId.ToString(), listPerGrp);
@@ -1026,6 +1046,70 @@ namespace CommonWebTemplate.CommonUtil
                     }
                 }
             }
+
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+            List<CommonStructure> mergeList(List<CommonStructure> list, int layerNo)
+            {
+                var resultList = list;
+
+                // 同一階層のデータを取得
+                var sameLayerList = resultList.Where(x => x.StructureLayerNo == layerNo);
+                if (!sameLayerList.Any()) { return resultList; }
+
+                // 一階層下のデータを取得
+                var lowerLayerList = resultList.Where(x => x.StructureLayerNo == layerNo + 1).ToList();
+
+                // 同一parentでグループ化
+                var groupByParentList = sameLayerList.GroupBy(x=>x.ParentStructureId).ToList();
+
+                // 同一parent単位でマージ
+                foreach(var groupByParent in groupByParentList)
+                {
+                    // 同一parentのリストを取得
+                    var sameParentList = groupByParentList.Single(x => x.Key == groupByParent.Key).ToList();
+                    // 同一翻訳でグループ化
+                    var groupByTextList = sameParentList.GroupBy(x => x.TranslationText).ToList();
+                    foreach (var groupByText in groupByTextList)
+                    {
+                        var sameTextList = groupByTextList.Single(x => x.Key == groupByText.Key).ToList();
+                        if (sameTextList.Count <= 1) { continue; }
+
+                        var structureId = 0;
+                        for (int i = 0; i < sameTextList.Count; i++)
+                        {
+                            var item = sameTextList[i];
+                            var idx = resultList.IndexOf(item);
+                            if (i == 0)
+                            {
+                                // 先頭データに抽出した工場IDと構成IDの配列を設定
+                                structureId = item.StructureId;
+                                resultList[idx].FactoryIdList = sameTextList.Select(x => x.FactoryId.Value).ToArray();
+                                resultList[idx].StructureIdList = sameTextList.Select(x => x.StructureId).ToArray();
+                                resultList[idx].FactoryId = null;
+                            }
+                            else
+                            {
+                                // 1階層下のデータから親構成IDと構成IDが一致するデータを抽出
+                                if (lowerLayerList.Any())
+                                {
+                                    var lowerItems = lowerLayerList.Where(x => x.ParentStructureId == item.StructureId).ToList();
+                                    foreach (var lowerItem in lowerItems)
+                                    {
+                                        var lowerIdx = resultList.IndexOf(lowerItem);
+                                        // 先頭データの構成IDで更新
+                                        resultList[lowerIdx].ParentStructureId = structureId;
+                                    }
+                                }
+                                // マージ後リストから削除
+                                resultList.RemoveAt(idx);
+                            }
+                        }
+                    }
+                }
+                // 再帰的に下位の階層のマージ処理を呼び出す
+                return mergeList(resultList, layerNo + 1);
+            }
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
 
             //実行ステータスを返却
             return returnInfo;

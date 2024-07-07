@@ -59,16 +59,23 @@ namespace BusinessLogic_MA0001
             // ページ情報取得
             pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
 
+            // 項目カスタマイズで選択されている項目のみSELECTする
+            List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.SearchResult);
+            uncommentList.Add("GetList");
+
             // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql, uncommentList);
             // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
 
             //保全実績評価から遷移してきた場合、職種を再設定する
             setJobCondition();
 
+            //詳細検索条件の発行日に初期値設定（機能起動時のみ。検索ボタン押下時等は設定しない）
+            setInitDetaiCondition();
+
             // 場所分類＆職種機種＆詳細検索条件取得
-            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, isJobKindOnly: true))
+            if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, isJobKindOnly: true, isDetailConditionOnly: true))
             {
                 return false;
             }
@@ -84,29 +91,18 @@ namespace BusinessLogic_MA0001
                 SetSearchResultsByDataClass<Dao.searchResult>(pageInfo, null, cnt, isDetailConditionApplied);
                 return false;
             }
-            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
-            // 添付情報作成
-            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Summary, FunctionTypeId.HistoryFailureAnalyze, FunctionTypeId.HistoryFailureFactAnalyze });
-            // 翻訳用一時テーブル登録
-            // 翻訳する構成グループのリスト
-            var structuregroupList = new List<GroupId>
-            {
-                GroupId.MqClass, GroupId.StopSystem, GroupId.Sudden, GroupId.BudgetManagement, GroupId.BudgetPersonality,
-                GroupId.Season, GroupId.DiscoveryMethods, GroupId.ActualResult, GroupId.Phenomenon, GroupId.FailureCause,
-                GroupId.TreatmentMeasure, GroupId.Progress, GroupId.Location, GroupId.FailureCausePersonality
-            };
-            listPf.GetCreateTranslation(); // テーブル作成
-            listPf.GetInsertTranslationAll(structuregroupList); // 各グループ
-            // 職種は職種階層のみなので別で指定
-            listPf.GetInsertLayerOnly(GroupId.Job, (int)Const.MsStructure.StructureLayerNo.Job.Job, true);
-            // 機能で作成するテーブル
-            listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
-            listPf.RegistTempTable(); // 登録
+
+            //一時テーブルの作成、登録
+            registTempTable(uncommentList);
+
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
 
+            //項目カスタマイズでSELECT項目を絞るので、詳細検索条件は機能側で付与する
+            StringBuilder baseSqlSb = new StringBuilder(baseSql);
+            baseSqlSb.AppendLine(whereSql);
             // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSqlSb.ToString(), null, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");
             selectSql.AppendLine("issue_date DESC");
@@ -130,6 +126,14 @@ namespace BusinessLogic_MA0001
                 // 正常終了
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
+            //グローバルリストへ総件数を設定
+            SetGlobalData(GlobalKey.MA0001AllListCount, isDetailConditionApplied ? results.Count : cnt);
+
+            //★2024/06/19 TMQ応急対応 メモリ解放処理追加 start
+            // 検索結果リストを解放
+            results = null;
+            GC.Collect();
+            //★2024/06/19 TMQ応急対応 メモリ解放処理追加 end
             return true;
 
             //職種を設定
@@ -154,6 +158,35 @@ namespace BusinessLogic_MA0001
                             List<int> list = ids.ToString().Split("|").ToList().ConvertAll(x => Convert.ToInt32(x));
                             this.searchConditionDictionary.Where(x => x.ContainsKey(STRUCTURE_CONSTANTS.CONDITION_KEY.Job)).FirstOrDefault()[STRUCTURE_CONSTANTS.CONDITION_KEY.Job] = list;
                         }
+                    }
+                }
+            }
+
+            //詳細検索条件の発行日に初期値設定
+            void setInitDetaiCondition()
+            {
+                var list = this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x.ContainsKey("CTRLID")).ToList();
+                if (list != null && list.Count > 0)
+                {
+                    var dic = list.Where(x => x["IsDetailCondition"].Equals(true) && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault();
+                    //マッピング情報からVAL値を取得
+                    var issueDateInfo = this.mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormList.ControlId.SearchResult) && x.ParamName == nameof(Dao.searchResult.IssueDate)).FirstOrDefault();
+                    //ユーザが発行日を条件として保存していない場合、初期値を設定する（保全実績評価からの遷移時も設定しない）
+                    if (dic.ContainsKey("VAL" + issueDateInfo.ItemNo) && (dic["VAL" + issueDateInfo.ItemNo] == null || dic["VAL" + issueDateInfo.ItemNo] == ""))
+                    {
+                        //機能マスタから取得した初期値を設定
+                        string param = TMQUtil.SqlExecuteClass.SelectEntity<string>(SqlName.List.GetStartUpParameters, SqlName.SubDir, null, this.db);
+                        int month = ComUtil.ConvertStringToInt(param) ?? 0;
+                        if (month <= 0)
+                        {
+                            // 初期値が未指定の場合、設定しない
+                            return;
+                        }
+                        //システム日付のNか月前を発行日の初期値（From）とする
+                        string issueDate = DateTime.Now.AddMonths(-month).ToString("yyyy/MM/dd");
+                        this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x["IsDetailCondition"].Equals(true) && x.ContainsKey("CTRLID") && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault()["VAL" + issueDateInfo.ItemNo] = issueDate + "|";
+                        //グローバルリストに保存（フロント側で詳細検索条件に値を設定する用）
+                        SetGlobalData(GlobalKey.MA0001InitDetailCondition, issueDate);
                     }
                 }
             }
@@ -371,5 +404,69 @@ namespace BusinessLogic_MA0001
             }
         }
 
+        /// <summary>
+        /// 一時テーブルの作成、登録
+        /// </summary>
+        /// <param name="uncommentList">項目カスタマイズで選択されている項目のリスト</param>
+        private void registTempTable(List<string> uncommentList)
+        {
+
+            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+            // 添付情報作成
+            List<FunctionTypeId> attachmentList = new();
+            if (uncommentList.Contains(nameof(Dao.searchResult.FileLinkSubject)))
+            {
+                // 件名添付
+                attachmentList.Add(FunctionTypeId.Summary);
+            }
+            if (uncommentList.Contains(nameof(Dao.searchResult.FileLinkFailure)))
+            {
+                // 故障原因分析書
+                attachmentList.AddRange(new List<FunctionTypeId> { FunctionTypeId.HistoryFailureAnalyze, FunctionTypeId.HistoryFailureFactAnalyze });
+            }
+            if (attachmentList.Count > 0)
+            {
+                listPf.GetAttachmentSql(attachmentList);
+            }
+            //表示項目のみの構成グループIDを指定する
+            //場所階層、原因性格はいずれかの項目が１つでも存在する場合、構成グループIDを追加する
+            List<string> locationList = new List<string>() { nameof(Dao.searchResult.DistrictName), nameof(Dao.searchResult.FactoryName), nameof(Dao.searchResult.PlantName), nameof(Dao.searchResult.SeriesName), nameof(Dao.searchResult.StrokeName), nameof(Dao.searchResult.FacilityName) };
+            List<string> failureCausePersonalityList = new List<string>() { nameof(Dao.searchResult.FailureCausePersonality1StructureName), nameof(Dao.searchResult.FailureCausePersonality2StructureName) };
+            int locationCount = uncommentList.FindAll(locationList.Contains).Count;
+            int failureCausePersonalityCount = uncommentList.FindAll(failureCausePersonalityList.Contains).Count;
+            if (locationCount > 0)
+            {
+                uncommentList.Add("Location");
+            }
+            if (failureCausePersonalityCount > 0)
+            {
+                uncommentList.Add("FailureCausePersonality");
+            }
+            //bool existJobFlg = uncommentList.Contains(nameof(Dao.searchResult.JobName));
+            //if (!existJobFlg)
+            //{
+            //    uncommentList.Add("CreateIndex");
+            //}
+
+            //// 翻訳用一時テーブル登録
+            //// 翻訳する構成グループのリスト
+            //var structuregroupList = new List<GroupId>
+            //{
+            //    GroupId.MqClass, GroupId.StopSystem, GroupId.Sudden, GroupId.BudgetManagement, GroupId.BudgetPersonality,
+            //    GroupId.Season, GroupId.DiscoveryMethods, GroupId.ActualResult, GroupId.Phenomenon, GroupId.FailureCause,
+            //    GroupId.TreatmentMeasure, GroupId.Progress, GroupId.Location, GroupId.FailureCausePersonality
+            //};
+            listPf.GetCreateTranslation(); // テーブル作成
+            //listPf.GetInsertTranslationAll(structuregroupList); // 各グループ
+            //if (existJobFlg)
+            //{
+            //    // 職種は職種階層のみなので別で指定
+            //    listPf.GetInsertLayerOnly(GroupId.Job, (int)Const.MsStructure.StructureLayerNo.Job.Job, existJobFlg);
+            //}
+            listPf.SetParamLanguageId();
+            // 機能で作成するテーブル
+            listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList, uncommentList);
+            listPf.RegistTempTable(); // 登録
+        }
     }
 }

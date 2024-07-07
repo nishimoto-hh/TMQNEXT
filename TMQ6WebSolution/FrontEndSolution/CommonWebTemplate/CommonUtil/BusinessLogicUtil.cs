@@ -19,6 +19,7 @@ using CommonWebTemplate.Models.Common;
 using System.Runtime.Serialization.Json;
 using static CommonWebTemplate.CommonUtil.RequestManageUtil;
 using Microsoft.AspNetCore.Http;
+using CommonWebTemplate.CommonDefinitions;
 
 namespace CommonWebTemplate.CommonUtil
 {
@@ -1752,9 +1753,9 @@ namespace CommonWebTemplate.CommonUtil
 
             foreach (var grpId in procData.StructureGroupList)
             {
-                var treeviewList = new List<CommonTreeViewInfo>();
                 if (structureDic.ContainsKey(grpId.ToString()))
                 {
+                    var treeviewList = new List<CommonTreeViewInfo>();
                     var structureList = structureDic[grpId.ToString()];
                     var rootId = 0;
                     foreach (var structureInfo in structureList)
@@ -1769,7 +1770,7 @@ namespace CommonWebTemplate.CommonUtil
                         }
                         else if (structureInfo.StructureLayerNo == 0)
                         {
-                            // ルートの構成IDを1階層目の親ノードIDにセット
+                            // ルートのノードIDを設定
                             info.Parent = rootId.ToString();
                         }
                         treeviewList.Add(info);

@@ -712,6 +712,7 @@
     <None Remove="Resources\sql\Maintenance\GetRequestNumberingForLock.sql" />
     <None Remove="Resources\sql\Maintenance\GetScheduleFromLongPlan.sql" />
     <None Remove="Resources\sql\Maintenance\GetSearchMachineList.sql" />
+    <None Remove="Resources\sql\Maintenance\GetStartUpParameters.sql" />
     <None Remove="Resources\sql\Maintenance\GetSummaryInfo.sql" />
     <None Remove="Resources\sql\Maintenance\GetUserRole.sql" />
     <None Remove="Resources\sql\Maintenance\InsertHistoryFailureInfo.sql" />
@@ -1066,6 +1067,7 @@
     <EmbeddedResource Include="Resources\sql\Maintenance\DeleteHistoryMachineForHistoryId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetEquipmentInfoByScheduleDetailId.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetInspectionMachineListForExcelPort.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetStartUpParameters.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />

@@ -2059,6 +2059,16 @@ namespace CommonSTDUtil.CommonSTDUtil
                     changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationNoHistory, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
                 }
 
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+                var mergeGroupIdList = new List<int>();
+                if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job))
+                {
+                    // 職種・機種の場合、マージ用のSQLを実行する
+                    mergeGroupIdList.Add(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job);
+                    structureGroupIdList.Remove(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job);
+                }
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
+
                 // 構成リストを取得
                 var structureList = db.GetListByOutsideSql<Dao.VStructureItemEntity>(sqlName, SqlName.SubDir,
                       new
@@ -2069,8 +2079,35 @@ namespace CommonSTDUtil.CommonSTDUtil
                           StructureGroupIdList = structureGroupIdList,
                           ExceptCommonFactory = exceptCommonFactory,
                           NarrowHistoryFactory = narrowHistoryFactory,
-                          IsTransFactoryOrderTree = isTransFactoryOrderTree
+                          IsTransFactoryOrderTree = isTransFactoryOrderTree,
+                          //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+                          MergeStructureList = false
+                          //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
                       }).ToList();
+
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+                if (mergeGroupIdList.Count > 0)
+                {
+                    // マージされた構成リストを取得
+                    var mergedList = db.GetListByOutsideSql<Dao.VStructureItemEntity>(sqlName, SqlName.SubDir,
+                          new
+                          {
+                              LanguageId = languageId,
+                              FactoryIdList = factoryIdList,
+                              StructureIdList = structureIdList,
+                              StructureGroupIdList = mergeGroupIdList,
+                              ExceptCommonFactory = exceptCommonFactory,
+                              NarrowHistoryFactory = narrowHistoryFactory,
+                              IsTransFactoryOrderTree = isTransFactoryOrderTree,
+                              MergeStructureList = true
+                          }).ToList();
+                    if(mergedList.Count > 0)
+                    {
+                        structureList.AddRange(mergedList);
+                        structureGroupIdList.AddRange(mergeGroupIdList);
+                    }
+                }
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
 
                 if (isLocationForUserUst)
                 {
@@ -4322,6 +4359,8 @@ namespace CommonSTDUtil.CommonSTDUtil
             public string DetailSearchColOrgName { get; set; }
             /// <summary>詳細検索データ種類</summary>
             public short DetailSearchDataType { get; set; }
+            /// <summary>項目カスタマイズ表示フラグ</summary>
+            public bool DisplayFlg { get; set; }
 
             /// <summary>From/To項目かどうか</summary>
             public bool IsFromTo

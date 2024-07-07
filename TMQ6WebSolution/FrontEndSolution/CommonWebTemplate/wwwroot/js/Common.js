@@ -13283,6 +13283,8 @@ function clickComUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrl
     if (addConditionData.length) {
         formData.append("AddRegistData", JSON.stringify(addConditionData));
     }
+    //個別実装用データリストを再設定（オーバライド用関数内で設定する場合を考慮）
+    formData.set("ListIndividual", JSON.stringify(P_dicIndividual));
 
     var formNo = 0;
     var ctrlId = "";
@@ -15399,7 +15401,9 @@ function transChildForm(appPath, childNo, dispPtn, transDiv, parentNo, btn_ctrlI
 
         //親画面をクリアして非表示
         // - 検索結果をクリア
-        clearSearchResult();
+        if (conductId != "MA0001") { //保全活動詳細画面から一覧画面へ戻る際に再検索を行わない
+            clearSearchResult();
+        }
         // - 明細エリアのエラー状態を初期化
         clearMessage();
         // - 画面ｴﾘｱ非表示
@@ -17749,7 +17753,9 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
         }
         if (isTreeMenu) {
             // 左側メニューの(職種機種の)場合、マージ処理を実行
-            jsonDataW = mergeTreeViewDataList(jsonDataW, 0);
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 start
+            //jsonDataW = mergeTreeViewDataList(jsonDataW, 0);
+            //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 end
         } else {
             // 左側メニューでない場合、指定階層番号範囲で絞り込み
             if (modalValues != null && modalValues.length > 0) {
@@ -17825,8 +17831,10 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                         }
                         // 工場IDで絞り込み
                         var filteredList = filterTreeViewJsonDataByFactoryId(jobData, factoryIdList);
+                        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 start
                         // マージ処理実行
-                        filteredList = mergeTreeViewDataList(filteredList, 0);
+                        //filteredList = mergeTreeViewDataList(filteredList, 0);
+                        //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 end
                         // ツリービューに設定
                         var jobSelector = '#' + getTreeViewId(structureGroupDef.Job, treeViewDef.TreeMenu.Val);
                         updateTreeViewData(jobSelector, filteredList);
@@ -17901,7 +17909,12 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                     selectedIdList.push(initStructureId);
                 }
             }
-            setSelectedDataToTreeView(selector, selectedIdList, false, isOpenNode);
+            //★2024/06/28 TMQ応急対応 SQL側でマージ処理実行 Mod start
+            //setSelectedDataToTreeView(selector, selectedIdList, false, isOpenNode);
+            // 職種機種の場合、マージデータ
+            var isMerged = grpId == structureGroupDef.Job;
+            setSelectedDataToTreeView(selector, selectedIdList, isMerged, isOpenNode);
+            //★2024/06/28 TMQ応急対応 SQL側でマージ処理実行 Mod end
             //場所階層ツリーの場合、工場階層まで展開する
             openFactoryNode(grpId, selector);
         }
@@ -18123,10 +18136,45 @@ function filterTreeViewJsonDataByFactoryId(jsonList, factoryIdList, isFilterTran
             // 翻訳を行わない場合は、リビジョン3734の対応前の処理と同じ
             $.each(resultList, function (idx, data) {
                 var factoryId = getTreeViewFacrotyId(data);
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod start
+                //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+                //if (data.li_attr['data-mergefactory'] && data.li_attr['data-mergefactory'].length > 0) {
+                //    var mergeFactoryIdList = getTreeViewMergeFacrotyIdList(data);
+                //    if (mergeFactoryIdList && mergeFactoryIdList.length > 0) {
+                //        // マージ後の工場IDが含まれる場合、結果リストに追加
+                //        $.each(factoryIdList, function (idx, id) {
+                //            if (mergeFactoryIdList.indexOf(id) >= 0) {
+                //                resultList2.push(data);
+                //                return false;   // break;
+                //            }
+                //        });
+                //    }
+                //}
+                ////★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
+                //else if (data.parent == '#' || (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0)) {
                 if (data.parent == '#' || (factoryId > 0 && factoryIdList.indexOf(factoryId) >= 0)) {
                     // ルート要素または指定工場の要素の場合、結果リストに追加
                     resultList2.push(data);
-                } else if (factoryId == 0) {
+                }
+                else if (data.li_attr['data-mergefactory'] && data.li_attr['data-mergefactory'].length > 0) {
+                    var mergeFactoryIdList = getTreeViewMergeFacrotyIdList(data);
+                    if (mergeFactoryIdList && mergeFactoryIdList.length > 0) {
+                        // マージ後の工場IDが含まれる場合、結果リストに追加
+                        if (mergeFactoryIdList.indexOf(0) >= 0) {
+                            // 各工場共通アイテムの場合
+                            resultList2.push(data);
+                        } else {
+                            $.each(factoryIdList, function (idx, id) {
+                                if (mergeFactoryIdList.indexOf(id) >= 0) {
+                                    resultList2.push(data);
+                                    return false;   // break;
+                                }
+                            });
+                        }
+                    }
+                }
+                //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod end
+                else if (factoryId == 0) {
                     // 共通工場の要素の場合、構成IDが同一の要素を検索
                     var structureId = getTreeViewStructureId(data);
                     var duplicatedData = $.grep(resultList, function (x, i) {
@@ -18320,6 +18368,17 @@ function getTreeViewFacrotyId(data) {
     return data.li_attr['data-factoryid'];
 }
 
+//★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD start
+/**
+ * ツリービューのマージ後工場IDリスト取得
+ * @param {Object} data :JSONデータ
+ * @return {number} 工場IDリスト
+ */
+function getTreeViewMergeFacrotyIdList(data) {
+    return data.li_attr['data-mergefactory'];
+}
+//★2024/06/12 TMQ応急対応 C#側でマージ処理実行 ADD end
+
 /**
  * ツリービューの構成ID取得
  * @param {Object} data :JSONデータ
@@ -18334,7 +18393,7 @@ function getTreeViewStructureId(data) {
 }
 
 /**
- * ツリービューの構成ID取得
+ * ツリービューの翻訳の工場ID取得
  * @param {Object} data :JSONデータ
  * @return {number} 翻訳の工場ID
  */
@@ -22155,11 +22214,32 @@ function getSelectedStructureIdList(grpId, treeViewType, isMerged) {
         } else {
             var idList = getTreeViewStructureIdList(data);
             if (idList != null && idList.length > 0) {
-                $.each(idList, function (i, id) {
-                    if (structureIdList.indexOf(id) < 0) {
-                        structureIdList.push(id);
+                //★2024/06/20 TMQ応急対応 C#側でマージ処理実行 start
+                //$.each(idList, function (i, id) {
+                //    if (structureIdList.indexOf(id) < 0) {
+                //        structureIdList.push(id);
+                //    }
+                //});
+                if (idList.length == 1) {
+                    structureIdList.push(idList[0]);
+                } else {
+                    // 対応する工場ID配列を取得
+                    var facrotyIdList = getTreeViewMergeFacrotyIdList(data);
+                    // 選択中の工場IDと一致する構成IDのみを取得
+                    if (P_SelectedFactoryIdList) {
+                        $.each(P_SelectedFactoryIdList, function (i, id) {
+                            var idx = facrotyIdList.indexOf(id);
+                            if (idx >= 0) {
+                                // 工場のインデックスと同じ位置の構成IDを追加
+                                var structureId = idList[idx];
+                                if (structureIdList.indexOf(structureId)) {
+                                    structureIdList.push(structureId);
+                                }
+                            }
+                        });
                     }
-                });
+                }
+                //★2024/06/20 TMQ応急対応 C#側でマージ処理実行 end
             }
         }
     });

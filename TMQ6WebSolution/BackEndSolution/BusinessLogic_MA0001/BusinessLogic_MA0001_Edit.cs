@@ -247,9 +247,14 @@ namespace BusinessLogic_MA0001
         /// <summary>
         /// 編集画面　登録処理
         /// </summary>
+        /// <param name="summaryId">保全活動件名ID</param>
+        /// <param name="isRegist">新規登録の場合true</param>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistEdit()
+        private bool executeRegistEdit(out long summaryId, out bool isRegist)
         {
+            summaryId = newSummaryId;
+            isRegist = false;
+
             //ユーザ役割取得
             //製造権限（true：権限あり）
             bool manufacturingFlg = Convert.ToBoolean(getValueByKeyName(ConductInfo.FormRegist.ControlId.DetailInfoIds[0], "manufacturing"));
@@ -302,7 +307,7 @@ namespace BusinessLogic_MA0001
             setLayerInfo(ref registSummaryInfo);
 
             //新規登録or更新
-            bool isRegist = registSummaryInfo.SummaryId == newSummaryId;
+            isRegist = registSummaryInfo.SummaryId == newSummaryId;
 
             //保全依頼
             ComDao.MaRequestEntity registRequestInfo = new ComDao.MaRequestEntity();
@@ -355,7 +360,7 @@ namespace BusinessLogic_MA0001
                 return false;
             }
             //保全活動件名ID
-            long summaryId = val;
+            summaryId = val;
 
             //点検・故障によって登録先を変更
             switch (registSummaryInfo.ActivityDivision)
@@ -380,7 +385,7 @@ namespace BusinessLogic_MA0001
             if (manufacturingFlg || isRegist)
             {
                 //製造権限がない場合は依頼情報の更新は行わない（新規登録の場合はレコードは作成しておく）
-                if (!registRequest())
+                if (!registRequest(summaryId, isRegist))
                 {
                     return false;
                 }
@@ -393,7 +398,7 @@ namespace BusinessLogic_MA0001
             }
 
             //保全計画
-            if (!registPlan())
+            if (!registPlan(summaryId, isRegist))
             {
                 return false;
             }
@@ -425,7 +430,7 @@ namespace BusinessLogic_MA0001
             }
 
             //依頼情報の登録
-            bool registRequest()
+            bool registRequest(long summaryId, bool isRegist)
             {
                 registRequestInfo.SummaryId = summaryId;
                 bool resultRequest = TMQUtil.SqlExecuteClass.Regist(isRegist ? SqlName.Regist.InsertRequest : SqlName.Regist.UpdateRequest, SqlName.SubDir, registRequestInfo, this.db);
@@ -437,7 +442,7 @@ namespace BusinessLogic_MA0001
             }
 
             //計画情報の登録
-            bool registPlan()
+            bool registPlan(long summaryId, bool isRegist)
             {
                 List<short> grpNoList = new List<short>() { ConductInfo.FormRegist.GroupNo.PlanInfo };
                 ComDao.MaPlanEntity registPlanInfo = getRegistInfo<ComDao.MaPlanEntity>(grpNoList, now);

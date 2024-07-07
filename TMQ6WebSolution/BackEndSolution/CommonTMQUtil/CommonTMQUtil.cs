@@ -2420,11 +2420,12 @@ namespace CommonTMQUtil
             /// <param name="subDir">SQLのフォルダ</param>
             /// <param name="createSqlName">CREATE文のファイル名</param>
             /// <param name="insertSqlName">INSERT文のファイル名</param>
-            public void AddTempTable(string subDir, string createSqlName, string insertSqlName)
+            /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+            public void AddTempTable(string subDir, string createSqlName, string insertSqlName, List<string> listUnComment = null)
             {
-                string create = SqlExecuteClass.GetExecuteSql(createSqlName, subDir, string.Empty);
+                string create = SqlExecuteClass.GetExecuteSql(createSqlName, subDir, string.Empty, listUnComment);
                 this.SqlCreateTemp.Append(create);
-                string insert = SqlExecuteClass.GetExecuteSql(insertSqlName, subDir, string.Empty);
+                string insert = SqlExecuteClass.GetExecuteSql(insertSqlName, subDir, string.Empty, listUnComment);
                 this.SqlInsertTemp.Append(insert);
             }
 
@@ -2437,6 +2438,14 @@ namespace CommonTMQUtil
             {
                 this.SqlCreateTemp.Append(createSql);
                 this.SqlInsertTemp.Append(insertSql);
+            }
+
+            /// <summary>
+            /// パラメータの言語IDを設定
+            /// </summary>
+            public void SetParamLanguageId()
+            {
+                this.Param.LanguageId = this.LanguageId;
             }
         }
 

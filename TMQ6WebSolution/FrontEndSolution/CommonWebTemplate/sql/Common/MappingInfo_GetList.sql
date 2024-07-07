@@ -23,6 +23,7 @@ from
             , coalesce(fcd.expansion_in_clause_division, 0) as InClauseKbn
             , coalesce(fcd.expansion_lock_type, 0) as LockType
             , fcd.expansion_lock_table_name as LockTblName
+            , case when cuc.display_flg = 0 then 0 else 1 end as DisplayFlg
         from
             cm_form_define fd 
             join cm_form_control_define fcd 
@@ -45,6 +46,14 @@ from
                 and trans.language_id = /*LanguageId*/'ja'
                 /*END*/
                 and trans.delete_flg = 0
+            left join cm_control_user_customize cuc
+                on fd.program_id = cuc.program_id
+                and fd.form_no = cuc.form_no
+                and fd.control_group_id = cuc.control_group_id
+                and fcd.control_no = cuc.control_no
+                /*IF UserId != null && UserId != ''*/
+                and cuc.user_id = /*UserId*/0
+                /*END*/
         where
             fcd.define_type = 1 
             and fcd.delete_flg = 0 
@@ -72,6 +81,7 @@ from
             , coalesce(fcd.expansion_in_clause_division, 0) as InClauseKbn
             , coalesce(fcd.expansion_lock_type, 0) as LockType 
             , fcd.expansion_lock_table_name as LockTblName
+            , case when cuc.display_flg = 0 then 0 else 1 end as DisplayFlg
         from
             cm_form_define fd 
             join cm_form_control_define fcd 
@@ -91,6 +101,14 @@ from
                 and trans.language_id = /*LanguageId*/'ja'
                 /*END*/
                 and trans.delete_flg = 0
+            left join cm_control_user_customize cuc
+                on fd.program_id = cuc.program_id
+                and fd.form_no = cuc.form_no
+                and fd.control_group_id = cuc.control_group_id
+                and fcd.control_no = cuc.control_no
+                /*IF UserId != null && UserId != ''*/
+                and cuc.user_id = /*UserId*/0
+                /*END*/
         where
             fcd.define_type = 1 
             and fcd.delete_flg = 0

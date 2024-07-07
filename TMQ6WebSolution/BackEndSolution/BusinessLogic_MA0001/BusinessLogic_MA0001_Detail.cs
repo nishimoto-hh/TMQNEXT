@@ -548,6 +548,9 @@ namespace BusinessLogic_MA0001
             //保全活動件名IDをクリアする
             TMQUtil.SqlExecuteClass.Regist(SqlName.Detail.UpdateScheduleSummaryId, SqlName.SubDir, detail, this.db);
 
+            //一覧画面のデータ更新用の値を設定（一覧画面に戻った際、再検索をせず一覧表示データを直接削除する）
+            setDeleteRowDataToGlobalData();
+
             return true;
 
             //SQL文取得＆削除処理
@@ -572,6 +575,24 @@ namespace BusinessLogic_MA0001
                     }
                 }
                 return true;
+            }
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData()
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //保全活動件名IDのVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormList.ControlId.SearchResult) && x.ParamName.Equals(nameof(Dao.searchResult.SummaryId))).Select(x => x.ItemNo).FirstOrDefault();
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, summaryId } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.MA0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.MA0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.MA0001AllListCount, count - 1);
             }
         }
 

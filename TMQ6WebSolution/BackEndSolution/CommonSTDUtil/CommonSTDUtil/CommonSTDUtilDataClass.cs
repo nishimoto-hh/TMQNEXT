@@ -1552,6 +1552,8 @@ namespace CommonSTDUtil.CommonSTDUtil
             public VStructureItemEntity()
             {
                 TableName = "v_structure_item";
+                StructureIdListText = null;
+                FactoryIdListText = null;
             }
             /// <summary>Gets テーブル名</summary>
             /// <value>テーブル名</value>
@@ -1589,6 +1591,56 @@ namespace CommonSTDUtil.CommonSTDUtil
             /// <summary>Gets or sets 翻訳項目説明</summary>
             /// <value>翻訳項目説明</value>
             public string TranslationItemDescription { get; set; }
+            //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Add start
+            /// <summary>Gets or sets 構成IDキー</summary>
+            /// <value>構成IDキー</value>
+            public string StructureIdKey { get; set; }
+            /// <summary>Gets or sets 親構成IDキー</summary>
+            /// <value>親構成IDキー</value>
+            public string ParentStructureIdKey { get; set; }
+            //★2024/06/27 TMQ応急対応 SQL側でマージ処理実行 Add end
+            //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+            /// <summary>Gets or sets 構成IDリスト</summary>
+            /// <value>構成IDリスト(カンマ区切り文字列)</value>
+            public string StructureIdListText { get; set; }
+            /// <summary>Gets or sets 工場IDリスト</summary>
+            /// <value>工場IDリスト(カンマ区切り文字列)</value>
+            public string FactoryIdListText { get; set; }
+            /// <summary>Gets or sets 構成IDリスト</summary>
+            /// <value>構成IDリスト(カンマ区切り文字列)</value>
+            public int[] StructureIdList
+            {
+                get
+                {
+                    if (!string.IsNullOrEmpty(this.StructureIdListText))
+                    {
+                        var idList = this.StructureIdListText.Split(",");
+                        return idList.Select(x => Convert.ToInt32(x)).ToArray();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            /// <summary>Gets or sets 工場IDリスト</summary>
+            /// <value>工場IDリスト(カンマ区切り文字列)</value>
+            public int[] FactoryIdList
+            {
+                get
+                {
+                    if (!string.IsNullOrEmpty(this.FactoryIdListText))
+                    {
+                        var idList = this.FactoryIdListText.Split(",");
+                        return idList.Select(x => Convert.ToInt32(x)).ToArray();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
 
             /// <summary>
             /// プライマリーキー
