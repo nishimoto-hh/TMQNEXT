@@ -153,7 +153,7 @@ factory_order AS(
     FROM
         v_structure AS vs
     WHERE
-/*IF NarrowHistoryFactory==1001 */
+/*IF NarrowHistoryFactory==1001 || NarrowHistoryFactory==1006*/
 -- 対象外の工場を取得する場合はNOT EXISTS
         NOT
 /*END*/
@@ -464,8 +464,10 @@ UPDATE statistics #TEMP_STRUCTURE_ALL_LIST;
 DROP TABLE IF EXISTS #TEMP_STRUC_ID_TREE;
 
 CREATE TABLE #TEMP_STRUC_ID_TREE(
-        structureId int,
-        translationTextTree  nvarchar(4000)
+        translationText  nvarchar(800),
+        translationTextTree  nvarchar(4000),
+        factoryId int,
+        structureId int
 );
 
 WITH STRUC_ID_TREE AS (
@@ -474,6 +476,7 @@ WITH STRUC_ID_TREE AS (
         , tmp.structureGroupId
         , tmp.structureLayerNo
         , tmp.translationText
+        , tmp.factoryId
         , CAST( tmp.translationText AS VARCHAR(4000) ) AS translationTextTree
     FROM #TEMP_STRUCTURE_ALL_LIST tmp
     WHERE tmp.structureLayerNo = -1
@@ -484,6 +487,7 @@ WITH STRUC_ID_TREE AS (
         , tmp2.structureGroupId
         , tmp2.structureLayerNo
         , tmp2.translationText
+        , tmp2.factoryId
         , CAST( tmp.translationTextTree + '-' + tmp2.translationText AS VARCHAR(4000) ) 
     FROM STRUC_ID_TREE tmp
     INNER JOIN
@@ -495,8 +499,10 @@ WITH STRUC_ID_TREE AS (
 )
 INSERT INTO #TEMP_STRUC_ID_TREE
 SELECT
-    structureId
+    translationText
     , translationTextTree
+    , factoryId
+    , structureId
 FROM
     STRUC_ID_TREE;
 
@@ -506,7 +512,7 @@ CREATE nonclustered INDEX [idxtemp_treeBaseStructure_01]
 UPDATE statistics #TEMP_TREE_BASE_STRUCTURE;
 
 CREATE nonclustered INDEX [idxtemp_STRUC_ID_TREE_01] 
-    ON [#TEMP_STRUC_ID_TREE] ([structureId],[translationTextTree]);
+    ON [#TEMP_STRUC_ID_TREE] ([translationText],[translationTextTree]);
 
 UPDATE statistics #TEMP_STRUC_ID_TREE;
 
@@ -583,7 +589,7 @@ FROM
 WHERE
     EXISTS( SELECT * FROM #TEMP_STRUC_ID_TREE AS idTree 
             WHERE idTree.translationTextTree = treeStructure.translationTextTree
-                  AND idTree.structureId = treeStructure.baseStructureId )
+                  AND idTree.translationText = treeStructure.translationText )
     OR treeStructure.structureLayerNo = -1;
 
 CREATE nonclustered INDEX [idxtemp_treeStructure_01] 
@@ -595,24 +601,15 @@ WITH
     listStructure AS 
 (
     SELECT 
-         tmp.translationText
-        , tmp2.translationText as parenttranslationText
-        , STRING_AGG( tmp.structureId , ',' )
-            WITHIN GROUP ( ORDER BY tmp.structureGroupId, tmp.factory_order, tmp.structureLayerNo, tmp.displayOrder, tmp.structureId )  AS StructureIdListText
+         tmp.translationTextTree
+        , STRING_AGG( tmp.StructureId , ',' )
+            WITHIN GROUP ( ORDER BY tmp.translationTextTree )  AS StructureIdListText
         , STRING_AGG( tmp.FactoryId , ',' )
-            WITHIN GROUP ( ORDER BY tmp.structureGroupId, tmp.factory_order, tmp.structureLayerNo, tmp.displayOrder, tmp.structureId )  AS FactoryIdListText
+            WITHIN GROUP ( ORDER BY tmp.translationTextTree )  AS FactoryIdListText
     FROM 
-        #TEMP_STRUCTURE_ALL_LIST tmp
-    LEFT JOIN
-        #TEMP_STRUCTURE_ALL_LIST tmp2
-    ON
-        tmp.structureGroupId = tmp2.structureGroupId
-        AND tmp.parentStructureId = tmp2.structureId
-    WHERE
-        tmp.structureGroupId = '1010'
+        #TEMP_STRUC_ID_TREE tmp
     GROUP BY
-        tmp.translationText
-        , tmp2.translationText
+        tmp.translationTextTree
 )
 SELECT
           treeStructure.structureId
@@ -633,9 +630,7 @@ FROM
 LEFT JOIN
     listStructure
 ON
-    listStructure.translationText = treeStructure.translationText
-    AND ( listStructure.parenttranslationText = treeStructure.parenttranslationText
-          OR ( listStructure.parenttranslationText IS NULL AND treeStructure.parenttranslationText IS NULL ) )
+    listStructure.translationTextTree = treeStructure.translationTextTree
 ORDER BY 
     treeStructure.factory_order, treeStructure.structureLayerNo, treeStructure.displayOrder, treeStructure.baseStructureId;
 /*END*/
