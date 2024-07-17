@@ -77,20 +77,120 @@ const FormList = {
     //一覧
     List: {
         Id: "BODY_020_00_LST_0",
+        // 発生日
+        OccurrenceDate: 1,
+        // 完了日
+        CompletionDate: 2,
+        // 件名
+        Subject: 3,
         //MQ分類
         MqClass: 4,
+        //地区
+        District: 7,
+        //工場
+        Factory: 8,
+        //プラント
+        Plant: 9,
+        //系列
+        Series: 10,
+        //工程
+        Stroke: 11,
+        //設備
+        Facility: 12,
         //職種
         Job: 13,
         //系停止
         StopSystem: 17,
+        //系停止時間(Hr)
+        StopSystemTime: 18,
+        //費用メモ
+        CostNote: 19,
         //突発区分
         Sudden: 20,
+        //着工予定日
+        ExpectedConstructionDate: 21,
         //故障原因分析書
         HistoryFailureAnalyzeFile: 22,
+        //予算管理区分
+        BudgetManagement: 23,
+        //予算性格区分
+        BudgetPersonality: 24,
+        //予算金額(k円)
+        TotalBudgetCost: 25,
+        //保全時期
+        MaintenanceSeason: 26,
+        //施工担当者
+        ConstructionPersonnel: 27,
+        // 作業時間(Hr)
+        TotalWorkingTime: 28,
+        // 自係(Hr)
+        WorkingTimeSelf: 29,
+        //発見方法
+        DiscoveryMethods: 30,
+        //実績結果
+        ActualResult: 31,
+        //施工会社
+        ConstructionCompany: 32,
+        //カウント件数
+        MaintenanceCount: 33,
+        // 作業計画・実施内容
+        PlanImplementationContent: 34,
+        // 件名メモ
+        SubjectNote: 35,
         //件名添付
         SummaryFile: 36,
+        //保全部位
+        MaintenanceSite: 37,
+        //保全内容
+        MaintenanceContent: 38,
+        //実績費用(k円)
+        Expenditure: 39,
+        //現象
+        Phenomenon: 40,
+        //現象補足
+        PhenomenonNote: 41,
+        //原因
+        FailureCause: 42,
+        //原因補足
+        FailureCauseNote: 43,
+        //原因性格1
+        FailureCausePersonality1: 44,
+        //原因性格2
+        FailureCausePersonality2: 45,
+        //性格補足
+        FailureCausePersonalityNote: 46,
+        //処置対策
+        TreatmentMeasure: 47,
+        //故障原因
+        FailureCauseAdditionNote: 48,
+        //故障状況
+        FailureStatus: 49,
+        //故障前の保全実施状況
+        PreviousSituation: 50,
+        //復旧措置
+        RecoveryAction: 51,
+        //改善対策
+        ImprovementMeasure: 52,
+        //保全システムのフィードバック
+        SystemFeedBack: 53,
+        //教訓
+        Lesson: 54,
+        //特記（メモ）
+        FailureNotices: 55,
+        //フォロー有無
+        FollowFlg: 56,
+        //フォロー予定年月
+        FollowPlanDate: 57,
+        //フォロー内容
+        FollowContent: 58,
+        // 依頼No
+        RequestNo: 59,
         //保全活動件名ID
         SummaryId: 60,
+        //進捗状況
+        ProgressStatus: 61,
+        //依頼担当
+        RequestPersonnel: 63,
         //発行日
         IssueDate: 80,
     },
@@ -116,6 +216,8 @@ const FormDetail = {
     // 非表示の情報
     HideInfo: {
         Id: "BODY_010_00_LST_1",
+        // 依頼No
+        RequestNo: 1,
         // 活動区分ID列
         DivisionId: 2,
         // 完了日列
@@ -137,9 +239,51 @@ const FormDetail = {
         //タブ番号
         TabNo: 13,
     },
+    //件名情報
+    SubjectInfo: {
+        Id: "BODY_020_00_LST_1",
+        // 件名
+        Subject: 1,
+        // 作業計画・実施内容
+        PlanImplementationContent: 2,
+        // 件名メモ
+        SubjectNote: 3,
+    },
     //場所階層職種情報
     LocationInfo: {
         Id: "BODY_030_00_LST_1",
+        //地区
+        District: 1,
+        //工場
+        Factory: 2,
+        //プラント
+        Plant: 3,
+        //系列
+        Series: 4,
+        //工程
+        Stroke: 5,
+        //設備
+        Facility: 6,
+        //職種
+        Job: 7,
+    },
+    //作業性格情報
+    WorkInfo: {
+        Id: "BODY_040_00_LST_1",
+        //MQ分類
+        MqClass: 1,
+        //予算管理区分
+        BudgetManagement: 3,
+        //予算性格区分
+        BudgetPersonality: 4,
+        //突発区分
+        Sudden: 5,
+        //系停止
+        StopSystem: 6,
+        //系停止時間(Hr)
+        StopSystemTime: 7,
+        //カウント件数
+        MaintenanceCount: 9,
     },
     // 対象機器一覧
     MachineList: {
@@ -150,6 +294,14 @@ const FormDetail = {
         GrayFlag: 17,
     },
     //依頼概要
+    RequestInfo: {
+        Id: "BODY_130_00_LST_1",
+        //発行日
+        IssueDate: 1,
+        //発見方法
+        DiscoveryMethods: 3,
+    },
+    //依頼申請情報
     RequestList: {
         Id: "BODY_150_00_LST_1",
         //依頼担当
@@ -169,36 +321,134 @@ const FormDetail = {
         //依頼職長名
         ForemanName: 9,
     },
+    //計画概要
+    PlanInfo: {
+        Id: "BODY_180_00_LST_1",
+        //発生日
+        OccurrenceDate: 2,
+        //着工予定日
+        ExpectedConstructionDate: 3,
+        //予算金額(k円)
+        TotalBudgetCost: 6,
+    },
     //履歴情報
     HistoryList: {
         Id: "BODY_190_00_LST_1",
+        // 完了日
+        CompletionDate: 2,
+        //保全時期
+        MaintenanceSeason: 3,
+        //施工会社
+        ConstructionCompany: 5,
         //施工担当者
         ConstructionPersonnel: 6,
+        //実績結果
+        ActualResult: 7,
         //施工担当者名
         ConstructionPersonnelName: 12,
+    },
+    //作業時間情報
+    WorkingTime: {
+        Id: "BODY_210_00_LST_1",
+        // 自係(Hr)
+        WorkingTimeSelf: 1,
+        // 作業時間(Hr)
+        TotalWorkingTime: 3,
+    },
+    //費用情報
+    Cost: {
+        Id: "BODY_220_00_LST_1",
+        // 費用メモ
+        CostNote: 1,
+        //実績費用(k円)
+        Expenditure: 2,
     },
     //履歴情報(個別工場)
     HistoryIndividualList: {
         Id: "BODY_230_00_LST_1",
-        //SEG担当者
-        SegPersonnel: 1,
+        //施工担当者
+        ConstructionPersonnel: 1,
         //製造担当者
-        ConstructionPersonnel: 2,
-        //SEG担当者名
-        SegPersonnelName: 12,
+        Manufacturing: 2,
+        //実績費用(k円)
+        Expenditure: 3,
+        // 完了日
+        CompletionDate: 7,
+        //施工担当者名
+        ConstructionPersonnelName: 12,
         //製造担当者名
-        ConstructionPersonnelName: 13,
+        ManufacturingName: 13,
+    },
+    //履歴情報(個別工場)
+    HistoryIndividualList2: {
+        Id: "BODY_280_00_LST_1",
+        // 作業時間(Hr)
+        TotalWorkingTime: 1,
     },
     // 故障情報
     FailureList: {
         Id: "BODY_060_00_LST_1",
         GroupNo: 204,
+        //保全部位
+        MaintenanceSite: 1,
+        //保全内容
+        MaintenanceContent: 2,
+    },
+    // 故障情報
+    FailureList2: {
+        Id: "BODY_070_00_LST_1",
+        //フォロー有無
+        FollowFlg: 1,
+        //フォロー予定年月
+        FollowPlanDate: 2,
+        //フォロー内容
+        FollowContent: 3,
+    },
+    // 故障情報
+    FailureList3: {
+        Id: "BODY_080_00_LST_1",
+        //現象
+        Phenomenon: 1,
+        //現象補足
+        PhenomenonNote: 2,
+        //原因
+        FailureCause: 3,
+        //原因補足
+        FailureCauseNote: 4,
+    },
+    // 故障情報
+    FailureList4: {
+        Id: "BODY_090_00_LST_1",
+        //原因性格1
+        FailureCausePersonality1: 1,
+        //原因性格2
+        FailureCausePersonality2: 2,
+        //性格補足
+        FailureCausePersonalityNote: 3,
+        //処置対策
+        TreatmentMeasure: 4,
     },
     // 故障分析情報タブ
     FailureTab: {
         Id: "BODY_300_00_LST_1",
         // 保全履歴故障情報ID列
         HistoryFailureId: 11,
+        //故障状況
+        FailureStatus: 1,
+        //故障原因
+        FailureCauseAdditionNote: 2,
+        //故障前の保全実施状況
+        PreviousSituation: 3,
+        //復旧措置
+        RecoveryAction: 4,
+        //改善対策
+        ImprovementMeasure: 5,
+        //保全システムのフィードバック
+        SystemFeedBack: 6,
+        //教訓
+        Lesson: 7,
+        //特記（メモ）
+        FailureNotices: 8,
     },
     // 故障分析情報(個別工場)タブ
     FailureIndividualTab: {
@@ -211,6 +461,36 @@ const FormDetail = {
             Id: "BODY_380_00_LST_1",
             //保全履歴故障情報ID列
             HistoryFailureId: 5,
+            //教訓
+            Lesson: 1,
+            //特記（メモ）
+            FailureNotices: 2,
+        },
+        //故障原因
+        List3: {
+            Id: "BODY_320_00_LST_1",
+            //故障状況
+            FailureStatus: 1,
+        },
+        //故障原因
+        List4: {
+            Id: "BODY_330_00_LST_1",
+            //故障原因
+            FailureCauseAdditionNote: 4,
+            //故障前の保全実施状況
+            PreviousSituation: 5,
+        },
+        //故障原因
+        List5: {
+            Id: "BODY_340_00_LST_1",
+            //復旧措置
+            RecoveryAction: 2,
+        },
+        //故障原因
+        List6: {
+            Id: "BODY_370_00_LST_1",
+            //改善対策
+            ImprovementMeasure: 1,
         },
     },
     ButtonId: {
@@ -400,20 +680,20 @@ const FormRegist = {
     //履歴情報(個別工場)
     HistoryIndividualList: {
         Id: "BODY_240_00_LST_2",
-        //SEG担当者
-        SegPersonnel: 1,
+        //施工担当者
+        ConstructionPersonnel: 1,
         //製造担当者
-        ConstructionPersonnel: 2,
+        Manufacturing: 2,
         //発生時刻
         OccurrenceTime: 6,
         //完了日
         CompletionDate: 7,
         //完了時刻
         CompletionTime: 8,
-        //SEG担当者名
-        SegPersonnelName: 12,
+        //施工担当者名
+        ConstructionPersonnelName: 12,
         //製造担当者名
-        ConstructionPersonnelName: 13,
+        ManufacturingName: 13,
     },
     //故障分析情報タブ
     FailureTab: {
@@ -788,8 +1068,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
                 break;
         }
 
-        //一覧画面に反映する更新情報、添付情報をクリア
-        delete P_dicIndividual[MA0001_UpdateListData];
+        //一覧画面に反映する添付情報をクリア
         delete P_dicIndividual[MA0001_UpdateAttachmentFlg];
 
         //フォーカス設定
@@ -1086,14 +1365,14 @@ function changeDisplayDeleteButton() {
         //保全履歴情報タブの施工担当者の値取得
         constructionPersonnel = getValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.ConstructionPersonnel, 1, CtrlFlag.TextBox);
     } else {
-        //保全履歴情報（個別工場）タブの製造担当者の値取得
+        //保全履歴情報（個別工場）タブの施工担当者の値取得
         constructionPersonnel = getValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.ConstructionPersonnel, 1, CtrlFlag.TextBox);
     }
 
     if ((completionDate != null && completionDate != "") || (constructionPersonnel != null && constructionPersonnel != "")) {
         //保全権限がない場合かつ「進捗状況」が「保全受付」「完了済」の場合は、削除ボタンを非表示とする
         //「完了済」：完了日に値が入っている場合
-        //「保全受付」：保全履歴情報タブの施工担当者または保全履歴情報（個別工場）タブの製造担当者に値が入っている場合
+        //「保全受付」：保全履歴情報タブの施工担当者または保全履歴情報（個別工場）タブの施工担当者に値が入っている場合
         setHideButton(FormDetail.ButtonId.Delete, true);
     } else {
         //削除ボタン表示
@@ -1559,18 +1838,16 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
     // 共通-文書管理詳細画面の実行正常終了後処理
     DM0002_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
 
-    //更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
-    setUpdateDataForList(appPath, conductId, pgmId, formNo);
+    //削除データを一覧画面から削除（登録・更新は詳細画面表示後のタイミングで反映）
+    setUpdateDataForList(conductId, true);
 }
 
 /**
  * 更新データを一覧画面に反映する
- *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  *  @param conductId   ：機能ID
- *  @param pgmId       ：プログラムID
- *  @param formNo      ：画面NO
+ *  @param isDelete    ：削除の場合true
  */
-function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
+function setUpdateDataForList(conductId, isDelete) {
     if (!P_dicIndividual[MA0001_UpdateListData] || conductId != ConductId_MA0001) {
         //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
         return;
@@ -1587,6 +1864,12 @@ function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
     //2行目：一覧画面用の反映データ
     var data = updateData[1];
 
+    if (isDelete && status != rowStatusDef.Delete) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録・更新処理を行う
+        return;
+    }
+
     //一覧画面のデータ
     var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
     var list = table.getData();
@@ -1602,6 +1885,8 @@ function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
             }
             //ROWNOに一覧データの最大値以降の値を設定
             data.ROWNO = maxRowNo + 1;
+            //詳細画面から値取得
+            setLabelValueToListData(data, status);
             //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
             table.addRow(data, true, 1);
             break;
@@ -1613,6 +1898,8 @@ function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
             var oldData = table.searchData("VAL" + FormList.List.SummaryId, "=", summaryId);
             if (oldData && oldData.length > 0) {
                 data.ROWNO = oldData[0].ROWNO;
+                //詳細画面から値取得
+                setLabelValueToListData(data, status);
                 table.updateRow(data.ROWNO, data);
             }
             break;
@@ -1630,8 +1917,389 @@ function setUpdateDataForList(appPath, conductId, pgmId, formNo) {
         default:
             break;
     }
-    //詳細画面再描画時に復活するので、initFormOriginal内で消す
-    //delete P_dicIndividual[MA0001_UpdateListData];
+
+    delete P_dicIndividual[MA0001_UpdateListData];
+}
+
+/**
+ * 詳細画面の値から一覧用データに値を反映する
+ * @param data 一覧用データ
+ * @param status ステータス(新規or更新)
+ */
+function setLabelValueToListData(data, status) {
+    //保全履歴個別工場表示フラグの値取得
+    var historyIndividualFlg = getValue(FormDetail.HideInfo.Id, FormDetail.HideInfo.HistoryIndividualFlg, 1, CtrlFlag.Label);
+    //故障分析個別工場表示対象フラグの値取得
+    var failureIndividualFlg = getValue(FormDetail.HideInfo.Id, FormDetail.HideInfo.FailureIndividualFlg, 1, CtrlFlag.Label);
+    //保全活動区分（点検or故障）の値取得
+    var divisionId = getValue(FormDetail.HideInfo.Id, FormDetail.HideInfo.DivisionId, 1, CtrlFlag.Label);
+
+    //一覧に表示している列に詳細画面の対応する項目値を設定
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+        switch (key) {
+            case "VAL" + FormList.List.OccurrenceDate: //発生日
+                data[key] = getItemLabelValue(FormDetail.PlanInfo.Id, FormDetail.PlanInfo.OccurrenceDate, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.CompletionDate: //完了日
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.CompletionDate, 1, CtrlFlag.TextBox);
+                } else {
+                    //保全履歴情報（個別工場）タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.CompletionDate, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.Subject: //件名
+                data[key] = getItemLabelValue(FormDetail.SubjectInfo.Id, FormDetail.SubjectInfo.Subject, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.MqClass: //MQ分類
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.MqClass, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.District: //地区
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.District, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Factory: //工場
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Factory, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Plant: //プラント
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Plant, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Series: //系列
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Series, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Stroke: //工程
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Stroke, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Facility: //設備
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Facility, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Job: //職種
+                data[key] = getItemLabelValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Job, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.StopSystem: //系停止
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.StopSystem, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.StopSystemTime: //系停止時間(Hr)
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.StopSystemTime, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.CostNote: //費用メモ
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.Cost.Id, FormDetail.Cost.CostNote, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.Sudden: //突発区分
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.Sudden, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.ExpectedConstructionDate: //着工予定日
+                data[key] = getItemLabelValue(FormDetail.PlanInfo.Id, FormDetail.PlanInfo.ExpectedConstructionDate, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.HistoryFailureAnalyzeFile: //故障原因分析書
+            case "VAL" + FormList.List.SummaryFile: //件名添付
+                if (status == rowStatusDef.Edit) {
+                    //添付情報は更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + FormList.List.BudgetManagement: //予算管理区分
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.BudgetManagement, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.BudgetPersonality: //予算性格区分
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.BudgetPersonality, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.TotalBudgetCost: //予算金額(k円)
+                data[key] = getItemLabelValue(FormDetail.PlanInfo.Id, FormDetail.PlanInfo.TotalBudgetCost, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.MaintenanceSeason: //保全時期
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.MaintenanceSeason, 1, CtrlFlag.Combo);
+                }
+                break;
+            case "VAL" + FormList.List.ConstructionPersonnel: //施工担当者
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.ConstructionPersonnelName, 1, CtrlFlag.Label);
+                } else {
+                    //保全履歴情報（個別工場）タブの値取得
+                    data[key] = getValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.ConstructionPersonnelName, 1, CtrlFlag.Label);
+                }
+                break;
+            case "VAL" + FormList.List.TotalWorkingTime: //作業時間(Hr)
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.WorkingTime.Id, FormDetail.WorkingTime.TotalWorkingTime, 1, CtrlFlag.TextBox);
+                } else {
+                    //保全履歴情報（個別工場）タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryIndividualList2.Id, FormDetail.HistoryIndividualList2.TotalWorkingTime, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.WorkingTimeSelf: //自係(Hr)
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.WorkingTime.Id, FormDetail.WorkingTime.WorkingTimeSelf, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.DiscoveryMethods: //発見方法
+                data[key] = getItemLabelValue(FormDetail.RequestInfo.Id, FormDetail.RequestInfo.DiscoveryMethods, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.List.ActualResult: //実績結果
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.ActualResult, 1, CtrlFlag.Combo);
+                }
+                break;
+            case "VAL" + FormList.List.ConstructionCompany: //施工会社
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.ConstructionCompany, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.MaintenanceCount: //カウント件数
+                data[key] = getItemLabelValue(FormDetail.WorkInfo.Id, FormDetail.WorkInfo.MaintenanceCount, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.PlanImplementationContent: //作業計画・実施内容
+                data[key] = getItemLabelValue(FormDetail.SubjectInfo.Id, FormDetail.SubjectInfo.PlanImplementationContent, 1, CtrlFlag.Textarea);
+                break;
+            case "VAL" + FormList.List.SubjectNote: //件名メモ
+                data[key] = getItemLabelValue(FormDetail.SubjectInfo.Id, FormDetail.SubjectInfo.SubjectNote, 1, CtrlFlag.Textarea);
+                break;
+            case "VAL" + FormList.List.MaintenanceSite: //保全部位
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList.Id, FormDetail.FailureList.MaintenanceSite, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.MaintenanceContent: //保全内容
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList.Id, FormDetail.FailureList.MaintenanceContent, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.Expenditure: //実績費用(k円)
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.Cost.Id, FormDetail.Cost.Expenditure, 1, CtrlFlag.TextBox);
+                } else {
+                    //保全履歴情報（個別工場）タブの値取得
+                    data[key] = getItemLabelValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.Expenditure, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.Phenomenon: //現象
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList3.Id, FormDetail.FailureList3.Phenomenon, 1, CtrlFlag.Combo);
+                }
+                break;
+            case "VAL" + FormList.List.PhenomenonNote: //現象補足
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList3.Id, FormDetail.FailureList3.PhenomenonNote, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCause: //原因
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList3.Id, FormDetail.FailureList3.FailureCause, 1, CtrlFlag.Combo);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCauseNote: //原因補足
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList3.Id, FormDetail.FailureList3.FailureCauseNote, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCausePersonality1: //原因性格1
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getValue(FormDetail.FailureList4.Id, FormDetail.FailureList4.FailureCausePersonality1, 1, CtrlFlag.Label);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCausePersonality2: //原因性格2
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getValue(FormDetail.FailureList4.Id, FormDetail.FailureList4.FailureCausePersonality2, 1, CtrlFlag.Label);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCausePersonalityNote: //性格補足
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getValue(FormDetail.FailureList4.Id, FormDetail.FailureList4.FailureCausePersonalityNote, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.TreatmentMeasure: //処置対策
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList4.Id, FormDetail.FailureList4.TreatmentMeasure, 1, CtrlFlag.Combo);
+                }
+                break;
+            case "VAL" + FormList.List.FailureCauseAdditionNote: //故障原因
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.FailureCauseAdditionNote, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List4.Id, FormDetail.FailureIndividualTab.List4.FailureCauseAdditionNote, 1, CtrlFlag.Textarea);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.FailureStatus: //故障状況
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.FailureStatus, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List3.Id, FormDetail.FailureIndividualTab.List3.FailureStatus, 1, CtrlFlag.TextBox);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.PreviousSituation: //故障前の保全実施状況
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.PreviousSituation, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List4.Id, FormDetail.FailureIndividualTab.List4.PreviousSituation, 1, CtrlFlag.Textarea);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.RecoveryAction: //復旧措置
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.RecoveryAction, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List5.Id, FormDetail.FailureIndividualTab.List5.RecoveryAction, 1, CtrlFlag.Textarea);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.ImprovementMeasure: //改善対策
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.ImprovementMeasure, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List6.Id, FormDetail.FailureIndividualTab.List6.ImprovementMeasure, 1, CtrlFlag.Textarea);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.SystemFeedBack: //保全システムのフィードバック
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.SystemFeedBack, 1, CtrlFlag.TextBox);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.Lesson: //教訓
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.Lesson, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List2.Id, FormDetail.FailureIndividualTab.List2.Lesson, 1, CtrlFlag.TextBox);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.FailureNotices: //特記（メモ）
+                if (divisionId == DivisionIdDefine.Failure) {
+                    if (failureIndividualFlg != IndividualFlg.Show) {
+                        //故障分析情報タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureTab.Id, FormDetail.FailureTab.FailureNotices, 1, CtrlFlag.TextBox);
+                    } else {
+                        //故障分析情報（個別工場）タブの値取得
+                        data[key] = getItemLabelValue(FormDetail.FailureIndividualTab.List2.Id, FormDetail.FailureIndividualTab.List2.FailureNotices, 1, CtrlFlag.TextBox);
+                    }
+                }
+                break;
+            case "VAL" + FormList.List.FollowFlg: //フォロー有無
+                if (divisionId == DivisionIdDefine.Inspection) {
+                    // 点検の場合
+                    //対象機器一覧のフォロー有無がTRUEのデータを取得
+                    var machineData = P_listData['#' + FormDetail.MachineList.Id + '_' + FormDetail.No].getData();
+                    if (machineData != null && machineData.length > 0) {
+                        var list = $.grep(machineData, function (obj, index) { return obj['VAL' + FormDetail.MachineList.HideCol.FollowFlg] });
+                        //フォロー有無がTRUEのデータが1件以上ある場合、TRUEを設定
+                        data[key] = (list != null && list.length > 0);
+                    }
+
+                } else if (divisionId == DivisionIdDefine.Failure) {
+                    // 故障の場合
+                    data[key] = getValue(FormDetail.FailureList2.Id, FormDetail.FailureList2.FollowFlg, 1, CtrlFlag.ChkBox);
+                }
+                break;
+            case "VAL" + FormList.List.FollowPlanDate: //フォロー予定年月
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList2.Id, FormDetail.FailureList2.FollowPlanDate, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.FollowContent: //フォロー内容
+                if (divisionId == DivisionIdDefine.Failure) {
+                    //故障の場合
+                    data[key] = getItemLabelValue(FormDetail.FailureList2.Id, FormDetail.FailureList2.FollowContent, 1, CtrlFlag.TextBox);
+                }
+                break;
+            case "VAL" + FormList.List.RequestNo: //依頼No
+                data[key] = getValue(FormDetail.HideInfo.Id, FormDetail.HideInfo.RequestNo, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.ProgressStatus: //進捗状況
+                var completionDate = null;
+                var constructionPersonnel = null;
+                if (historyIndividualFlg != IndividualFlg.Show) {
+                    //保全履歴情報タブの完了日の値取得
+                    completionDate = getValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.CompletionDate, 1, CtrlFlag.TextBox);
+                    //保全履歴情報タブの施工担当者の値取得
+                    constructionPersonnel = getValue(FormDetail.HistoryList.Id, FormDetail.HistoryList.ConstructionPersonnelName, 1, CtrlFlag.Label);
+                } else {
+                    //保全履歴情報（個別工場）タブの完了日の値取得
+                    completionDate = getValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.CompletionDate, 1, CtrlFlag.TextBox);
+                    //保全履歴情報（個別工場）タブの施工担当者の値取得
+                    constructionPersonnel = getValue(FormDetail.HistoryIndividualList.Id, FormDetail.HistoryIndividualList.ConstructionPersonnelName, 1, CtrlFlag.Label);
+                }
+                if (completionDate != null && completionDate != "") {
+                    data[key] = P_ComMsgTranslated[131060003]; //完了済
+                } else if (constructionPersonnel != null && constructionPersonnel != "") {
+                    data[key] = P_ComMsgTranslated[131300002]; //保全受付
+                } else {
+                    data[key] = P_ComMsgTranslated[131110001]; //作成済
+                }
+                break;
+            case "VAL" + FormList.List.RequestPersonnel: //依頼担当
+                data[key] = getValue(FormDetail.RequestList.Id, FormDetail.RequestList.PersonnelName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.IssueDate: //発行日
+                data[key] = getItemLabelValue(FormDetail.RequestInfo.Id, FormDetail.RequestInfo.IssueDate, 1, CtrlFlag.TextBox);
+                break;
+            default:
+                break;
+        }
+    });
+}
+
+/**
+ * 対象のラベル値を取得（フォーマット等が必要な項目はラベル値を取得すること）
+ * @param ctrlId コントロールID
+ * @param val VAL値
+ * @param rowNo 行番号
+ * @param flg=0:テキストボックス、1:ラベル、2:コンボボックス、3:チェックボックス、4:リンク、5:入力項目、6:テキストエリア、7:パスワード
+ * 
+ * @return 取得した値
+ */
+function getItemLabelValue(ctrlId, val, rowNo, flg) {
+    //要素取得
+    var ele = getCtrl(ctrlId, val, rowNo, flg);
+    //表示しているラベルの値を取得
+    return $(ele).closest("td").find("span.labeling").text();
 }
 
 /**
@@ -2534,6 +3202,9 @@ function postBuiltTabulator(tbl, id) {
         // 作業記録列がラベル表示の場合は改行されているデータでも改行されずに表示されてしまうため、改行されるためのクラスを追加する
         $("#" + FormDetail.MachineList.Id + getAddFormNo()).find(".work_record_height").find("span").addClass("word_break");
 
+        //更新データを一覧画面に反映する（再検索を行わず、一覧データに反映。対象機器一覧の項目を参照する為ここで行う）
+        setUpdateDataForList(getConductId(), false);
+
     }
     if (getFormNo() == FormRegist.No && id == '#' + FormRegist.MachineList.Id + getAddFormNo()) {
         //登録画面の対象機器一覧
@@ -2851,10 +3522,10 @@ function setPersonnelName(ctrl, formNo) {
     var foremanCtrlId = getTextBoxId(formRequestDefine.Id, formRequestDefine.Foreman);
     //履歴タブ 施工担当者のコントロールのID属性を取得
     var constructionCtrlId = getTextBoxId(formHistoryDefine.HistoryList.Id, formHistoryDefine.HistoryList.ConstructionPersonnel);
-    //履歴(個別工場)タブ SEG担当者のコントロールのID属性を取得
-    var segCtrlId = getTextBoxId(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.SegPersonnel);
+    //履歴(個別工場)タブ 施工担当者のコントロールのID属性を取得
+    var segCtrlId = getTextBoxId(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.ConstructionPersonnel);
     //履歴(個別工場)タブ 製造担当者のコントロールのID属性を取得
-    var constructionIndividualCtrlId = getTextBoxId(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.ConstructionPersonnel);
+    var constructionIndividualCtrlId = getTextBoxId(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.Manufacturing);
 
     var name = "";
     switch (id) {
@@ -2879,12 +3550,12 @@ function setPersonnelName(ctrl, formNo) {
             name = getValue(formHistoryDefine.HistoryList.Id, formHistoryDefine.HistoryList.ConstructionPersonnelName, 1, CtrlFlag.Label);
             break;
         case segCtrlId:
-            //SEG担当者の取得
-            name = getValue(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.SegPersonnelName, 1, CtrlFlag.Label);
+            //施工担当者の取得
+            name = getValue(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.ConstructionPersonnelName, 1, CtrlFlag.Label);
             break;
         case constructionIndividualCtrlId:
             //製造担当者の取得
-            name = getValue(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.ConstructionPersonnelName, 1, CtrlFlag.Label);
+            name = getValue(formHistoryDefine.HistoryIndividualList.Id, formHistoryDefine.HistoryIndividualList.ManufacturingName, 1, CtrlFlag.Label);
             break;
     }
     if (name) {

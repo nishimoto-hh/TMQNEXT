@@ -3758,32 +3758,37 @@ namespace BusinessLogic_MA0001
         /// <param name="isRegist">新規登録の場合true</param>
         private void getListRowData(long summaryId, bool isRegist)
         {
-            // 項目カスタマイズで選択されている項目のみSELECTする
-            List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.SearchResult);
-            uncommentList.Add("GetDetail");
+            //// 項目カスタマイズで選択されている項目のみSELECTする
+            //List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.SearchResult);
+            //uncommentList.Add("GetDetail");
 
-            // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql, uncommentList);
-            // WITH句は別に取得
-            TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
+            //// SQLを取得
+            //TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetList, out string baseSql, uncommentList);
+            //// WITH句は別に取得
+            //TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
 
-            //一時テーブルの作成、登録
-            registTempTable(uncommentList);
+            ////一時テーブルの作成、登録
+            //registTempTable(uncommentList);
 
-            StringBuilder selectSql = new StringBuilder(withSql);
-            selectSql.AppendLine(baseSql);
+            //StringBuilder selectSql = new StringBuilder(withSql);
+            //selectSql.AppendLine(baseSql);
 
-            // 検索実行(取得は1件)
-            IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), new { SummaryId = summaryId, LanguageId = this.LanguageId });
+            //// 検索実行(取得は1件)
+            //IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), new { SummaryId = summaryId, LanguageId = this.LanguageId });
+            //検索は行わず、詳細画面の値から取得する（速度改善）
+            Dao.searchResult result = new();
+            result.SummaryId = summaryId;
 
             // ページ情報取得
             PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.SearchResult, this.pageInfoList);
             pageInfo.CtrlId = ConductInfo.FormList.ControlId.SearchResult;
-            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, results);
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<Dao.searchResult>() { result });
             List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
             dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
             foreach (var obj in list)
             {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
                 Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
                 dicList.Add(dic);
             }
