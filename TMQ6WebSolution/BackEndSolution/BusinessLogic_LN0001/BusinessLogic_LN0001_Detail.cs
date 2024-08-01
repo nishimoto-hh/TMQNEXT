@@ -240,16 +240,6 @@ namespace BusinessLogic_LN0001
                 {
                     Dao.Detail.List row = new();
                     SetDataClassFromDictionary(deleteRow, listCtrlId, row);
-
-                    // スケジュールに保全活動の紐づきチェック
-                    int result = TMQUtil.SqlExecuteClass.SelectEntity<int>(SqlName.Detail.GetSummaryScheduleByContent, SqlName.Detail.SubDir, row, this.db);
-                    // 保全活動が紐づいている場合、エラー
-                    if (result > 0)
-                    {
-                        //「保全活動が作成されているため、削除できません。」
-                        this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141300004 });
-                        return true;
-                    }
                 }
                 return false;
             }
