@@ -3676,7 +3676,7 @@ namespace CommonTMQUtil
                 return result > 0;
             }
         }
-        
+
         /// <summary>
         /// 棚差調整データ
         /// </summary>
@@ -5766,6 +5766,241 @@ namespace CommonTMQUtil
                 return result > 0;
             }
         }
+        /// <summary>
+        /// 機器別管理基準標準
+        /// </summary>
+        public class McManagementStandardsEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public McManagementStandardsEntity()
+            {
+                TableName = "mc_management_standards";
+            }
 
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機器別管理基準標準ID</summary>
+            /// <value>機器別管理基準標準ID</value>
+            public long ManagementStandardsId { get; set; }
+            /// <summary>Gets or sets 機能場所階層ID</summary>
+            /// <value>機能場所階層ID</value>
+            public int? LocationStructureId { get; set; }
+            /// <summary>Gets or sets 地区ID</summary>
+            /// <value>地区ID</value>
+            public int LocationDistrictStructureId { get; set; }
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int? LocationFactoryStructureId { get; set; }
+            /// <summary>Gets or sets 職種機種階層ID</summary>
+            /// <value>職種機種階層ID</value>
+            public int? JobStructureId { get; set; }
+            /// <summary>Gets or sets 職種ID</summary>
+            /// <value>職種ID</value>
+            public int? JobKindStructureId { get; set; }
+            /// <summary>Gets or sets 機種大分類ID</summary>
+            /// <value>機種大分類ID</value>
+            public int? JobLargeClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種中分類ID</summary>
+            /// <value>機種中分類ID</value>
+            public int? JobMiddleClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 機種小分類ID</summary>
+            /// <value>機種小分類ID</value>
+            public int? JobSmallClassficationStructureId { get; set; }
+            /// <summary>Gets or sets 標準名称</summary>
+            /// <value>標準名称</value>
+            public string ManagementStandardsName { get; set; }
+            /// <summary>Gets or sets メモ</summary>
+            /// <value>メモ</value>
+            public string Memo { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機器別管理基準標準ID</summary>
+                /// <value>機器別管理基準標準ID</value>
+                public long ManagementStandardsId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pManagementStandardsId)
+                {
+                    ManagementStandardsId = pManagementStandardsId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.ManagementStandardsId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public McManagementStandardsEntity GetEntity(long pManagementStandardsId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pManagementStandardsId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<McManagementStandardsEntity>(getEntitySql);
+            }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pManagementStandardsId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pManagementStandardsId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
+
+        /// <summary>
+        /// 機器別管理基準標準詳細
+        /// </summary>
+        public class McManagementStandardsDetailEntity : CommonTableItem
+        {
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public McManagementStandardsDetailEntity()
+            {
+                TableName = "mc_management_standards_detail";
+            }
+
+            /// <summary>Gets テーブル名</summary>
+            /// <value>テーブル名</value>
+            public string TableName { get; }
+            /// <summary>Gets or sets 機器別管理基準標準詳細ID</summary>
+            /// <value>機器別管理基準標準詳細ID</value>
+            public long ManagementStandardsDetailId { get; set; }
+            /// <summary>Gets or sets 機器別管理基準標準ID</summary>
+            /// <value>機器別管理基準標準ID</value>
+            public long ManagementStandardsId { get; set; }
+            /// <summary>Gets or sets 部位名称</summary>
+            /// <value>部位名称</value>
+            public string InspectionSiteName { get; set; }
+            /// <summary>Gets or sets 部位重要度ID</summary>
+            /// <value>部位重要度ID</value>
+            public int? InspectionSiteImportanceStructureId { get; set; }
+            /// <summary>Gets or sets 保全方式ID</summary>
+            /// <value>保全方式ID</value>
+            public int? InspectionSiteConservationStructureId { get; set; }
+            /// <summary>Gets or sets 保全区分ID</summary>
+            /// <value>保全区分ID</value>
+            public int? MaintainanceDivision { get; set; }
+            /// <summary>Gets or sets 保全項目名称</summary>
+            /// <value>保全項目名称</value>
+            public string InspectionContentName { get; set; }
+            /// <summary>Gets or sets 点検種別ID</summary>
+            /// <value>点検種別ID</value>
+            public int? MaintainanceKindStructureId { get; set; }
+            /// <summary>Gets or sets 予算金額</summary>
+            /// <value>予算金額</value>
+            public decimal? BudgetAmount { get; set; }
+            /// <summary>Gets or sets スケジュール管理基準ID</summary>
+            /// <value>スケジュール管理基準ID</value>
+            public int? ScheduleTypeStructureId { get; set; }
+            /// <summary>Gets or sets 準備期間(日)</summary>
+            /// <value>準備期間(日)</value>
+            public int? PreparationPeriod { get; set; }
+            /// <summary>Gets or sets 周期(年)</summary>
+            /// <value>周期(年)</value>
+            public int? CycleYear { get; set; }
+            /// <summary>Gets or sets 周期(月)</summary>
+            /// <value>周期(月)</value>
+            public int? CycleMonth { get; set; }
+            /// <summary>Gets or sets 周期(日)</summary>
+            /// <value>周期(日)</value>
+            public int? CycleDay { get; set; }
+            /// <summary>Gets or sets 表示周期</summary>
+            /// <value>表示周期</value>
+            public string DispCycle { get; set; }
+            /// <summary>Gets or sets 機器別管理基準備考</summary>
+            /// <value>機器別管理基準備考</value>
+            public string Remarks { get; set; }
+
+            /// <summary>
+            /// プライマリーキー
+            /// </summary>
+            public class PrimaryKey
+            {
+                /// <summary>Gets or sets 機器別管理基準標準詳細ID</summary>
+                /// <value>機器別管理基準標準詳細ID</value>
+                public long ManagementStandardsDetailId { get; set; }
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                public PrimaryKey(long pManagementStandardsDetailId)
+                {
+                    ManagementStandardsDetailId = pManagementStandardsDetailId;
+                }
+            }
+
+            /// <summary>
+            /// プライマリーキー情報
+            /// </summary>
+            /// <returns>プライマリーキー情報</returns>
+            public PrimaryKey PK()
+            {
+                PrimaryKey pk = new PrimaryKey(this.ManagementStandardsDetailId);
+                return pk;
+            }
+
+            /// <summary>
+            /// エンティティ
+            /// </summary>
+            /// <returns>該当のデータを返す</returns>
+            public McManagementStandardsDetailEntity GetEntity(long pManagementStandardsDetailId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pManagementStandardsDetailId);
+                // SQL文生成
+                string getEntitySql = getEntity(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(getEntitySql))
+                {
+                    return null;
+                }
+                return db.GetEntityByDataClass<McManagementStandardsDetailEntity>(getEntitySql);
+            }
+
+            /// <summary>
+            /// 主キーを指定してDELETE実行
+            /// </summary>
+            /// <returns>エラーの場合False</returns>
+            public bool DeleteByPrimaryKey(long pManagementStandardsDetailId, ComDB db)
+            {
+                PrimaryKey condition = new PrimaryKey(pManagementStandardsDetailId);
+                // SQL文生成
+                string deleteSql = getDeleteSql(this.TableName, condition, db);
+                if (string.IsNullOrEmpty(deleteSql))
+                {
+                    return false;
+                }
+                int result = db.Regist(deleteSql);
+                return result > 0;
+            }
+        }
     }
 }

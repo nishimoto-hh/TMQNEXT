@@ -1960,6 +1960,9 @@ namespace CommonSTDUtil.CommonSTDUtil
                 // ※本務工場の下のAプラントに権限がある場合、Bプラントの権限は無いので本務工場の権限を持つとBプラントの権限も含まれてしまう
                 List<int> dutyStructureGroupList = new List<int> {
                     STRUCTURE_CONSTANTS.STRUCTURE_GROUP .Location, STRUCTURE_CONSTANTS.STRUCTURE_GROUP .LocationNoHistory,
+                    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD start
+                    STRUCTURE_CONSTANTS.STRUCTURE_GROUP .LocationForMngStd,
+                    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD start
                     STRUCTURE_CONSTANTS.STRUCTURE_GROUP .LocationHistory};
                 bool isExistsDutyLocationGroup = structureGroupIdList.Intersect(dutyStructureGroupList).Any();
                 // 本務工場が設定されている場合(システム管理者でない)
@@ -2058,6 +2061,16 @@ namespace CommonSTDUtil.CommonSTDUtil
                     // 構成グループIDの置換
                     changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationNoHistory, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
                 }
+                // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD start
+                else if (structureGroupIdList.Contains(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForMngStd))
+                {
+                    // 機器別管理基準標準用の工場を表示する場合
+                    isHistory = true;
+                    narrowHistoryFactory = STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForMngStd;
+                    // 構成グループIDの置換
+                    changeTreeStructureGroupId(structureGroupIdList, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.LocationForMngStd, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location);
+                }
+                // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD end
 
                 //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
                 var mergeGroupIdList = new List<int>();

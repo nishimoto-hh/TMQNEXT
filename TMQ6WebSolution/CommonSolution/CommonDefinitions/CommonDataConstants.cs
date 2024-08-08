@@ -1268,8 +1268,17 @@ namespace CommonWebTemplate.Models.Common
             /// <remarks>この構成グループIDは存在しない、ツリー表示用</remarks>
             public const short LocationHistory = 1002;
 
+            // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD start
+            /// <summary>機器別管理基準標準用場所階層</summary>
+            /// <remarks>この構成グループIDは存在しない、ツリー表示用</remarks>
+            public const short LocationForMngStd = 1006;
+            // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD end
+
             /// <summary>工場取得のための場所階層として扱う構成グループIDのリスト</summary>
-            public static int[] Locations = { Location, LocationForUserMst, LocationNoHistory, LocationHistory };
+            // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD start
+            //public static int[] Locations = { Location, LocationForUserMst, LocationNoHistory, LocationHistory };
+            public static int[] Locations = { Location, LocationForUserMst, LocationNoHistory, LocationHistory, LocationForMngStd };
+            // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD end
         }
 
         /// <summary>

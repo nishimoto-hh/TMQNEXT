@@ -1,0 +1,3 @@
+-- 機器別管理基準内容テーブルのシーケンスを取得
+SELECT
+    NEXT VALUE FOR seq_mc_management_standards_content_management_standards_content_id

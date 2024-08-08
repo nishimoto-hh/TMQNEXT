@@ -2287,59 +2287,6 @@ function setLabelValueToListData(data, status) {
 }
 
 /**
- * 対象のラベル値を取得（フォーマット等が必要な項目はラベル値を取得すること）
- * @param ctrlId コントロールID
- * @param val VAL値
- * @param rowNo 行番号
- * @param flg=0:テキストボックス、1:ラベル、2:コンボボックス、3:チェックボックス、4:リンク、5:入力項目、6:テキストエリア、7:パスワード
- * 
- * @return 取得した値
- */
-function getItemLabelValue(ctrlId, val, rowNo, flg) {
-    //要素取得
-    var ele = getCtrl(ctrlId, val, rowNo, flg);
-    //表示しているラベルの値を取得
-    return $(ele).closest("td").find("span.labeling").text();
-}
-
-/**
- * 一覧画面のページングを再設定
- *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @param conductId   ：機能ID
- *  @param pgmId       ：プログラムID
- *  @param status      ：実行処理結果ｽﾃｰﾀｽ
- */
-function setListPagination(appPath, conductId, pgmId, status) {
-    // 読込件数エリアの総件数の設定
-    var div = $(P_Article).find('div[data-relation-id="' + FormList.List.Id + '"]');
-    var label = $(div).find('td[data-name="VAL3"]');
-    if (label != null && label.length > 0 && P_dicIndividual[MA0001_AllListCount]) {
-        var oldCount = $(label).text(); //「/123」のような先頭にスラッシュが付与された値
-        if (oldCount.slice(1) == P_dicIndividual[MA0001_AllListCount]) {
-            //件数の変更はないため処理なし
-            return;
-        }
-        $(label).text('/' + P_dicIndividual[MA0001_AllListCount]);
-    }
-
-    //一覧画面のデータ
-    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
-    //ページャーの再設定
-    if (table) {
-        var count = getTotalRowCount(table);
-        setupPagination(appPath, conductId, pgmId, FormList.No, FormList.List.Id, count);
-    }
-    //ページャーの総ページ数が1件の場合、ページャーを非表示
-    setHidePagination("#" + FormList.List.Id + "_" + FormList.No, table);
-
-    //メッセージの設定
-    if (status != null && status.MESSAGE != null && status.MESSAGE.length > 0) {
-        // 削除時の成功メッセージ
-        addMessage(status.MESSAGE, status.STATUS);
-    }
-}
-
-/**
  *【オーバーライド用関数】Excel出力ﾁｪｯｸ処理 - 前処理
  *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  *  @conductId   {string}   ：機能ID
@@ -2797,7 +2744,7 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
 
     if (conductId == ConductId_MA0001 && formNo == FormList.No) {
         //ページング再設定
-        setListPagination(appPath, conductId, pgmId, status);
+        setListPagination(appPath, conductId, pgmId, status, FormList.List.Id, FormList.No, MA0001_AllListCount);
     }
     else if (formNo == FormDetail.No) {
         //戻る・閉じるボタンの表示制御

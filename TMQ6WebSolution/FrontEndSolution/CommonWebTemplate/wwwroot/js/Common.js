@@ -636,6 +636,10 @@ const structureGroupDef = {
     LocationHistory: 1002,
     //ユーザーマスタ用場所階層
     LocationForUserMst: 1004,
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD start
+    //機器別管理基準標準用場所階層
+    LocationForMngStd: 1006,
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 ADD end
     //職種機種
     Job: 1010,
     // 原因性格
@@ -766,6 +770,9 @@ const FilterUseKbnDef = {
     /** フィルター使用(完全一致) */
     ExactMatch: 2
 }
+
+/** 定義 一覧画面へ戻る際に再検索しない機能IDリスト */
+const notSearchConductIdList = ["MA0001", "MC0002"];
 
 //jquery-ui-datepickerとの競合防止
 //var bootstrapDatepicker = $.fn.datepicker.noConflict();
@@ -8523,7 +8530,12 @@ function dispDataVertical(appPath, data, formNo, isEdit) {
                                     setStructureInfoToTreeLabel(td, values[1], values[0]);
                                 }
                                 // 場所階層のコントロールの場合、工場コントロールのchangeイベントに連動させない
-                                if ($(td).data('structuregrpid') == structureGroupDef.Location) { return true; }
+                                // 2024/07/19 機器別管理基準標準用場所階層ツリー追加 UPD start
+                                //if ($(td).data('structuregrpid') == structureGroupDef.Location) { return true; }
+                                //const locationGrpIdList = [structureGroupDef.Location, structureGroupDef.LocationForMngStd];
+                                const locationGrpIdList = [structureGroupDef.Location, structureGroupDef.LocationNoHistory, structureGroupDef.LocationForMngStd];
+                                if (locationGrpIdList.indexOf($(td).data('structuregrpid')) >= 0) { return true; }
+                                // 2024/07/19 機器別管理基準標準用場所階層ツリー追加 UPD end
 
                                 if (!factoryTd || factoryTd.length == 0) {
                                     // 同一画面上に工場コントロールがない場合、左側の場所階層メニューに連動
@@ -8535,7 +8547,7 @@ function dispDataVertical(appPath, data, formNo, isEdit) {
                                         // 工場コントロールのchangeイベント
                                         var factoryId = $(this).data('structureid');
                                         var tdFactoryId = $(td).data('factoryid');
-                                        if (tdFactoryId != null && tdFactoryId.length > 0) {
+                                        if (tdFactoryId != null && tdFactoryId != '') {
                                             if (factoryId != tdFactoryId) {
                                                 // 工場IDが変更されたらツリー選択ラベルの値をクリアする
                                                 setStructureInfoToTreeLabel(td, '', '');
@@ -11170,7 +11182,9 @@ function initAllSelectCancelBtn(isSelect, appPath, btns) {
                     //行番号
                     var rowNo = row.getData().ROWNO;
                     //表示中ページ内で見えていない行(HTMLが生成されていない行)のチェックボックスON/OFF設定
-                    if ($.inArray(rowNo, checksRowNoList) == -1 && row.getPosition() != false) {
+                    //if ($.inArray(rowNo, checksRowNoList) == -1 && row.getPosition() != false) {
+                    //上記に加えて、画面番号1以降の場合、表示対象外のページの行すべてに対してupdateData()を実施しないと反映されないことがある
+                    if ($.inArray(rowNo, checksRowNoList) == -1 && (row.getPosition() != false || formNo > 0)) {
                         //SELTAGに選択状態を設定
                         var item = { ROWNO: rowNo, SELTAG: val };
                         table.updateData([item]);
@@ -14881,12 +14895,23 @@ function initSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStruc
         // 選択値の取得
         var nodes = $(tree).jstree(true).get_selected(true);
         if (nodes == null || nodes.length == 0) {
-            return;
+            // 2024/07/08 階層選択モーダル画面で未選択状態を許容する UPD start
+            //return;
+            // 未選択の場合、全階層をクリアする
+            var targetRow = $(targetDiv).find('div.vertical_list');
+            for (var j = 0; j <= maxStructureNo; j++) {
+                setStructureInfoToTreeLabelDiv(targetRow, j, '', '');
+            }
+            targetRow = null;
+            // 2024/07/08 階層選択モーダル画面で未選択状態を許容する UPD end
         }
         // 親要素が選択されている場合、自身を選択リストから削除(複数選択可能な場合)
         selectedNodes = [];
         var ids = nodes.filter(x => x["parent"] != "#").map(x => x["id"]);
-        var locationGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+        // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD start
+        //var locationGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+        var locationGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.LocationForMngStd];
+        // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD end
         $.each(nodes, function (idx, node) {
             var parent = node.parent;
             //if (!ids.includes(parent) && parent != '#') {
@@ -14909,7 +14934,10 @@ function initSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStruc
         });
 
         // 値の個数(単一選択の場合は1)
-        const valueCounts = isMultiSelect ? selectedNodes.length : 1;
+        // 2024/07/08 階層選択モーダル画面で未選択状態を許容する UPD start
+        //const valueCounts = isMultiSelect ? selectedNodes.length : 1;
+        const valueCounts = selectedNodes.length > 0 ? (isMultiSelect ? selectedNodes.length : 1) : 0;
+        // 2024/07/08 階層選択モーダル画面で未選択状態を許容する UPD end
         // 複数行の場合、表示行数分列を増やす
         addTreeLabels(targetDiv, valueCounts);
 
@@ -15401,7 +15429,7 @@ function transChildForm(appPath, childNo, dispPtn, transDiv, parentNo, btn_ctrlI
 
         //親画面をクリアして非表示
         // - 検索結果をクリア
-        if (conductId != "MA0001") { //保全活動詳細画面から一覧画面へ戻る際に再検索を行わない
+        if (!(parentNo == 0 && notSearchConductIdList.indexOf(conductId) >= 0)) { //詳細画面から一覧画面へ戻る際に再検索を行わない機能は検索結果をクリアしない
             clearSearchResult();
         }
         // - 明細エリアのエラー状態を初期化
@@ -16488,7 +16516,7 @@ function dispListData(appPath, conductId, pgmId, formNo, data, isSearch) {
             setConditionAppliedStatus(tbl, info);
 
             if (totalCount == 0) {
-                return 0;
+                return true;
             }
 
             //ｴﾘｱのidを退避
@@ -17740,8 +17768,12 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
     // 場所階層の構成グループは、以下の処理を行わない。場所階層だが取得内容を制御するために構成グループが異なるものも含む
     var noNarrowGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
     if (!noNarrowGrpIds.includes(grpId)) {
-        // 予備品ツリーは工場により絞込を行わない
-        if (grpId != structureGroupDef.Parts) {
+        // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD start
+        //// 予備品ツリーは工場により絞込を行わない
+        //if (grpId != structureGroupDef.Parts) {
+        // 予備品ツリー/機器別管理基準標準用場所階層ツリーは工場により絞込を行わない
+        if (grpId != structureGroupDef.Parts && grpId != structureGroupDef.LocationForMngStd) {
+        // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD end
             // 場所階層以外のツリーの場合、選択中の工場IDを取得
             // 左側ツリーメニューの場合、表示中の画面ではなくツリーから取得
             var getFromArticle = !isTreeMenu;
@@ -17775,7 +17807,10 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
 
 
     //指定階層を展開した状態で表示するツリーの場合true、選択階層までを展開する場合はfalse
-    var openNodeGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.Job];
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD start
+    //var openNodeGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.Job];
+    var openNodeGrpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.Job, structureGroupDef.LocationForMngStd];
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD end
     const isOpenNode = openNodeGrpIds.includes(grpId);
 
     var selector = '#' + getTreeViewId(grpId, treeViewType.Val);
@@ -18385,11 +18420,31 @@ function getTreeViewMergeFacrotyIdList(data) {
  * @return {number} 構成ID
  */
 function getTreeViewStructureId(data) {
-    if (data.li_attr) {
-        return data.li_attr['data-structureid'];
-    } else {
-        return -1;
+    //★2024/07/19 TMQ応急対応 SQL側でマージ処理実行 Mod start
+    //if (data.li_attr) {
+    //    return data.li_attr['data-structureid'];
+    //} else {
+    //    return -1;
+    //}
+    var structureIdList = getTreeViewStructureIdList(data);
+    if (structureIdList.length == 1) {
+        return structureIdList[0];
+    } else if (structureIdList.length > 1) {
+        // マージされている場合
+        // 選択中の工場IDを取得
+        var selectedFactoryIdList = getSelectedFactoryIdList(null, true, false);
+        if (selectedFactoryIdList.length > 0) {
+            // 対応する工場ID配列を取得
+            var facrotyIdList = getTreeViewMergeFacrotyIdList(data);
+            var idx = facrotyIdList.indexOf(selectedFactoryIdList[0]);
+            if (idx >= 0) {
+                // 工場のインデックスと同じ位置の構成IDを追加
+                return structureIdList[idx];
+            }
+        }
     }
+    return -1;
+    //★2024/07/19 TMQ応急対応 SQL側でマージ処理実行 Mod end
 }
 
 /**
@@ -18797,7 +18852,10 @@ function getTreeViewNodeByStructureIdForMerge(tree, structureIdList) {
  * @param {any} selector ツリーのID
  */
 function openFactoryNode(grpId, selector) {
-    var grpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD start
+    //var grpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory];
+    var grpIds = [structureGroupDef.Location, structureGroupDef.LocationForUserMst, structureGroupDef.LocationHistory, structureGroupDef.LocationNoHistory, structureGroupDef.LocationForMngStd];
+    // 2024/07/08 機器別管理基準標準用場所階層ツリー追加 UPD end
     if (grpIds.includes(grpId)) {
         //場所階層ツリーの場合、工場階層まで展開する
 
@@ -20877,6 +20935,9 @@ function setHeaderText(head, id, editptn, referenceMode, appPath) {
 
                 //ラベル表示に切り替え
                 $(ele).addClass("readonly");
+
+                // 日付(DatePicker)、時刻(TimePicker)、日時(DateTimePicker)コントロールの初期化
+                initDateTypePicker($(ele), false);
             } else {
                 //直接編集可
 

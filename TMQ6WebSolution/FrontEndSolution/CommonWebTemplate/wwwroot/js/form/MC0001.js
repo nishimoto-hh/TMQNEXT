@@ -164,6 +164,7 @@ const DatailManagementStandard = {
             EquipLevel: 32,
             MachineNo: 2,
             MachineName: 3,
+            StartDate: 17,
             ManagementStandardCompId: 19,
             ManagementStandardContId: 20,
             MainteScheduleId: 21,
@@ -1024,6 +1025,13 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
                     var editMachineName = getCtrl(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.MachineName, 1, CtrlFlag.TextBox, true, false);
                     changeInputControl(editMachineName, false);
 
+                }
+                else {
+
+                    // 新規行以外(詳細リンクで表示された場合)
+                    // タブレーターに表示されている開始日を単票の開始日に表示(日付コントロールの初期化処理の影響でシステム日付が初期値になってしまうため)
+                    var startDate = $(element).closest(".tabulator-row").find("div[tabulator-field='VAL" + DatailManagementStandard.ManagementStandardList.ColumnNo.StartDate + "']")[0].innerText;
+                    setValue(DatailManagementStandard.ManagementStandardList.Id, DatailManagementStandard.ManagementStandardList.ColumnNo.StartDate, rowNo, CtrlFlag.TextBox, startDate.trim(), true, false);
                 }
 
                 // 「スケジュールを更新」を選択状態にする(新規・更新関係なし)
@@ -2532,22 +2540,22 @@ function setMaintKindListGroupingMachine() {
         var [newPrevKindId, isTopKind, isBottomKind] = getGroupSetInfo(DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLankId, prevKindId, index, list);
         prevKindId = newPrevKindId;
         changeCols = [DatailManagementStandard.ScheduleLankList.ColumnNo.MainteLank,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonthLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDayLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateSchedule,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDate,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateScheduleLabel,
-            DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDateLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYear,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonth,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDay,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDisp,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.StartDate,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleMante,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleYearLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleMonthLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDayLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.CycleDispLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.StartDateLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.ScheduleManteLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateSchedule,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDate,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.IsUpdateScheduleLabel,
+        DatailManagementStandard.ScheduleLankList.ColumnNo.NextScheduleDateLabel,
         ];
         setGroupToCols(index, changeCols, isTopMachine || isTopKind, isBottomMachine || isBottomKind);
 

@@ -205,6 +205,7 @@
     <None Remove="sql\Common\ComboBox\C0037.sql" />
     <None Remove="sql\Common\ComboBox\C0038.sql" />
     <None Remove="sql\Common\ComboBox\C0039.sql" />
+    <None Remove="sql\Common\ComboBox\C0040.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0003.sql" />
@@ -301,6 +302,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="sql\Common\ComboBox\C0040.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Template\0\RP0450\4114\template_RP0450.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -922,6 +926,7 @@
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_LN0002\BusinessLogic_LN0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MA0001\BusinessLogic_MA0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MC0001\BusinessLogic_MC0001.csproj" />
+    <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MC0002\BusinessLogic_MC0002.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MP0001\BusinessLogic_MP0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MS0001\BusinessLogic_MS0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_MS0010\BusinessLogic_MS0010.csproj" />

@@ -424,9 +424,13 @@ namespace CommonTMQUtil
         /// <param name="db">DB接続</param>
         /// <param name="languageId">言語ID</param>
         /// <param name="buttomId">out 取得した最下層の構成ID</param>
+        /// <param name="prmMaxLayerNo">チェック対象となる最下層の階層番号(未指定の場合は-1)</param>
         /// <returns>最下層でない場合、False</returns>
         /// <remarks>下層の値が一つの場合、上層の構成IDをツリーは返す。紐づく下層の値の数を調べ、一つかどうか判定する</remarks>
-        public static bool GetButtomValueFromTree(int structureId, ComDB db, string languageId, out int buttomId)
+        // 2024/07/12 チェック対象となる最下層の階層番号を指定可能に修正 Upd start
+        //public static bool GetButtomValueFromTree(int structureId, ComDB db, string languageId, out int buttomId)
+        public static bool GetButtomValueFromTree(int structureId, ComDB db, string languageId, out int buttomId, int prmMaxLayerNo = -1)
+        // 2024/07/12 チェック対象となる最下層の階層番号を指定可能に修正 Upd end
         {
             // outの初期値
             buttomId = -1;
@@ -436,6 +440,13 @@ namespace CommonTMQUtil
             int orgLayerNo = (list.Where(x => x.StructureId == structureId).Select(x => x.StructureLayerNo).First()) ?? -1;
             // 最大の構成階層番号を取得
             int maxLayerNo = list.Max(x => x.StructureLayerNo) ?? -1;
+            // 2024/07/12 チェック対象となる最下層の階層番号を指定可能に修正 Add start
+                // チェック対象の最下層の階層番号が指定されている場合
+            if (prmMaxLayerNo >= 0 && prmMaxLayerNo < maxLayerNo)
+            {
+                maxLayerNo = prmMaxLayerNo;
+            }
+            // 2024/07/12 チェック対象となる最下層の階層番号を指定可能に修正 Add end
 
             // 引数の階層IDの構成階層番号から最大の階層番号まで順に階層を進め、それぞれ一つしか要素が無いかを判定する
             for (int layerNo = orgLayerNo; layerNo <= maxLayerNo; layerNo++)

@@ -1,0 +1,3 @@
+-- 機器別管理基準部位テーブルのシーケンスを取得
+SELECT
+    NEXT VALUE FOR seq_mc_management_standards_component_management_standards_component_id

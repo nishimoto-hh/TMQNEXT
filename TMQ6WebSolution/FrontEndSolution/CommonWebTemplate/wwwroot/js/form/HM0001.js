@@ -733,6 +733,11 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
                 getButtonCtrl(FormDetail.Button.ManagementStandardRegist).hide();
             }
+
+            // 新規行以外(詳細リンクで表示された場合)
+            // タブレーターに表示されている開始日を単票の開始日に表示(日付コントロールの初期化処理の影響でシステム日付が初期値になってしまうため)
+            var startDate = $(element).closest(".tabulator-row").find("div[tabulator-field='VAL" + FormDetail.ManagementStandardsList.ColumnNo.StartDate + "']")[0].innerText;
+            setValue(FormDetail.ManagementStandardsList.Id, FormDetail.ManagementStandardsList.ColumnNo.StartDate, rowNo, CtrlFlag.TextBox, startDate.trim(), true, false);
         }
 
         // 表示するレコードの保全スケジュール変更管理IDを取得

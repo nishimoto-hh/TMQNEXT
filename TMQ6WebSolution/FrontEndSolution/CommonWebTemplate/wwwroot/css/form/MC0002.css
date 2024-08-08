@@ -1,0 +1,45 @@
+﻿@charset "utf-8";
+
+/*********************************************
+ *** MC0002：機器別管理基準標準 *** 
+ *********************************************/
+
+/***********************標準割当画面*************************/
+
+#COND_020_00_LST_4_4_div + table {
+    /*開始日の反映元の入力コントロールを「閉じる」ボタンの隣に配置*/
+    float: left;
+}
+
+/*検索結果の「開始日」の設定*/
+#BODY_080_00_LST_4_4_div {
+    /*反映ボタンを隣に配置*/
+    position: relative;
+    float: left;
+    /*場所を移動*/
+    left: 30px;
+    top: 6px;
+    /*横幅を設定(移動すると狭くなってしまうため)*/
+    width: 300px;
+}
+    /*検索結果の「開始日」を移動すると入力箇所にスクロールバーが表示されてしまうため非表示にする*/
+    #BODY_080_00_LST_4_4_div > #BODY_080_00_LST_4_4 {
+        scrollbar-width: none;
+    }
+
+/*背景調整*/
+.TextAreaResize {
+    /*テキストエリアの高さ調整*/
+    height: 80px;
+    /*1行の高さ*/
+    line-height: 1;
+}
+
+/*readonlyが付与されているセルのラベル化解除*/
+.tabulator-cell.not_readonly div.substance {
+    display: inline-block !important;
+}
+
+.tabulator-cell.not_readonly span.labeling {
+    display: none !important;
+}

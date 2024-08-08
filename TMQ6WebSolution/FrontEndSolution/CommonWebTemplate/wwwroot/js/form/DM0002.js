@@ -39,6 +39,7 @@ const DM0002_FormDetail = {
     Link: 23,                            // リンク
     FileName: 21,                        // 登録済ファイル名
     AttachmentExData: 30,                // 添付種類拡張項目
+    MakeDate: 25,                        // 作成日
     BtnUploadId: "Upload"                // 登録ボタン(アップロード)
 };
 
@@ -140,6 +141,12 @@ function DM0002_postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn,
                 }
             });
         }
+    }
+    else {
+        // 新規行以外(詳細リンクで表示された場合)
+        // タブレーターに表示されている作成日を単票の開始日に表示(日付コントロールの初期化処理の影響でシステム日付が初期値になってしまうため)
+        var makeDate = $(element).closest(".tabulator-row").find("div[tabulator-field='VAL" + DM0002_FormDetail.MakeDate + "']")[0].innerText;
+        setValue(DM0002_FormDetail.Id, DM0002_FormDetail.MakeDate, rowNo, CtrlFlag.TextBox, makeDate.trim(), true, false);
     }
 
     // 表示されている文書種類コンボボックスの項目番号を取得
