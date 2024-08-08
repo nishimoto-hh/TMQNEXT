@@ -477,6 +477,22 @@ function getSiblingsValue(element, val, flg) {
 }
 
 /**
+ * 対象のラベル値を取得（フォーマット等が必要な項目はラベル値を取得すること）
+ * @param ctrlId コントロールID
+ * @param val VAL値
+ * @param rowNo 行番号
+ * @param flg=0:テキストボックス、1:ラベル、2:コンボボックス、3:チェックボックス、4:リンク、5:入力項目、6:テキストエリア、7:パスワード
+ * 
+ * @return 取得した値
+ */
+function getItemLabelValue(ctrlId, val, rowNo, flg) {
+    //要素取得
+    var ele = getCtrl(ctrlId, val, rowNo, flg);
+    //表示しているラベルの値を取得
+    return $(ele).closest("td").find("span.labeling").text();
+}
+
+/**
  * 値を対象の場所に設定する
  * @param ctrlId コントロールID
  * @param val VAL値
@@ -4079,4 +4095,43 @@ function getValueChangedAllItemForHistory(applicationDivisionCode, columnList) {
     });
 
     return valueChanged;
+}
+
+/**
+ * 一覧画面のページングを再設定(詳細から一覧へ戻る際に再検索を行わない機能で使用)
+ *  @param appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param conductId   ：機能ID
+ *  @param pgmId       ：プログラムID
+ *  @param ctrlId      ：一覧のコントロールID
+ *  @param formNo      ：一覧の画面No
+ *  @param allListCountKey：グローバルリストに保存している総件数のキー
+ */
+function setListPagination(appPath, conductId, pgmId, status, ctrlId, formNo, allListCountKey) {
+    // 読込件数エリアの総件数の設定
+    var div = $(P_Article).find('div[data-relation-id="' + ctrlId + '"]');
+    var label = $(div).find('td[data-name="VAL3"]');
+    if (label != null && label.length > 0 && P_dicIndividual[allListCountKey]) {
+        var oldCount = $(label).text(); //「/123」のような先頭にスラッシュが付与された値
+        if (oldCount.slice(1) == P_dicIndividual[allListCountKey]) {
+            //件数の変更はないため処理なし
+            return;
+        }
+        $(label).text('/' + P_dicIndividual[allListCountKey]);
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + ctrlId + "_" + formNo];
+    //ページャーの再設定
+    if (table) {
+        var count = getTotalRowCount(table);
+        setupPagination(appPath, conductId, pgmId, formNo, ctrlId, count);
+    }
+    //ページャーの総ページ数が1件の場合、ページャーを非表示
+    setHidePagination("#" + ctrlId + "_" + formNo, table);
+
+    //メッセージの設定
+    if (status != null && status.MESSAGE != null && status.MESSAGE.length > 0) {
+        // 削除時の成功メッセージ
+        addMessage(status.MESSAGE, status.STATUS);
+    }
 }
