@@ -2627,6 +2627,10 @@ namespace CommonTMQUtil
                 /// 検索条件
                 /// </summary>
                 public const int Condition = 9;
+                /// <summary>
+                /// 年報
+                /// </summary>
+                public const int Year = 10;
             }
 
             /// <summary>
@@ -2936,6 +2940,12 @@ namespace CommonTMQUtil
 
                     case ReportRP0450.SheetNo.CountByFactory: // 工場別件数
                         if (!getOutDataForOldStyleCountByFactory(db, searchCondition, sheetDefine.TargetSql, ref mappingInfoList, out mqList))
+                        {
+                            return false;
+                        }
+                        break;
+                    case ReportRP0450.SheetNo.Year: // 工場別件数
+                        if (!getOutDataForOldStyleYear(db, searchCondition, sheetDefine.TargetSql, ref mappingInfoList, out dataList))
                         {
                             return false;
                         }
@@ -3549,6 +3559,75 @@ namespace CommonTMQUtil
                 cmdInfoList.Add(cmdInfo);
             }
         }
+
+        #region 年報 シート
+        /// <summary>
+        /// 検索処理・個別マッピング
+        /// </summary>
+        /// <param name="db">DBクラス</param>
+        /// <param name="searchCondition">検索条件</param>
+        /// <param name="targetSql">検索SQL</param>
+        /// <param name="mappingInfoList">マッピング情報リスト</param>
+        /// <param name="mqList">MQ分類のリスト</param>
+        /// <returns>エラーの場合はFalse</returns>
+        public static bool getOutDataForOldStyleYear(ComDB db, dynamic searchCondition, string targetSql, ref List<CommonExcelPrtInfo> mappingInfoList, out IList<dynamic> mqList)
+        {
+            // 検索結果格納用リスト
+            IList<dynamic> dataList = null;
+
+            // MQ分類の検索結果(他のシートでも使用する)
+            mqList = null;
+
+            // マッピング情報格納用
+            var info = new CommonExcelPrtInfo();
+            info.SetSheetNo(ReportRP0450.SheetNo.Year); // マッピング対象のシート番号
+
+            // 対象SQLファイルからSQL文を取得(月ごとの件数)
+            if (!TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0450.SubDir, targetSql , out string selectMqSql))
+            {
+                return false;
+            }
+
+            // 帳票データ(MQ分類)取得
+            dataList = db.GetList(selectMqSql, searchCondition);
+            mqList = dataList;
+
+            // 検索結果(MQ分類)をマッピング
+            mappingInfoList.AddRange(setMappingInfoYear());
+
+            return true;
+
+            // MQ分類のデータをマッピング
+            List<CommonExcelPrtInfo> setMappingInfoYear()
+            {
+                string mqNameColumn = "H";  // MQ分類名をマッピングする列
+                string mqCountColumn = "I"; // MQ分類ごとの件数をマッピングする列
+                int startRowNo = 7;         // データのマッピングを開始する行
+
+                List<CommonExcelPrtInfo> mappingInfoListMq = new();
+
+                // 検索結果をマッピングする
+                foreach (dynamic data in dataList)
+                {
+                    // MQ分類名をマッピング
+                    info.SetExlSetValueByAddress(mqNameColumn + startRowNo.ToString(), data.mq_name);
+                    mappingInfoListMq.Add(info);
+
+                    // MQ分類ごとの件数をマッピング
+                    info.SetExlSetValueByAddress(mqCountColumn + startRowNo.ToString(), data.cnt);
+                    mappingInfoListMq.Add(info);
+
+                    startRowNo++;
+                }
+
+                return mappingInfoListMq;
+            }
+
+        }
+        #endregion
+
+
+
 
         /// <summary>
         /// データの検索、検索したデータのマッピング処理
@@ -4625,7 +4704,7 @@ namespace CommonTMQUtil
             param.LanguageId = languageId;
 
             // 変更管理帳票出力対象項目定義を取得
-            List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, db, Const.CommonFactoryId, true);
+            List<TMQUtil.StructureItemEx.StructureItemExInfo> list = TMQUtil.StructureItemEx.GetStructureItemExData(param, db, Const.CommonFactoryId, false);
 
             //出力機能毎に変更項目が異なるので、ここでSQLを作成する
             //機器台帳or長期計画
@@ -4675,6 +4754,10 @@ namespace CommonTMQUtil
                 if (isContent)
                 {
                     sql.AppendLine("    , hd.management_standards_content_id");
+                    if( condition.ConductCode == ((int)Const.MsStructure.StructureId.OutputItemConduct.HM0001).ToString())
+                    {
+                        sql.AppendLine("    , hd.subject");
+                    }
                     sql.AppendLine("FROM");
                     sql.AppendLine("    #temp_history_maintainance_data AS hd");
                     sql.AppendLine("    CROSS JOIN #report_maintainance_col_info AS rpc");

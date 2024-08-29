@@ -238,6 +238,7 @@
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonStopAndMaintenance_4116.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonSuddenAndCall.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet1.sql" />
+    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet10.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
@@ -1045,6 +1046,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet10.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\CreateIdDateForProc.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertIdDateForProc.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertMaintainanceScheduleDetailTable.sql" />
