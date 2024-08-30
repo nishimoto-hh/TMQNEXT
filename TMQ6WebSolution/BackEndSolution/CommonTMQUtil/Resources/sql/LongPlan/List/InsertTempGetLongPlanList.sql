@@ -1,3 +1,4 @@
+/*@FileLinkEquip
 INSERT INTO #eq_att
 -- 機器情報添付の取得に使用する機器IDを機器情報より取得
 SELECT DISTINCT
@@ -26,6 +27,7 @@ WHERE
 AND mc.machine_id IS NOT NULL
 AND eq.equipment_id IS NOT NULL
 ;
+@FileLinkEquip*/
 INSERT INTO #max_dt
 -- 排他処理で使用する項目(長期計画件名IDごとの最大の更新日時)
 SELECT

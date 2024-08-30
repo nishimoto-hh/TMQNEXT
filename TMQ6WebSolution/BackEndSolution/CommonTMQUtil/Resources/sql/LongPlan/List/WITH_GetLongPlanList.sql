@@ -28,10 +28,10 @@ WITH target AS(
         ,lp.long_plan_division_structure_id
         ,lp.long_plan_group_structure_id
 /*@UnExcelPort
-        ,
         -- 機器添付有無
         -- ひとつの件名に複数の機器別管理基準内容が紐づきうるので、複数の機器の添付情報を結合して表示する
-        (
+        /*@FileLinkEquip
+        ,(
              SELECT
                 (
                      SELECT
@@ -44,7 +44,9 @@ WITH target AS(
                          eq_att.long_plan_id FOR xml path('')
                 )
         ) AS file_link_equip
+        @FileLinkEquip*/
         --dbo.get_file_download_info(1640, lp.long_plan_id)
+        /*@FileLinkSubject
         ,REPLACE((
                 SELECT
                     dbo.get_file_download_info_row(att_temp.file_name, att_temp.attachment_id, att_temp.function_type_id, att_temp.key_id, att_temp.extension_data)
@@ -56,6 +58,7 @@ WITH target AS(
                 ORDER BY
                     document_no FOR xml path('')
             ), ' ', '') AS file_link_subject
+        @FileLinkSubject*/
 @UnExcelPort*/
         ,lp.purpose_structure_id
         ,lp.work_class_structure_id

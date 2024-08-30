@@ -52,6 +52,11 @@ namespace BusinessLogic_LN0002
             public const string GetLinkCntForTrans = "GetLinkCntForTrans";
             /// <summary>SQL名：○リンククリック時に保全スケジュール詳細IDから機器情報を取得</summary>
             public const string GetEquipmentInfoByScheduleDetailId = "GetEquipmentInfoByScheduleDetailId";
+
+            /// <summary>SQL名：一時テーブル作成：一覧取得用</summary>
+            public const string CreateTempForGetList = "CreateTableTempGetList";
+            /// <summary>SQL名：一時テーブル登録：一覧取得用</summary>
+            public const string InsertTempForGetList = "InsertTempGetList";
         }
 
         /// <summary>

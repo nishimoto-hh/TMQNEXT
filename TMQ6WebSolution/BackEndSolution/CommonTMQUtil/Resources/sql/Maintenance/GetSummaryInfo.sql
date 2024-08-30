@@ -31,6 +31,7 @@ SELECT
             follow_plan_key_id = @SummaryId
     ) AS follow_plan_flg
     ,su.follow_plan_key_id
+    ,su.long_plan_id
 FROM
     ma_summary su
     LEFT JOIN ma_request re

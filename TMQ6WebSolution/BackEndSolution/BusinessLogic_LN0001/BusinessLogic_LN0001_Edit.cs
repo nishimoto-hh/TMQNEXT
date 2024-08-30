@@ -37,7 +37,9 @@ namespace BusinessLogic_LN0001
             /// <summary>複写</summary>
             Copy,
             /// <summary>登録後再表示</summary>
-            Redisplay
+            Redisplay,
+            /// <summary>未設定</summary>
+            None = -1
         }
 
         /// <summary>
@@ -98,10 +100,8 @@ namespace BusinessLogic_LN0001
         /// 編集画面　登録処理
         /// </summary>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistEdit()
+        private bool executeRegistEdit(bool isInsert)
         {
-            EditDispType editType = getEditType();
-            bool isInsert = isInsertEdit(editType);
             // 排他チェック(更新のみ)
             if (!isInsert && !checkExclusiveSingle(ConductInfo.FormEdit.ControlId.Hide))
             {
@@ -128,8 +128,15 @@ namespace BusinessLogic_LN0001
             if (!isInsert)
             {
                 // 更新時、再検索処理
+                this.selectedLongPlanIdList.Add(registInfo.LongPlanId);
                 return initEdit(EditDispType.Redisplay);
             }
+            else
+            {
+                // 登録時
+                this.selectedLongPlanIdList.Add(newLongPlanId);
+            }
+
             // INSERTの場合の再検索処理
             var param = new ComDao.LnLongPlanEntity();
             param.LongPlanId = newLongPlanId;
@@ -170,18 +177,15 @@ namespace BusinessLogic_LN0001
                 case LISTITEM_DEFINE_CONSTANTS.DAT_TRANS_ACTION_DIV.New:
                     // 新規
                     return EditDispType.New;
-                    break;
                 case LISTITEM_DEFINE_CONSTANTS.DAT_TRANS_ACTION_DIV.Edit:
                     // 修正
                     return EditDispType.Update;
-                    break;
                 case LISTITEM_DEFINE_CONSTANTS.DAT_TRANS_ACTION_DIV.Copy:
                     // 複写
                     return EditDispType.Copy;
-                    break;
                 default:
                     // 到達不能
-                    throw new Exception();
+                    return EditDispType.None;
             }
         }
 

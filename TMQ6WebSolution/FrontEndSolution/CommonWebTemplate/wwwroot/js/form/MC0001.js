@@ -24,6 +24,12 @@ document.write("<script src=\"" + getPath() + "/DM0002.js\"></script>");
 document.write("<script src=\"" + getPath() + "/RM0001.js\"></script>");
 // 機能ID
 const ConductId_MC0001 = "MC0001";
+// グローバル変数のキー、一覧画面の表示データを更新する用
+const MC0001_UpdateListData = "MC0001_UpdateListData";
+// グローバル変数のキー、文書管理画面で添付情報が更新された場合true
+const MC0001_UpdateAttachmentFlg = "MC0001_UpdateAttachmentFlg";
+// グローバル変数のキー、一覧画面用の総件数
+const MC0001_AllListCount = "MC0001_AllListCount";
 
 // 一覧画面
 const SearchList = {
@@ -31,6 +37,41 @@ const SearchList = {
     No: 0,
     List: {
         Id: "BODY_020_00_LST_0",
+        ColumnNo: {
+            MachineNo: 1,
+            MachineName: 2,
+            EquipLevel: 3,
+            District: 4,
+            Factory: 5,
+            Plant: 6,
+            Series: 7,
+            Stroke: 8,
+            Facility: 9,
+            InpLank: 10,
+            Mante: 11,
+            SetLoc: 12,
+            SetCnt: 13,
+            SetDate: 14,
+            ApplicableLaws: 15,
+            MachineNote: 16,
+            Job: 17,
+            LargeClassfication: 18,
+            MiddleClassfication: 19,
+            SmallClassfication: 20,
+            Maker: 21,
+            MakerType: 22,
+            ModelNo: 23,
+            SerialNo: 24,
+            DateOfManufacture: 25,
+            DeliveryDate: 26,
+            UseKbn: 27,
+            FileLinkMachine: 28,
+            FileLinkEquip: 29,
+            FixedAssetNo: 30,
+            EquipmentNote: 31,
+            MachineId: 32,
+            EquipmentId: 33,
+        }
     },
     HiddenList: {
         Id: "BODY_030_00_LST_0",
@@ -53,6 +94,13 @@ const SearchList = {
 const MachineDatail = {
     // 画面No
     No: 1,
+    HideenKeyInfo: {
+        Id: "BODY_000_00_LST_1",
+        ColumnNo: {
+            MachineId: 1,
+            EquipmentId: 2
+        },
+    },
     HiddenList: {
         Id: "BODY_007_00_LST_1",
         ColumnNo: {
@@ -61,6 +109,14 @@ const MachineDatail = {
     },
     MachineDatail10: {
         Id: "BODY_010_00_LST_1",
+        ColumnNo: {
+            District: 1,
+            Factory: 2,
+            Plant: 3,
+            Series: 4,
+            Stroke: 5,
+            Facility: 6,
+        },
     },
     MachineDatail20: {
         Id: "BODY_020_00_LST_1",
@@ -81,20 +137,40 @@ const MachineDatail = {
     },
     MachineDatail30: {
         Id: "BODY_030_00_LST_1",
+        ColumnNo: {
+            ApplicableLaws: 1,
+            MachineNote: 2,
+        },
     },
     MachineDatail40: {
         Id: "BODY_040_00_LST_1",
+        ColumnNo: {
+            Job: 1, 
+            LargeClassfication: 2,
+            MiddleClassfication: 3,
+            SmallClassfication: 4,
+        },
     },
     MachineDatail50: {
         Id: "BODY_050_00_LST_1",
         ColumnNo: {
             UseKbn: 1,
+            FixedAssetNo: 3,
+            Maker: 4,
+            MakerType: 5,
+            ModelNo: 6,
+            SerialNo: 7,
+            DateOfManufacture: 8,
+            DeliveryDate: 9,
             MaintLank: 10,
-            EquipmentId: 11
+            EquipmentId: 11,
         },
     },
     MachineDatail60: {
         Id: "BODY_060_00_LST_1",
+        ColumnNo: {
+            EquipmentNote: 1,
+        },
     },
     MachineDatail70: {
         Id: "BODY_070_00_LST_1",
@@ -531,8 +607,23 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     // 共通-文書管理詳細画面の初期化処理
     DM0002_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
 
-    // 機能IDが機器台帳以外の場合は何もしない
+    // 機能IDが機器台帳以外の場合
     if (conductId != ConductId_MC0001) {
+        
+        if (conductId == DM0002_FormDetail.ConductId) {
+            //文書管理画面の場合
+            //機能タイプIDを取得
+            var typeId = getValue(DM0002_Subject.Id, DM0002_Subject.FunctionTypeId, 1, CtrlFlag.TextBox, false);
+            //機番IDを取得
+            var keyId = getValueByOtherForm(1, MachineDatail.HideenKeyInfo.Id, MachineDatail.HideenKeyInfo.ColumnNo.MachineId, 1, CtrlFlag.Label);
+            if (P_dicIndividual[MC0001_UpdateAttachmentFlg] && P_dicIndividual[MC0001_UpdateAttachmentFlg].TYPEID == typeId) {
+                //添付情報更新後は処理なし
+                return;
+            }
+            //文書管理画面の初期表示時に機能タイプID、機番IDを設定
+            P_dicIndividual[MC0001_UpdateAttachmentFlg] = { TYPEID: typeId, KEYID: keyId, UPDATE: false };
+
+        }
         return;
     }
 
@@ -561,6 +652,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
     } else if (formNo == MachineDatail.No) {
         //詳細画面
+
+        //登録更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+        setUpdateDataForList(conductId, false);
 
         //フォーカス設定
         setFocusButton(MachineDatail.ForcusId);
@@ -617,6 +711,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var hideBtns = [MachineDatail.ButtonId.Copy, MachineDatail.ButtonId.Update, MachineDatail.ButtonId.Delete];
         var hideLists = [];
         setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), MachineDatail.ButtonId.HistoryManagementDetail, hideBtns, hideLists);
+
+        //一覧画面に反映する添付情報をクリア
+        delete P_dicIndividual[MC0001_UpdateAttachmentFlg];
 
     } else if (formNo == MachineEditDetail.No) {
         //詳細画面
@@ -960,12 +1057,20 @@ function beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, condu
  */
 function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
 
-    var formNo = getFormNo();
-    if (formNo == MachineEditDetail.No && btnCtrlId == MachineEditDetail.ButtonId.Regist) {
-        //新規登録画面から登録後、参照画面に渡すキー情報をセット
-        var conditionDataList = getListDataByCtrlIdList([MachineEditDetail.MachineDatail10.Id], MachineEditDetail.No, 0);
-        // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
-        setSearchCondition(ConductId_MC0001, MachineDatail.No, conditionDataList);
+    var formNo = getFormNo();    
+    if (formNo == MachineEditDetail.No) {
+        if (btnCtrlId == MachineEditDetail.ButtonId.Regist) {
+            //新規登録画面から登録後、参照画面に渡すキー情報をセット
+            var conditionDataList = getListDataByCtrlIdList([MachineEditDetail.MachineDatail10.Id], MachineEditDetail.No, 0);
+            // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
+            setSearchCondition(ConductId_MC0001, MachineDatail.No, conditionDataList);
+        } else if (btnCtrlId == MachineEditDetail.ButtonId.Back) {
+            //登録画面から戻るボタンで戻る際、再検索は行わない
+            return false;
+        }
+    } else if (formNo == MachineDatail.No) {
+        //一覧画面へ戻る際、再検索は行わない
+        return false;
     }
     return true;
 }
@@ -1871,6 +1976,11 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     // 共通-予備品検索画面を閉じたときの再表示処理はこちらで行うので、各機能での呼出は不要
     SP0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
 
+    if (conductId == ConductId_MC0001 && formNo == SearchList.No) {
+        //ページング再設定
+        setListPagination(appPath, conductId, pgmId, status, SearchList.List.Id, SearchList.No, MC0001_AllListCount);
+    }
+
     // 参照画面の場合、戻る/閉じるボタン表示制御
     if (formNo == MachineDatail.No) {
         setDisplayCloseBtn(transPtn);
@@ -1886,6 +1996,72 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
 
         initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);
     }
+
+    if (backFrom == DM0002_ConductId) {
+        //文書管理画面を閉じた場合
+        setAttachmentForList();
+    }
+}
+
+/**
+ * 添付情報を一覧画面のデータに反映する
+ */
+function setAttachmentForList() {
+    //添付情報が更新された場合、一覧画面のデータに反映する
+
+    if (!P_dicIndividual[MC0001_UpdateAttachmentFlg] || !P_dicIndividual[MC0001_UpdateAttachmentFlg].UPDATE) {
+        return;
+    }
+
+    //機能タイプIDを取得
+    var typeId = P_dicIndividual[MC0001_UpdateAttachmentFlg].TYPEID;
+    //機番IDを取得
+    var keyId = P_dicIndividual[MC0001_UpdateAttachmentFlg].KEYID;
+
+    //一覧の表示項目か
+    var col = 0;
+    switch (typeId.toString()) {
+        case AttachmentStructureGroupID.Machine.toString(): //機番添付
+            col = SearchList.List.ColumnNo.FileLinkMachine;
+            break;
+        case AttachmentStructureGroupID.Equipment.toString(): //機器添付
+            col = SearchList.List.ColumnNo.FileLinkEquip;
+            break;
+    }
+    if (col == 0) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+    var define = P_listData['#' + SearchList.List.Id + '_' + SearchList.No].getColumnDefinitions().find(x => x.field == "VAL" + col);
+    if (!define) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+
+    //添付情報文字列
+    var attachment = "";
+
+    //文書管理画面の添付情報を取得
+    var dm0002List = P_listData['#' + DM0002_FormDetail.Id + '_' + DM0002_FormDetail.No].getData();
+    if (dm0002List && dm0002List.length > 0) {
+        // 文書番号でソート
+        var list = dm0002List.sort((a, b) => a["VAL" + DM0002_FormDetail.DocumentNo] > b["VAL" + DM0002_FormDetail.DocumentNo] ? 1 : -1);
+        attachment = list.map(x => x["VAL" + DM0002_FormDetail.DownloadLink]).join("");
+    }
+
+    //更新前のデータを取得
+    var table = P_listData["#" + SearchList.List.Id + "_" + SearchList.No];
+    var oldData = table.searchData("VAL" + SearchList.List.ColumnNo.MachineId, "=", keyId);
+    if (oldData && oldData.length > 0) {
+        var updateData = {};
+        updateData.ROWNO = oldData[0].ROWNO;
+        updateData["VAL" + col] = attachment;
+        //添付情報を更新（ROWNOがキー）
+        table.updateRow(oldData[0].ROWNO, updateData);
+    }
+
+    //詳細画面再描画時に復活するので、initFormOriginal内で消す
+    //delete P_dicIndividual[MC0001_UpdateAttachmentFlg];
 }
 
 /**
@@ -1912,6 +2088,209 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     // 構成機器タブ
     initTabConstitution();
+
+    // 削除データを一覧画面から削除（登録・更新は詳細画面表示後のタイミングで反映）
+    setUpdateDataForList(conductId, true);
+}
+
+/**
+ * 更新データを一覧画面に反映する
+ *  @param conductId   ：機能ID
+ *  @param isDelete    ：削除の場合true
+ */
+function setUpdateDataForList(conductId, isDelete) {
+    if (!P_dicIndividual[MC0001_UpdateListData] || conductId != ConductId_MC0001) {
+        //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[MC0001_UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    if (isDelete && status != rowStatusDef.Delete) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録・更新処理を行う
+        return;
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + SearchList.List.Id + "_" + SearchList.No];
+
+    switch (status) {
+        case rowStatusDef.New: //新規
+            //一覧画面のデータのROWNO最大値を取得
+            var maxRowNo = 0;
+            var list = table.getData();
+            if (list && list.length > 0) {
+                var rowNoList = list.map(x => x.ROWNO);
+                //maxRowNo = Math.max.apply(null, rowNoList);
+                maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
+            }
+            //ROWNOに一覧データの最大値以降の値を設定
+            data.ROWNO = maxRowNo + 1;
+            //詳細画面から値取得
+            setLabelValueToListData(data, status);
+            //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
+            table.addRow(data, true, 1);
+            break;
+
+        case rowStatusDef.Edit: //更新
+            //データの機番IDを取得
+            var machineId = data["VAL" + SearchList.List.ColumnNo.MachineId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + SearchList.List.ColumnNo.MachineId, "=", machineId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                //詳細画面から値取得
+                setLabelValueToListData(data, status);
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        case rowStatusDef.Delete: //削除
+            //データの機番IDを取得
+            var machineId = data["VAL" + SearchList.List.ColumnNo.MachineId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + SearchList.List.ColumnNo.MachineId, "=", machineId);
+            if (oldData && oldData.length > 0) {
+                table.deleteRow(oldData[0].ROWNO);
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    delete P_dicIndividual[MC0001_UpdateListData];
+}
+
+/**
+ * 詳細画面の値から一覧用データに値を反映する
+ * @param data 一覧用データ
+ * @param status ステータス(新規or更新)
+ */
+function setLabelValueToListData(data, status) {
+
+    //一覧に表示している列に詳細画面の対応する項目値を設定
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+        switch (key) {
+            case "VAL" + SearchList.List.ColumnNo.MachineNo: //機器番号
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.MachineNo, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.MachineName: //機器名称
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.MachineName, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.EquipLevel: //機器レベル
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.EquipLevel, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.District: //地区
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.District, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Factory: //工場
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.Factory, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Plant: //プラント
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.Plant, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Series: //系列
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.Series, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Stroke: //工程
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.Stroke, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Facility: //設備
+                data[key] = getValue(MachineDatail.MachineDatail10.Id, MachineDatail.MachineDatail10.ColumnNo.Facility, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.InpLank: //重要度
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.InpLank, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Mante: //保全方式
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.Mante, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.SetLoc: //設置場所
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.setLoc, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.SetCnt: //設置台数
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.SetCnt, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.SetDate: //設置年月
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.SetDate, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.ApplicableLaws: //適用法規
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail30.Id, MachineDatail.MachineDatail30.ColumnNo.ApplicableLaws, 1, CtrlFlag.MultiCheckBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.MachineNote: //機番メモ
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail30.Id, MachineDatail.MachineDatail30.ColumnNo.MachineNote, 1, CtrlFlag.Textarea);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Job: //職種
+                data[key] = getValue(MachineDatail.MachineDatail40.Id, MachineDatail.MachineDatail40.ColumnNo.Job, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.LargeClassfication: //機種大分類
+                data[key] = getValue(MachineDatail.MachineDatail40.Id, MachineDatail.MachineDatail40.ColumnNo.LargeClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.MiddleClassfication: //機種中分類
+                data[key] = getValue(MachineDatail.MachineDatail40.Id, MachineDatail.MachineDatail40.ColumnNo.MiddleClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.SmallClassfication: //機種小分類
+                data[key] = getValue(MachineDatail.MachineDatail40.Id, MachineDatail.MachineDatail40.ColumnNo.SmallClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.Maker: //メーカー
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.Maker, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.MakerType: //メーカー型式
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.MakerType, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.ModelNo: //型式コード
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.ModelNo, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.SerialNo: //製造番号
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.SerialNo, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.DateOfManufacture: //製造年月
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.DateOfManufacture, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.DeliveryDate: //納期
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.DeliveryDate, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.UseKbn: //使用区分
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.UseKbn, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.FileLinkMachine: //機番添付有無
+                if (status == rowStatusDef.Edit) {
+                    //添付情報は更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + SearchList.List.ColumnNo.FileLinkEquip: //機器添付有無
+                if (status == rowStatusDef.Edit) {
+                    //添付情報は更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + SearchList.List.ColumnNo.FixedAssetNo: //固定資産番号
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail50.Id, MachineDatail.MachineDatail50.ColumnNo.FixedAssetNo, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.EquipmentNote: //機器メモ
+                data[key] = getItemLabelValue(MachineDatail.MachineDatail60.Id, MachineDatail.MachineDatail60.ColumnNo.EquipmentNote, 1, CtrlFlag.Textarea);
+                break;
+            case "VAL" + SearchList.List.ColumnNo.EquipmentId: //機器ID
+                data[key] = getValue(MachineDatail.HideenKeyInfo.Id, MachineDatail.HideenKeyInfo.ColumnNo.EquipmentId, 1, CtrlFlag.Label);
+                break;
+            default:
+                break;
+        }
+    });
 }
 
 /**
@@ -1953,6 +2332,10 @@ function postRegistProcessFailure(appPath, conductId, pgmId, formNo, btn, conduc
 function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) {
     // 共通-文書管理詳細画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
     if (IsExecDM0002_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+
+        // 添付情報が更新された場合（一覧データに反映用のフラグ）
+        P_dicIndividual[MC0001_UpdateAttachmentFlg].UPDATE = true;
+
         return DM0002_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
     }
 

@@ -670,6 +670,9 @@ const localStorageCode = {
     PageSize: 23,
     //スケジュール表示条件
     ScheduleCond: 24,
+    //スケジュールデータ更新キーリスト
+    ScheduleUpdateKeyList: 25,
+
 }
 
 /** セッションストレージキー データ種別 */
@@ -772,7 +775,7 @@ const FilterUseKbnDef = {
 }
 
 /** 定義 一覧画面へ戻る際に再検索しない機能IDリスト */
-const notSearchConductIdList = ["MA0001", "MC0002"];
+const notSearchConductIdList = ["MA0001", "MC0001", "MC0002", "LN0001"];
 
 //jquery-ui-datepickerとの競合防止
 //var bootstrapDatepicker = $.fn.datepicker.noConflict();
@@ -7895,7 +7898,9 @@ function initSearchBtn(appPath, btn) {
             // ボタンを不活性化
             $(this).prop("disabled", true);
             // モーダル画面の場合、検索ボタンが取得できないのでボタンを再取得
-            btn = $('input:button[data-actionkbn="' + actionkbn.Search + '"]');
+            // ※2024/08/20 以下の取り方だと対象機能の全ての検索ボタンが取得されるので、P_Articleから取得するよう変更(ただ、thisで問題ないと思う)
+            //btn = $('input:button[data-actionkbn="' + actionkbn.Search + '"]');
+            btn = $(P_Article).find($('input:button[data-actionkbn="' + actionkbn.Search + '"]'));
 
             try {
                 //【オーバーライド用関数】検索前の個別実装(選択チェックボックスがチェックされているかチェック)
@@ -19076,6 +19081,10 @@ function initTab(articleSelector) {
 function transOtherTab(appPath, transDiv, transTarget, formNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, target, modalNo) {
 
     var urlParam = transTarget.replace(/'/g, "").split("|");
+    if (isScheduleLink(btn_ctrlId)) {
+        // スケジュールリンクの場合、先頭にスケジュール種類が付加されているため削除
+        urlParam = urlParam.slice(1);
+    }
     var conductId = urlParam[0];
     // APより転記　他機能遷移先を動的に取得　列の定義で@5とすることでVAL5に記載の機能へ遷移
     // 「@」が付与されている場合、置き換える

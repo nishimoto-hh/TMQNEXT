@@ -25,6 +25,7 @@ using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
+using CommonWebTemplate.CommonDefinitions;
 
 namespace BusinessLogic_MC0001
 {
@@ -160,6 +161,11 @@ namespace BusinessLogic_MC0001
             public const string UpdateSpecInfo = "UpdateSpecInfo";
             /// <summary>SQL名：機種別仕様情報削除/summary>
             public const string DeleteSpecInfo = "DeleteSpecInfo";
+
+            /// <summary>SQL名：一時テーブル作成：一覧取得用</summary>
+            public const string CreateTempForGetList = "CreateTableTempGetMachineList";
+            /// <summary>SQL名：一時テーブル登録：一覧取得用</summary>
+            public const string InsertTempForGetList = "InsertTempGetMachineList";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"Machine";
@@ -414,6 +420,17 @@ namespace BusinessLogic_MC0001
             public const int IsUpdateSchedule = 42;
             // 次回実施予定日
             public const int NextScheduleDate = 43;
+        }
+
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            // グローバル変数のキー、一覧画面の表示データを更新する用
+            public const string MC0001UpdateListData = "MC0001_UpdateListData";
+            // グローバル変数のキー、一覧画面用の総件数
+            public const string MC0001AllListCount = "MC0001_AllListCount";
         }
         #endregion
 
@@ -1228,29 +1245,24 @@ namespace BusinessLogic_MC0001
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
 
+            // 項目カスタマイズで選択されている項目のみSELECTする
+            List<string> uncommentList = getDisplayCustomizeCol(TargetCtrlId.SearchList);
+
             // SQLを取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql, uncommentList);
 
             // 場所分類＆職種機種＆詳細検索条件取得
             if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
             {
                 return false;
             }
-            TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
-            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment });
-            var structuregroupList = new List<GroupId>
-            {
-                GroupId.Location, GroupId.Job, GroupId.MachineLevel, GroupId.Importance, GroupId.Conservation, GroupId.Manufacturer, GroupId.UseSegment, GroupId.ApplicableLaws
-            };
-            //listPf.GetTranslation(structuregroupList);
-            //listPf.GetTranslationLayer(GroupId.Job, (int)Const.MsStructure.StructureLayerNo.Job.Job);
-            listPf.GetCreateTranslation(); // テーブル作成
-            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
-            //listPf.GetInsertLayerOnly(GroupId.Job, (int)TMQConst.MsStructure.StructureLayerNo.Job.Job);
-            //listPf.AddTempTable(SqlName.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList);
-            listPf.RegistTempTable(); // 登録
+
+            // 一時テーブル設定
+            setTempTable(uncommentList);
+
             //SQLパラメータに言語ID設定
             whereParam.LanguageId = this.LanguageId;
+
             // 総件数を取得
             int cnt = db.GetCount(TMQUtil.GetCountSql(new ComDao.McMachineEntity().TableName, whereParam), whereParam);
             // 総件数のチェック
@@ -1263,8 +1275,12 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            //項目カスタマイズでSELECT項目を絞るので、詳細検索条件は機能側で付与する
+            StringBuilder baseSqlSb = new StringBuilder(baseSql);
+            baseSqlSb.AppendLine().AppendLine(whereSql);
+
             // 一覧検索SQL文の取得
-            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, null, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+            string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSqlSb.ToString(), null, null, isDetailConditionApplied, pageInfo.SelectMaxCnt);
             var selectSql = new StringBuilder(executeSql);
             selectSql.AppendLine("ORDER BY");
             selectSql.AppendLine("machine_no ");
@@ -1288,7 +1304,58 @@ namespace BusinessLogic_MC0001
                 this.Status = CommonProcReturn.ProcStatus.Valid;
             }
 
+            //グローバルリストへ総件数を設定
+            SetGlobalData(GlobalKey.MC0001AllListCount, isDetailConditionApplied ? results.Count : cnt);
+
+            // 検索結果リストを解放
+            results = null;
+            GC.Collect();
+
             return true;
+
+            void setTempTable(List<string> uncommentList)
+            {
+                if (uncommentList == null)
+                {
+                    return;
+                }
+
+                TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
+                List<FunctionTypeId> attachmentList = new();
+                if (uncommentList.Contains(nameof(Dao.searchResult.FileLinkMachine)))
+                {
+                    // 機番添付有無
+                    attachmentList.Add(FunctionTypeId.Machine);
+                }
+                if (uncommentList.Contains(nameof(Dao.searchResult.FileLinkEquip)))
+                {
+                    // 機器添付有無
+                    attachmentList.Add(FunctionTypeId.Equipment);
+                }
+                if (attachmentList.Count > 0)
+                {
+                    listPf.GetAttachmentSql(attachmentList);
+                }
+
+                //表示項目のみの構成グループIDを指定する
+                //場所階層、職種・機種はいずれかの項目が１つでも存在する場合、構成グループIDを追加する
+                List<string> locationList = new List<string>() { nameof(Dao.searchResult.DistrictName), nameof(Dao.searchResult.FactoryName), nameof(Dao.searchResult.PlantName), nameof(Dao.searchResult.SeriesName), nameof(Dao.searchResult.StrokeName), nameof(Dao.searchResult.FacilityName) };
+                List<string> jobList = new List<string>() { nameof(Dao.searchResult.JobName), nameof(Dao.searchResult.LargeClassficationName), nameof(Dao.searchResult.MiddleClassficationName), nameof(Dao.searchResult.SmallClassficationName) };
+                int locationCount = uncommentList.FindAll(locationList.Contains).Count;
+                int jobCount = uncommentList.FindAll(jobList.Contains).Count;
+                if (locationCount > 0)
+                {
+                    uncommentList.Add("Location");
+                }
+                if (jobCount > 0)
+                {
+                    uncommentList.Add("Job");
+                }
+                // 翻訳用一時テーブル登録
+                listPf.SetParamLanguageId();
+                listPf.AddTempTable(SqlName.SubDir, SqlName.CreateTempForGetList, SqlName.InsertTempForGetList, uncommentList);
+                listPf.RegistTempTable(); // 登録
+            }
         }
 
         /// <summary>
@@ -1861,6 +1928,9 @@ namespace BusinessLogic_MC0001
 
                 // 更新後初期表示処理のためデータセット
                 setUpdateEditData(machineResult.id);
+
+                // 一覧画面用のデータ取得（一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+                getListRowData(machineResult.id, true);
             }
             else
             {
@@ -1899,6 +1969,9 @@ namespace BusinessLogic_MC0001
 
                 // 更新後初期表示処理のためデータセット
                 setUpdateEditData(registMachineInfo.MachineId);
+
+                // 一覧画面用のデータ取得（一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+                getListRowData(registMachineInfo.MachineId, false);
             }
 
             return true;
@@ -1922,6 +1995,38 @@ namespace BusinessLogic_MC0001
                 target.JobLargeClassficationStructureId = ComUtil.ConvertStringToInt(source.LargeClassficationName);
                 target.JobMiddleClassficationStructureId = ComUtil.ConvertStringToInt(source.MiddleClassficationName);
                 target.JobSmallClassficationStructureId = ComUtil.ConvertStringToInt(source.SmallClassficationName);
+            }
+
+            //一覧用のデータと総件数をグローバルリストへ設定
+            void getListRowData(long machineId, bool isRegist)
+            {
+                //検索は行わず、詳細画面の値から取得する（速度改善）
+                Dao.searchResult result = new();
+                result.MachineId = machineId;
+
+                // ページ情報取得
+                PageInfo pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
+                pageInfo.CtrlId = TargetCtrlId.SearchList;
+                var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<Dao.searchResult>() { result });
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //ステータスを設定(１行目)
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+                foreach (var obj in list)
+                {
+                    //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                    Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                    dicList.Add(dic);
+                }
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.MC0001UpdateListData, dicList);
+                if (isRegist)
+                {
+                    //総件数を取得
+                    object oldCount = GetGlobalData(GlobalKey.MC0001AllListCount);
+                    long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                    //グローバルリストへ総件数を設定
+                    SetGlobalData(GlobalKey.MC0001AllListCount, count + 1);
+                }
             }
         }
 
@@ -2378,7 +2483,28 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            //一覧画面のデータ更新用の値を設定（一覧画面に戻った際、再検索をせず一覧表示データを直接削除する）
+            setDeleteRowDataToGlobalData();
+
             return true;
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData()
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //機器番号のVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(TargetCtrlId.SearchList) && x.ParamName.Equals(nameof(Dao.searchResult.MachineId))).Select(x => x.ItemNo).FirstOrDefault();
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, machineId } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.MC0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.MC0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.MC0001AllListCount, count - 1);
+            }
         }
 
         /// <summary>

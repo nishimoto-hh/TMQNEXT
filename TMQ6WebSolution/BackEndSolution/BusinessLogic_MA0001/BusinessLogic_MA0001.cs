@@ -925,6 +925,8 @@ namespace BusinessLogic_MA0001
             public const string MA0001UpdateListData = "MA0001_UpdateListData";
             // グローバル変数のキー、一覧画面用の総件数
             public const string MA0001AllListCount = "MA0001_AllListCount";
+            // グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキー
+            public const string MA0001UpdateKeyForLN0001 = "MA0001_UpdateKeyForLN0001";
         }
 
         /// <summary>

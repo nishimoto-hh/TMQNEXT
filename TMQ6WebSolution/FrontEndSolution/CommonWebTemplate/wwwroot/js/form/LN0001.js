@@ -72,7 +72,64 @@ const ScheduleUnit = { Year: 2, Month: 1 };
 // 一覧画面の定義
 const FormList = {
     No: 0
-    , List: { Id: "BODY_040_00_LST_0" } // 一覧
+    //一覧
+    , List: {
+        Id: "BODY_040_00_LST_0",
+        // 件名
+        Subject: 1,
+        //件名メモ
+        SubjectNote: 2,
+        //地区
+        District: 3,
+        //工場
+        Factory: 4,
+        //プラント
+        Plant: 5,
+        //系列
+        Series: 6,
+        //工程
+        Stroke: 7,
+        //設備
+        Facility: 8,
+        //職種
+        Job: 9,
+        //機器大分類
+        LargeClassfication: 10,
+        //機器中分類
+        MiddleClassfication: 11,
+        //機器小分類
+        SmallClassfication: 12,
+        //保全時期
+        MaintenanceSeason: 14,
+        //担当
+        Person: 15,
+        //作業項目
+        WorkItem: 17,
+        //予算管理区分
+        BudgetManagement: 20,
+        //予算性格区分
+        BudgetPersonality: 21,
+        //目的区分
+        Purpose: 22,
+        //作業区分
+        WorkClass: 23,
+        //処置区分
+        Treatment: 24,
+        //設備区分
+        FacilityStructure: 25,
+        //件名添付有無
+        FileLinkSubject: 26,
+        //機器添付有無
+        FileLinkEquip: 27,
+        //長計件名ID
+        LongPlanId: 51,
+        //準備対象
+        PreparationFlg: 53,
+        //長計区分
+        LongPlanDivision: 54,
+        //長計グループ
+        LongPlanGroup: 55,
+    }
     , Button: { MakePlan: "btnMakePlan", Insert: "btnInsert", Output: "btnOutPut", HistoryManagement: "btnHistoryManagement" }
     , Filter: { Id: "BODY_010_00_LST_0", Input: 1 } // 一覧上部のフィルタ
     , Condition: { Id: "BODY_020_00_LST_0", Schedule: { Unit: 1, Year: 2, Month: 3, Ext: 4 } } // スケジュール表示条件※共通
@@ -106,12 +163,84 @@ const FormDetail = {
         // スケジュール表示条件関連
         , Schedule: { Unit: 1, Year: 2, Month: 5, Ext: 6 }
     }
-    , Button: { MakeMaintainance: "btnMakeMaintainance", AddSubject: "btnAddSubject", Schedule: "btnUpdateSchedule", HistoryManagement: "btnHistoryManagement", Copy: "btnCopy", Update: "btnUpdate", Delete: "btnDelete" }
+    , Button: {
+        MakeMaintainance: "btnMakeMaintainance",
+        AddSubject: "btnAddSubject",
+        Schedule: "btnUpdateSchedule",
+        HistoryManagement: "btnHistoryManagement",
+        Copy: "btnCopy",
+        Update: "btnUpdate",
+        Delete: "btnDelete",
+        RowAdd: "",
+        RowDelete: "Delete",
+        ReDisplay: "btnRedisplay",
+    }
     , Person: { Id: "BODY_040_00_LST_1", Code: 1, Name: 2 }
+    
+    //場所階層情報
+    , LocationInfo: {
+        Id: "BODY_010_00_LST_1",
+        //地区
+        District: 1,
+        //工場
+        Factory: 2,
+        //プラント
+        Plant: 3,
+        //系列
+        Series: 4,
+        //工程
+        Stroke: 5,
+        //設備
+        Facility: 6,
+    },
+    //職種機種情報
+    JobInfo: {
+        Id: "BODY_020_00_LST_1",
+        //職種
+        Job: 1,
+        //機器大分類
+        LargeClassfication: 2,
+        //機器中分類
+        MiddleClassfication: 3,
+        //機器小分類
+        SmallClassfication: 4,
+        //予算管理区分
+        BudgetManagement: 5,
+        //予算性格区分
+        BudgetPersonality: 6,
+        //保全時期
+        MaintenanceSeason: 7,
+        //作業項目
+        WorkItem: 8,
+    },
+    //件名情報
+    SubjectInfo: {
+        Id: "BODY_030_00_LST_1",
+        // 件名
+        Subject: 1,
+        // 件名メモ
+        SubjectNote: 2,
+    },
+    //区分情報
+    DivisionInfo: {
+        Id: "BODY_110_00_LST_1",
+        //目的区分
+        Purpose: 1,
+        //作業区分
+        WorkClass: 2,
+        //処置区分
+        Treatment: 3,
+        //設備区分
+        FacilityStructure: 4,
+        //長計区分
+        LongPlanDivision: 5,
+        //長計グループ
+        LongPlanGroup: 6,
+    }
 };
 
 // 詳細編集画面の定義
-const FormEdit = { No: 2, Button: { Regist: "Regist" }, Hide: { Id: "BODY_050_00_LST_2" } };
+const FormEdit = { No: 2, Button: { Regist: "Regist", Back: "Back" }, Hide: { Id: "BODY_050_00_LST_2" } };
 // 計画一括作成画面の定義
 const FormMakePlan = { No: 3 };
 // 保全活動作成画面の定義
@@ -168,6 +297,21 @@ const HistoryManagementDisplayFlag = {
     Dual: "2"
 };
 
+// グローバル変数のキー、詳細検索条件の初期値
+const LN0001_InitDetailCondition = "LN0001_InitDetailCondition";
+// グローバル変数のキー、一覧画面の表示データを更新する用
+const LN0001_UpdateListData = "LN0001_UpdateListData";
+// グローバル変数のキー、文書管理画面で添付情報が更新された場合true
+const LN0001_UpdateAttachmentFlg = "LN0001_UpdateAttachmentFlg";
+// グローバル変数のキー、一覧画面用の総件数
+const LN0001_AllListCount = "LN0001_AllListCount";
+// グローバル変数のキー、詳細画面の表示条件
+const LN0001_DetailFormCondition = "LN0001_DetailFormCondition";
+// グローバル変数のキー、詳細画面のスケジュールデータ
+const LN0001_DetailFormSchedule = "LN0001_DetailFormSchedule";
+/** グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキー */
+const LN0001_UpdateKeyList = "LN0001_UpdateKeyList";
+
 /**
  * フォーム番号より一致するフォームの情報を取得する
  * @param {any} formNo フォーム番号
@@ -205,7 +349,22 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
 
     if (conductId != ConductId_LN0001) {
-        // LN0001以外なら終了
+        // 共通画面の場合
+
+        if (conductId == DM0002_FormDetail.ConductId) {
+            //文書管理画面の場合
+            //機能タイプIDを取得
+            var typeId = getValue(DM0002_Subject.Id, DM0002_Subject.FunctionTypeId, 1, CtrlFlag.TextBox, false);
+            //長計件名IDを取得
+            var keyId = getValueByOtherForm(1, FormDetail.Info.Id, FormDetail.Info.LongPlanId, 1, CtrlFlag.Label);
+            if (P_dicIndividual[LN0001_UpdateAttachmentFlg] && P_dicIndividual[LN0001_UpdateAttachmentFlg].TYPEID == typeId) {
+                //添付情報更新後は処理なし
+                return;
+            }
+            //文書管理画面の初期表示時に機能タイプID、長計件名IDを設定
+            P_dicIndividual[LN0001_UpdateAttachmentFlg] = { TYPEID: typeId, KEYID: keyId, UPDATE: false };
+
+        }
         return;
     }
     // 以降は件名別長期計画一覧の処理
@@ -242,6 +401,8 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 押下不能なら出力ボタン
         setFocusButtonAvailable(FormList.Button.Insert, FormList.Button.Output);
 
+        // 一覧画面初期化時、ローカルストレージの一覧更新キーをクリア
+        removeSaveDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
 
     } else if (formNo == FormDetail.No) {
         // スケジュールの検索条件コンボが両方表示されている場合は制御
@@ -253,6 +414,12 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var hideBtns = [FormDetail.Button.Copy, FormDetail.Button.Update, FormDetail.Button.Delete];
         var hideLists = [];
         setHistoryManagementCtrlDisplay(getIsHisotyManagement(false), FormDetail.Button.HistoryManagement, hideBtns, hideLists);
+
+        //登録更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+        setUpdateDataForList(conductId, false);
+
+        //一覧画面に反映する添付情報をクリア
+        delete P_dicIndividual[LN0001_UpdateAttachmentFlg];
 
         // 参照画面　件名添付
         setFocusButton(FormDetail.Button.AddSubject);
@@ -446,9 +613,77 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     SU0001_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
 
     // 参照画面の場合、戻る/閉じるボタン表示制御
-    if (formNo == FormDetail.No) {
+    if (conductId == ConductId_LN0001 && formNo == FormList.No) {
+        //ページング再設定
+        setListPagination(appPath, conductId, pgmId, status, FormList.List.Id, FormList.No, LN0001_AllListCount);
+    }
+    else if (formNo == FormDetail.No) {
         setDisplayCloseBtn(transPtn);
     }
+
+    if (backFrom == DM0002_ConductId) {
+        //文書管理画面を閉じた場合
+        setAttachmentForList();
+    }
+
+}
+
+/**
+ * 添付情報を一覧画面のデータに反映する
+ */
+function setAttachmentForList() {
+    //添付情報が更新された場合、一覧画面のデータに反映する
+
+    if (!P_dicIndividual[LN0001_UpdateAttachmentFlg] || !P_dicIndividual[LN0001_UpdateAttachmentFlg].UPDATE) {
+        return;
+    }
+
+    //機能タイプIDを取得
+    var typeId = P_dicIndividual[LN0001_UpdateAttachmentFlg].TYPEID;
+    //長計件名IDを取得
+    var keyId = P_dicIndividual[LN0001_UpdateAttachmentFlg].KEYID;
+
+    //一覧の表示項目か
+    var col = 0;
+    switch (typeId.toString()) {
+        case AttachmentStructureGroupID.LongPlan.toString(): //件名添付
+            col = FormList.List.FileLinkSubject;
+            break;
+    }
+    if (col == 0) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+    var define = P_listData['#' + FormList.List.Id + '_' + FormList.No].getColumnDefinitions().find(x => x.field == "VAL" + col);
+    if (!define) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+
+    //添付情報文字列
+    var attachment = "";
+
+    //文書管理画面の添付情報を取得
+    var dm0002List = P_listData['#' + DM0002_FormDetail.Id + '_' + DM0002_FormDetail.No].getData();
+    if (dm0002List && dm0002List.length > 0) {
+        // 文書番号でソート
+        var list = dm0002List.sort((a, b) => a["VAL" + DM0002_FormDetail.DocumentNo] > b["VAL" + DM0002_FormDetail.DocumentNo] ? 1 : -1);
+        attachment = list.map(x => x["VAL" + DM0002_FormDetail.DownloadLink]).join("");
+    }
+
+    //更新前のデータを取得
+    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
+    var oldData = table.searchData("VAL" + FormList.List.LongPlanId, "=", keyId);
+    if (oldData && oldData.length > 0) {
+        var updateData = {};
+        updateData.ROWNO = oldData[0].ROWNO;
+        updateData["VAL" + col] = attachment;
+        //添付情報を更新（ROWNOがキー）
+        table.updateRow(oldData[0].ROWNO, updateData);
+    }
+
+    //詳細画面再描画時に復活するので、initFormOriginal内で消す
+    //delete P_dicIndividual[LN0001_UpdateAttachmentFlg];
 }
 
 /**
@@ -469,6 +704,38 @@ function beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, condu
         return RM0001_beforeSearchBtnProcess(appPath, btn, conductIdW, pgmIdW, formNoW, conductPtnW);
     }
 
+    if (conductIdW == LN0001_ConductId) {
+        if (formNoW == FormList.No) {
+            // 一覧画面検索時、ローカルストレージの一覧更新キーをクリア
+            removeSaveDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
+        } else if (formNoW == FormDetail.No) {
+            // 詳細画面再表示時、ローカルストレージから更新キー取得
+            var keyList = getSavedDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
+            if (keyList) {
+                // グローバルデータへ設定
+                P_dicIndividual[LN0001_UpdateKeyList] = keyList;
+                // ローカルストレージから削除
+                removeSaveDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
+            }
+        }
+    }
+}
+
+/**
+ *【オーバーライド用関数】ページデータ取得後
+ * @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+ * @param {any} btn       : クリックされたボタン要素
+ * @param {any} conductId : 機能ID
+ * @param {any} pgmId     : プログラムID
+ * @param {any} formNo    : 画面番号
+ */
+function postGetPageData(appPath, btn, conductId, pgmId, formNo) {
+    if (conductId == LN0001_ConductId) {
+        if (formNo == FormDetail.No && $(btn).attr('name') == FormDetail.Button.ReDisplay) {
+            // 詳細画面の再表示ボタン押下時、スケジュールデータを一覧画面へ反映
+            setUpdateDataForList(conductId, false);
+        }
+    }
 }
 
 /**
@@ -765,12 +1032,20 @@ function getConditionDataListToDetail() {
 function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
 
     var formNo = getFormNo();
-    if (formNo == FormEdit.No && btnCtrlId == FormEdit.Button.Regist) {
-        //新規登録画面から登録後、参照画面に渡すキー情報をセット
-        var conditionDataList = getListDataByCtrlIdList([FormEdit.Hide.Id], FormEdit.No, 0);
-        // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
-        conditionDataList.concat(getConditionDataListToDetail());
-        setSearchCondition(ConductId_LN0001, FormDetail.No, conditionDataList);
+    if (formNo == FormEdit.No) {
+        if (btnCtrlId == FormEdit.Button.Regist) {
+            //新規登録画面から登録後、参照画面に渡すキー情報をセット
+            var conditionDataList = getListDataByCtrlIdList([FormEdit.Hide.Id], FormEdit.No, 0);
+            // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
+            conditionDataList.concat(getConditionDataListToDetail());
+            setSearchCondition(ConductId_LN0001, FormDetail.No, conditionDataList);
+        } else if (btnCtrlId == FormEdit.Button.Back) {
+            //編集画面から戻るボタンで戻る際、再検索は行わない
+            return false;
+        }
+    } else if (formNo == FormDetail.No) {
+        //詳細画面から一覧画面へ戻る際、再検索は行わない
+        return false;
     }
     return true;
 }
@@ -816,6 +1091,184 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     // 共通-文書管理詳細画面の実行正常終了後処理
     DM0002_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
+    if (formNo == FormDetail.No) {
+        var btnName = $(btn).attr('name');
+        if (btnName == FormDetail.Button.Delete) {
+            //削除ボタンの場合、削除データを一覧画面から削除
+            setUpdateDataForList(conductId, true);
+        } else if (btnName == FormDetail.Button.Schedule || FormDetail.Button.RowDelete) {
+            //スケジュール確定ボタン/保全項目一覧の行削除ボタンの場合、スケジュールデータを一覧画面へ反映
+            setUpdateDataForList(conductId, false);
+        }
+    }
+}
+
+/**
+ * 更新データを一覧画面に反映する
+ *  @param conductId   ：機能ID
+ *  @param isDelete    ：削除の場合true
+ */
+function setUpdateDataForList(conductId, isDelete) {
+    if (!P_dicIndividual[LN0001_UpdateListData] || conductId != ConductId_LN0001) {
+        //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[LN0001_UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    if (isDelete && status != rowStatusDef.Delete) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録・更新処理を行う
+        return;
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
+
+    switch (status) {
+        case rowStatusDef.New: //新規
+            //一覧画面のデータのROWNO最大値を取得
+            var maxRowNo = 0;
+            var list = table.getData();
+            if (list && list.length > 0) {
+                var rowNoList = list.map(x => x.ROWNO);
+                //maxRowNo = Math.max.apply(null, rowNoList);
+                maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
+            }
+            //ROWNOに一覧データの最大値以降の値を設定
+            data.ROWNO = maxRowNo + 1;
+            //詳細画面から値取得
+            setLabelValueToListData(data, status);
+            //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
+            table.addRow(data, true, 1);
+            break;
+
+        case rowStatusDef.Edit: //更新
+            //データの長計件名IDを取得
+            var longPlanId = data["VAL" + FormList.List.LongPlanId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.List.LongPlanId, "=", longPlanId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                //詳細画面から値取得
+                setLabelValueToListData(data, status);
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        case rowStatusDef.Delete: //削除
+            //データの長計件名IDを取得
+            var longPlanId = data["VAL" + FormList.List.LongPlanId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.List.LongPlanId, "=", longPlanId);
+            if (oldData && oldData.length > 0) {
+                table.deleteRow(oldData[0].ROWNO);
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    delete P_dicIndividual[LN0001_UpdateListData];
+}
+
+/**
+ * 詳細画面の値から一覧用データに値を反映する
+ * @param data 一覧用データ
+ * @param status ステータス(新規or更新)
+ */
+function setLabelValueToListData(data, status) {
+
+    //一覧に表示している列に詳細画面の対応する項目値を設定
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+        switch (key) {
+            case "VAL" + FormList.List.Subject: //件名
+                data[key] = getItemLabelValue(FormDetail.SubjectInfo.Id, FormDetail.SubjectInfo.Subject, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.List.SubjectNote: //件名メモ
+                data[key] = getItemLabelValue(FormDetail.SubjectInfo.Id, FormDetail.SubjectInfo.SubjectNote, 1, CtrlFlag.Textarea);
+                break;
+            case "VAL" + FormList.List.District: //地区
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.District, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Factory: //工場
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Factory, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Plant: //プラント
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Plant, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Series: //系列
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Series, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Stroke: //工程
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Stroke, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Facility: //設備
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.Facility, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Job: //職種
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.Job, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.LargeClassfication: //機種大分類
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.LargeClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.MiddleClassfication: //機種中分類
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.MiddleClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.SmallClassfication: //機種小分類
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.SmallClassfication, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.MaintenanceSeason: //保全時期
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.MaintenanceSeason, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Person: //担当
+                data[key] = getValue(FormDetail.Person.Id, FormDetail.Person.Name, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.WorkItem: //作業項目
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.WorkItem, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.BudgetManagement: //予算管理区分
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.BudgetManagement, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.BudgetPersonality: //予算性格区分
+                data[key] = getValue(FormDetail.JobInfo.Id, FormDetail.JobInfo.BudgetPersonality, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Purpose: //目的区分
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.Purpose, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.WorkClass: //作業区分
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.WorkClass, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.Treatment: //処置区分
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.Treatment, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.FacilityStructure: //設備区分
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.FacilityStructure, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.LongPlanDivision: //長計区分
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.LongPlanDivision, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.List.LongPlanGroup: //長計グループ
+                data[key] = getValue(FormDetail.DivisionInfo.Id, FormDetail.DivisionInfo.LongPlanGroup, 1, CtrlFlag.Label);
+                break;
+            default:
+                break;
+        }
+    });
 }
 
 /**
@@ -829,6 +1282,9 @@ function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) 
     var btnName = $(btn)[0].name;
     // 共通-文書管理詳細画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
     if (IsExecDM0002_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+        // 添付情報が更新された場合（一覧データに反映用のフラグ）
+        P_dicIndividual[LN0001_UpdateAttachmentFlg].UPDATE = true;
+
         return DM0002_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
     }
     if (formNo == FormSelect.No) {

@@ -695,12 +695,12 @@ function setUpdateDataForList(conductId, isDelete) {
 
     //一覧画面のデータ
     var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
-    var list = table.getData();
 
     switch (status) {
         case rowStatusDef.New: //新規
             //一覧画面のデータのROWNO最大値を取得
             var maxRowNo = 0;
+            var list = table.getData();
             if (list && list.length > 0) {
                 var rowNoList = list.map(x => x.ROWNO);
                 //maxRowNo = Math.max.apply(null, rowNoList);

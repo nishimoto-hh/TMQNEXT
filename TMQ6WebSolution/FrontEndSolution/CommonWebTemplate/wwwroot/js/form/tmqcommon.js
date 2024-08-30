@@ -1,6 +1,6 @@
 ﻿
 // getCtrl、getValue、setValueの引数に使用するflgの値を定義
-var CtrlFlag = { TextBox: 0, Label: 1, Combo: 2, ChkBox: 3, Link: 4, Input: 5, Textarea: 6, Password: 7, Button: 8, Search: 9 };
+var CtrlFlag = { TextBox: 0, Label: 1, Combo: 2, ChkBox: 3, Link: 4, Input: 5, Textarea: 6, Password: 7, Button: 8, Search: 9, MultiCheckBox: 10 };
 // 戻るボタンのID
 const BtnCtrlId_Back = 'Back';
 
@@ -232,7 +232,9 @@ const TransParamForMA0001ByLink =
     DispAll: "0",                          // クリックされた○リンクと同一年月のスケジュールを全て表示する
     DispSelected: "1",                     // クリックされた○リンクのスケジュールのみを表示する
     MaintainanceScheduleDetailId: "VAL60", // クリックされた○リンクの保全スケジュール詳細ID
-    ScheduleCtrlNo: "VAL62"                // 確認メッセージを表示するかどうか判定するためのもの(スケジュールアイコンの種類)
+    //ScheduleCtrlNo: "VAL62"                // 確認メッセージを表示するかどうか判定するためのもの(スケジュールアイコンの種類)
+    TabNoCtrlNo: "VAL62",                  // クリックされた○リンクのタブ番号
+    ScheduleCtrlNo: "ScheduleType"         // 確認メッセージを表示するかどうか判定するためのもの(スケジュールアイコンの種類)
 }
 
 
@@ -277,6 +279,8 @@ function getCtrl(ctrlId, val, rowNo, flg, isModal, tableHeader) {
             return $(trs).find(tag + "[data-name='VAL" + val + "'] input[type='button']")[0];
         } else if (flg == CtrlFlag.Search) {
             return $(trs).find(tag + "[data-name='VAL" + val + "'] input[type='search']")[0];
+        } else if (flg == CtrlFlag.MultiCheckBox) {
+            return $(trs).find(tag + "[data-name='VAL" + val + "'] div.multisel-parent")[0];
         }
 
     } else {
@@ -2532,13 +2536,17 @@ function getParamToLN0001(longplanId) {
  * 保全活動参照画面への画面遷移パラメータを設定する処理
  * @param {string} summaryId 保全活動件名ID
  * @param {number} tabNo タブ番号（依頼タブ：1、履歴タブ：3）
+ * @param {number} scheduleType スケジュール種類
  */
-function getParamToMA0001(summaryId, tabNo) {
+function getParamToMA0001(summaryId, tabNo, scheduleType) {
     var conditionDataList = [];
     var conditionData = {};
     conditionData['CTRLID'] = 'BODY_020_00_LST_0';
     conditionData['VAL60'] = summaryId;
     conditionData['VAL62'] = tabNo;
+    if (scheduleType) {
+        conditionData['ScheduleType'] = scheduleType;
+    }
     conditionDataList.push(conditionData);
     return conditionDataList;
 }
@@ -2753,7 +2761,8 @@ function setCustomTabulatorHeader(formNo, id, head) {
             const targetYM = field.replace('Y', '').replace('M', '');
             const maintainanceKind = aryVal.length > 1 ? aryVal[1] : "";
             const existsLink = aryVal.length > 2 && aryVal.length <= 6;
-            const transParam = aryVal.length > 2 ? aryVal.slice(2).join('|') : "";
+            //const transParam = aryVal.length > 2 ? aryVal.slice(2).join('|') : "";
+            const transParam = aryVal.length > 2 ? aryVal[0] + '|' + aryVal.slice(2).join('|') : "";
             const appPath = head.formatterParams.appPath;
             const move = head.formatterParams.move;
             const zIndex = head.formatterParams.zindex;
@@ -3262,7 +3271,9 @@ function isScheduleLink(btn_ctrlId) {
 function getParamToMA0001BySchedule(transTarget) {
     // 機能ID|フォームNo|タブNo|保全活動ID
     var paramList = transTarget.split('|');
-    return getParamToMA0001(paramList[3], paramList[2]);
+    //return getParamToMA0001(paramList[3], paramList[2]);
+    // スケジュール種類|機能ID|フォームNo|タブNo|保全活動ID
+    return getParamToMA0001(paramList[4], paramList[3], paramList[0]);
 }
 
 /**

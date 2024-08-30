@@ -220,7 +220,7 @@ const FormDetail = {
 };
 
 // 詳細編集画面の定義
-const FormEdit = { No: 2, Button: { Regist: "Regist" }, Hide: { Id: "BODY_050_00_LST_2" } };
+const FormEdit = { No: 2, Button: { Regist: "Regist", Back: "Back" }, Hide: { Id: "BODY_050_00_LST_2" } };
 // 機器別管理基準選択画面の定義
 const FormSelect = {
     No: 3

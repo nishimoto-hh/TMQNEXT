@@ -97,6 +97,10 @@ namespace CommonTMQUtil
             /// </summary>
             public class Display
             {
+                /// <summary>Gets or sets 一覧グループID</summary>
+                /// <value>一覧グループID</value>
+                /// <remarks>一覧の折り畳み単位ごとに同じ値が入る</remarks>
+                public long ListGroupId { get; set; }
                 /// <summary>Gets or sets 集計キーID</summary>
                 /// <value>集計キーID</value>
                 public string KeyId { get; set; }
@@ -420,6 +424,14 @@ namespace CommonTMQUtil
                 /// <summary>
                 /// コンストラクタ
                 /// </summary>
+                public GetCondition()
+                {
+
+                }
+
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
                 /// <param name="condition">画面の検索条件</param>
                 /// <param name="monthStartNendo">年度開始月</param>
                 /// <remarks>画面の検索条件によらず作成が必要なら、コンストラクタを追加すること</remarks>
@@ -555,6 +567,15 @@ namespace CommonTMQUtil
                         return result;
                     }
                 }
+                /// <summary>
+                /// オブジェクトのコピー
+                /// </summary>
+                /// <returns></returns>
+                public GetCondition Copy()
+                {
+                    return (GetCondition)MemberwiseClone();
+                }
+
             }
         }
 

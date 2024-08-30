@@ -201,7 +201,7 @@ narrow_summary AS(
         --特記（メモ）
         ,hf.failure_note
         --フォロー有無
-        ,hi.follow_flg
+        ,COALESCE(hi.follow_flg, 0) AS follow_flg
         --フォロー予定年月 故障のみ表示
         ,CASE
             WHEN su.is_failure = 1 THEN hf.follow_plan_date

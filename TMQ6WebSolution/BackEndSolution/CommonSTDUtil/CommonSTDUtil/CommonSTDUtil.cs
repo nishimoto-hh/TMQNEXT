@@ -22,6 +22,9 @@ using CommonSTDUtil.Properties;
 using CommonWebTemplate.CommonDefinitions;
 using Password = CommonWebTemplate.PasswordEncrypt;
 using System.Security.Cryptography;
+using System.Collections;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Newtonsoft.Json.Linq;
 
 namespace CommonSTDUtil.CommonSTDUtil
 {
@@ -2908,6 +2911,25 @@ namespace CommonSTDUtil.CommonSTDUtil
         }
 
         /// <summary>
+        /// Dictionary型のデータを指定クラスのプロパティの型に変換して設定する
+        /// </summary>
+        /// <typeparam name="T">型</typeparam>
+        /// <param name="target">設定対象クラス変数</param>
+        /// <param name="dic">変換対象Dictionaryデータ</param>
+        public static void SetPropertyValues<T>(T target, Dictionary<string, object> dic)
+        {
+            // 設定するデータクラスの情報を取得
+            PropertyInfo[] targetProps = typeof(T).GetProperties();
+            foreach(var prop in targetProps)
+            {
+                if (dic.ContainsKey(prop.Name))
+                {
+                    SetPropertyValue(prop, target, dic[prop.Name]);
+                }
+            }
+        }
+
+        /// <summary>
         /// 指定クラスのプロパティの型に値を変換して設定する
         /// </summary>
         /// <typeparam name="T">型</typeparam>
@@ -2968,9 +2990,62 @@ namespace CommonSTDUtil.CommonSTDUtil
             {
                 prop.SetValue(target, Convert.ToBoolean(val));
             }
+            else if (prop.PropertyType.IsEnum)
+            {
+                // Enum型の場合
+                prop.SetValue(target, Enum.ToObject(prop.PropertyType, Convert.ToInt32(val)));
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(prop.PropertyType))
+            {
+                // List型の場合
+                var type = prop.PropertyType.GetGenericArguments()[0];
+                if (type == typeof(int))
+                {
+                    prop.SetValue(target, toList<int>(val));
+                }
+                else if (type == typeof(short))
+                {
+                    prop.SetValue(target, toList<short>(val));
+                }
+                else if (type == typeof(byte))
+                {
+                    prop.SetValue(target, toList<byte>(val));
+                }
+                else if (type == typeof(long))
+                {
+                    prop.SetValue(target, toList<long>(val));
+                }
+                else if (type == typeof(decimal))
+                {
+                    prop.SetValue(target, toList<decimal>(val));
+                }
+                else if (type == typeof(DateTime))
+                {
+                    prop.SetValue(target, toList<DateTime>(val));
+                }
+                else if (type == typeof(bool))
+                {
+                    prop.SetValue(target, toList<bool>(val));
+                }
+                else if (type == typeof(string))
+                {
+                    prop.SetValue(target, toList<string>(val));
+                }
+            }
             else
             {
                 prop.SetValue(target, val);
+            }
+
+            // object型からList型へ変換
+            List<T2> toList<T2>(object list)
+            {
+                var resultList = new List<T2>();
+                foreach (var val in list as IList)
+                {
+                    resultList.Add((T2)Convert.ChangeType(val, typeof(T2)));
+                }
+                return resultList;
             }
         }
 

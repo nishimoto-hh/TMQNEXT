@@ -179,6 +179,8 @@ namespace BusinessLogic_LN0001
                 }
             }
 
+            this.selectedLongPlanIdList.Add(hideInfo.LongPlanId);
+
             return true;
 
             // 入力チェック

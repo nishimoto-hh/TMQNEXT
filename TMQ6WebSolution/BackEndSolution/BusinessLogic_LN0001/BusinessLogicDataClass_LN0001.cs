@@ -312,7 +312,7 @@ namespace BusinessLogic_LN0001
             /// <summary>
             /// 機器別管理基準一覧
             /// </summary>
-            public class DeitalList: ComDao.CommonTableItem
+            public class DeitalList : ComDao.CommonTableItem
             {
                 /// <summary>Gets or sets 行番号</summary>
                 /// <value>行番号</value>
@@ -1090,6 +1090,15 @@ namespace BusinessLogic_LN0001
                 /// <value>長期計画IDリスト(カンマ区切り)</value>
                 public string LongPlanIdList { get; set; }
 
+                /// <summary>
+                /// コンストラクタ
+                /// </summary>
+                /// <param name="condition">画面の検索条件</param>
+                /// <param name="monthStartNendo">年度開始月</param>
+                /// <param name="languageId">言語ID</param>
+                public SearchCondition()
+                {
+                }
                 /// <summary>
                 /// コンストラクタ
                 /// </summary>

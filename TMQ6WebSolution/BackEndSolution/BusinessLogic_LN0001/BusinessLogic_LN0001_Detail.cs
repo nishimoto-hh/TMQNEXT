@@ -10,6 +10,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Office.PowerPoint.Y2021.M06.Main;
+using DocumentFormat.OpenXml.Math;
+
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
@@ -20,11 +24,7 @@ using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using SchedulePlanContent = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.SchedulePlanContent;
-
 using ScheduleStatus = CommonTMQUtil.CommonTMQConstants.MsStructure.StructureId.ScheduleStatus;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Office.PowerPoint.Y2021.M06.Main;
-using DocumentFormat.OpenXml.Math;
 
 namespace BusinessLogic_LN0001
 {
@@ -63,6 +63,8 @@ namespace BusinessLogic_LN0001
             string ctrlId = getCtrlIdForKeyInfo(type);
             // 長期計画IDを取得
             var param = getParam(ctrlId, type == DetailDispType.Redisplay);
+            // 一覧更新キーチェック
+            checkUpdateKey(type, param.LongPlanId);
             // 初期化処理呼出
             // 一覧画面の一覧より取得した情報で参照画面の項目に値を設定する
             initFormByLongPlanId(param, getResultMappingInfoByGrpNo(ConductInfo.FormDetail.HeaderGroupNo).CtrlIdList, out bool isDisplayMaintainanceKind, out int factoryId, true, ctrlId == ConductInfo.FormList.ControlId.List);
@@ -76,6 +78,12 @@ namespace BusinessLogic_LN0001
 
             // ★画面定義の翻訳情報取得★
             GetContorlDefineTransData(factoryId);
+
+            // 一覧画面更新用のデータを取得
+            if (this.selectedLongPlanIdList.Count > 0)
+            {
+                getListRowData(this.selectedLongPlanIdList);
+            }
 
             return true;
 
@@ -142,6 +150,46 @@ namespace BusinessLogic_LN0001
                 // スケジュール情報のセット
                 // 保全活動の場合移動可能
                 setSchedule(isDisplayMaintainanceKind, listCtrlId, true, param.LongPlanId, factoryId, contentType);
+            }
+
+            // 一覧更新キーチェック
+            void checkUpdateKey(DetailDispType type, long longPlanId)
+            {
+                if (type == DetailDispType.Init || type == DetailDispType.AfterRegist)
+                {
+                    // 初期化/新規登録後の場合、一覧更新対象外
+                    return;
+                }
+
+                if (this.CtrlId == ConductInfo.FormDetail.ButtonId.Redisplay)
+                {
+                    // 再表示ボタン押下の場合
+                    // グローバルデータから保全活動登録/削除時の一覧画面更新キーを取得
+                    var globalObj = GetGlobalData(GlobalKey.LN0001UpdateKeyList, true);
+                    if (globalObj == null)
+                    {
+                        // 更新キーが存在しない場合、一覧更新対象外
+                        return;
+                    }
+                    var keyList = globalObj as List<object>;
+                    if (!keyList.Select(x => Convert.ToInt64(x)).Contains(longPlanId))
+                    {
+                        // 更新キーと詳細画面表示対象の長期計画件名IDが一致しない場合、一覧更新対象外
+                        return;
+                    }
+                }
+                else
+                {
+                    // グローバルデータから添付情報の更新フラグを取得
+                    var globalObj = GetGlobalData(GlobalKey.LN0001UpdateAttachmentFlg);
+                    if(globalObj != null)
+                    {
+                        // 添付情報の更新処理は別タイミングで実行する
+                        return;
+                    }
+                }
+                // 一覧更新対象リストへ詳細画面表示対象の長期計画件名IDを追加
+                this.selectedLongPlanIdList.Add(longPlanId);
             }
         }
 
@@ -222,6 +270,12 @@ namespace BusinessLogic_LN0001
             if (!initDetail(DetailDispType.RedisplaySearch))
             {
                 return false;
+            }
+
+            // 一覧画面更新用のデータを取得
+            if (this.selectedLongPlanIdList.Count > 0)
+            {
+                getListRowData(this.selectedLongPlanIdList);
             }
 
             return true;
@@ -371,6 +425,27 @@ namespace BusinessLogic_LN0001
             // 添付情報削除
             // キーIDで削除
             new ComDao.AttachmentEntity().DeleteByKeyId(TMQConst.Attachment.FunctionTypeId.LongPlan, update.LongPlanId, this.db);
+
+            //一覧画面のデータ更新用の値を設定（一覧画面に戻った際、再検索をせず一覧表示データを直接削除する）
+            setDeleteRowDataToGlobalData(update.LongPlanId);
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData(long longPlanId)
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //長計件名IDのVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormList.ControlId.List) && x.ParamName.Equals(nameof(Dao.ListSearchResult.LongPlanId))).Select(x => x.ItemNo).FirstOrDefault();
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, longPlanId } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.LN0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.LN0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.LN0001AllListCount, count - 1);
+            }
 
             return true;
         }

@@ -228,6 +228,12 @@ namespace BusinessLogic_LN0001
                 // SQL実行
                 bool result = TMQUtil.SqlExecuteClass.Regist(SqlName.Postpone.UpdateScheduleDetail, SqlName.Postpone.SubDir, condUpdate, this.db);
 
+                if (result)
+                {
+                    // 一覧画面の選択行の長計件名IDを保持
+                    this.selectedLongPlanIdList.Add(condUpdate.LongPlanId);
+                }
+
                 return result;
             }
         }

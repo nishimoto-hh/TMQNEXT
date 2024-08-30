@@ -215,6 +215,9 @@ namespace BusinessLogic_LN0001
                 // メッセージ表示
                 setCompleteMessageForMakeSummary(registCounts);
 
+                // 一覧画面の選択行の長計件名IDを保持
+                this.selectedLongPlanIdList.Add(condition.LongPlanId);
+
                 return true;
 
                 // 登録処理で使用するSQLを取得してディクショナリへ格納

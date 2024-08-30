@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
 using System.IO;
+using System.Diagnostics;
 
 namespace CommonWebTemplate.Controllers.Common
 {
@@ -48,6 +49,10 @@ namespace CommonWebTemplate.Controllers.Common
         [Produces("application/json")]
         public ActionResult Index(CommonProcData procData, int rowNo = 0, byte childno = 0, string key = "")
         {
+            //★速度計測用 start
+            Stopwatch sw = Stopwatch.StartNew();
+            //★速度計測用 end
+
             try
             {
                 ActionResult actionResult = null;
@@ -128,6 +133,13 @@ namespace CommonWebTemplate.Controllers.Common
             {
                 //例外ｴﾗｰ画面に遷移
                 return returnActionResult(ex);
+            }
+            finally
+            {
+                //★速度計測用 start
+                sw.Stop();
+                logger.DebugLog(string.Format(" UserID:{0} [{1}][{2}]{3}ms", procData.LoginUserId, "Index", procData.ConductId, sw.ElapsedMilliseconds));
+                //★速度計測用 end
             }
         }
 

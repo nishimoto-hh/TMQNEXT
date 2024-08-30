@@ -226,6 +226,10 @@ namespace CommonSTDUtil.CommonBusinessLogic
         #region publicメソッド
         public int ExecuteBusinessLogic(CommonProcParamIn inParam, out CommonProcParamOut outParam)
         {
+            //★速度計測用 start
+            Stopwatch sw = Stopwatch.StartNew();
+            //★速度計測用 end
+
             int result = 0;
             outParam = new CommonProcParamOut();
 
@@ -532,10 +536,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
                 return -2;
             }
-            //finally
-            //{
-            //    logger.Debug(string.Format("{0}, {1}, {2}, {3} end.", this.UserId, this.ConductId, this.PgmId, this.CtrlId));
-            //}
+            finally
+            {
+                //logger.Debug(string.Format("{0}, {1}, {2}, {3} end.", this.UserId, this.ConductId, this.PgmId, this.CtrlId));
+                //★速度計測用 start
+                sw.Stop();
+                logger.DebugLog(this.FactoryId, this.UserId, string.Format("[{0}][{1}]{2}ms", this.ConductId, this.CtrlId, sw.ElapsedMilliseconds));
+                //★速度計測用 end
+            }
         }
         /// <summary>
         /// 帳票用選択キーデータ取得
@@ -5703,13 +5711,22 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="targetValue">設定値</param>
         protected void SetGlobalData(string targetKey, object targetVal)
         {
-            // 含まれている場合、いったんクリアする
+            // 一旦クリアする
+            RemoveGlobalData(targetKey);
+            this.IndividualDictionary.Add(targetKey, targetVal);
+        }
+
+        /// <summary>
+        /// グローバルリストから対象キーを削除
+        /// </summary>
+        /// <param name="targetKey">対象キー</param>
+        protected void RemoveGlobalData(string targetKey)
+        {
+            // 対象キーが存在する場合、削除する
             if (this.IndividualDictionary.ContainsKey(targetKey))
             {
                 this.IndividualDictionary.Remove(targetKey);
             }
-            this.IndividualDictionary.Add(targetKey, targetVal);
-            return;
         }
 
         /// <summary>
@@ -6804,26 +6821,26 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <param name="scheduleData">スケジュールの一覧</param>
         /// <param name="listCtrlId">一覧のコントロールID</param>
         /// <remarks>一覧はKeyIdをKeyNameに持つこと</remarks>
-        protected void SetScheduleDataToResult(Dictionary<string, Dictionary<string, string>> scheduleData, string listCtrlId)
+        protected void SetScheduleDataToResult(Dictionary<string, Dictionary<string, string>> scheduleData, string listCtrlId, List<Dictionary<string, object>> resultList = null)
         {
             // 一覧のキー値のVAL値を取得(スケジュールとの紐付に使用)
             var valKeyId = GetValKeyIdForSchedule(listCtrlId);
             // 一覧に設定されているディクショナリの内容を取得
-            var targetDics = ComUtil.GetDictionaryListByCtrlId(this.ResultList, listCtrlId);
+            var targetDics = ComUtil.GetDictionaryListByCtrlId(resultList == null ? this.ResultList : resultList, listCtrlId);
             var rowDics = targetDics.Where(x => int.Parse(x["ROWNO"].ToString()) > 0).ToList(); // ROWNO=0は一覧の情報なので除外
             // 一覧を繰り返し、一覧とスケジュールデータのキー値が同じところにスケジュールデータを追加
             foreach (var row in rowDics)
             {
                 // 一覧のキー値
-                string keyValue = row[valKeyId].ToString();
+                var keyValue = row[valKeyId];
                 // スケジュールデータに存在しない場合、次の行へ
-                if (!scheduleData.ContainsKey(keyValue))
+                if (keyValue == null || !scheduleData.ContainsKey(keyValue.ToString()))
                 {
                     continue;
                 }
                 // スケジュールデータに存在する場合
                 // スケジュールデータのキー値で取得したディクショナリ(列の年月とマークの情報)
-                var scheduleRow = scheduleData[keyValue];
+                var scheduleRow = scheduleData[keyValue.ToString()];
                 foreach (var item in scheduleRow)
                 {
                     // 一覧に追加

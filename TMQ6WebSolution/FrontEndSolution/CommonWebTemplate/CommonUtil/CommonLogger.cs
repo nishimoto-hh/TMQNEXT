@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,8 +13,9 @@ namespace CommonWebTemplate.CommonUtil
         private readonly string appPath;
         private readonly string logPath;
         private readonly string extention;
-        private readonly string writetarget;
+        private string writetarget;
         private readonly long maxFileSize;
+        private readonly string logLevel;
 
         private static CommonLogger singleton = null;
         #endregion
@@ -39,20 +41,43 @@ namespace CommonWebTemplate.CommonUtil
         /// </summary>
         private CommonLogger()
         {
+            var configItem = AppCommonObject.Config.LogSettings.GetLoggerSetting("logger");
             //世代管理数
             generation = 10;
             //ログファイル名
-            logFileName = "FrontEndErrorLog";
+            logFileName = "FrontEndLog";
             //アプリケーションパス
             appPath = System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
-            //ログファイル出力先パス
-            logPath = System.IO.Path.Combine(appPath, "logs");
-            //ログファイル拡張子
-            extention = ".log";
-            //
+            if (configItem != null)
+            {
+                //ログファイル出力先パス
+                logPath = !string.IsNullOrWhiteSpace(configItem.DirPath) ? configItem.DirPath : System.IO.Path.Combine(appPath, "logs");
+                //ログファイル拡張子
+                extention = "." + (!string.IsNullOrWhiteSpace(configItem.FileExtension) ? configItem.FileExtension : "log");
+                //ファイルサイズによる世代管理の上限サイズ
+                long size;
+                if (!string.IsNullOrWhiteSpace(configItem.ArchiveAboveSize) &&
+                    long.TryParse(configItem.ArchiveAboveSize, out size) && (size > 0))
+                {
+                    maxFileSize = size;
+                }
+                else
+                {
+                    maxFileSize = 1048576;
+                }
+                logLevel = !string.IsNullOrEmpty(configItem.MinLevel) ? configItem.MinLevel.ToUpper() : "INFO";
+            }
+            else
+            {
+                //ログファイル出力先パス
+                logPath = System.IO.Path.Combine(appPath, "logs");
+                //ログファイル拡張子
+                extention = ".log";
+                //ファイルサイズによる世代管理の上限サイズ
+                maxFileSize = 1048576;
+                logLevel = "INFO";
+            }
             writetarget = System.IO.Path.Combine(logPath, logFileName + extention);
-            //ファイルサイズによる世代管理の上限サイズ
-            maxFileSize = 1048576;
         }
         #endregion
 
@@ -84,13 +109,17 @@ namespace CommonWebTemplate.CommonUtil
         /// </summary>
         public void WriteLog(string Message)
         {
+            DateTime now = DateTime.Now;
             // フォルダが存在しない場合、自動生成
-            if (!System.IO.Directory.Exists(logPath))
+            string logDir = System.IO.Path.Combine(logPath, now.ToString("yyyyMMdd"));
+
+            if (!System.IO.Directory.Exists(logDir))
             {
-                System.IO.Directory.CreateDirectory(logPath);
+                System.IO.Directory.CreateDirectory(logDir);
             }
 
             // ファイルが存在しない場合、自動生成
+            writetarget = System.IO.Path.Combine(logDir, logFileName + extention);
             if (!System.IO.File.Exists(writetarget))
             {
                 System.IO.File.Create(writetarget).Close();
@@ -105,7 +134,7 @@ namespace CommonWebTemplate.CommonUtil
                     // 指定された最大世代ループ時
                     if (i == generation)
                     {
-                        string target = System.IO.Path.Combine(logPath, logFileName + i.ToString().PadLeft(2, '0') + extention);
+                        string target = System.IO.Path.Combine(logDir, logFileName + i.ToString().PadLeft(2, '0') + extention);
 
                         // 存在する場合は削除
                         if (System.IO.File.Exists(target))
@@ -117,7 +146,7 @@ namespace CommonWebTemplate.CommonUtil
                     // 最大未満～当世代未満の場合
                     if (1 < i && i < generation)
                     {
-                        string target = System.IO.Path.Combine(logPath, logFileName + i.ToString().PadLeft(2, '0') + extention);
+                        string target = System.IO.Path.Combine(logDir, logFileName + i.ToString().PadLeft(2, '0') + extention);
 
                         // 存在する場合はコピーして削除
                         if (System.IO.File.Exists(target))
@@ -127,18 +156,18 @@ namespace CommonWebTemplate.CommonUtil
                             if (i == 2)
                             {
                                 // 1世代上のファイルがあればコピーして削除
-                                if (System.IO.File.Exists(System.IO.Path.Combine(logPath, logFileName + extention)))
+                                if (System.IO.File.Exists(System.IO.Path.Combine(logDir, logFileName + extention)))
                                 {
-                                    System.IO.File.Copy(target, System.IO.Path.Combine(logPath, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
+                                    System.IO.File.Copy(target, System.IO.Path.Combine(logDir, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
                                     System.IO.File.Delete(target);
                                 }
                             }
                             else
                             {
                                 // 1世代上のファイルがあればコピーして削除
-                                if (System.IO.File.Exists(System.IO.Path.Combine(logPath, logFileName + (i - 1).ToString().PadLeft(2, '0') + extention)))
+                                if (System.IO.File.Exists(System.IO.Path.Combine(logDir, logFileName + (i - 1).ToString().PadLeft(2, '0') + extention)))
                                 {
-                                    System.IO.File.Copy(target, System.IO.Path.Combine(logPath, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
+                                    System.IO.File.Copy(target, System.IO.Path.Combine(logDir, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
                                     System.IO.File.Delete(target);
                                 }
                             }
@@ -148,12 +177,12 @@ namespace CommonWebTemplate.CommonUtil
                     // 当世代の場合
                     if (i == 1)
                     {
-                        string target = System.IO.Path.Combine(logPath, logFileName + extention);
+                        string target = System.IO.Path.Combine(logDir, logFileName + extention);
 
                         // 存在する場合はコピーして削除して当世代新規作成
                         if (System.IO.File.Exists(target))
                         {
-                            System.IO.File.Copy(target, System.IO.Path.Combine(logPath, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
+                            System.IO.File.Copy(target, System.IO.Path.Combine(logDir, logFileName + (i + 1).ToString().PadLeft(2, '0') + extention));
                             System.IO.File.Delete(target);
                             System.IO.File.Create(target).Close();
                         }
@@ -162,7 +191,14 @@ namespace CommonWebTemplate.CommonUtil
             }
 
             // 書き込み対象のログにメッセージを追加する
-            System.IO.File.AppendAllText(writetarget, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff") + "：" + Message + Environment.NewLine);
+            System.IO.File.AppendAllText(writetarget, string.Format("[{0:yyyy/MM/dd HH:mm:ss}]{1}", now, Message + Environment.NewLine));
+        }
+
+        public void DebugLog(string message)
+        {
+            if(logLevel=="TRACE" || logLevel == "DEBUG"){
+                WriteLog("[DEBUG]" + message);
+            }
         }
         #endregion
     }

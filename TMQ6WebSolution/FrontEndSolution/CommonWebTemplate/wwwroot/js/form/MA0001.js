@@ -729,6 +729,8 @@ const FormRegist = {
         AllClear: "AllClear",
         //登録
         Regist: "Regist",
+        //戻る
+        Back: "Back",
     },
     //タブ番号
     TabNo: {
@@ -922,6 +924,8 @@ const MA0001_UpdateListData = "MA0001_UpdateListData";
 const MA0001_UpdateAttachmentFlg = "MA0001_UpdateAttachmentFlg";
 // グローバル変数のキー、一覧画面用の総件数
 const MA0001_AllListCount = "MA0001_AllListCount";
+/** グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキー */
+const MA0001_UpdateKeyForLN0001 = "MA0001_UpdateKeyForLN0001";
 
 /**
  * 【オーバーライド用関数】
@@ -1755,10 +1759,15 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
  */
 function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
 
-    if (getFormNo() == FormRegist.No && btnCtrlId == FormRegist.ButtonId.Regist) {
-        //新規登録画面から登録後、詳細画面に渡すキー情報をセット
-        const conditionDataList = getListDataByCtrlIdList([FormRegist.HideInfo.Id], FormRegist.No, 0);
-        setSearchCondition(ConductId_MA0001, FormDetail.No, conditionDataList);
+    if (getFormNo() == FormRegist.No) {
+        if (btnCtrlId == FormRegist.ButtonId.Regist) {
+            //新規登録画面から登録後、詳細画面に渡すキー情報をセット
+            const conditionDataList = getListDataByCtrlIdList([FormRegist.HideInfo.Id], FormRegist.No, 0);
+            setSearchCondition(ConductId_MA0001, FormDetail.No, conditionDataList);
+        } else if (btnCtrlId == FormRegist.ButtonId.Back) {
+            //登録画面から戻るボタンで戻る際、再検索は行わない
+            return false;
+        }
     } else if (getFormNo() == FormReplace.No) {
         // 機器交換画面
         if (btnCtrlId == FormReplace.ButtonId.Regist) {
@@ -1840,6 +1849,9 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     //削除データを一覧画面から削除（登録・更新は詳細画面表示後のタイミングで反映）
     setUpdateDataForList(conductId, true);
+
+    //長期計画からの別タブ遷移時に登録ボタン押下時、グローバルデータの更新キーをローカルストレージへ保存
+    saveUpdateKey(conductId);
 }
 
 /**
@@ -1872,12 +1884,16 @@ function setUpdateDataForList(conductId, isDelete) {
 
     //一覧画面のデータ
     var table = P_listData["#" + FormList.List.Id + "_" + FormList.No];
-    var list = table.getData();
+    if (!table) {
+        // 一覧画面を生成していない場合(別タブ遷移で一覧画面を経由していない場合)、処理終了
+        return;
+    }
 
     switch (status) {
         case rowStatusDef.New: //新規
             //一覧画面のデータのROWNO最大値を取得
             var maxRowNo = 0;
+            var list = table.getData();
             if (list && list.length > 0) {
                 var rowNoList = list.map(x => x.ROWNO);
                 //maxRowNo = Math.max.apply(null, rowNoList);
@@ -1919,6 +1935,31 @@ function setUpdateDataForList(conductId, isDelete) {
     }
 
     delete P_dicIndividual[MA0001_UpdateListData];
+}
+
+function saveUpdateKey(conductId) {
+    var key = P_dicIndividual[MA0001_UpdateKeyForLN0001];
+    if (!key || conductId != ConductId_MA0001) {
+        //更新キーが存在しない場合
+        return;
+    }
+
+    // ローカルストレージから保存済みの更新キーリストを取得
+    var localKeyList = getSavedDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
+    if (localKeyList) {
+        // 保存済みのリストへ追加
+        if (localKeyList.indexOf(key) < 0) {
+            localKeyList.push(key);
+        }
+    } else {
+        localKeyList = [];
+        localKeyList.push(key);
+    }
+    // 更新キーリストをローカルストレージへ保存
+    setSaveDataToLocalStorage(localKeyList, localStorageCode.ScheduleUpdateKeyList)
+
+    // グローバルリストから更新キーを削除
+    delete P_dicIndividual[MA0001_UpdateKeyForLN0001];
 }
 
 /**

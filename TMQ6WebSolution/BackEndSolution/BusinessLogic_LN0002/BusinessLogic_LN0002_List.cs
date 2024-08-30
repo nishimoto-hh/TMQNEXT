@@ -32,8 +32,11 @@ namespace BusinessLogic_LN0002
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.CtrlId.ScheduleCondition, monthStartNendo);
 
+            // 項目カスタマイズで選択されている項目のみSELECTする
+            List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.CtrlId.List);
+
             // 一覧データを取得して設定
-            if (!setListData(out List<string> keyIdList, out IList<Dao.FormList.List> resultsWithHead, out List<string> longPlanIdList))
+            if (!setListData(out List<string> keyIdList, out IList<Dao.FormList.List> resultsWithHead, out List<string> longPlanIdList, uncommentList))
             {
                 return false;
             }
@@ -46,7 +49,7 @@ namespace BusinessLogic_LN0002
             // out List<string> keyIdList 取得したスケジュール一覧と紐づけるIDのリスト
             // out IList<Dao.FormList.List> resultsHead 機器ごとにブランクのヘッダを追加したリスト
             // out List<string> longPlanIdList 取得した一覧の長計件名IDのリスト
-            bool setListData(out List<string> keyIdList, out IList<Dao.FormList.List> resultsWithHead, out List<string> longPlanIdList)
+            bool setListData(out List<string> keyIdList, out IList<Dao.FormList.List> resultsWithHead, out List<string> longPlanIdList, List<string> uncommentList)
             {
                 keyIdList = new();
                 resultsWithHead = new List<Dao.FormList.List>();
@@ -56,7 +59,7 @@ namespace BusinessLogic_LN0002
                 var pageInfo = GetPageInfo(ConductInfo.FormList.CtrlId.List, this.pageInfoList);
 
                 // SQLを取得
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql);
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetList, out string baseSql, uncommentList);
                 // WITH句は別に取得
                 TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.GetList, out string withSql);
                 // 場所分類＆職種機種＆詳細検索条件取得
@@ -66,12 +69,16 @@ namespace BusinessLogic_LN0002
                 }
                 //SQLパラメータに言語ID設定
                 whereParam.LanguageId = this.LanguageId;
-                // SQL、WHERE句、WITH句より件数取得SQLを作成
-                string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
+
                 // 一時テーブル設定
-                setTempTable();
+                setTempTable(uncommentList);
+
+                //項目カスタマイズでSELECT項目を絞るので、詳細検索条件は機能側で付与する
+                StringBuilder baseSqlSb = new StringBuilder(baseSql);
+                baseSqlSb.AppendLine().AppendLine(whereSql);
+
                 // 一覧検索SQL文の取得
-                executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql);
+                string executeSql = TMQUtil.GetSqlStatementSearch(false, baseSqlSb.ToString(), null, withSql);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine(" ORDER BY machine_no ,machine_name ");
                 selectSql.AppendLine(" ,inspection_site_structure_id ,inspection_site_importance_structure_id ");
@@ -96,16 +103,24 @@ namespace BusinessLogic_LN0002
                 }
                 keyIdList = results.Select(x => x.KeyId).Distinct().ToList(); // スケジュール一覧との紐付用(詳細条件検索により絞り込まれる場合を想定)
                 longPlanIdList = results.Select(x => x.LongPlanId.ToString()).Distinct().ToList(); // スケジュール一覧の絞り込み用
+
+                // 検索結果リストを解放
+                results = null;
+                GC.Collect();
+
                 return true;
 
-                void setTempTable()
+                void setTempTable(List<string> uncommentList)
                 {
+                    if (uncommentList == null)
+                    {
+                        return;
+                    }
+
                     TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
                     // 翻訳用一時テーブル登録
-                    // 翻訳する構成グループのリスト
-                    var structuregroupList = new List<GroupId> { GroupId.SiteMaster, GroupId.Importance, GroupId.Conservation, GroupId.InspectionDetails, GroupId.BudgetPersonality, GroupId.MaintainanceKind };
-                    listPf.GetCreateTranslation(); // テーブル作成
-                    listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+                    listPf.SetParamLanguageId();
+                    listPf.AddTempTable(SqlName.SubDir, SqlName.CreateTempForGetList, SqlName.InsertTempForGetList, uncommentList);
                     listPf.RegistTempTable(); // 登録
                 }
 
@@ -193,6 +208,12 @@ namespace BusinessLogic_LN0002
                     List<TMQDao.ScheduleList.Display> rtnList = new();
                     // 処理済みのグループIDと年月日を保持するリスト
                     Dictionary<long, Dictionary<DateTime, bool>> finishList = new();
+                    // 20240823 ListGroupIdを設定するためのforeachを追加
+                    foreach (var schedule in scheduleList)
+                    {
+                        long listGroupId = getListGroupId(schedule.KeyId); // 処理対象グループ(行をまとめる単位)
+                        schedule.ListGroupId = listGroupId;
+                    }
                     foreach (var schedule in scheduleList)
                     {
                         long listGroupId = getListGroupId(schedule.KeyId); // 処理対象グループ(行をまとめる単位)
@@ -214,7 +235,8 @@ namespace BusinessLogic_LN0002
                         groupDic.Add(keyDate, true);
 
                         // グループと日付でスケジュールを集計し、ヘッダ行用として追加する
-                        var targets = scheduleList.Where(x => x.KeyDate == keyDate && getListGroupId(x.KeyId) == listGroupId); // 集計対象
+                        //var targets = scheduleList.Where(x => x.KeyDate == keyDate && getListGroupId(x.KeyId) == listGroupId); // 集計対象(20240823変更前)
+                        var targets = scheduleList.Where(x => x.KeyDate == keyDate && x.ListGroupId == listGroupId); // 集計対象(20240823変更後)
                                                                                                                                // 優先順位→点検種別の順に集計
                         var target = targets.OrderBy(x => x.StatusPriority).ThenBy(x => x.MaintainanceKindLevel).First();
                         rtnList.Add(makeGroupHead(target, listGroupId));//キーをヘッダ用にグループIDに変更

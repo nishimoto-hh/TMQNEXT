@@ -85,9 +85,10 @@ namespace CommonTMQUtil
         /// <param name="subDir">Resources\sql配下のサブディレクトリパス(サブディレクトリが複数階層の場合、パス区切り文字は"\"ではなく".")</param>
         /// <param name="fileName">SQLテキストファイル名</param>
         /// <param name="sql">out 取得したSQL文</param>
-        /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+        /// <param name="listUnCommentPrm">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
+        /// <param name="listCommentPrm">省略可能 SQLの中でコメントのままで残したい箇所のリスト</param>
         /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
-        public static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnComment = null)
+        public static bool GetFixedSqlStatement(string subDir, string fileName, out string sql, List<string> listUnCommentPrm = null, List<string> listCommentPrm = null)
         {
             sql = string.Empty;
             string assemblyName = CommonWebTemplate.AppCommonObject.Config.AppSettings.FixedSqlStatementAssemblyName;
@@ -106,7 +107,29 @@ namespace CommonTMQUtil
             bool result = ComUtil.GetEmbeddedResourceStr(assemblyName, resourceName.ToString(), out sql);
 
             // SQLの動的制御　コメントアウトを解除
-            if (listUnComment != null && listUnComment.Count > 0)
+            List<string> listUnComment = new List<string>();
+            if (listUnCommentPrm != null)
+            {
+                listUnComment.AddRange(listUnCommentPrm);
+            }
+            if (listCommentPrm != null)
+            {
+                // /*@で始まるキーワードを抽出
+                var results = Regex.Matches(sql, @"(\/\*@)(?<name>.*)(\r)$", RegexOptions.Multiline);
+                foreach (Match r in results)
+                {
+                    var name = r.Groups["name"].Value;
+                    if (!listCommentPrm.Contains(name))
+                    {
+                        // コメントのままで残したいキーワードに含まれない場合はコメントアウト解除のリストへ追加
+                        if (listUnCommentPrm == null || !listUnCommentPrm.Contains(name))
+                        {
+                            listUnComment.Add(name);
+                        }
+                    }
+                }
+            }
+            if (listUnComment.Count > 0)
             {
                 foreach (string wordUnComment in listUnComment)
                 {
@@ -129,10 +152,10 @@ namespace CommonTMQUtil
         /// <param name="listUnComment">省略可能 SQLの中でコメントアウトを解除したい箇所のリスト</param>
         /// <returns>取得結果(true:取得OK/false:取得NG )</returns>
         /// <returns></returns>
-        public static bool GetFixedSqlStatementWith(string subDir, string fileName, out string sql, List<string> listUnComment = null)
+        public static bool GetFixedSqlStatementWith(string subDir, string fileName, out string sql, List<string> listUnComment = null, List<string> listComment = null)
         {
             // ファイル名にWIHT_を接続して取得
-            if (!GetFixedSqlStatement(subDir, "WITH_" + fileName, out sql, listUnComment))
+            if (!GetFixedSqlStatement(subDir, "WITH_" + fileName, out sql, listUnComment, listComment))
             {
                 // エラー
                 return false;
@@ -1904,6 +1927,78 @@ namespace CommonTMQUtil
 
                 return result;
             }
+
+            /// <summary>
+            /// ディクショナリの検索結果に追加可能なデータ形式に変換する(一覧更新用)
+            /// </summary>
+            /// <param name="scheduleList">スケジュールの取得結果</param>
+            /// <param name="condition">画面のスケジュール表示条件のクラス</param>
+            /// <param name="longPlanIdList">スケジュールクリア時の対象となる長計件名IDリスト</param>
+            /// <returns>二重のディクショナリ(キー：画面の一覧との紐付用キー値、値：ディクショナリ(キー：列の日付、値：セルの値)</returns>
+            public static Dictionary<string, Dictionary<string, string>> ConvertDictionaryAddDataForUpdateList(
+                List<Dao.ScheduleList.Display> scheduleList, Dao.ScheduleList.GetCondition condition, List<long> longPlanIdList = null)
+            {
+                // 戻り値
+                // 行単位のキー(キー値)、列単位のキー(年月)、セルの値
+                Dictionary<string, Dictionary<string, string>> result = new();
+                bool isYear = condition.IsYear(); // 年単位で表示の場合True
+                DateTime targetDate = condition.ScheduleStart;
+
+                if (scheduleList != null)
+                {
+                    // スケジュールデータが存在する場合
+                    // 行単位のキー(キー値)でグループ化
+                    var schechleListGrpByKeyId = scheduleList.GroupBy(x => x.KeyId).ToList();
+                    foreach (var schechleListGrp in schechleListGrpByKeyId)
+                    {
+                        // 一覧の行単位のディクショナリを追加
+                        var keyId = schechleListGrp.Key;
+                        result.Add(keyId, new());
+
+                        var list = schechleListGrp.ToList();
+                        while (targetDate <= condition.ScheduleEnd)
+                        {
+                            var scheduleCell = list.Where(x => x.KeyDate == targetDate).FirstOrDefault();
+                            string value = string.Empty;
+                            if (scheduleCell == null)
+                            {
+                                // 該当日付のスケジュールが存在しない場合は空のデータを生成する(既存データをクリアするため)
+                                scheduleCell = new Dao.ScheduleList.Display();
+                                scheduleCell.KeyDate = targetDate;
+                            }
+                            else
+                            {
+                                value = scheduleCell.ConvertScheduleData(); // 1セルの値
+                            }
+                            string dateKey = scheduleCell.GetDateKey(isYear); // 年月キー
+                            result[keyId].Add(dateKey, value);
+
+                            targetDate = !isYear ? targetDate.AddMonths(1) : targetDate.AddYears(1);
+                        }
+                    }
+                }
+                else if(longPlanIdList != null)
+                {
+                    // スケジュールデータが存在しない場合
+                    // 対象の長計件名IDで空のデータを生成する(既存データをクリアするため)
+                    foreach (var longPlanId in longPlanIdList)
+                    {
+                        var keyId = longPlanId.ToString();
+                        result.Add(keyId, new());
+                        while (targetDate <= condition.ScheduleEnd)
+                        {
+                            var scheduleCell = new Dao.ScheduleList.Display();
+                            scheduleCell.KeyDate = targetDate;
+                            string dateKey = scheduleCell.GetDateKey(isYear); // 年月キー
+                            result[keyId].Add(dateKey, string.Empty);
+
+                            targetDate = !isYear ? targetDate.AddMonths(1) : targetDate.AddYears(1);
+                        }
+                    }
+                }
+                return result;
+            }
+
             /// <summary>
             /// 画面の一覧の内容より、スケジュールが移動されたセルの情報を取得する
             /// </summary>

@@ -435,6 +435,8 @@ namespace BusinessLogic_MA0001
             string summaryId = getValueByKeyName(ctrlId, "summary_id");
             //保全活動区分
             string maintenanceDivisionId = getValueByKeyName(ctrlId, "activity_division");
+            //長期計画件名ID
+            string longPlanId = getValueByKeyName(ctrlId, "long_plan_id");
             //保全活動件名削除SQL文の取得
             string sql;
             if (!TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Detail.DeleteSummary, out sql))
@@ -550,6 +552,12 @@ namespace BusinessLogic_MA0001
 
             //一覧画面のデータ更新用の値を設定（一覧画面に戻った際、再検索をせず一覧表示データを直接削除する）
             setDeleteRowDataToGlobalData();
+
+            if (!string.IsNullOrEmpty(longPlanId))
+            {
+                // 長期計画件名IDが設定されている場合、グローバルデータへ設定
+                SetGlobalData(GlobalKey.MA0001UpdateKeyForLN0001, Convert.ToInt64(longPlanId));
+            }
 
             return true;
 

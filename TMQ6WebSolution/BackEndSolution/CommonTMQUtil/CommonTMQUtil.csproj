@@ -432,10 +432,12 @@
     <None Remove="Resources\sql\IssueInput\Select_parts_location_by_parts_id.sql" />
     <None Remove="Resources\sql\IssueInput\Select_preIssueDayCount.sql" />
     <None Remove="Resources\sql\IssueInput\Select_where_by_inout_history_id.sql" />
+    <None Remove="Resources\sql\LongPlanMachine\CreateTableTempGetList.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetEquipmentInfoByScheduleDetailId.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetLinkCntForTrans.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetList.sql" />
     <None Remove="Resources\sql\LongPlanMachine\GetScheduleList.sql" />
+    <None Remove="Resources\sql\LongPlanMachine\InsertTempGetList.sql" />
     <None Remove="Resources\sql\LongPlanMachine\WITH_GetList.sql" />
     <None Remove="Resources\sql\LongPlan\DeleteLongPlan.sql" />
     <None Remove="Resources\sql\LongPlan\Detail\DeleteContentForExcelPort.sql" />
@@ -480,9 +482,11 @@
     <None Remove="Resources\sql\LongPlan\InputCheck\GetNextScheduleDate.sql" />
     <None Remove="Resources\sql\LongPlan\InputCheck\GetScheduleInfoFromContentId.sql" />
     <None Remove="Resources\sql\LongPlan\InsertLongPlan.sql" />
+    <None Remove="Resources\sql\LongPlan\List\CreateTableTempGetList.sql" />
     <None Remove="Resources\sql\LongPlan\List\CreateTableTempGetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\List\GetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\List\GetLongPlanSchedule.sql" />
+    <None Remove="Resources\sql\LongPlan\List\InsertTempGetList.sql" />
     <None Remove="Resources\sql\LongPlan\List\InsertTempGetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\List\WITH_GetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\MakeMaintainance\InsertHistory.sql" />
@@ -511,6 +515,7 @@
     <None Remove="Resources\sql\LongPlan\Select_GetLongPlanList.sql" />
     <None Remove="Resources\sql\LongPlan\UpdateLongPlan.sql" />
     <None Remove="Resources\sql\LongPlan\WITH_GetLongPlanList.sql" />
+    <None Remove="Resources\sql\Machine\CreateTableTempGetMachineList.sql" />
     <None Remove="Resources\sql\Machine\DeleteAccessoryInfo.sql" />
     <None Remove="Resources\sql\Machine\DeleteApplicableLaws.sql" />
     <None Remove="Resources\sql\Machine\DeleteEquipmentAttachment.sql" />
@@ -612,6 +617,7 @@
     <None Remove="Resources\sql\Machine\InsertMpInfo.sql" />
     <None Remove="Resources\sql\Machine\InsertParentInfo.sql" />
     <None Remove="Resources\sql\Machine\InsertSelectMachineLoop.sql" />
+    <None Remove="Resources\sql\Machine\InsertTempGetMachineList.sql" />
     <None Remove="Resources\sql\Machine\InsertUseParts.sql" />
     <None Remove="Resources\sql\Machine\SELECT_MachineDetail.sql" />
     <None Remove="Resources\sql\Machine\UpdateDispCycleOfMaintainanceSchedule.sql" />
@@ -1047,6 +1053,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet10.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlanMachine\CreateTableTempGetList.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlanMachine\InsertTempGetList.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\List\CreateTableTempGetList.sql" />
+    <EmbeddedResource Include="Resources\sql\LongPlan\List\InsertTempGetList.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\CreateTableTempGetMachineList.sql" />
+    <EmbeddedResource Include="Resources\sql\Machine\InsertTempGetMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\CreateIdDateForProc.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertIdDateForProc.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertMaintainanceScheduleDetailTable.sql" />

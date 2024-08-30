@@ -10,6 +10,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using AutoMapper;
+using CommonWebTemplate.CommonDefinitions;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -26,7 +30,6 @@ using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
 using TMQExcelPort = CommonTMQUtil.CommonTMQUtil.ComExcelPort;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
-using AutoMapper;
 
 namespace BusinessLogic_LN0001
 {
@@ -35,18 +38,24 @@ namespace BusinessLogic_LN0001
     /// </summary>
     public partial class BusinessLogic_LN0001 : CommonBusinessLogicBase
     {
-        #region private変数
-        #endregion
-
         #region 定数
 
         /// <summary>GetDetailWithのアンコメント用文字列</summary>
         private const string UnCommentWordOfGetDetailWith = "UnComp";
-        /// <summary>GetListのアンコメント用文字列</summary>
-        private const string UnCommentWordOfGetList = "UnExcelPort";
+        /// <summary>GetListのExcelPort以外のアンコメント用文字列</summary>
+        private const string UnCommentWordOfGetListNotForExcelPort = "UnExcelPort";
+        /// <summary>GetListの一覧以外のアンコメント用文字列</summary>
+        private const string UnCommentWordOfGetListNotForList = "UnList";
 
         /// <summary>スケジュール日時条件用フォーマット</summary>
         private const string ScheduleDateConditionFormat = "yyyyMM";
+
+        #region private変数
+        /// <summary>
+        /// 一覧画面で選択された長計件名IDのリスト
+        /// </summary>
+        private List<long> selectedLongPlanIdList = new();
+        #endregion
 
         /// <summary>
         /// SQLファイル名称
@@ -72,6 +81,10 @@ namespace BusinessLogic_LN0001
                 /// <summary>一覧情報取得の一時テーブル登録SQL</summary>
                 public const string InsertTempTable = "InsertTempGetLongPlanList";
 
+                /// <summary>SQL名：一時テーブル作成：一覧取得用</summary>
+                public const string CreateTempForGetList = "CreateTableTempGetList";
+                /// <summary>SQL名：一時テーブル登録：一覧取得用</summary>
+                public const string InsertTempForGetList = "InsertTempGetList";
             }
             /// <summary>
             /// 共通
@@ -563,6 +576,25 @@ namespace BusinessLogic_LN0001
                 }
             }
         }
+
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            // グローバル変数のキー、一覧画面の表示条件データ
+            public const string LN0001ListCondition = "LN0001_ListCondition";
+            // グローバル変数のキー、詳細検索条件の初期値
+            public const string LN0001InitDetailCondition = "LN0001_InitDetailCondition";
+            // グローバル変数のキー、一覧画面の表示データを更新する用
+            public const string LN0001UpdateListData = "LN0001_UpdateListData";
+            // グローバル変数のキー、一覧画面用の総件数
+            public const string LN0001AllListCount = "LN0001_AllListCount";
+            // グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキーリスト
+            public const string LN0001UpdateKeyList = "LN0001_UpdateKeyList";
+            // グローバル変数のキー、文書管理画面で添付情報の更新フラグ
+            public const string LN0001UpdateAttachmentFlg = "LN0001_UpdateAttachmentFlg";
+        }
         #endregion
 
         #region コンストラクタ
@@ -767,6 +799,13 @@ namespace BusinessLogic_LN0001
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // 一覧画面更新用のデータを取得
+            if(this.selectedLongPlanIdList.Count > 0)
+            {
+                getListRowData(this.selectedLongPlanIdList);
+            }
+
             // 完了メッセージ表示
             setCompleteExecute(processName);
             return ComConsts.RETURN_RESULT.OK;
@@ -790,6 +829,8 @@ namespace BusinessLogic_LN0001
         protected override int RegistImpl()
         {
             bool resultRegist = false;  // 登録処理戻り値、エラーならFalse
+            EditDispType editType = getEditType();
+            bool isRegist = isInsertEdit(editType); // 編集画面の登録処理かどうか
 
             // 登録ボタンが複数の画面に無い場合、分岐は不要
             // 処理を実行する画面Noの値により処理を分岐する
@@ -797,7 +838,7 @@ namespace BusinessLogic_LN0001
             {
                 case ConductInfo.FormEdit.FormNo:
                     // 編集画面の場合の登録処理
-                    resultRegist = executeRegistEdit();
+                    resultRegist = executeRegistEdit(isRegist);
                     break;
                 case ConductInfo.FormSelectStandards.FormNo:
                     // 機器別管理基準選択画面の場合の登録処理
@@ -822,6 +863,14 @@ namespace BusinessLogic_LN0001
 
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // 一覧画面更新用のデータを取得
+            if (this.selectedLongPlanIdList.Count > 0)
+            {
+                // 新規登録時はスケジュール更新なし
+                getListRowData(this.selectedLongPlanIdList, isRegist, !isRegist);
+            }
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「登録処理に成功しました。」
@@ -1307,10 +1356,15 @@ namespace BusinessLogic_LN0001
                 // 一時テーブル設定
                 setTempTableForGetList(null, true);
 
+                // ExcelPortの場合にコメントとして残しておくキーワード
+                List<string> commentList = new List<string> { UnCommentWordOfGetListNotForExcelPort };
+                // コメントアウトを解除するキーワード
+                List<string> unCommentList = new List<string> { UnCommentWordOfGetListNotForList };
+
                 // SQLを取得
-                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string baseSql);
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string baseSql, unCommentList, commentList);
                 // WITH句は別に取得
-                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql);
+                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, null, commentList);
 
                 // WHERE句に場所階層と職種機種を設定
                 var whereSql = new StringBuilder();
@@ -1616,36 +1670,83 @@ namespace BusinessLogic_LN0001
         /// <summary>
         /// 一覧取得SQLに必要な、一時テーブル登録処理
         /// </summary>
-        private void setTempTableForGetList(long? longPlanId = null, bool isExcelPort = false)
+        private void setTempTableForGetList(long? longPlanId = null, bool isExcelPort = false, List<string> uncommentList = null)
         {
             // 一覧の場合、長計件名IDがNull。詳細の場合、Nullでない。
             bool isList = longPlanId == null;
 
             // 一時テーブル関連処理
             TMQUtil.ListPerformanceUtil listPf = new(this.db, this.LanguageId);
-            listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment, FunctionTypeId.LongPlan });
-            // 使用する構成グループ(点検種別はスケジュールで使用)
-            var structuregroupList = new List<GroupId>
+            listPf.SetParamLanguageId();
+            if (uncommentList == null)
+            {
+                listPf.GetAttachmentSql(new List<FunctionTypeId> { FunctionTypeId.Machine, FunctionTypeId.Equipment, FunctionTypeId.LongPlan });
+                // 使用する構成グループ(点検種別はスケジュールで使用)
+                var structuregroupList = new List<GroupId>
                     {
                         GroupId.Location, GroupId.Job, GroupId.Season, GroupId.BudgetPersonality, GroupId.Purpose,
                         GroupId.WorkClass, GroupId.Treatment, GroupId.Facility, GroupId.MaintainanceKind,
                         GroupId.WorkItem, GroupId.BudgetManagement, GroupId.LongPlanDivisionName, GroupId.LongPlanGroupName
                     };
-            if (!isList)
-            {
-                // 詳細の場合、翻訳を追加
-                structuregroupList.AddRange(new List<GroupId> { GroupId.Importance, GroupId.SiteMaster, GroupId.InspectionDetails, GroupId.ScheduleType });
+                if (!isList)
+                {
+                    // 詳細の場合、翻訳を追加
+                    structuregroupList.AddRange(new List<GroupId> { GroupId.Importance, GroupId.SiteMaster, GroupId.InspectionDetails, GroupId.ScheduleType });
+                }
+                listPf.GetCreateTranslation(); // テーブル作成
+                listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
             }
-            listPf.GetCreateTranslation(); // テーブル作成
-            listPf.GetInsertTranslationAll(structuregroupList, true); // 各グループ
+            else
+            {
+                List<FunctionTypeId> attachmentList = new();
+                if (uncommentList.Contains(nameof(Dao.ListSearchResult.FileLinkSubject)))
+                {
+                    // 件名添付有無
+                    attachmentList.Add(FunctionTypeId.LongPlan);
+                }
+                if (uncommentList.Contains(nameof(Dao.ListSearchResult.FileLinkEquip)))
+                {
+                    // 機器添付有無
+                    attachmentList.Add(FunctionTypeId.Machine);
+                    attachmentList.Add(FunctionTypeId.Equipment);
+                }
+                if (attachmentList.Count > 0)
+                {
+                    listPf.GetAttachmentSql(attachmentList);
+                }
+
+                //場所階層、職種・機種はいずれかの項目が１つでも存在する場合、構成グループIDを追加する
+                List<string> locationList = new List<string>() { nameof(Dao.ListSearchResult.DistrictName), nameof(Dao.ListSearchResult.FactoryName), nameof(Dao.ListSearchResult.PlantName), nameof(Dao.ListSearchResult.SeriesName), nameof(Dao.ListSearchResult.StrokeName), nameof(Dao.ListSearchResult.FacilityName) };
+                List<string> jobList = new List<string>() { nameof(Dao.ListSearchResult.JobName), nameof(Dao.ListSearchResult.LargeClassficationName), nameof(Dao.ListSearchResult.MiddleClassficationName), nameof(Dao.ListSearchResult.SmallClassficationName) };
+                int locationCount = uncommentList.FindAll(locationList.Contains).Count;
+                int jobCount = uncommentList.FindAll(jobList.Contains).Count;
+                if (locationCount > 0)
+                {
+                    uncommentList.Add("Location");
+                }
+                if (jobCount > 0)
+                {
+                    uncommentList.Add("Job");
+                }
+                listPf.AddTempTable(SqlName.List.SubDir, SqlName.List.CreateTempForGetList, SqlName.List.InsertTempForGetList, uncommentList);
+            }
 
             // 機能個別
             if (!isExcelPort)
             {
-                // Create文
-                string createSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.CreateTempTable, SqlName.List.SubDir, string.Empty);
-                // Insert文は一覧と詳細で異なる
                 List<string> listUnComment = new();
+                if(uncommentList != null)
+                {
+                    listUnComment.AddRange(uncommentList);
+                }
+                else
+                {
+                    listUnComment.Add(nameof(Dao.ListSearchResult.FileLinkEquip));
+                    listUnComment.Add(nameof(Dao.ListSearchResult.PreparationFlg));
+                }
+                // Create文
+                string createSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.CreateTempTable, SqlName.List.SubDir, string.Empty, listUnComment);
+                // Insert文は一覧と詳細で異なる
                 listUnComment.Add(isList ? "ForList" : "ForDetail");
                 // Insert文
                 string insertSql = TMQUtil.SqlExecuteClass.GetExecuteSql(SqlName.List.InsertTempTable, SqlName.List.SubDir, string.Empty, listUnComment);
@@ -1657,7 +1758,6 @@ namespace BusinessLogic_LN0001
                 // 設定
                 listPf.AddTempTableBySql(createSql, insertSql);
             }
-
             listPf.RegistTempTable(); // 登録
         }
 
@@ -1666,24 +1766,35 @@ namespace BusinessLogic_LN0001
         /// </summary>
         /// <param name="param">取得する長期計画の条件</param>
         /// <param name="isTree">省略可能 ツリービュー表示用の場合、True</param>
+        /// <param name="setLocationAndJob">省略可能 場所階層、職種・機種情報の設定が不要な場合、False</param>
         /// <returns>取得した長期計画の情報(一覧画面の1レコード)</returns>
-        private Dao.ListSearchResult getLongPlanInfo(ComDao.LnLongPlanEntity param, bool isTree = false)
+        private Dao.ListSearchResult getLongPlanInfo(ComDao.LnLongPlanEntity param, bool isTree = false, bool setLocationAndJob = true, List<string> unCommentListPrm = null)
         {
             // 一時テーブル関連処理
             setTempTableForGetList(param.LongPlanId);
 
             // 一覧検索のSQLをキー指定で実行し、画面に表示する内容を取得する
-            TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, new List<string> { UnCommentWordOfGetList });
-            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string outSql, new List<string> { UnCommentWordOfGetList });
+            List<string> unCommentList = new List<string>() { UnCommentWordOfGetListNotForExcelPort };
+            if (unCommentListPrm != null)
+            {
+                unCommentList.AddRange(unCommentListPrm);
+            }
+            TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, unCommentList);
+            unCommentList.Add(UnCommentWordOfGetListNotForList);
+            unCommentList.Add(nameof(ComDao.LnLongPlanEntity.SubjectNote));
+            unCommentList.Add(nameof(ComDao.LnLongPlanEntity.PersonName));
+            TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string outSql, unCommentList);
             StringBuilder execSql = new(withSql);
             execSql.AppendLine(addSqlWhereLongPlanId(outSql));
 
             // キー指定なので結果は必ず1件
             IList<Dao.ListSearchResult> results = new List<Dao.ListSearchResult> { db.GetEntityByDataClass<Dao.ListSearchResult>(execSql.ToString(), param) };
 
-            // 取得した結果に対して、地区と職種の情報を設定する
-            TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, isTree);
-
+            if (setLocationAndJob)
+            {
+                // 取得した結果に対して、地区と職種の情報を設定する
+                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref results, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, isTree);
+            }
             return results[0];
         }
 
@@ -1710,6 +1821,118 @@ namespace BusinessLogic_LN0001
             // 画面に設定
             var pageInfo = GetPageInfo(listCtrlId, this.pageInfoList);
             SetSearchResultsByDataClass<Dao.HiddenInfo>(pageInfo, new List<Dao.HiddenInfo> { hideInfo }, 1);
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを取得
+        /// </summary>
+        /// <param name="longPlanIdList">長計件名IDリスト</param>
+        /// <param name="isRegist">新規登録の場合true</param>
+        /// <param name="updateSchedule">スケジュール更新有りの場合true</param>
+        private void getListRowData(List<long> longPlanIdList, bool isRegist = false, bool updateSchedule = true)
+        {
+            List<Dao.ListSearchResult> resultList = new();
+            Dictionary<string, Dictionary<string, string>> setScheduleData = null;
+            if (updateSchedule)
+            {
+                // 準備対象/スケジュールデータ更新有りの場合
+                // 項目カスタマイズで選択されている項目を取得
+                List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.List);
+                if (uncommentList.Contains(nameof(Dao.ListSearchResult.PreparationFlg)))
+                {
+                    // 準備対象が表示対象列に含まれる場合、該当行のデータを取得する
+                    List<string> uncommentListPrm = new List<string>();
+                    if (uncommentList.Contains(nameof(Dao.ListSearchResult.FileLinkSubject)))
+                    {
+                        uncommentListPrm.Add(nameof(Dao.ListSearchResult.FileLinkSubject));
+                    }
+                    if (uncommentList.Contains(nameof(Dao.ListSearchResult.FileLinkEquip)))
+                    {
+                        uncommentListPrm.Add(nameof(Dao.ListSearchResult.FileLinkEquip));
+                    }
+                    foreach (long longPlanId in longPlanIdList)
+                    {
+                        resultList.Add(getLongPlanInfo(new ComDao.LnLongPlanEntity { LongPlanId = longPlanId }, false, false, uncommentListPrm));
+                    }
+                }
+                else
+                {
+                    foreach (long longPlanId in longPlanIdList)
+                    {
+                        resultList.Add(new Dao.ListSearchResult { KeyId = longPlanId.ToString(), LongPlanId = longPlanId });
+                        // 一時テーブル関連処理
+                        setTempTableForGetList(longPlanId);
+                    }
+
+                }
+
+                // 一覧画面スケジュールデータ取得用条件取得
+                var listCond = (Dictionary<string, object>)GetGlobalData(GlobalKey.LN0001ListCondition);
+                var scheduleCond = new Dao.Schedule.SearchCondition();
+                SetPropertyValues(scheduleCond, listCond);
+                scheduleCond.LongPlanIdList = string.Join(",", longPlanIdList);
+
+                // スケジュール一覧表示用データの取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetListSchedule, out string sqlSchedule);
+                IList<TMQDao.ScheduleList.Get> scheduleList = db.GetListByDataClass<TMQDao.ScheduleList.Get>(sqlSchedule, scheduleCond);
+
+                if (scheduleList.Count > 0)
+                {
+                    // 取得したデータを画面表示用に変換、マークなど取得
+                    TMQUtil.ScheduleListConverterNoRank listSchedule = new();
+                    int monthStartNendo = scheduleCond.ScheduleStart.AddMonths(-3).Year;
+                    List<TMQDao.ScheduleList.Display> scheduleDisplayList = listSchedule.Execute(scheduleList, scheduleCond, monthStartNendo, true, this.db, getScheduleLinkInfo());
+
+                    // 画面設定用データに変換
+                    setScheduleData = TMQUtil.ScheduleListUtil.ConvertDictionaryAddDataForUpdateList(scheduleDisplayList, scheduleCond);
+                }
+                else
+                {
+                    // 画面設定用データに変換
+                    setScheduleData = TMQUtil.ScheduleListUtil.ConvertDictionaryAddDataForUpdateList(null, scheduleCond, longPlanIdList);
+                }
+            }
+            else
+            {
+                // 準備対象/スケジュールデータ更新無しの場合
+                foreach (var longPlanId in longPlanIdList)
+                {
+                    resultList.Add(new Dao.ListSearchResult() { LongPlanId = longPlanId });
+                }
+            }
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.List;
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, resultList);
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+
+            if (updateSchedule)
+            {
+                // 準備対象/スケジュールデータ更新有りの場合
+                // スケジュールデータを設定
+                SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List, dicList);
+            }
+
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.LN0001UpdateListData, dicList);
+            if (isRegist)
+            {
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.LN0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.LN0001AllListCount, count + 1);
+            }
+            longPlanIdList.Clear();
         }
         #endregion
 

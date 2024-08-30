@@ -41,8 +41,11 @@ namespace BusinessLogic_LN0001
             // 変更管理ボタンの表示制御用フラグ
             setHistoryManagementFlg(ConductInfo.FormList.ControlId.HiddenInfo);
 
+            // 項目カスタマイズで選択されている項目のみSELECTする
+            List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.List);
+
             // 一覧データを取得して設定
-            if (!setListData(out List<string> keyIdList))
+            if (!setListData(out List<string> keyIdList, uncommentList))
             {
                 return false;
             }
@@ -55,7 +58,7 @@ namespace BusinessLogic_LN0001
             // 一覧データの取得と設定(スケジュール以外)
             // return bool 後続の処理を行わない場合True
             // out List<string> keyIdList 取得したスケジュール一覧と紐づけるIDのリスト
-            bool setListData(out List<string> keyIdList)
+            bool setListData(out List<string> keyIdList, List<string> uncommentList)
             {
                 keyIdList = new();
 
@@ -63,7 +66,8 @@ namespace BusinessLogic_LN0001
                 var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
 
                 // SQLを取得
-                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string baseSql, new List<string> { UnCommentWordOfGetList });
+                uncommentList.Add(UnCommentWordOfGetListNotForExcelPort);
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string baseSql, uncommentList);
 
                 // 場所分類＆職種機種＆詳細検索条件取得
                 if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied))
@@ -71,14 +75,13 @@ namespace BusinessLogic_LN0001
                     return false;
                 }
                 // 一時テーブル設定
-                setTempTableForGetList();
+                setTempTableForGetList(uncommentList: uncommentList);
                 //SQLパラメータに言語ID設定
                 whereParam.LanguageId = this.LanguageId;
 
                 // WITH句は別に取得
-                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, new List<string> { UnCommentWordOfGetList });
-                // SQL、WHERE句、WITH句より件数取得SQLを作成
-                string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, whereSql, withSql);
+                TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
+
                 // 総件数を取得
                 int cnt = db.GetCount(TMQUtil.GetCountSql(new ComDao.LnLongPlanEntity().TableName, whereParam), whereParam);
                 // 総件数のチェック
@@ -91,8 +94,12 @@ namespace BusinessLogic_LN0001
                     return false;
                 }
 
+                //項目カスタマイズでSELECT項目を絞るので、詳細検索条件は機能側で付与する
+                StringBuilder baseSqlSb = new StringBuilder(baseSql);
+                baseSqlSb.AppendLine().AppendLine(whereSql);
+
                 // 一覧検索SQL文の取得
-                executeSql = TMQUtil.GetSqlStatementSearch(false, baseSql, whereSql, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
+                var executeSql = TMQUtil.GetSqlStatementSearch(false, baseSqlSb.ToString(), null, withSql, isDetailConditionApplied, pageInfo.SelectMaxCnt);
                 var selectSql = new StringBuilder(executeSql);
                 selectSql.AppendLine("ORDER BY subject");
                 // 一覧検索実行
@@ -113,6 +120,14 @@ namespace BusinessLogic_LN0001
                     this.Status = CommonProcReturn.ProcStatus.Valid;
                 }
                 keyIdList = results.Select(x => x.KeyId).Distinct().ToList(); // スケジュール一覧との紐付用(詳細条件検索により絞り込まれる場合を想定)
+
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.LN0001AllListCount, isDetailConditionApplied ? results.Count : cnt);
+
+                // 検索結果リストを解放
+                results = null;
+                GC.Collect();
+
                 return true;
             }
 
@@ -124,6 +139,9 @@ namespace BusinessLogic_LN0001
                 var scheduleCond = GetFormDataByCtrlId<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, false);
                 Dao.Schedule.SearchCondition cond = new(scheduleCond, monthStartNendo, this.LanguageId);
                 cond.FactoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
+
+                // 一覧画面の表示条件を個別実装用データへセット
+                SetGlobalData(GlobalKey.LN0001ListCondition, cond.Copy());
 
                 // 個別実装用データへスケジュールのレイアウトデータ(scheduleLayout)をセット
                 TMQUtil.ScheduleListUtil.SetLayout(ref this.IndividualDictionary, cond, false, getNendoText(), monthStartNendo);

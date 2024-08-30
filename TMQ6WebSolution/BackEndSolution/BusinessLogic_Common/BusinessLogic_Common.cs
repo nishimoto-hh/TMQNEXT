@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using CommonWebTemplate.CommonDefinitions;
+using System.Diagnostics;
 
 namespace BusinessLogic_Common
 {
@@ -80,6 +81,10 @@ namespace BusinessLogic_Common
         #region 共通ロジック
         public int ExecuteBusinessLogic(CommonProcParamIn inParam, out CommonProcParamOut outParam)
         {
+            //★速度計測用 start
+            Stopwatch sw = Stopwatch.StartNew();
+            //★速度計測用 end
+
             this.Status = CommonProcReturn.ProcStatus.Valid;
             this.MsgId = string.Empty;
             this.LogNo = string.Empty;
@@ -192,6 +197,7 @@ namespace BusinessLogic_Common
                     outParam.MsgId = this.MsgId;
                     outParam.LogNo = this.LogNo;
                     outParam.ResultList = this.resultInfoDictionary;
+
                     return result;
                 }
                 catch (Exception ex)
@@ -219,6 +225,20 @@ namespace BusinessLogic_Common
 
                 return -2;
             }
+            //★速度計測用 start
+            finally
+            {
+                sw.Stop();
+                if (this.CtrlId == "CTRLSQL")
+                {
+                    logger.DebugLog(this.FactoryId, this.UserId, string.Format("[{0}][{1}][{2}]{3}ms", this.CtrlId, this.searchConditionDictionary[0]["CTRLSQLID"], this.searchConditionDictionary[0]["CTRLSQLPARAM"], sw.ElapsedMilliseconds));
+                }
+                else
+                {
+                    logger.DebugLog(this.FactoryId, this.UserId, string.Format("[{0}]{1}ms", this.CtrlId, sw.ElapsedMilliseconds));
+                }
+            }
+            //★速度計測用 end
         }
         #endregion
 

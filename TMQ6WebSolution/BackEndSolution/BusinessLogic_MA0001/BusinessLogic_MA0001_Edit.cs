@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -294,7 +295,8 @@ namespace BusinessLogic_MA0001
             }
 
             // 排他チェック(長期計画の白丸「○」リンクから遷移してきた場合)
-            if (isErrorExclusiveFromLongPlan(registSummaryInfo.MaxUpdateDatetimeSchedule, registSummaryInfo.MaintainanceScheduleDetailId))
+            var isMovedFromLongPlan = !string.IsNullOrEmpty(registSummaryInfo.MaintainanceScheduleDetailId);
+            if (isMovedFromLongPlan && isErrorExclusiveFromLongPlan(registSummaryInfo.MaxUpdateDatetimeSchedule, registSummaryInfo.MaintainanceScheduleDetailId))
             {
                 return false;
             }
@@ -343,7 +345,7 @@ namespace BusinessLogic_MA0001
             }
 
             // 保全スケジュール詳細IDがnullでない(長期計画の白丸「○」リンクから遷移してきた)場合
-            if (!string.IsNullOrEmpty(registSummaryInfo.MaintainanceScheduleDetailId))
+            if (isMovedFromLongPlan)
             {
                 // 登録情報に長期計画件名IDを設定する
                 if (!getLongPlanIdByScheduleDetailId(registSummaryInfo.MaintainanceScheduleDetailId, out long? outLongPlanId))
@@ -414,6 +416,14 @@ namespace BusinessLogic_MA0001
             ComDao.MaSummaryEntity info = new ComDao.MaSummaryEntity();
             info.SummaryId = summaryId;
             SetSearchResultsByDataClass<ComDao.MaSummaryEntity>(pageInfo, new List<ComDao.MaSummaryEntity> { info }, 1);
+
+            // ↓長期計画の二重丸「◎」/黒丸「●」リンクから詳細画面を経由して遷移してきた場合にも対応するため、常に設定することとする
+            //// 長期計画の白丸「○」リンクから遷移してきた場合
+            //if (isMovedFromLongPlan)
+            //{
+                // 長期計画件名IDをグローバルデータへ設定
+                SetGlobalData(GlobalKey.MA0001UpdateKeyForLN0001, registSummaryInfo.LongPlanId);
+            //}
 
             return true;
 
@@ -1825,10 +1835,11 @@ namespace BusinessLogic_MA0001
         private bool isErrorExclusiveFromLongPlan(DateTime? savedMaxUpdateDate, string maintainanceScheduleDetailId)
         {
             // 保全スケジュール詳細IDがnullの場合は何もしない
-            if (string.IsNullOrEmpty(maintainanceScheduleDetailId))
-            {
-                return false;
-            }
+            // ⇒呼び元でチェックする
+            //if (string.IsNullOrEmpty(maintainanceScheduleDetailId))
+            //{
+            //    return false;
+            //}
 
             // 保全スケジュール詳細データと同一の長期計画件名、同一年月データの最大更新日時を取得
             if (!getMaxUpdateDateFromLongPlan(maintainanceScheduleDetailId, out DateTime? maxUpdateDate))
