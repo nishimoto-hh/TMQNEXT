@@ -34,6 +34,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using static CommonExcelUtil.CommonExcelCmd;
 using DocumentFormat.OpenXml.Wordprocessing;
 using static CommonSTDUtil.CommonConstants;
+using DocumentFormat.OpenXml.Office2010.ExcelAc;
 
 // 一つのファイルに書くと長くなって対象の処理を探すのが大変になりそうなので分割テスト(partial)
 // 将来的には適当な処理単位で分割したい。その際はファイル名も相応しい内容に変更
@@ -2945,7 +2946,7 @@ namespace CommonTMQUtil
                         }
                         break;
                     case ReportRP0450.SheetNo.Year: // 工場別件数
-                        if (!getOutDataForOldStyleYear(db, searchCondition, sheetDefine.TargetSql, ref mappingInfoList, out dataList))
+                        if (!getOutDataForOldStyleYear(db, searchCondition, sheetDefine.TargetSql, ref mappingInfoList, out dataList , languageId))
                         {
                             return false;
                         }
@@ -3570,7 +3571,7 @@ namespace CommonTMQUtil
         /// <param name="mappingInfoList">マッピング情報リスト</param>
         /// <param name="mqList">MQ分類のリスト</param>
         /// <returns>エラーの場合はFalse</returns>
-        public static bool getOutDataForOldStyleYear(ComDB db, dynamic searchCondition, string targetSql, ref List<CommonExcelPrtInfo> mappingInfoList, out IList<dynamic> mqList)
+        public static bool getOutDataForOldStyleYear(ComDB db, dynamic searchCondition, string targetSql, ref List<CommonExcelPrtInfo> mappingInfoList, out IList<dynamic> mqList, string languageId)
         {
             // 検索結果格納用リスト
             IList<dynamic> dataList = null;
@@ -3588,11 +3589,13 @@ namespace CommonTMQUtil
                 return false;
             }
 
-            // 帳票データ(MQ分類)取得
+            TMQUtil.SqlExecuteClass.Regist(ComReport.CreateTableTemp, ExcelPath, null, db);
+
+            // 帳票データ取得
             dataList = db.GetList(selectMqSql, searchCondition);
             mqList = dataList;
 
-            // 検索結果(MQ分類)をマッピング
+            // 検索結果をマッピング
             mappingInfoList.AddRange(setMappingInfoYear());
 
             return true;
@@ -3600,8 +3603,8 @@ namespace CommonTMQUtil
             // MQ分類のデータをマッピング
             List<CommonExcelPrtInfo> setMappingInfoYear()
             {
-                string mqNameColumn = "H";  // MQ分類名をマッピングする列
-                string mqCountColumn = "I"; // MQ分類ごとの件数をマッピングする列
+                //string mqNameColumn = "H";  // MQ分類名をマッピングする列
+                //string mqCountColumn = "I"; // MQ分類ごとの件数をマッピングする列
                 int startRowNo = 7;         // データのマッピングを開始する行
 
                 List<CommonExcelPrtInfo> mappingInfoListMq = new();
@@ -3609,15 +3612,7 @@ namespace CommonTMQUtil
                 // 検索結果をマッピングする
                 foreach (dynamic data in dataList)
                 {
-                    // MQ分類名をマッピング
-                    info.SetExlSetValueByAddress(mqNameColumn + startRowNo.ToString(), data.mq_name);
                     mappingInfoListMq.Add(info);
-
-                    // MQ分類ごとの件数をマッピング
-                    info.SetExlSetValueByAddress(mqCountColumn + startRowNo.ToString(), data.cnt);
-                    mappingInfoListMq.Add(info);
-
-                    startRowNo++;
                 }
 
                 return mappingInfoListMq;

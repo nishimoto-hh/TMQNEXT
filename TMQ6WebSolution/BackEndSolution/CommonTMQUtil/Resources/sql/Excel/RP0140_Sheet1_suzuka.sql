@@ -571,8 +571,4 @@ AND language_id = @key2;
         INNER JOIN #temp temp
         ON su.summary_id = temp.Key1
         ORDER BY
-		1,2,
-            mc.job_structure_id ASC,
-			mc.machine_no ASC,
-			his.inspection_site_structure_id ASC,
-			hic.inspection_content_structure_id ASC;
+		completion_date ASC , occurrence_date ASC;
