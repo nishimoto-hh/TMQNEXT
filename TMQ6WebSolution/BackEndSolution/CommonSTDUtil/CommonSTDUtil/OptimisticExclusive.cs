@@ -1,4 +1,5 @@
 ﻿using CommonWebTemplate.CommonDefinitions;
+using CommonWebTemplate.Models.Common;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -871,11 +872,14 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
             if (dic.Count > 0)
             {
-                var jsonOptions = new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                };
-                jsonText = JsonSerializer.Serialize(dic, jsonOptions);
+                //2024.09 .NET8バージョンアップ対応 start
+                //var jsonOptions = new JsonSerializerOptions
+                //{
+                //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                //};
+                //jsonText = JsonSerializer.Serialize(dic, jsonOptions);
+                jsonText = JsonSerializer.Serialize(dic, JsonSerializerOptionsDefine.JsOptionsForEncode);
+                //2024.09 .NET8バージョンアップ対応 end
             }
             return jsonText;
         }
@@ -888,11 +892,14 @@ namespace CommonSTDUtil.CommonSTDUtil
         {
             if (string.IsNullOrWhiteSpace(jsonText)) { return; }
 
-            var jsonOptions = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-            };
-            var results = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(jsonText, jsonOptions);
+            //2024.09 .NET8バージョンアップ対応 start
+            //var jsonOptions = new JsonSerializerOptions
+            //{
+            //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+            //};
+            //var results = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(jsonText, jsonOptions);
+            var results = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(jsonText, JsonSerializerOptionsDefine.JsOptionsForEncode);
+            //2024.09 .NET8バージョンアップ対応 end
 
             this.LockValues.AddRange(results[LockValueName]);
             this.LockKeys.AddRange(results[LockKeyName]);

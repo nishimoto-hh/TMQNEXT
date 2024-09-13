@@ -506,10 +506,13 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 outParam.LogNo = this.LogNo;
                 outParam.ResultList = this.ResultList;
 
-                var jsonOptions = new JsonSerializerOptions
-                {
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                };
+                //2024.09 .NET8バージョンアップ対応 start
+                // 未使用のため削除
+                //var jsonOptions = new JsonSerializerOptions
+                //{
+                //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                //};
+                //2024.09 .NET8バージョンアップ対応 end
                 outParam.Individual = this.IndividualDictionary;
                 outParam.ButtonStatusList = this.buttonInfoDictionary;
 
@@ -2071,11 +2074,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
             {
                 if (list != null && list.Count > 0)
                 {
-                    var jsonOptions = new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                    };
-                    return JsonSerializer.Serialize(list, jsonOptions);
+                    //2024.09 .NET8バージョンアップ対応 start
+                    //var jsonOptions = new JsonSerializerOptions
+                    //{
+                    //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                    //};
+                    //return JsonSerializer.Serialize(list, jsonOptions);
+                    return JsonSerializer.Serialize(list, JsonSerializerOptionsDefine.JsOptionsForEncode);
+                    //2024.09 .NET8バージョンアップ対応 start
                 }
                 else
                 {
@@ -6975,7 +6981,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
             try
             {
                 // ZIP圧縮
-                if (!ComUtil.FileZip(sourceZipPath, targetZipFilePath, string.Empty))
+                //2024.09 .NET8バージョンアップ対応 start
+                // 使用ライブラリをDotNetZip⇒System.IO.Compressionへ変更
+                //if (!ComUtil.FileZip(sourceZipPath, targetZipFilePath, string.Empty))
+                if (!ComUtil.FileZip(sourceZipPath, targetZipFilePath))
+                //2024.09 .NET8バージョンアップ対応 end
                 {
                     // エラー
                     return false;
@@ -6992,14 +7002,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 this.OutputFileName = downloadZipName;
                 this.OutputStream = zipStream;
             }
-            catch (Exception ex)
+            catch
             {
                 // 例外発生時、ZIPファイルを作成している場合は削除して終了
                 if (File.Exists(targetZipFilePath))
                 {
                     File.Delete(targetZipFilePath);
                 }
-                throw ex;
+                throw;
             }
 
 

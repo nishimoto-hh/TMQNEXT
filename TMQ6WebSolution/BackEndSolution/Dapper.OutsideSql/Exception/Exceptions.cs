@@ -28,7 +28,9 @@ using System.Runtime.Serialization;
 
 namespace Jiifureit.Dapper.OutsideSql.Exception
 {
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class EndCommentNotFoundRuntimeException : SRuntimeException
     {
         public EndCommentNotFoundRuntimeException()
@@ -37,7 +39,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class IfConditionNotFoundRuntimeException : SRuntimeException
     {
         public IfConditionNotFoundRuntimeException()
@@ -46,7 +50,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class IllegalBoolExpressionRuntimeException : SRuntimeException
     {
         public IllegalBoolExpressionRuntimeException(string expression)
@@ -55,22 +61,28 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             Expression = expression;
         }
 
-        public IllegalBoolExpressionRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Expression = info.GetString("_expression");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public IllegalBoolExpressionRuntimeException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    Expression = info.GetString("_expression");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public string Expression { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_expression", Expression, typeof(string));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_expression", Expression, typeof(string));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class UpdateFailureRuntimeException : SRuntimeException
     {
         public UpdateFailureRuntimeException(object bean, int rows)
@@ -80,26 +92,32 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             Rows = rows;
         }
 
-        public UpdateFailureRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Bean = info.GetValue("_bean", typeof(object));
-            Rows = info.GetInt32("_rows");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public UpdateFailureRuntimeException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    Bean = info.GetValue("_bean", typeof(object));
+        //    Rows = info.GetInt32("_rows");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public object Bean { get; }
 
         public int Rows { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_bean", Bean, typeof(object));
-            info.AddValue("_rows", Rows, typeof(int));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_bean", Bean, typeof(object));
+        //    info.AddValue("_rows", Rows, typeof(int));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class TokenNotClosedRuntimeException : SRuntimeException
     {
         public TokenNotClosedRuntimeException(string token, string sql)
@@ -109,26 +127,32 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             Sql = sql;
         }
 
-        public TokenNotClosedRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Token = info.GetString("_token");
-            Sql = info.GetString("_sql");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public TokenNotClosedRuntimeException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    Token = info.GetString("_token");
+        //    Sql = info.GetString("_sql");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public string Token { get; }
 
         public string Sql { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_token", Token, typeof(string));
-            info.AddValue("_sql", Sql, typeof(string));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_token", Token, typeof(string));
+        //    info.AddValue("_sql", Sql, typeof(string));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class WrongPropertyTypeOfTimestampException : SRuntimeException
     {
         public WrongPropertyTypeOfTimestampException(string propertyName, string propertyType)
@@ -138,26 +162,32 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             PropertyType = propertyType;
         }
 
-        public WrongPropertyTypeOfTimestampException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            PropertyName = info.GetString("_propertyName");
-            PropertyType = info.GetString("_propertyType");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public WrongPropertyTypeOfTimestampException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    PropertyName = info.GetString("_propertyName");
+        //    PropertyType = info.GetString("_propertyType");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public string PropertyName { get; }
 
         public string PropertyType { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_propertyName", PropertyName, typeof(string));
-            info.AddValue("_propertyType", PropertyType, typeof(string));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_propertyName", PropertyName, typeof(string));
+        //    info.AddValue("_propertyType", PropertyType, typeof(string));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class NotFoundModifiedPropertiesRuntimeException : SRuntimeException
     {
         public NotFoundModifiedPropertiesRuntimeException(
@@ -170,7 +200,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         public string BeanClassName { get; }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class NoUpdatePropertyTypeRuntimeException : SRuntimeException
     {
         public NoUpdatePropertyTypeRuntimeException()
@@ -179,7 +211,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class SqlFileNotFoundRuntimeException : SRuntimeException
     {
         public SqlFileNotFoundRuntimeException(string fileName)
@@ -188,7 +222,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class IllegalReturnElementTypeException : SRuntimeException
     {
         public IllegalReturnElementTypeException(MemberInfo elementType, MemberInfo resultType)
@@ -197,7 +233,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
         }
     }
 
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class SqlStreamNullException : SRuntimeException
     {
         public SqlStreamNullException()

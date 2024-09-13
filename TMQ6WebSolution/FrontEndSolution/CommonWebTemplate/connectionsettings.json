@@ -4,7 +4,7 @@
     "ConnectionStringSettings": [
       {
         "Name": "SqlServer",
-        "ConnectionString": "data source=192.168.1.118;initial catalog=TMQ_NEW;persist security info=True;user id=sa;password=Att$2304[sqldb];MultipleActiveResultSets=True;App=EntityFramework",
+        "ConnectionString": "data source=192.168.1.118;initial catalog=TMQ_NEW;persist security info=True;user id=sa;password=Att$2304[sqldb];MultipleActiveResultSets=True;App=EntityFramework;TrustServerCertificate=True",
         "ProviderName": "System.Data.SqlClient"
       },
       {

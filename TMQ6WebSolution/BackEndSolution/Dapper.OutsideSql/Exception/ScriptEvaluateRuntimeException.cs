@@ -31,7 +31,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
     /// <summary>
     ///     CSharpScript Evaluation Runtime Exception
     /// </summary>
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public sealed class ScriptEvaluateRuntimeException : SRuntimeException
     {
         public ScriptEvaluateRuntimeException(string expression, System.Exception cause)
@@ -40,18 +42,22 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             Expression = expression;
         }
 
-        public ScriptEvaluateRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Expression = info.GetString("_expression");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public ScriptEvaluateRuntimeException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    Expression = info.GetString("_expression");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public string Expression { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_expression", Expression, typeof(string));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_expression", Expression, typeof(string));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 }

@@ -203,10 +203,13 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// <returns>bool true:OK, false:NG</returns>
         public static bool GetControlAuthority(ComDB db, string factoryId, string iTantoCd, int iMenuId, int iTabId, ref string oAuthList)
         {
-            var jsonOptions = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-            };
+            //2024.09 .NET8バージョンアップ対応 start
+            //var jsonOptions = new JsonSerializerOptions
+            //{
+            //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+            //};
+            var jsonOptions = JsonSerializerOptionsDefine.JsOptionsForEncode;
+            //2024.09 .NET8バージョンアップ対応 end
             try
             {
                 var authList = new Dictionary<string, string>();
@@ -3445,39 +3448,94 @@ namespace CommonSTDUtil.CommonSTDUtil
             return diff;
         }
 
+        //2024.09 .NET8バージョンアップ対応 start
+        // 使用ライブラリをDotNetZip⇒System.IO.Compressionへ変更
+        ///// <summary>
+        ///// ファイル圧縮
+        ///// </summary>
+        ///// <param name="filePath"></param>
+        ///// <param name="zipFilePath"></param>
+        ///// <returns></returns>
+        //public static bool FileZip(string filePath, string zipFilePath, string password)
+        //{
+        //    using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(Encoding.GetEncoding("shift_jis")))
+        //    {
+        //        // 圧縮レベル
+        //        zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
+
+        //        if (!string.IsNullOrEmpty(password))
+        //        {
+        //            zip.Password = password;
+        //        }
+
+        //        // ファイルやディレクトリをZIPアーカイブに追加
+        //        var isDirectry = File.GetAttributes(filePath).HasFlag(FileAttributes.Directory);
+        //        if (isDirectry)
+        //        {
+        //            // フォルダの場合
+        //            zip.AddDirectory(filePath, "");
+        //        }
+        //        else
+        //        {
+        //            // ファイルの場合
+        //            zip.AddFile(filePath, "");
+        //        }
+
+        //        // 保存
+        //        zip.Save(zipFilePath);
+        //    }
+        //    return true;
+        //}
+
+        ///// <summary>
+        ///// ファイル解凍
+        ///// </summary>
+        ///// <param name="zipFilePath"></param>
+        ///// <param name="unZipDir"></param>
+        ///// <returns></returns>
+        //public static bool FileUnZip(string zipFilePath, string unZipDir, string password)
+        //{
+        //    using (var zip = new Ionic.Zip.ZipFile(zipFilePath))
+        //    {
+
+        //        if (!string.IsNullOrEmpty(password))
+        //        {
+        //            zip.Password = password;
+        //        }
+        //        // 一括で指定パスに解凍
+        //        zip.ExtractAll(unZipDir);
+
+        //        // 全エントリーを走査して個別解凍
+        //        foreach (var entry in zip.Entries)
+        //        {
+        //            entry.Extract();
+        //        }
+        //    }
+
+        //    return true;
+        //}
         /// <summary>
         /// ファイル圧縮
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="zipFilePath"></param>
         /// <returns></returns>
-        public static bool FileZip(string filePath, string zipFilePath, string password)
+        public static bool FileZip(string filePath, string zipFilePath)
         {
-            using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(Encoding.GetEncoding("shift_jis")))
+            // ファイルやディレクトリをZIPアーカイブに追加
+            if (File.GetAttributes(filePath).HasFlag(FileAttributes.Directory))
             {
-                // 圧縮レベル
-                zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
-
-                if (!string.IsNullOrEmpty(password))
+                // フォルダの場合
+                ZipFile.CreateFromDirectory(filePath, zipFilePath, CompressionLevel.SmallestSize, false, Encoding.GetEncoding("shift_jis"));
+            }
+            else
+            {
+                // ファイルの場合
+                var fi = new FileInfo(filePath);
+                using (ZipArchive archive = ZipFile.Open(zipFilePath, ZipArchiveMode.Update))
                 {
-                    zip.Password = password;
+                    archive.CreateEntryFromFile(filePath, fi.Name, CompressionLevel.SmallestSize);
                 }
-
-                // ファイルやディレクトリをZIPアーカイブに追加
-                var isDirectry = File.GetAttributes(filePath).HasFlag(FileAttributes.Directory);
-                if (isDirectry)
-                {
-                    // フォルダの場合
-                    zip.AddDirectory(filePath, "");
-                }
-                else
-                {
-                    // ファイルの場合
-                    zip.AddFile(filePath, "");
-                }
-
-                // 保存
-                zip.Save(zipFilePath);
             }
             return true;
         }
@@ -3490,25 +3548,12 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// <returns></returns>
         public static bool FileUnZip(string zipFilePath, string unZipDir, string password)
         {
-            using (var zip = new Ionic.Zip.ZipFile(zipFilePath))
-            {
-
-                if (!string.IsNullOrEmpty(password))
-                {
-                    zip.Password = password;
-                }
-                // 一括で指定パスに解凍
-                zip.ExtractAll(unZipDir);
-
-                // 全エントリーを走査して個別解凍
-                foreach (var entry in zip.Entries)
-                {
-                    entry.Extract();
-                }
-            }
+            // Zipファイルを指定フォルダに解凍する(既存ファイルは上書きする)
+            ZipFile.ExtractToDirectory(zipFilePath, unZipDir, true);
 
             return true;
         }
+        //2024.09 .NET8バージョンアップ対応 end
 
         /// <summary>
         /// 埋め込みリソースのテキストファイルから文字列を取得

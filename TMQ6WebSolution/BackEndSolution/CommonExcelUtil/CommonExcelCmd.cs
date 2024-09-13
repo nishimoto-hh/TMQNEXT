@@ -2537,7 +2537,11 @@ namespace CommonExcelUtil
                 {
                     workSheet.Cell(val.Y + 1, val.X + 1).Style.NumberFormat.Format = val.Format;
                 }
-                workSheet.Cell(val.Y + 1, val.X + 1).Value = val.Value;
+                //2024.09 .NET8バージョンアップ対応 start
+                // ClosedXMLバージョンアップ(0.96.0⇒0.102.3)
+                //workSheet.Cell(val.Y + 1, val.X + 1).Value = val.Value;
+                workSheet.Cell(val.Y + 1, val.X + 1).Value = XLCellValue.FromObject(val.Value);
+                //2024.09 .NET8バージョンアップ対応 start
             }
         }
 

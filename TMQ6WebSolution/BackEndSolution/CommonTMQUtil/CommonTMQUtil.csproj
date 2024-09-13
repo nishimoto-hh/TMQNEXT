@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     
   </PropertyGroup>
 
@@ -238,7 +238,6 @@
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonStopAndMaintenance_4116.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_CommonSuddenAndCall.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet1.sql" />
-    <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet10.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_1.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet2_2.sql" />
     <None Remove="Resources\sql\Excel\RP0450\RP0450_Sheet8.sql" />
@@ -1052,7 +1051,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\sql\Excel\RP0450\RP0450_Sheet10.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\CreateTableTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\InsertTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\List\CreateTableTempGetList.sql" />

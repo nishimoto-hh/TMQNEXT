@@ -1214,11 +1214,14 @@ namespace BusinessLogicProtoType
             {
                 if (list != null && list.Count > 0)
                 {
-                    var jsonOptions = new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-                    };
-                    return JsonSerializer.Serialize(list, jsonOptions);
+                    //2024.09 .NET8バージョンアップ対応 start
+                    //var jsonOptions = new JsonSerializerOptions
+                    //{
+                    //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+                    //};
+                    //return JsonSerializer.Serialize(list, jsonOptions);
+                    return JsonSerializer.Serialize(list, JsonSerializerOptionsDefine.JsOptionsForEncode);
+                    //2024.09 .NET8バージョンアップ対応 start
                 }
                 else
                 {

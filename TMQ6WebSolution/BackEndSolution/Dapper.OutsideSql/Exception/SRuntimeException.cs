@@ -33,7 +33,9 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
     ///     Seasarの実行時例外のベースとなるクラスです。
     ///     メッセージコードによって例外を詳細に特定できます。
     /// </summary>
-    [Serializable]
+    //2024.09 .NET8バージョンアップ対応 start
+    //[Serializable]
+    //2024.09 .NET8バージョンアップ対応 end
     public class SRuntimeException : ApplicationException
     {
         private readonly string _message;
@@ -57,14 +59,16 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
             _message = "[" + messageCode + "]" + SimpleMessage;
         }
 
-        public SRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            MessageCode = info.GetString("_messageCode");
-            Args = info.GetValue("_args", typeof(object[])) as object[];
-            _message = info.GetString("_message");
-            SimpleMessage = info.GetString("_simpleMessage");
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public SRuntimeException(SerializationInfo info, StreamingContext context)
+        //    : base(info, context)
+        //{
+        //    MessageCode = info.GetString("_messageCode");
+        //    Args = info.GetValue("_args", typeof(object[])) as object[];
+        //    _message = info.GetString("_message");
+        //    SimpleMessage = info.GetString("_simpleMessage");
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
 
         public string MessageCode { get; }
 
@@ -74,13 +78,15 @@ namespace Jiifureit.Dapper.OutsideSql.Exception
 
         public string SimpleMessage { get; }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("_messageCode", MessageCode, typeof(string));
-            info.AddValue("_args", Args, typeof(object[]));
-            info.AddValue("_message", _message, typeof(string));
-            info.AddValue("_simpleMessage", SimpleMessage, typeof(string));
-            base.GetObjectData(info, context);
-        }
+        //2024.09 .NET8バージョンアップ対応 start
+        //public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        //{
+        //    info.AddValue("_messageCode", MessageCode, typeof(string));
+        //    info.AddValue("_args", Args, typeof(object[]));
+        //    info.AddValue("_message", _message, typeof(string));
+        //    info.AddValue("_simpleMessage", SimpleMessage, typeof(string));
+        //    base.GetObjectData(info, context);
+        //}
+        //2024.09 .NET8バージョンアップ対応 end
     }
 }
