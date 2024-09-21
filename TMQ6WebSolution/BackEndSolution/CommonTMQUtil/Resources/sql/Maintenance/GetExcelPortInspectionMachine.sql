@@ -542,3 +542,13 @@ WHERE
     /*@Completion
         AND su.completion_date IS NOT NULL
     @Completion*/
+
+    -- 発行日(From)
+    /*@IssueDateFrom
+        AND re.issue_date >= @IssueDateFrom
+    @IssueDateFrom*/
+
+    -- 発行日(To)
+    /*@IssueDateTo
+        AND re.issue_date <= @IssueDateTo
+    @IssueDateTo*/

@@ -226,7 +226,8 @@ SELECT
     mscn.maintainance_kind_structure_id,						-- 点検種別
 --    ie.extension_data AS maintainance_kind_level,				-- 点検種別レベル
 --    st.translation_text AS maintainance_kind_char,
-	map.total_budget_cost AS budget_amount,						-- 全体予算金額
+	--map.total_budget_cost AS budget_amount,						-- 全体予算金額
+	man_con.budget_amount AS budget_amount,						-- 全体予算金額
 	mah.expenditure AS expenditure,								-- 実績金額
     '' AS maintainance_kind_char,
     msd.summary_id
@@ -267,11 +268,11 @@ FROM
     ON  (
             msd.maintainance_schedule_id = msh.maintainance_schedule_id
         )
-    LEFT OUTER JOIN
-        ma_plan AS map                                           -- 保全計画
-    ON  (
-            map.summary_id = msd.summary_id
-        )
+    --LEFT OUTER JOIN
+    --    ma_plan AS map                                           -- 保全計画
+    --ON  (
+    --        map.summary_id = msd.summary_id
+    --    )
     LEFT OUTER JOIN
         ma_history AS mah                                        -- 保全履歴
     ON  (

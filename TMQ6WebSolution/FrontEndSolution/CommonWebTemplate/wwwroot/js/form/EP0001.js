@@ -55,7 +55,8 @@ const EP0001_DownLoadCondition = {
     ExpectedConstructionDate: 8,        // 着工予定日
     CompletionDate: 9,                  // 完了日
     CompletionIndicator: 10,　          // 完了区分
-    HideAddCondition: 11                // 追加条件区分(隠し項目)
+    HideAddCondition: 11,               // 追加条件区分(隠し項目)
+    IssueDate: 12                       // 発行日
 };
 
 /*
@@ -103,6 +104,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         var ExpectedConstructionDateCtrl = $(getCtrl(EP0001_DownLoadCondition.Id, EP0001_DownLoadCondition.ExpectedConstructionDate, 1, CtrlFlag.Input));
         var CompletionDateCtrl = $(getCtrl(EP0001_DownLoadCondition.Id, EP0001_DownLoadCondition.CompletionDate, 1, CtrlFlag.Input));
         var CompletionIndicatorCtrl = $(getCtrl(EP0001_DownLoadCondition.Id, EP0001_DownLoadCondition.CompletionIndicator, 1, CtrlFlag.Combo));
+        var IssueDateCtrl = $(getCtrl(EP0001_DownLoadCondition.Id, EP0001_DownLoadCondition.IssueDate, 1, CtrlFlag.Input));
 
         // 工場非表示
         $(FactoryCtrl).closest("td").hide();
@@ -125,6 +127,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             // 完了区分非表示
             $(CompletionIndicatorCtrl).closest("td").hide();
             $(CompletionIndicatorCtrl).closest("tr").find("th").hide();
+            // 発行日非表示
+            $(IssueDateCtrl).closest("td").hide();
+            $(IssueDateCtrl).closest("tr").find("th").hide();
 
             // メンテナンス対象を必須にする
             setRequiredElement($(MaintenanceTarget).closest("td").find("select"), true);

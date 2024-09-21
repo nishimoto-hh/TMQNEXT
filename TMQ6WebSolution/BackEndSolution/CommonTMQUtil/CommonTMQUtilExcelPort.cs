@@ -65,6 +65,10 @@ namespace CommonTMQUtil
             public DateTime? CompletionDateTo { get; set; }
             /// <summary>完了区分</summary>
             public int CompletionDivision { get; set; }
+            /// <summary>発行日(From)</summary>
+            public DateTime? IssueDateFrom { get; set; }
+            /// <summary>発行日(To)</summary>
+            public DateTime? IssueDateTo { get; set; }
         }
 
         /// <summary>
