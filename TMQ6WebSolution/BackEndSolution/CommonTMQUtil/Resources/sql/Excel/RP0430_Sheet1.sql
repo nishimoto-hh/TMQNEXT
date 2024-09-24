@@ -664,17 +664,17 @@ CREATE TABLE #temp_history_maintainance_data(
     , execution_division INT
     , machine_no nvarchar(800) COLLATE Japanese_CI_AS_KS
     , machine_name nvarchar(800) COLLATE Japanese_CI_AS_KS
-    , importance_name nvarchar(800) COLLATE Japanese_CI_AS_KS
+    --, importance_name nvarchar(800) COLLATE Japanese_CI_AS_KS
     , inspection_site_name nvarchar(800) COLLATE Japanese_CI_AS_KS
     , inspection_content_name nvarchar(800) COLLATE Japanese_CI_AS_KS
-    , budget_amount nvarchar(20) COLLATE Japanese_CI_AS_KS
-    , maintainance_kind_name nvarchar(800) COLLATE Japanese_CI_AS_KS
-    , schedule_type_name nvarchar(800) COLLATE Japanese_CI_AS_KS
-    , start_date nvarchar(10) COLLATE Japanese_CI_AS_KS
-    , cycle_year nvarchar(20) COLLATE Japanese_CI_AS_KS
-    , cycle_month nvarchar(20) COLLATE Japanese_CI_AS_KS
-    , cycle_day nvarchar(20) COLLATE Japanese_CI_AS_KS
-    , disp_cycle nvarchar(20) COLLATE Japanese_CI_AS_KS
+    --, budget_amount nvarchar(20) COLLATE Japanese_CI_AS_KS
+    --, maintainance_kind_name nvarchar(800) COLLATE Japanese_CI_AS_KS
+    --, schedule_type_name nvarchar(800) COLLATE Japanese_CI_AS_KS
+    --, start_date nvarchar(10) COLLATE Japanese_CI_AS_KS
+    --, cycle_year nvarchar(20) COLLATE Japanese_CI_AS_KS
+    --, cycle_month nvarchar(20) COLLATE Japanese_CI_AS_KS
+    --, cycle_day nvarchar(20) COLLATE Japanese_CI_AS_KS
+    --, disp_cycle nvarchar(20) COLLATE Japanese_CI_AS_KS
 ); 
 
 WITH history_management AS ( 
@@ -693,50 +693,56 @@ WITH history_management AS (
                 td.long_plan_id = hm.key_id
         ) -- 出力対象の件名のみ
 ) 
-, schedule AS ( 
-    -- 保全スケジュール
+, component AS ( 
+    -- 長計件名に紐づく保全部位、保全項目を機器台帳の変更履歴から取得
     SELECT
-        schedule.maintainance_schedule_id
-        , schedule.management_standards_content_id AS management_standards_content_id_schedule
-        , schedule.start_date
-        , schedule.cycle_year
-        , schedule.cycle_month
-        , schedule.cycle_day
-        , schedule.disp_cycle 
+        row_number() OVER ( 
+            PARTITION BY
+                ma_hmcom.management_standards_component_id 
+            ORDER BY
+                ISNULL(ma_hm.application_date, GETDATE())
+                , ma_hm.history_management_id
+        ) AS history_order                      -- 保全部位、保全項目ごとに何番目の変更管理かを採番
+        , ma_hmcon.management_standards_content_id
+        , ma_hmcom.management_standards_component_id
+        , ma_hmcom.inspection_site_structure_id
+        , ma_hmcon.inspection_content_structure_id
+        , ma_hmcom.machine_id
+        , ma_hm.factory_id
     FROM
-        ( 
-            -- 機器別管理基準内容IDごとに最大の開始日時をもつものを取得
-            SELECT
-                main.maintainance_schedule_id
-                , main.management_standards_content_id
-                , main.start_date
-                , main.cycle_year
-                , main.cycle_month
-                , main.cycle_day
-                , main.disp_cycle 
-            FROM
-                mc_maintainance_schedule AS main 
-            WHERE
-                NOT EXISTS ( 
-                    SELECT
-                        * 
-                    FROM
-                        mc_maintainance_schedule AS sub 
-                    WHERE
-                        main.management_standards_content_id = sub.management_standards_content_id 
-                        AND main.start_date < sub.start_date
-                )
-                AND EXISTS ( 
-                    SELECT
-                        * 
-                    FROM
-                        history_management hm 
-                        INNER JOIN hm_mc_management_standards_content hmcon 
-                            ON hm.history_management_id = hmcon.history_management_id 
-                    WHERE
-                        main.management_standards_content_id = hmcon.management_standards_content_id
-                ) -- 出力対象の件名に紐づくデータのみ
-        ) AS schedule
+        history_management hm                   --長計の変更履歴
+        INNER JOIN hm_mc_management_standards_content hmcon 
+            ON hm.history_management_id = hmcon.history_management_id 
+        INNER JOIN hm_mc_management_standards_component ma_hmcom    --機器台帳の変更履歴
+            ON hmcon.management_standards_component_id = ma_hmcom.management_standards_component_id 
+        INNER JOIN hm_history_management ma_hm
+            ON ma_hmcom.history_management_id = ma_hm.history_management_id
+            AND ma_hm.application_conduct_id = 1
+        INNER JOIN hm_mc_management_standards_content ma_hmcon
+            ON ma_hm.history_management_id = ma_hmcon.history_management_id
+            AND ma_hmcon.management_standards_component_id = ma_hmcom.management_standards_component_id
+) 
+, machine AS ( 
+    -- 長計件名に紐づく保全部位の機器を機器台帳の変更履歴から取得
+    SELECT
+        row_number() OVER ( 
+            PARTITION BY
+                hmma.machine_id 
+            ORDER BY
+                ISNULL(ma_hm.application_date, GETDATE())
+                , ma_hm.history_management_id
+        ) AS history_order                      -- 機器ごとに何番目の変更管理かを採番
+        , hmma.history_management_id
+        , hmma.machine_id 
+        , hmma.machine_no
+        , hmma.machine_name
+        , hmma.location_factory_structure_id AS factory_id
+    FROM
+        hm_mc_machine hmma 
+        INNER JOIN (SELECT DISTINCT machine_id FROM component) com 
+            ON hmma.machine_id = com.machine_id 
+        LEFT JOIN hm_history_management ma_hm
+            ON ma_hm.history_management_id = hmma.history_management_id
 ) 
 -- 対象の長期計画件名の全ての変更履歴を表示
 INSERT 
@@ -787,14 +793,32 @@ SELECT
     , hm.application_division_id
     , hmcon.management_standards_content_id
     , hmcon.execution_division
-    , machine.machine_no
-    , machine.machine_name
+    , newestma.machine_no
+    , newestma.machine_name
     /*@GetCount
-    , machine.importance_structure_id AS importance_name
-    , com.inspection_site_structure_id AS inspection_site_name
-    , hmcon.inspection_content_structure_id AS inspection_content_name
+    --, machine.importance_structure_id AS importance_name
+    , newestcom.inspection_site_structure_id AS inspection_site_name
+    , newestcom.inspection_content_structure_id AS inspection_content_name
     @GetCount*/
     /*@GetData
+    --, ( 
+    --    SELECT
+    --        tra.translation_text 
+    --    FROM
+    --        v_structure_item_all AS tra 
+    --    WHERE
+    --        tra.language_id = @LanguageId 
+    --        AND tra.location_structure_id = ( 
+    --            SELECT
+    --                MAX(st_f.factory_id) 
+    --            FROM
+    --                #temp_structure_factory AS st_f 
+    --            WHERE
+    --                st_f.structure_id = machine.importance_structure_id 
+    --                AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+    --        ) 
+    --        AND tra.structure_id = machine.importance_structure_id
+    --) AS importance_name 
     , ( 
         SELECT
             tra.translation_text 
@@ -808,28 +832,10 @@ SELECT
                 FROM
                     #temp_structure_factory AS st_f 
                 WHERE
-                    st_f.structure_id = machine.importance_structure_id 
-                    AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+                    st_f.structure_id = newestcom.inspection_site_structure_id 
+                    AND st_f.factory_id IN (0, newestma.factory_id)
             ) 
-            AND tra.structure_id = machine.importance_structure_id
-    ) AS importance_name 
-    , ( 
-        SELECT
-            tra.translation_text 
-        FROM
-            v_structure_item_all AS tra 
-        WHERE
-            tra.language_id = @LanguageId 
-            AND tra.location_structure_id = ( 
-                SELECT
-                    MAX(st_f.factory_id) 
-                FROM
-                    #temp_structure_factory AS st_f 
-                WHERE
-                    st_f.structure_id = com.inspection_site_structure_id 
-                    AND st_f.factory_id IN (0, machine.location_factory_structure_id)
-            ) 
-            AND tra.structure_id = com.inspection_site_structure_id
+            AND tra.structure_id = newestcom.inspection_site_structure_id
     ) AS inspection_site_name 
     , ( 
         SELECT
@@ -844,70 +850,90 @@ SELECT
                 FROM
                     #temp_structure_factory AS st_f 
                 WHERE
-                    st_f.structure_id = hmcon.inspection_content_structure_id 
-                    AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+                    st_f.structure_id = newestcom.inspection_content_structure_id 
+                    AND st_f.factory_id IN (0, newestma.factory_id)
             ) 
-            AND tra.structure_id = hmcon.inspection_content_structure_id
+            AND tra.structure_id = newestcom.inspection_content_structure_id
     ) AS inspection_content_name
     @GetData*/
-    , FORMAT(hmcon.budget_amount, '#,#') AS budget_amount
-    /*@GetCount
-    , hmcon.maintainance_kind_structure_id AS maintainance_kind_name
-    , hmcon.schedule_type_structure_id AS schedule_type_name
-    @GetCount*/
-    /*@GetData
-    , ( 
-        SELECT
-            tra.translation_text 
-        FROM
-            v_structure_item_all AS tra 
-        WHERE
-            tra.language_id = @LanguageId 
-            AND tra.location_structure_id = ( 
-                SELECT
-                    MAX(st_f.factory_id) 
-                FROM
-                    #temp_structure_factory AS st_f 
-                WHERE
-                    st_f.structure_id = hmcon.maintainance_kind_structure_id 
-                    AND st_f.factory_id IN (0, machine.location_factory_structure_id)
-            ) 
-            AND tra.structure_id = hmcon.maintainance_kind_structure_id
-    ) AS maintainance_kind_name
-    , ( 
-        SELECT
-            tra.translation_text 
-        FROM
-            v_structure_item_all AS tra 
-        WHERE
-            tra.language_id = @LanguageId 
-            AND tra.location_structure_id = ( 
-                SELECT
-                    MAX(st_f.factory_id) 
-                FROM
-                    #temp_structure_factory AS st_f 
-                WHERE
-                    st_f.structure_id = hmcon.schedule_type_structure_id 
-                    AND st_f.factory_id IN (0, machine.location_factory_structure_id)
-            ) 
-            AND tra.structure_id = hmcon.schedule_type_structure_id
-    ) AS schedule_type_name
-    @GetData*/
-    , FORMAT(schedule.start_date, 'yyyy/MM/dd') AS start_date
-    , CAST(schedule.cycle_year AS nvarchar) AS cycle_year
-    , CAST(schedule.cycle_month AS nvarchar) AS cycle_month
-    , CAST(schedule.cycle_day AS nvarchar) AS cycle_day
-    , schedule.disp_cycle 
+    --, FORMAT(hmcon.budget_amount, '#,#') AS budget_amount
+    --/*@GetCount
+    --, hmcon.maintainance_kind_structure_id AS maintainance_kind_name
+    --, hmcon.schedule_type_structure_id AS schedule_type_name
+    --@GetCount*/
+    --/*@GetData
+    --, ( 
+    --    SELECT
+    --        tra.translation_text 
+    --    FROM
+    --        v_structure_item_all AS tra 
+    --    WHERE
+    --        tra.language_id = @LanguageId 
+    --        AND tra.location_structure_id = ( 
+    --            SELECT
+    --                MAX(st_f.factory_id) 
+    --            FROM
+    --                #temp_structure_factory AS st_f 
+    --            WHERE
+    --                st_f.structure_id = hmcon.maintainance_kind_structure_id 
+    --                AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+    --        ) 
+    --        AND tra.structure_id = hmcon.maintainance_kind_structure_id
+    --) AS maintainance_kind_name
+    --, ( 
+    --    SELECT
+    --        tra.translation_text 
+    --    FROM
+    --        v_structure_item_all AS tra 
+    --    WHERE
+    --        tra.language_id = @LanguageId 
+    --        AND tra.location_structure_id = ( 
+    --            SELECT
+    --                MAX(st_f.factory_id) 
+    --            FROM
+    --                #temp_structure_factory AS st_f 
+    --            WHERE
+    --                st_f.structure_id = hmcon.schedule_type_structure_id 
+    --                AND st_f.factory_id IN (0, machine.location_factory_structure_id)
+    --        ) 
+    --        AND tra.structure_id = hmcon.schedule_type_structure_id
+    --) AS schedule_type_name
+    --@GetData*/
+    --, FORMAT(schedule.start_date, 'yyyy/MM/dd') AS start_date
+    --, CAST(schedule.cycle_year AS nvarchar) AS cycle_year
+    --, CAST(schedule.cycle_month AS nvarchar) AS cycle_month
+    --, CAST(schedule.cycle_day AS nvarchar) AS cycle_day
+    --, schedule.disp_cycle 
 FROM
     history_management hm 
     INNER JOIN hm_mc_management_standards_content hmcon 
         ON hm.history_management_id = hmcon.history_management_id 
-    LEFT JOIN mc_management_standards_component com 
-        ON hmcon.management_standards_component_id = com.management_standards_component_id 
-    LEFT JOIN mc_machine AS machine 
-        ON com.machine_id = machine.machine_id 
-    LEFT JOIN schedule 
-        ON schedule.management_standards_content_id_schedule = hmcon.management_standards_content_id 
+    LEFT JOIN ( 
+        SELECT
+            MAX(com.history_order) AS newest_history_order
+            , com.management_standards_component_id
+        FROM
+            component com 
+        GROUP BY
+            com.management_standards_component_id
+    ) hmcom -- 保全部位、保全項目単位で最新の変更管理
+        ON hmcon.management_standards_component_id = hmcom.management_standards_component_id 
+    LEFT JOIN component newestcom
+        ON newestcom.history_order = hmcom.newest_history_order
+        AND newestcom.management_standards_component_id = hmcom.management_standards_component_id
+    LEFT JOIN ( 
+        SELECT
+            MAX(ma.history_order) AS newest_history_order
+            , ma.machine_id
+        FROM
+            machine ma 
+        GROUP BY
+            ma.machine_id
+    ) hmma -- 機器単位で最新の変更管理
+        ON newestcom.machine_id = hmma.machine_id 
+    LEFT JOIN machine newestma
+        ON newestma.history_order = hmma.newest_history_order
+        AND newestma.machine_id = hmma.machine_id
     LEFT JOIN #temp_division_info AS div 
         ON (div.structure_id = hm.application_division_id) 
 ;
@@ -1028,14 +1054,6 @@ WITH history_data_vertical AS (
     -- 項目ごとの縦持ちに変更
     @HistoryMaintainanceVertical 
 )
-, t_long_plan AS (
-    -- 長計件名と工場IDを取得
-    SELECT
-        lp.*
-        , lp.location_factory_structure_id AS factory_id --工場ID
-    FROM
-        ln_long_plan lp
-) 
 -- history_orderの前後で紐づけて、変更前後を横持ちにした帳票を出力
 /*@GetCount
 , get_count AS (
@@ -1050,29 +1068,8 @@ WITH history_data_vertical AS (
         /*@GetData
         a.long_plan_id
         , a.history_management_id
-        , CASE 
-            WHEN lp.job_structure_id IS NOT NULL 
-                THEN ( 
-                SELECT
-                    tra.translation_text 
-                FROM
-                    v_structure_item_all AS tra 
-                WHERE
-                    tra.language_id = @LanguageId 
-                    AND tra.location_structure_id = ( 
-                        SELECT
-                            MAX(st_f.factory_id) 
-                        FROM
-                            #temp_structure_factory AS st_f 
-                        WHERE
-                            st_f.structure_id = lp.job_kind_structure_id 
-                            AND st_f.factory_id IN (0, lp.factory_id)
-                    ) 
-                    AND tra.structure_id = lp.job_kind_structure_id
-            )
-            ELSE hd.job_name 
-            END AS job_name                         --職種
-        , COALESCE(lp.subject, hd.subject) AS subject -- 長計件名
+        , hd.job_name --職種
+        , hd.subject -- 長計件名
         , NULL AS machine_no
         , NULL AS machine_name
         , NULL AS inspection_site_name
@@ -1104,20 +1101,19 @@ WITH history_data_vertical AS (
                 AND a.history_order - 1 = b.history_order 
                 AND a.col_no = b.col_no
             ) 
-        LEFT JOIN t_long_plan lp 
-            ON a.long_plan_id = lp.long_plan_id 
         LEFT JOIN ( 
             SELECT
-                max(hd.history_management_id) AS history_management_id
+                MAX(hd.history_order) AS newest_history_order
                 , hd.long_plan_id 
             FROM
                 #temp_history_data hd 
             GROUP BY
                 hd.long_plan_id
-        ) hmlp 
+        ) hmlp -- 件名毎の最新の情報
             ON a.long_plan_id = hmlp.long_plan_id 
         LEFT JOIN #temp_history_data hd 
-            ON hd.history_management_id = hmlp.history_management_id 
+            ON hd.history_order = hmlp.newest_history_order
+            AND hd.long_plan_id = hmlp.long_plan_id 
     WHERE
         (
             COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
@@ -1161,84 +1157,12 @@ WITH history_data_vertical AS (
         /*@GetData
         a.long_plan_id
         , a.history_management_id
-        , CASE 
-            WHEN lp.job_structure_id IS NOT NULL 
-                THEN ( 
-                SELECT
-                    tra.translation_text 
-                FROM
-                    v_structure_item_all AS tra 
-                WHERE
-                    tra.language_id = @LanguageId 
-                    AND tra.location_structure_id = ( 
-                        SELECT
-                            MAX(st_f.factory_id) 
-                        FROM
-                            #temp_structure_factory AS st_f 
-                        WHERE
-                            st_f.structure_id = lp.job_kind_structure_id 
-                            AND st_f.factory_id IN (0, lp.factory_id)
-                    ) 
-                    AND tra.structure_id = lp.job_kind_structure_id
-            ) 
-            ELSE ( 
-                SELECT
-                    tra.translation_text 
-                FROM
-                    v_structure_item_all AS tra 
-                WHERE
-                    tra.language_id = @LanguageId 
-                    AND tra.location_structure_id = ( 
-                        SELECT
-                            MAX(st_f.factory_id) 
-                        FROM
-                            #temp_structure_factory AS st_f 
-                        WHERE
-                            st_f.structure_id = hmlp.job_kind_structure_id 
-                            AND st_f.factory_id IN (0, hmlp.location_factory_structure_id)
-                    ) 
-                    AND tra.structure_id = hmlp.job_kind_structure_id
-            ) 
-            END AS job_name                          --職種
-        , COALESCE(lp.subject, hmlp.subject) AS subject -- 長計件名
-        , COALESCE(mc.machine_no, hmc.machine_no) AS machine_no --機器番号
-        , COALESCE(mc.machine_name, hmc.machine_name) AS machine_name --機器名称
-        , ( 
-            SELECT
-                tra.translation_text 
-            FROM
-                v_structure_item_all AS tra 
-            WHERE
-                tra.language_id = @LanguageId 
-                AND tra.location_structure_id = ( 
-                    SELECT
-                        MAX(st_f.factory_id) 
-                    FROM
-                        #temp_structure_factory AS st_f 
-                    WHERE
-                        st_f.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id) 
-                        AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
-                ) 
-                AND tra.structure_id = COALESCE(mscom.inspection_site_structure_id, hmscom.inspection_site_structure_id)
-        ) AS inspection_site_name                   --保全部位(翻訳)
-        , ( 
-            SELECT
-                tra.translation_text 
-            FROM
-                v_structure_item_all AS tra 
-            WHERE
-                tra.language_id = @LanguageId 
-                AND tra.location_structure_id = ( 
-                    SELECT
-                        MAX(st_f.factory_id) 
-                    FROM
-                        #temp_structure_factory AS st_f 
-                    WHERE
-                        st_f.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id) 
-                        AND st_f.factory_id IN (0, COALESCE(lp.factory_id, hmlp.location_factory_structure_id))
-                ) 
-                AND tra.structure_id = COALESCE(mscon.inspection_content_structure_id, hcon.inspection_content_structure_id)
-        ) AS inspection_content_name                --保全項目(翻訳)
+        , hd.job_name --職種
+        , hd.subject -- 長計件名
+        , hmd.machine_no --機器番号
+        , hmd.machine_name --機器名称
+        , hmd.inspection_site_name --保全部位
+        , hmd.inspection_content_name --保全項目
         , a.col_name                                --変更項目
         , CASE 
             WHEN a.division_cd = '10' OR a.execution_division = 4 THEN '' 
@@ -1266,43 +1190,36 @@ WITH history_data_vertical AS (
                 AND a.long_plan_id = b.long_plan_id
                 AND a.history_order - 1 = b.history_order 
                 AND a.col_no = b.col_no
-            ) 
-        LEFT JOIN t_long_plan lp 
-            ON a.long_plan_id = lp.long_plan_id 
-        LEFT JOIN mc_management_standards_content mscon 
-            ON a.management_standards_content_id = mscon.management_standards_content_id 
-        LEFT JOIN mc_management_standards_component mscom 
-            ON mscon.management_standards_component_id = mscom.management_standards_component_id 
-        LEFT JOIN mc_machine mc 
-            ON mscom.machine_id = mc.machine_id 
+            )             
         LEFT JOIN ( 
             SELECT
-                max(hmlp.history_management_id) AS history_management_id
-                , hmlp.long_plan_id 
+                MAX(hd.history_order) AS newest_history_order
+                , hd.long_plan_id 
             FROM
-                hm_ln_long_plan hmlp 
-            WHERE
-                EXISTS ( 
-                    SELECT
-                        * 
-                    FROM
-                        #temp_target_data temp 
-                    WHERE
-                        hmlp.long_plan_id = temp.long_plan_id
-                ) 
+                #temp_history_data hd 
             GROUP BY
-                long_plan_id
-        ) history --件名単位で最新の変更管理
-            ON a.long_plan_id = history.long_plan_id 
-        LEFT JOIN hm_ln_long_plan hmlp 
-            ON history.history_management_id = hmlp.history_management_id 
-        LEFT JOIN hm_mc_management_standards_content hcon 
-            ON history.history_management_id = hcon.history_management_id 
-            AND a.management_standards_content_id = hcon.management_standards_content_id 
-        LEFT JOIN mc_management_standards_component hmscom 
-            ON hcon.management_standards_component_id = hmscom.management_standards_component_id 
-        LEFT JOIN mc_machine hmc 
-            ON hmscom.machine_id = hmc.machine_id 
+                hd.long_plan_id
+        ) hmlp -- 件名毎の最新の情報
+            ON a.long_plan_id = hmlp.long_plan_id 
+        LEFT JOIN #temp_history_data hd 
+            ON hd.history_order = hmlp.newest_history_order
+            AND hd.long_plan_id = hmlp.long_plan_id 
+        LEFT JOIN ( 
+            SELECT
+                MAX(hmd.history_order) AS newest_history_order
+                , hmd.management_standards_content_id
+                , hmd.long_plan_id 
+            FROM
+                #temp_history_maintainance_data hmd 
+            GROUP BY
+                hmd.management_standards_content_id, hmd.long_plan_id
+        ) hmcon -- 部位、項目毎の最新の情報
+            ON a.management_standards_content_id = hmcon.management_standards_content_id 
+            AND a.long_plan_id = hmcon.long_plan_id 
+        LEFT JOIN #temp_history_maintainance_data hmd 
+            ON hmd.history_order = hmcon.newest_history_order
+            AND hmd.management_standards_content_id = hmcon.management_standards_content_id 
+            AND hmd.long_plan_id = hmcon.long_plan_id 
     WHERE
         (
             COALESCE(a.col_value, '') <> COALESCE(b.col_value, '') -- 変更前後で値が異なる
