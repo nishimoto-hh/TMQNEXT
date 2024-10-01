@@ -3034,6 +3034,10 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     prop.SetValue(target, toList<string>(val));
                 }
+                else
+                {
+                    prop.SetValue(target, val);
+                }
             }
             else
             {
