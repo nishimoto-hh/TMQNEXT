@@ -1,7 +1,7 @@
 with sudden_summary as ( 
     select
         ex.extension_data as sudden_division
-        , count(summary.sudden_division_structure_id) as cnt 
+        , sum(summary.maintenance_count) as cnt 
     from
         ma_summary summary 
         left join ms_structure ms 
