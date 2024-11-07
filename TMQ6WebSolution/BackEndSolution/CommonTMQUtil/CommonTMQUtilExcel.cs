@@ -4097,8 +4097,6 @@ namespace CommonTMQUtil
 
             // 初期化
             var info = new CommonExcelPrtInfo();
-            info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
-            info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
 
             // SQLを取得(ヘッダー部に出力される仕様項目名)
             TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.GetHeaderSpecInfo, out string sql);
@@ -4142,7 +4140,12 @@ namespace CommonTMQUtil
                     address = ToAlphabet(headerColumnNo) + (specStartRow - 1).ToString();
 
                     // マッピング情報設定
+                    info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
                     info.SetExlSetValueByAddress(address, headerSpecInfo.SpecName, ComReport.StrFormat);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { headerSpecInfo.SpecName });
 
                     // マッピングリストに追加
                     mappingList.Add(info);
@@ -4197,7 +4200,13 @@ namespace CommonTMQUtil
                     address = ToAlphabet(dataColumnNo) + dataRowNo.ToString();
 
                     // マッピング情報設定
+                    info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
                     info.SetExlSetValueByAddress(address, dataSpecInfo.SpecValue, ComReport.StrFormat);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { dataSpecInfo.SpecValue });
+          
                     // マッピングリストに追加
                     mappingList.Add(info);
 

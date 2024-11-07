@@ -11,7 +11,11 @@ using System.Text.Unicode;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using DocumentFormat.OpenXml.Drawing.Charts;
-using Microsoft.Extensions.PlatformAbstractions;
+using DocumentFormat.OpenXml.InkML;
+
+//2024.09 .NET8バージョンアップ対応 start
+//using Microsoft.Extensions.PlatformAbstractions;
+//2024.09 .NET8バージョンアップ対応 end
 using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 
 namespace CommonWebTemplate.CommonUtil
@@ -275,7 +279,10 @@ namespace CommonWebTemplate.CommonUtil
         }
         private string getRootPath()
         {
-            var path = PlatformServices.Default.Application.ApplicationBasePath;
+            //2024.09 .NET8バージョンアップ対応 start
+            //var path = PlatformServices.Default.Application.ApplicationBasePath;
+            var path = AppContext.BaseDirectory;
+            //2024.09 .NET8バージョンアップ対応 end
             var idx = path.LastIndexOf("bin");
             if (idx >= 0)
             {
@@ -424,10 +431,13 @@ namespace CommonWebTemplate.CommonUtil
         {
 
             retResults = null;
-            var jsonOptions = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-            };
+            //2024.09 .NET8バージョンアップ対応 start
+            // 未使用のため削除
+            //var jsonOptions = new JsonSerializerOptions
+            //{
+            //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
+            //};
+            //2024.09 .NET8バージョンアップ対応 end
 
             if (execModeDef.Default.Equals(this.execMode))
             {
@@ -1010,10 +1020,13 @@ namespace CommonWebTemplate.CommonUtil
                             //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod start
                             //var json = JsonSerializer.Serialize(dicResult["structureList"]);
                             //var list = JsonSerializer.Deserialize<List<CommonStructure>>(json);
-                            var options = new JsonSerializerOptions
-                            {
-                                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-                            };
+                            //2024.09 .NET8バージョンアップ対応 start
+                            //var options = new JsonSerializerOptions
+                            //{
+                            //    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                            //};
+                            var options = JsonSerializerOptionsDefine.JsOptionsForNull;
+                            //2024.09 .NET8バージョンアップ対応 end
                             var json = JsonSerializer.Serialize(dicResult["structureList"], options);
                             var list = JsonSerializer.Deserialize<List<CommonStructure>>(json, options);
                             //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Mod end

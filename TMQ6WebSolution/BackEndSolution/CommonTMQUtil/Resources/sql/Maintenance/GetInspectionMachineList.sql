@@ -5,7 +5,7 @@ WITH structure_factory AS(
     FROM
         v_structure_item_all
     WHERE
-        structure_group_id IN(1010)
+        structure_group_id IN(1010, 1180, 1220)
     AND language_id = @LanguageId
 )
 SELECT DISTINCT
@@ -82,6 +82,42 @@ SELECT DISTINCT
             )
             AND tra.structure_id = mc.job_small_classfication_structure_id
       ) AS small_classfication_name
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = his.inspection_site_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = his.inspection_site_structure_id
+      ) AS inspection_site_name
+     , (
+        SELECT
+            tra.translation_text 
+        FROM
+            v_structure_item_all AS tra 
+        WHERE
+            tra.language_id = @LanguageId
+            AND tra.location_structure_id = ( 
+                SELECT
+                    MAX(st_f.factory_id) 
+                FROM
+                    structure_factory AS st_f 
+                WHERE
+                    st_f.structure_id = hic.inspection_content_structure_id
+                    AND st_f.factory_id IN (0, mc.location_factory_structure_id)
+            )
+            AND tra.structure_id = hic.inspection_content_structure_id
+      ) AS inspection_content_name
     , mc.machine_no                             --機器番号
     , mc.machine_name                           --機器名称
     , mc.equipment_level_structure_id           --機器レベル

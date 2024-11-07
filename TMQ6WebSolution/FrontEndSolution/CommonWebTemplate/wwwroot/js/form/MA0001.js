@@ -289,7 +289,7 @@ const FormDetail = {
     MachineList: {
         Id: "BODY_050_00_LST_1",
         // 非表示列
-        HideCol: { InspectionSite: 10, InspectionContent: 11, FollowFlg: 12, FollowUpPlanDate: 13, FollowContent: 14, FollowComplitionDate: 15 },
+        HideCol: { InspectionSite: 28, InspectionContent: 29, FollowFlg: 12, FollowUpPlanDate: 13, FollowContent: 14, FollowComplitionDate: 15 },
         // 行のグレーアウトを判定する項目
         GrayFlag: 17,
     },
@@ -3080,6 +3080,8 @@ function prevCreateTabulator(appPath, id, options, header, dispData) {
     if (getFormNo() == FormSelectMachine.No && id == '#' + FormSelectMachine.List.Id + getAddFormNo()) {
         //機器選択画面
 
+        //活動区分（非表示）の値取得
+        var divisionId = getValue(FormSelectMachine.HideInfo.Id, FormSelectMachine.HideInfo.DivisionId, 1, CtrlFlag.Label);
         //管理基準（非表示）の値取得
         var managementStandard = getValue(FormSelectMachine.HideInfo.Id, FormSelectMachine.HideInfo.ManagementStandard, 1, CtrlFlag.Label);
         $.each(header, function (idx, head) {
@@ -3100,6 +3102,33 @@ function prevCreateTabulator(appPath, id, options, header, dispData) {
                         //保全部位、保全内容はラベル表示
                         head.cssClass = head.cssClass.replace("not_readonly", "");
                     }
+                }
+            }
+
+            // 列の非表示設定（固定列の非表示をhideColumnで行うと列幅調整が出来なくなる為ここで非表示化）
+            if (divisionId == DivisionIdDefine.Inspection) {
+                //点検情報の場合
+
+                // 機器選択画面の一覧の選択（ボタン）列を非表示
+                if (head.field == "VAL" + FormSelectMachine.List.Select) {
+                    head.visible = false;
+                }
+
+                // 一覧の選択チェックボックス列、保全部位列、保全内容列を表示
+                if (head.field == "SELTAG" || head.field == "VAL" + FormSelectMachine.List.InspectionSite || head.field == "VAL" + FormSelectMachine.List.InspectionContent) {
+                    head.visible = true;
+                }
+            } else {
+                //故障情報の場合
+
+                // 機器選択画面の一覧の選択（ボタン）列を表示
+                if (head.field == "VAL" + FormSelectMachine.List.Select) {
+                    head.visible = true;
+                }
+
+                // 一覧の選択チェックボックス列、保全部位列、保全内容列を非表示
+                if (head.field == "SELTAG" || head.field == "VAL" + FormSelectMachine.List.InspectionSite || head.field == "VAL" + FormSelectMachine.List.InspectionContent) {
+                    head.visible = false;
                 }
             }
         });
@@ -3269,20 +3298,26 @@ function postBuiltTabulator(tbl, id) {
     if (getFormNo() == FormSelectMachine.No && id == '#' + FormSelectMachine.List.Id + getAddFormNo()) {
         //活動区分（非表示）の値取得
         var divisionId = getValue(FormSelectMachine.HideInfo.Id, FormSelectMachine.HideInfo.DivisionId, 1, CtrlFlag.Label);
-        if (divisionId == DivisionIdDefine.Inspection) {
-            //点検情報の場合
+        if (divisionId == DivisionIdDefine.Failure) {
+            // 一覧の全選択/全解除ボタンを非表示
+            setHideButtonTopForList(FormSelectMachine.List.Id, actionkbn.SelectAll, true);
+            setHideButtonTopForList(FormSelectMachine.List.Id, actionkbn.CancelAll, true);
+        }
 
-            var rows = tbl.getRows();
+        // 管理基準の値を取得
+        var managementStandard = getValue(FormSelectMachine.HideInfo.Id, FormSelectMachine.HideInfo.ManagementStandard, 1, CtrlFlag.Label);
+        // テーブルの取得
+        var table = P_listData['#' + FormSelectMachine.List.Id + getAddFormNo()];
 
-            // 機器選択画面の一覧の選択（ボタン）列を非表示
-            changeTabulatorColumnDisplay(FormSelectMachine.List.Id, FormSelectMachine.List.Select, false);
+        // 管理基準に応じて列を非表示にする
+        if (managementStandard == ManagementDefine.NotManagement) {
+            // 管理基準外の場合、5,6列目の「保全部位」と「保全内容」を非表示
+            table.hideColumn('VAL22'); // 保全部位を非表示
+            table.hideColumn('VAL23'); // 保全内容を非表示
         } else {
-            // 一覧の全選択/全解除ボタン、選択チェックボックス列を非表示
-            changeRowControl(FormSelectMachine.List.Id, false);
-            // 一覧の保全部位列を非表示
-            changeTabulatorColumnDisplay(FormSelectMachine.List.Id, FormSelectMachine.List.InspectionSite, false);
-            // 一覧の保全内容列を非表示
-            changeTabulatorColumnDisplay(FormSelectMachine.List.Id, FormSelectMachine.List.InspectionContent, false);
+            // 管理基準の場合、3,4列目の「保全部位」と「保全内容」を非表示
+            table.hideColumn('VAL15'); // 保全部位を非表示
+            table.hideColumn('VAL16'); // 保全内容を非表示
         }
     }
 }
@@ -3485,6 +3520,72 @@ function setCodeTransOtherNames(appPath, formNo, ctrl, data) {
         if (formNo == FormRegist.No) {
             //登録画面
             setPersonnelName(ctrl, formNo);
+        }
+        if (formNo == FormSelectMachine.No && ($(ctrl)[0].name).indexOf(FormSelectMachine.List.Id) > 0) {
+            var exceptName = $(ctrl)[0].name + getAddFormNo() + 'VAL';
+
+            //if (($(ctrl)[0].name)) {
+
+            //}
+            //else if () {
+
+            //}
+        }
+    }
+    // 「保全部位」「保全内容」の制御
+    if (data && $(ctrl).val() != "") {
+
+        // 管理基準の値を取得
+        var managementStandard = getValue(FormSelectMachine.HideInfo.Id, FormSelectMachine.HideInfo.ManagementStandard, 1, CtrlFlag.Label);
+        // テーブルの取得
+        var table = P_listData['#' + FormSelectMachine.List.Id + getAddFormNo()];
+
+        // 管理基準外の場合
+        if (managementStandard == ManagementDefine.NotManagement) {
+
+            // 保全部位IDを取得し、指定の項目にセット
+            if (data && data.length > 0) {
+
+                
+                var selectedColumnId = ctrl[0].id; // 選択列番号を取得
+                var selectedColumnNoMatch = selectedColumnId.match(/VAL(\d+)/); // 末尾の数値を抽出
+                var selectedColumnNo = selectedColumnNoMatch[1]; // 選択列を取得
+
+                // 選択列番号で保全部位/保全内容を区別
+                if (selectedColumnNo && selectedColumnNo == 15) {
+                    var partId = data[0].VALUE1; // 保全部位で選択されたアイテムの保全部位IDを取得
+                    var partNm = data[0].VALUE2; // 保全部位選択されたアイテムの保全部位名称を取得
+                } else {
+                    var dataId = data[0].VALUE1; // 保全内容で選択されたアイテムの保全内容IDを取得
+                    var dataNm = data[0].VALUE2; // 保全内容で選択されたアイテムの保全内容名称を取得
+                }
+
+                var selectedRowId = ctrl[0].id; // 選択行番号を取得
+                var selectedRowNoMatch = selectedRowId.match(/(\d+)$/); // 末尾の数値を抽出
+                var selectedRowNo = selectedRowNoMatch[1]; // 選択行を取得
+            }
+
+            // 検索結果一覧の要素を取得
+            var machinList = P_listData["#BODY_050_00_LST_5_5"].getData();
+
+            var partRowData = machinList[selectedRowNo - 1];
+
+            if (partId && partId > 0) {
+                partRowData.VAL24 = partId; //保全部位ID
+            }
+            if (partNm) {
+                partRowData.VAL22 = partNm; //保全部位名称
+            }
+            if (dataId && dataId > 0) {
+                partRowData.VAL25 = dataId; //保全内容ID
+            }
+            if (dataNm) {
+                partRowData.VAL23 = dataNm; //保全内容名称
+            }
+
+            machinList[selectedRowNo - 1] = partRowData;
+
+            P_listData["#BODY_050_00_LST_5_5"].updateData(machinList);
         }
     }
 }

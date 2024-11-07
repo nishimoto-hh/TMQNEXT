@@ -206,7 +206,7 @@ namespace BusinessLogic_MC0001
 
             // 様式１一覧初期検索
             // 2023.09 暫定対応 様式１一覧の検索実施しない
-            // setDataList<Dao.format1ListResult>(machineId, SqlNameManagementStandard.GetFormat1List, TargetCtrlIdManagementStandard.DetailForma1List120);
+            setDataList<Dao.format1ListResult>(machineId, SqlNameManagementStandard.GetFormat1List, TargetCtrlIdManagementStandard.DetailForma1List120);
 
             // スケジューリング一覧初期検索
             // 点検種別毎管理の機器なら点検種別毎一覧

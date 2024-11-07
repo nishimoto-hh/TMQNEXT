@@ -1,6 +1,7 @@
 ﻿
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
@@ -131,7 +132,10 @@ namespace CommonWebTemplate.CommonUtil
         /// <param name="obj">対象オブジェクト</param>
         public static void SetObject<T>(this ISession session, string key, T obj)
         {
-            var json = JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), });
+            //2024.09 .NET8バージョンアップ対応 start
+            //var json = JsonSerializer.Serialize<T>(obj, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), });
+            var json = JsonSerializer.Serialize<T>(obj, JsonSerializerOptionsDefine.JsOptionsForEncode);
+            //2024.09 .NET8バージョンアップ対応 end
             session.SetString(key, json);
         }
 

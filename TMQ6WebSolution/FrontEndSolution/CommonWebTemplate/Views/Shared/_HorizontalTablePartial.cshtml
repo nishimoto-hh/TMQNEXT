@@ -1078,7 +1078,10 @@
         }
 
         ViewBag.isCtrlGrp = true;
-        return JsonSerializer.Serialize(headerDatas, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), });
+        //2024.09 .NET8バージョンアップ対応 start
+        // return JsonSerializer.Serialize(headerDatas, new JsonSerializerOptions { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), });
+        return JsonSerializer.Serialize(headerDatas, JsonSerializerOptionsDefine.JsOptionsForEncode);
+        //2024.09 .NET8バージョンアップ対応 end
     }
 
     //各列のヘッダー定義を作成

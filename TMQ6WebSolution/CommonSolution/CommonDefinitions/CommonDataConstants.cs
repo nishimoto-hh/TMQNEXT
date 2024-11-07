@@ -1,4 +1,11 @@
-﻿///<summary>
+﻿
+using System.Text.Encodings.Web;
+using System.Text.Json;
+
+
+using System.Text.Unicode;
+
+///<summary>
 /// 機能名　　：　【共通】
 /// タイトル　：　共通データ定数定義クラス
 /// 説明　　　：　共通データテーブル内で使用する定数を定義します。
@@ -1332,4 +1339,21 @@ namespace CommonWebTemplate.Models.Common
             public const short Administrator = 99;
         }
     }
+
+    //2024.09 .NET8バージョンアップ対応 start
+    public static class JsonSerializerOptionsDefine
+    {
+        /// <summary>JSONシリアライズ実行時オプション(エンコード用)</summary>
+        public static readonly JsonSerializerOptions JsOptionsForEncode = new()
+        {
+            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+        };
+
+        /// <summary>JSONシリアライズ実行時オプション(NULL対応用)</summary>
+        public static readonly JsonSerializerOptions JsOptionsForNull = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+    }
+    //2024.09 .NET8バージョンアップ対応 end
 }
