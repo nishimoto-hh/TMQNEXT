@@ -9706,6 +9706,8 @@ function reportCreate(appPath, btn, conductId, pgmId, formNo, conductPtn, btnCtr
                 // 結果データが存在せず、ボタン情報が存在する場合、ボタンの権限制御のみ実施
                 setButtonStatus();
             }
+            // 【オーバーライド用関数】Excel出力後処理
+            postOutputExcel(appPath, conductId, pgmId, formNo, btnCtrlId);
 
             // ダウンロードファイル名
             var fileName = status.FILEDOWNLOADNAME;

@@ -97,6 +97,8 @@ namespace CommonTMQUtil
 
             /// <summary>０落ち対応 フォーマット</summary>
             public const string StrFormat = "@";
+            /// <summary>予算実績用フォーマット</summary>
+            public const string StrFormatForBudget = "#,##0";
             /// <summary>SQL名：出力帳票シート定義取得用SQL</summary>
             public const string GetReportSheetDefine = "GetReportSheetDefine";
             /// <summary>SQL名：ファイル入出力項目定義情報取得用SQL</summary>
@@ -4095,8 +4097,6 @@ namespace CommonTMQUtil
 
             // 初期化
             var info = new CommonExcelPrtInfo();
-            info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
-            info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
 
             // SQLを取得(ヘッダー部に出力される仕様項目名)
             TMQUtil.GetFixedSqlStatement(ExcelPath + @"\" + ReportRP0020.SqlName.SubDir, ReportRP0020.SqlName.GetHeaderSpecInfo, out string sql);
@@ -4140,7 +4140,12 @@ namespace CommonTMQUtil
                     address = ToAlphabet(headerColumnNo) + (specStartRow - 1).ToString();
 
                     // マッピング情報設定
+                    info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
                     info.SetExlSetValueByAddress(address, headerSpecInfo.SpecName, ComReport.StrFormat);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { headerSpecInfo.SpecName });
 
                     // マッピングリストに追加
                     mappingList.Add(info);
@@ -4195,7 +4200,13 @@ namespace CommonTMQUtil
                     address = ToAlphabet(dataColumnNo) + dataRowNo.ToString();
 
                     // マッピング情報設定
+                    info = new CommonExcelPrtInfo();
+                    info.SetSheetName(null);  // シート名にnullを設定(シート番号でマッピングを行うため)
+                    info.SetSheetNo(sheetNo); // シート番号に対象のシート番号を設定
                     info.SetExlSetValueByAddress(address, dataSpecInfo.SpecValue, ComReport.StrFormat);
+                    info.SetAddress(address);
+                    info.SetColData(new[] { dataSpecInfo.SpecValue });
+          
                     // マッピングリストに追加
                     mappingList.Add(info);
 
@@ -5844,7 +5855,7 @@ namespace CommonTMQUtil
                                     // マッピングセルを設定
                                     string address = ToAlphabet(startColNo + offsetCol) + offsetRow;
                                     // フォーマット設定
-                                    string format = ComReport.StrFormat;
+                                    string format = ComReport.StrFormatForBudget;
                                     object val;
 
                                     // 出力方式が 3:予算別の場合、記号ではなく、予算と実績を設定する。
@@ -5857,7 +5868,7 @@ namespace CommonTMQUtil
                                         }
                                         else
                                         {
-                                            val = (optionData.BudgetAmount.GetValueOrDefault()).ToString("#,##0.###");
+                                            val = optionData.BudgetAmount.GetValueOrDefault();
                                         }
                                         // マッピング情報設定
                                         info.SetExlSetValueByAddress(address, val, format);
@@ -5870,7 +5881,7 @@ namespace CommonTMQUtil
                                         }
                                         else
                                         {
-                                            val = (optionData.Expenditure.GetValueOrDefault()).ToString("#,##0.###");
+                                            val = optionData.Expenditure.GetValueOrDefault();
                                         }
                                         // 実績は１行下に設定
                                         address = ToAlphabet(startColNo + offsetCol) + (offsetRow + 1);

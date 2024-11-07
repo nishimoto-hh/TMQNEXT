@@ -343,7 +343,8 @@ const DatailManagementStandard = {
         DeleteManagementStandard: "DeleteManagementStandard",
         RegistSchedule: "RegistSchedule",
         RegistLankSchedule: "RegistLankSchedule",
-        RegistOrder: "RegistOrder"
+        RegistOrder: "RegistOrder",
+        Output:"Output"
     },
 };
 
@@ -1579,6 +1580,8 @@ function initTabOriginal(tabNo, tableId) {
 
         } else if (tableId == DatailManagementStandard.ScheduleLankList.Id + getAddFormNo()) {
 
+            // 罫線制御処理
+            setTimeout(function () { setMaintKindListGroupingMachine(); }, 500);
             // 描画に間に合っていないため間隔をあけて実行
             setTimeout(function () {
                 setEventFlg();
@@ -3253,4 +3256,27 @@ function hideColumnOfScheduleList(table, isDisp, ColNo) {
         table.hideColumn("VAL" + ColNo);
     }
 
+}
+
+/**
+*【オーバーライド用関数】Excel出力後
+* @param {any} appPath   : ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ 
+* @param {any} btn       : クリックされたボタン要素
+* @param {any} conductId : 機能ID
+* @param {any} pgmId     : プログラムID
+* @param {any} formNo    : 画面番号
+* 
+* @param {any} listData  : バックエンド側に渡すデータ(何もしない場合はそのまま返す)
+*/
+function postOutputExcel(appPath, conductId, pgmId, formNo, btnCtrlId) {
+
+    //機器別管理基準タブ 表示一覧選択ボタン
+    if (btnCtrlId == DatailManagementStandard.ButtonId.Output && formNo == DatailManagementStandard.No) { // 様式１一覧
+        // 2023.09 様式１一覧の件数が０件なら並び順設定ボタン非活性
+        var pageRowCount = P_listData["#" + DatailManagementStandard.Format1List.Id + getAddFormNo()].getDataCount("display");
+        if (pageRowCount == 0) {
+            // 並び順設定ボタン非活性
+            setDispMode(getButtonCtrl(DatailManagementStandard.ButtonId.RegistOrder), true);
+        }
+    }    
 }

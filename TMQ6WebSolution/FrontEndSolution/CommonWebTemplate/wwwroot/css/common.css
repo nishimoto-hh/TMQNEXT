@@ -1646,7 +1646,8 @@ input[type="radio"] {
 }
 /* Tabulatorフィルターのクリアボタン表示(bootstrap3の設定により消されないよう対応) */
 input[type="search"]::-webkit-search-cancel-button {
-    -webkit-appearance: searchfield-cancel-button;
+    /*-webkit-appearance: searchfield-cancel-button;*/
+    -webkit-appearance: auto;
 }
 
 /*datepicker カスタムスタイル*/

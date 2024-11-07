@@ -140,6 +140,8 @@ WITH item AS (
     WHERE
         structure_group_id IN ( 
             1200
+            , 1180
+            , 1220
         ) 
         AND language_id = @LanguageId
 ) 

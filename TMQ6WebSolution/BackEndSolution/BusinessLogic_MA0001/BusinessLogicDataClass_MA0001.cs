@@ -648,6 +648,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 作業記録</summary>
             /// <value>作業記録</value>
             public string WorkRecord { get; set; }
+            /// <summary>Gets or sets 保全部位</summary>
+            /// <value>保全部位</value>
+            public string InspectionSiteName { get; set; }
+            /// <summary>Gets or sets 保全内容</summary>
+            /// <value>保全内容</value>
+            public string InspectionContentName { get; set; }
         }
 
         /// <summary>
@@ -1149,6 +1155,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 重要度(表示用)</summary>
             /// <value>重要度(表示用)</value>
             public string ImportanceName { get; set; }
+            /// <summary>Gets or sets 保全部位</summary>
+            /// <value>保全部位</value>
+            public string InspectionSiteName { get; set; }
+            /// <summary>Gets or sets 保全内容</summary>
+            /// <value>保全内容</value>
+            public string InspectionContentName { get; set; }
         }
 
         /// <summary>
