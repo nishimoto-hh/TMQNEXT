@@ -530,7 +530,7 @@ AND language_id = @key2;
 		LEFT JOIN ma_history hi
 			ON hi.summary_id = su.summary_id
 
-	    LEFT JOIN ma_history_machine hm 
+	    LEFT JOIN (select max(machine_id) as machine_id , history_id from  ma_history_machine hm group by history_id) hm
 			ON hi.history_id = hm.history_id 
 
 		LEFT JOIN ma_history_failure hf
@@ -559,12 +559,6 @@ AND language_id = @key2;
         LEFT JOIN ms_item_extension ie 
             ON vsi.structure_item_id = ie.item_id 
             AND ie.sequence_no = 1 
-
-		LEFT JOIN ma_history_inspection_site his 
-			ON hm.history_machine_id = his.history_machine_id 
-
-	    LEFT JOIN ma_history_inspection_content hic 
-			ON his.history_inspection_site_id = hic.history_inspection_site_id
 
 	    LEFT JOIN (select * from  attachment where function_type_id = 1690 ) att  
 			ON att.key_id = hf.history_failure_id 
