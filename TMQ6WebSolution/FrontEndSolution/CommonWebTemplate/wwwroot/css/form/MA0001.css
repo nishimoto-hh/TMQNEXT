@@ -35,10 +35,39 @@
 
 }
 
-/*背景調整*/
+/*背が高いテキストエリア*/
 .TextAreaResize {
     /*テキストエリアの高さ調整*/
     height: 80px;
     /*1行の高さ*/
     line-height: 1;
+}
+
+/*背が高く、入力してほしいテキストエリア*/
+.TextAreaResizeRequired {
+    /*テキストエリアの高さ調整*/
+    height: 80px;
+    /*1行の高さ*/
+    line-height: 1;
+    /*水色背景*/
+    background-color: #e0ffff
+}
+
+.TextAreaResizeRequiredTrouble {
+    /*テキストエリアの高さ調整*/
+    height: 80px;
+    /*1行の高さ*/
+    line-height: 1;
+    /*クリーム色背景*/
+    background-color: #ffefd5
+}
+
+.Required {
+    /*水色背景*/
+    background-color: #e0ffff
+}
+
+.RequiredTrouble {
+    /*クリーム色背景*/
+    background-color: #ffefd5
 }
