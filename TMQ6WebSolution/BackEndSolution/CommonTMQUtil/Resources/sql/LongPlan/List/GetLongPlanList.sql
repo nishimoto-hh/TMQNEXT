@@ -2,6 +2,10 @@ SELECT
      target.long_plan_id
      -- 件名
     ,target.subject
+     -- 場所階層ID
+    ,target.location_structure_id
+     -- 職種機種ID
+    ,target.job_structure_id
     -- 件名メモ
     /*@SubjectNote
     ,target.subject_note
@@ -13,7 +17,6 @@ SELECT
 
 /*@UnList
     -- 場所階層
-    ,target.location_structure_id
     ,target.district_id
     ,target.factory_id
     ,target.plant_id
@@ -21,7 +24,6 @@ SELECT
     ,target.stroke_id
     ,target.facility_id
     -- 職種機種
-    ,target.job_structure_id
     ,target.job_id
     ,target.large_classfication_id
     ,target.middle_classfication_id
