@@ -3369,7 +3369,7 @@ namespace CommonTMQUtil
                                         object tmpId = null;
                                         // 複数選択項目の場合、いずれかが不正なアイテムであればエラー
                                         bool multErrorFlg = false;
-                                        if (!val.Contains(","))
+                                        if (reportInfo.ControlType != "0501" || !val.Contains(","))
                                         {
                                             if (targetFactoryId == TMQConsts.CommonFactoryId)
                                             {
