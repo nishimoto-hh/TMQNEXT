@@ -1104,8 +1104,8 @@ namespace BusinessLogic_HM0002
                 case (int)TMQConst.MsStructure.StructureId.ProcessMode.transaction: // トランザクションモード
 
                     // SQL取得
-                    TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string withTraSql, new List<string> { UnCommentWordOfGetList });
-                    TMQUtil.GetFixedSqlStatement(SqlName.List.SubDirLongPlan, SqlName.List.GetList, out string traSql, new List<string> { UnCommentWordOfGetList });
+                    TMQUtil.GetFixedSqlStatementWith(SqlName.List.SubDir, SqlName.List.GetList, out string withTraSql, new List<string> { UnCommentWordOfGetList });
+                    TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetList, out string traSql, new List<string> { UnCommentWordOfGetList });
                     execSql.AppendLine(withTraSql);
                     execSql.AppendLine(addSqlWhereLongPlanId(traSql));
                     break;

@@ -264,10 +264,12 @@
     <None Remove="Resources\sql\HistoryLongPlan\List\GetHistoryLongPlanSchedule.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\GetHistoryManagementDetail.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\GetHmLongPlan.sql" />
+    <None Remove="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\InsertLongPlan.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\InsertTempGetLongPlanList.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\UpdateSummary.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\WITH_GetHistoryLongPlanList.sql" />
+    <None Remove="Resources\sql\HistoryLongPlan\List\WITH_GetLongPlanList.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\SelectStandards\WITH_GetManagementStandardsContentList.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetApplicableLaws.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetApplicableLawsTransaction.sql" />
@@ -1052,6 +1054,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\WITH_GetLongPlanList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\CreateTableTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\InsertTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\List\CreateTableTempGetList.sql" />
