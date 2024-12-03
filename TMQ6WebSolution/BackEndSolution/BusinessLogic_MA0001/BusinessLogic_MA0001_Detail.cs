@@ -219,6 +219,7 @@ namespace BusinessLogic_MA0001
 
             // 画面情報にログインユーザーIDと取得したユーザー名称を設定
             historyInfo.ConstructionPersonnelId = Convert.ToInt32(this.UserId);
+            historyInfo.ConstructionPersonnelIdLN = Convert.ToInt32(this.UserId);
             historyInfo.ConstructionPersonnelName = userInfo.DisplayName;
         }
 

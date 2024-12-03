@@ -748,6 +748,9 @@ namespace CommonTMQUtil
             /// <summary>Gets or sets 施工担当者ID</summary>
             /// <value>施工担当者ID</value>
             public int? ConstructionPersonnelId { get; set; }
+            /// <summary>Gets or sets 施工担当者ID(長期計画から遷移した場合に使用する項目)</summary>
+            /// <value>施工担当者ID(長期計画から遷移した場合に使用する項目)</value>
+            public int? ConstructionPersonnelIdLN { get; set; }
             /// <summary>Gets or sets 施工担当者名 </summary>
             /// <value>施工担当者名 </value>
             public string ConstructionPersonnelName { get; set; }
