@@ -78,17 +78,18 @@ namespace BusinessLogic_MA0001
             setInitDetaiCondition();
 
             // メニューから選択された際かつ、保全実績評価からの遷移でない場合の初期検索は行わない
-            if (this.CtrlId == "Init" && !isTransedMP0001)
-            {
-                // 検索結果の設定
-                if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
-                {
-                    // 正常終了
-                    this.Status = CommonProcReturn.ProcStatus.Valid;
-                }
+            // 20241211 初期検索をするように修正
+            //if (this.CtrlId == "Init" && !isTransedMP0001)
+            //{
+            //    // 検索結果の設定
+            //    if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
+            //    {
+            //        // 正常終了
+            //        this.Status = CommonProcReturn.ProcStatus.Valid;
+            //    }
 
-                return true;
-            }
+            //    return true;
+            //}
 
             // 場所分類＆職種機種＆詳細検索条件取得
             if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, isJobKindOnly: true, isDetailConditionOnly: true))
