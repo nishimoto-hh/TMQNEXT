@@ -18,3 +18,83 @@
 .updateScheduleError {
     background-color: #ffb6c1 !important;
 }
+
+/*一覧画面上部のボタングループ*/
+.ListButton {
+    /*警告コメントの一覧を自身の右側に持ってくる*/
+    float: left;
+}
+
+/*一覧画面のフィルタ・読み込み件数の一覧*/
+.FilterCntList {
+    /*通常の配置に戻す(float: left無効)*/
+    clear: both;
+
+    /*位置の調整*/
+    position: relative;
+    top: 5px;
+    left: -2px;
+}
+
+/*警告コメントの親要素*/
+.WarningCommentParent {
+    /*位置の調整*/
+    position: relative;
+    top: 14px;
+    z-index: -1;
+}
+
+/*警告コメント*/
+.WarningComment {
+    /*背景色の変更*/
+    background-color: yellow;
+    /*文字色の変更*/
+    color: red !important;
+    /*文字の太さ*/
+    font-weight: bold !important;
+    /*文字の位置(中央寄せ)*/
+    text-align: center;
+    /*境界線をなくす*/
+    border: none !important;
+    /*文字の大きさを変更*/
+    font-size: 20px;
+}
+
+/*警告コメントの一覧の大元の要素*/
+.WarningCommentTable {
+    /*境界線を無くす*/
+    border-collapse: unset;
+}
+
+
+/***************モーダル表示した「帳票出力」**************/
+/*警告コメントの親要素*/
+.HM0004_WarningCommentParent {
+/*位置の調整*/
+position: relative;
+top: -500px;
+left: 750px
+}
+
+/*警告コメント*/
+.HM0004_WarningComment {
+    /*背景色の変更*/
+    background-color: yellow;
+    /*文字色の変更*/
+    color: red !important;
+    /*文字の太さ*/
+    font-weight: bold !important;
+    /*文字の位置(中央寄せ)*/
+    text-align: center;
+    /*境界線をなくす*/
+    border: none !important;
+    /*文字の大きさを変更*/
+    font-size: 20px;
+}
+
+/*警告コメントの一覧の大元の要素*/
+.HM0004_WarningCommentTable {
+    /*境界線を無くす*/
+    border-collapse: unset;
+}
+/*********************************************************/

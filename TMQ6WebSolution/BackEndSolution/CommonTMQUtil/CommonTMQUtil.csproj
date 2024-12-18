@@ -97,6 +97,7 @@
     <None Remove="Resources\sql\Common\HistoryManagement\GetHistoryManagementDetailIdByHistoryManagementId.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetHistoryManagementIdByKeyId.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\GetIsSystemAdministratorByUserId.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\GetWarningComment.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagement.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagementDetail.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
@@ -265,6 +266,7 @@
     <None Remove="Resources\sql\HistoryLongPlan\List\GetHistoryManagementDetail.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\GetHmLongPlan.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
+    <None Remove="Resources\sql\HistoryLongPlan\List\GetWarningComment.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\InsertLongPlan.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\InsertTempGetLongPlanList.sql" />
     <None Remove="Resources\sql\HistoryLongPlan\List\UpdateSummary.sql" />
@@ -301,6 +303,7 @@
     <None Remove="Resources\sql\HistoryMachine\GetNextScheduleDate.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionMachineInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\GetTransactionManagementStandardsList.sql" />
+    <None Remove="Resources\sql\HistoryMachine\GetWarningComment.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertApplicableLawsInfo.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertApplicableLawsTransaction.sql" />
     <None Remove="Resources\sql\HistoryMachine\InsertEquipmentInfo.sql" />
@@ -1054,8 +1057,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\WITH_GetLongPlanList.sql" />
+    <EmbeddedResource Include="Resources\sql\HistoryMachine\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\CreateTableTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlanMachine\InsertTempGetList.sql" />
     <EmbeddedResource Include="Resources\sql\LongPlan\List\CreateTableTempGetList.sql" />

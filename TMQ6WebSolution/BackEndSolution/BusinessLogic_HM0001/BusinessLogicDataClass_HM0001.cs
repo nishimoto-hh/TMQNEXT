@@ -704,5 +704,15 @@ namespace BusinessLogic_HM0001
             public string ExtensionData { get; set; }
         }
 
+        /// <summary>
+        /// 一覧画面 警告コメント用 データクラス
+        /// </summary>
+        public class WarningComment : ComDao.CommonTableItem
+        {
+            /// <summary>Gets or sets 警告コメント</summary>
+            /// <value>警告コメント</value>
+            public string Comment { get; set; }
+        }
+
     }
 }

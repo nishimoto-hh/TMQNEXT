@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -48,6 +49,9 @@ namespace BusinessLogic_HM0001
             {
                 return false;
             }
+
+            // 警告コメントを設定する
+            setWarningComment();
 
             // 一覧のページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
@@ -147,6 +151,22 @@ namespace BusinessLogic_HM0001
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return true;
+
+            // 警告コメントを設定する
+            void setWarningComment()
+            {
+                // 一覧のページ情報取得
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.WarningComment, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetWarningComment, out string commentSql);
+
+                // 一覧検索実行
+                IList<Dao.WarningComment> comment = db.GetListByDataClass<Dao.WarningComment>(commentSql.ToString(), new { LanguageId = this.LanguageId });
+
+                // 検索結果の設定
+                SetFormByDataClass(ConductInfo.FormList.ControlId.WarningComment, comment);
+            }
         }
 
         /// <summary>

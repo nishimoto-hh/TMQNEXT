@@ -58,6 +58,9 @@ namespace BusinessLogic_HM0002
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, monthStartNendo);
 
+            // 警告コメントを設定する
+            setWarningComment();
+
             // メニューから選択された際の初期検索は行わない
             if (isInit)
             {
@@ -175,6 +178,22 @@ namespace BusinessLogic_HM0002
 
                 // 画面に設定
                 SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List);
+            }
+
+            // 警告コメントを設定する
+            void setWarningComment()
+            {
+                // 一覧のページ情報取得
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.WarningComment, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.List.SubDir, SqlName.List.GetWarningComment, out string commentSql);
+
+                // 一覧検索実行
+                IList<Dao.WarningComment> comment = db.GetListByDataClass<Dao.WarningComment>(commentSql.ToString(), new { LanguageId = this.LanguageId });
+
+                // 検索結果の設定
+                SetFormByDataClass(ConductInfo.FormList.ControlId.WarningComment, comment);
             }
         }
 

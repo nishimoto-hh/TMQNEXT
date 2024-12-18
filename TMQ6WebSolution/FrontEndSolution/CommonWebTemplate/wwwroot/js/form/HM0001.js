@@ -25,6 +25,10 @@ document.write("<script src=\"" + getPath() + "/HM0004.js\"></script>");
 // 一覧画面 コントロール番号
 const FormList = {
     No: 0, // 画面番号
+    WarnigComment: { // 警告コメント
+        Id: "BODY_050_00_LST_0", // コントロールグループID
+        ColumnNo: 1              // 項目番号
+    },
     Filter: // フィルタ
     {
         Id: "BODY_010_00_LST_0", // コントロールグループID
@@ -281,7 +285,7 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         setHideButton(FormList.Button.DenialAllTrans, !convertStrToBool(isApprovalUser));
 
         //フォーカス設定(新規申請ボタンが不可の場合、出力ボタン)
-        setFocusButtonAvailable(FormList.Button.New, FormList.Button.Output)
+        setFocusButtonAvailable(FormList.Button.New, FormList.Button.Output);
     }
     else if (formNo == FormDetail.No) { // 詳細画面
 
@@ -532,6 +536,10 @@ function postBuiltTabulator(tbl, id) {
 
     // 描画された一覧を判定
     if (id == "#" + FormList.List.Id + getAddFormNo()) { // 一覧画面 機器台帳一覧
+
+        // 一覧画面の警告コメントにスタイルを適用する
+        setStyleForWarningComment();
+
         // 一覧フィルタ処理実施
         callExecuteListFilter(FormList.List.Id, FormList.Filter.Id, FormList.Filter.ColumnNo);
 
@@ -948,4 +956,47 @@ function checkHisoryManagemtntExclusive(appPath, formNo) {
     var strMessage = P_ComMsgTranslated[941290001]; //「編集していたデータは他のユーザにより更新されました。もう一度編集する前にデータを再表示してください。」
 
     return checkTransition(appPath, formNo, ConductId_HM0001, "checkHisoryManagemtntExclusive", FormDetail.MachineInfo.Machine.ColumnNo.StatusCntExceptApproved, strMessage);
+}
+
+/**
+ * 一覧画面の警告コメントにスタイルを適用する
+ */
+function setStyleForWarningComment() {
+    /*警告コメントの文字列を取得*/
+    var warningCommentText = getValue(FormList.WarnigComment.Id, FormList.WarnigComment.ColumnNo, 0, CtrlFlag.Label, false, false);
+
+    // 設定されていない場合は一覧を非表示にして終了
+    if (!warningCommentText) {
+        changeListDisplay(FormList.WarnigComment.Id, false);
+        return;
+    }
+
+    // 警告コメントの一覧を表示
+    changeListDisplay(FormList.WarnigComment.Id, true);
+
+    // 一覧画面上部のボタングループに対してCSSクラス「ListButton」を付与
+    var listButton = $(P_Article).find("#top_divid_0").find(".actionlist")[0];
+    $(listButton).addClass("ListButton");
+
+    // フィルタ・読み込み件数の一覧に対してCSSクラス「FilterCntList」を付与
+    var filterList = $(P_Article).find("#" + FormList.Filter.Id + getAddFormNo() + "_div");
+    $(filterList).addClass("FilterCntList");
+
+    // 警告コメントの親要素に対してCSSクラス「WarningCommentParent」を付与
+    var warningCommentParent = $(P_Article).find("#" + FormList.WarnigComment.Id + getAddFormNo() + "_div");
+    $(warningCommentParent).addClass("WarningCommentParent");
+
+    // 警告コメントに対してCSSクラス「WarningComment」を付与
+    var warningComment = getCtrl(FormList.WarnigComment.Id, FormList.WarnigComment.ColumnNo, 0, CtrlFlag.Label, false, false);
+    $(warningComment).addClass("WarningComment");
+
+    // ヘッダーを削除
+    var header = $(warningComment).parent().find("th");
+    $(header).remove();
+
+    // コントロールが配置されている大元のテーブルタグに対してCSSクラス「WarningCommentTable」を付与
+    var mainTable = $(warningComment).closest("table");
+    $(mainTable).addClass("WarningCommentTable");
+    $(mainTable).removeAttr("style");
+
 }

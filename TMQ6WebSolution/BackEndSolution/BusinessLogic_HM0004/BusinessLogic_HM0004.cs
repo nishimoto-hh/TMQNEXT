@@ -49,6 +49,10 @@ namespace BusinessLogic_HM0004
             /// </summary>
             public const string HideInfo = "CCOND_080_00_LST_0";
             /// <summary>
+            /// 警告メッセージ表示一覧
+            /// </summary>
+            public const string WarningComment = "CCOND_110_00_LST_0";
+            /// <summary>
             /// 検索条件のグループ番号リスト
             /// </summary>
             public static ReadOnlyCollection<int> GroupNoList { get; } = new[] { 1000, 1003, 1004, 1005 }.ToList().AsReadOnly();
@@ -70,13 +74,24 @@ namespace BusinessLogic_HM0004
             /// <summary>長期計画 変更履歴一覧</summary>
             public const string LongPlan = "RP0430";
         }
-        #endregion
 
-        #region コンストラクタ
         /// <summary>
-        /// コンストラクタ
+        /// SQLファイル名称
         /// </summary>
-        public BusinessLogic_HM0004() : base()
+        private static class SqlName
+        {
+            /// <summary>SQL格納先サブディレクトリ名</summary>
+            public const string SubDir = @"Common\HistoryManagement";
+            /// <summary>警告メッセージ取得SQL</summary>
+            public const string GetWarningComment = "GetWarningComment";
+        }
+            #endregion
+
+            #region コンストラクタ
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public BusinessLogic_HM0004() : base()
         {
         }
         #endregion
@@ -112,9 +127,28 @@ namespace BusinessLogic_HM0004
                 }
             }
 
+            // 警告コメントを設定する
+            setWarningComment();
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             return ComConsts.RETURN_RESULT.OK;
+
+            // 警告コメントを設定する
+            void setWarningComment()
+            {
+                // 一覧のページ情報取得
+                var pageInfo = GetPageInfo(TargetCtrlId.WarningComment, this.pageInfoList);
+
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.GetWarningComment, out string commentSql);
+
+                // 一覧検索実行
+                IList<Dao.WarningComment> comment = db.GetListByDataClass<Dao.WarningComment>(commentSql.ToString(), new { LanguageId = this.LanguageId });
+
+                // 検索結果の設定
+                SetFormByDataClass(TargetCtrlId.WarningComment, comment);
+            }
         }
 
         /// <summary>

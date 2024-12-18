@@ -77,6 +77,8 @@ namespace BusinessLogic_HM0001
                 public const string GetHistoryManagementDetail = "GetHistoryManagementDetail";
                 /// <summary>一覧情報件数取得SQL</summary>
                 public const string GetCountHistoryMachineList = "GetCountHistoryMachineList";
+                /// <summary>警告メッセージ取得SQL</summary>
+                public const string GetWarningComment = "GetWarningComment";
             }
             /// <summary>
             /// 詳細画面SQL
@@ -298,6 +300,10 @@ namespace BusinessLogic_HM0001
                     /// 一覧
                     /// </summary>
                     public const string List = "BODY_040_00_LST_0";
+                    /// <summary>
+                    /// 警告メッセージ表示一覧
+                    /// </summary>
+                    public const string WarningComment = "BODY_050_00_LST_0";
                 }
                 /// <summary>
                 /// ボタンコントロールID

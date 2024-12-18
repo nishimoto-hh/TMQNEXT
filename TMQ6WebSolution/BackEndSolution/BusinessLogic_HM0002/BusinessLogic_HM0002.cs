@@ -103,6 +103,9 @@ namespace BusinessLogic_HM0002
                 public const string CreateTempTable = "CreateTableTempGetLongPlanList";
                 /// <summary>一覧情報取得の一時テーブル登録SQL</summary>
                 public const string InsertTempTable = "InsertTempGetLongPlanList";
+
+                /// <summary>警告メッセージ取得SQL</summary>
+                public const string GetWarningComment = "GetWarningComment";
             }
 
             /// <summary>
@@ -240,6 +243,10 @@ namespace BusinessLogic_HM0002
                     /// 検索条件(自分の申請のみ表示)
                     /// </summary>
                     public const string MySubjectCondition = "BODY_050_00_LST_0";
+                    /// <summary>
+                    /// 警告メッセージ表示一覧
+                    /// </summary>
+                    public const string WarningComment = "BODY_060_00_LST_0";
                 }
                 /// <summary>
                 /// ボタンコントロールID
