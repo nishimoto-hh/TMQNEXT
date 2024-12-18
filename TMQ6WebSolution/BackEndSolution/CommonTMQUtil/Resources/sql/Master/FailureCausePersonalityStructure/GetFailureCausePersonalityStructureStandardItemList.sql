@@ -1,21 +1,55 @@
+WITH structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (1000, 1020, @StructureGroupId) 
+        AND language_id = @LanguageId
+)
 SELECT
     st.structure_id                             -- 構成ID
     , st.structure_group_id                     -- 構成グループID
-    , dbo.get_translation_text_all( 
-        @ParentStructureId
-        , 0
-        , 1020
-        , @LanguageId
-    ) AS failure_cause_personality_structure_name -- 原因性格名称
+	, ( 
+	SELECT
+		tra.translation_text 
+	FROM
+		v_structure_item_all AS tra 
+	WHERE
+		tra.language_id = @LanguageId
+		AND tra.location_structure_id = ( 
+			SELECT
+				MAX(st_f.factory_id) 
+			FROM
+				structure_factory AS st_f 
+			WHERE
+				st_f.structure_id = st.structure_id
+				AND st_f.factory_id IN (0, @FactoryId)
+		) 
+		AND tra.structure_id = st.structure_id
+	) AS failure_cause_personality_structure_name -- 原因性格名称
     , st.factory_id                             -- 工場ID
     , st.structure_item_id AS item_id           -- アイテムID
     , it.item_translation_id AS translation_id  -- アイテム翻訳ID
-    , dbo.get_translation_text_all( 
-        st.structure_id
-        , @FactoryId
-        , @StructureGroupId
-        , @LanguageId
-    ) AS translation_text                       -- アイテム翻訳名称
+	, ( 
+	SELECT
+		tra.translation_text 
+	FROM
+		v_structure_item_all AS tra 
+	WHERE
+		tra.language_id = @LanguageId
+		AND tra.location_structure_id = ( 
+			SELECT
+				MAX(st_f.factory_id) 
+			FROM
+				structure_factory AS st_f 
+			WHERE
+				st_f.structure_id = st.structure_id
+				AND st_f.factory_id IN (0, @FactoryId)
+		) 
+		AND tra.structure_id = st.structure_id
+	) AS translation_text -- アイテム翻訳名称
     , it_ex1.extension_data AS ex_data1         -- 拡張データ1
     , it_ex2.extension_data AS ex_data2         -- 拡張データ2
     , it_ex3.extension_data AS ex_data3         -- 拡張データ3

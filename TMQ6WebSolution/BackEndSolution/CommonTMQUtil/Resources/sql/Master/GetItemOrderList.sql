@@ -20,17 +20,39 @@ WITH max_order AS (
         ord.structure_group_id = @StructureGroupId 
         AND ord.factory_id = @FactoryId
 )
+, structure_factory AS (
+    SELECT
+        structure_id
+        , location_structure_id AS factory_id 
+    FROM
+        v_structure_item_all 
+    WHERE
+        structure_group_id IN (@StructureGroupId) 
+        AND language_id = @LanguageId
+)
 SELECT
     st.structure_id                             -- 構成ID
     , st.structure_group_id                     -- 構成グループID
     , st.structure_item_id AS item_id           -- アイテムID
     , it.item_translation_id AS translation_id  -- アイテム翻訳ID
-    , dbo.get_translation_text_all( 
-        st.structure_id
-        , @FactoryId
-        , @StructureGroupId
-        , @LanguageId
-    ) AS translation_text                       -- アイテム翻訳名称
+	, ( 
+	SELECT
+		tra.translation_text 
+	FROM
+		v_structure_item_all AS tra 
+	WHERE
+		tra.language_id = @LanguageId
+		AND tra.location_structure_id = ( 
+			SELECT
+				MAX(st_f.factory_id) 
+			FROM
+				structure_factory AS st_f 
+			WHERE
+				st_f.structure_id = st.structure_id
+				AND st_f.factory_id IN (0, @FactoryId)
+		) 
+		AND tra.structure_id = st.structure_id
+	) AS translation_text -- アイテム翻訳名称
     , ord.display_order                         -- 表示順
     , CASE st.factory_id 
         WHEN 0 THEN 1 
