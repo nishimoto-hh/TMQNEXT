@@ -24,6 +24,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq;
+using CommonWebTemplate.CommonDefinitions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CommonWebTemplate.Controllers.CommonApi
 {
@@ -37,6 +39,7 @@ namespace CommonWebTemplate.Controllers.CommonApi
         #endregion
         /// <summary>ログ出力</summary>
         protected CommonLogger logger = CommonLogger.GetInstance();
+        protected static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
         #endregion
 
         #region === コンストラクタ ===
@@ -662,12 +665,39 @@ namespace CommonWebTemplate.Controllers.CommonApi
             {
                 //【共通 - 階層ツリー】構成マスタ情報取得
                 var structureList = new Dictionary<string, List<CommonTreeViewInfo>>();
-                CommonProcReturn returnInfo = blogic.GetStructureList(procData, ref structureList);
-                if (returnInfo.IsProcEnd())
+
+                //★インメモリ化対応 start
+                //CommonProcReturn returnInfo = blogic.GetStructureList(procData, ref structureList);
+                //if (returnInfo.IsProcEnd())
+                //{
+                //    //エラーの場合、エラー情報を返却
+                //    return BadRequest(returnInfo);
+                //}
+                // セッションからツリーデータを取得する
+                Dictionary<string, List<CommonTreeViewInfo>> sessionStructureList = null;
+                CommonProcReturn returnInfo = new CommonProcReturn();
+                var refreshData = getSessionStructureList(procData, ref structureList, ref sessionStructureList);
+                if (refreshData || structureList == null || structureList.Count == 0)
                 {
-                    //エラーの場合、エラー情報を返却
-                    return BadRequest(returnInfo);
+                    // セッションから取得できなかった場合、取得する
+                    returnInfo = blogic.GetStructureList(procData, ref structureList);
+                    if (returnInfo.IsProcEnd())
+                    {
+                        //エラーの場合、エラー情報を返却
+                        return BadRequest(returnInfo);
+                    }
+                    // セッションへ保存
+                    if (sessionStructureList != null && sessionStructureList.Count > 0)
+                    {
+                        sessionStructureList = sessionStructureList.Concat(structureList).ToDictionary();
+                    }
+                    else
+                    {
+                        sessionStructureList = structureList;
+                    }
+                    HttpContext.Session.SetObject<Dictionary<string, List<CommonTreeViewInfo>>>(RequestManageUtil.SessionKey.TMQ_STRUCTURE_TREE_LIST, sessionStructureList);
                 }
+                //★インメモリ化対応 end
 
                 IList<object> retObj = new List<object>();
                 retObj.Add(returnInfo);     //[0]:処理ステータス
@@ -685,6 +715,13 @@ namespace CommonWebTemplate.Controllers.CommonApi
                     //エラーの場合、エラー情報を返却
                     return BadRequest(returnInfo);
                 }
+                //★インメモリ化対応 start
+                // セッションのユーザ情報を取得し、ユーザカスタマイズ情報を更新
+                UserInfoDef userInfo = HttpContext.Session.GetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO);
+                userInfo.CustomizeList = procData.CustomizeList;
+                // セッションのユーザ情報を更新
+                HttpContext.Session.SetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO, userInfo);
+                //★インメモリ化対応 end
 
                 IList<object> retObj = new List<object>();
                 retObj.Add(returnInfo);     //[0]:処理ステータス
@@ -721,6 +758,28 @@ namespace CommonWebTemplate.Controllers.CommonApi
 
                 IList<object> retObj = new List<object>();
                 retObj.Add(returnInfo);     //[0]:処理ステータス
+                return Ok(retObj);
+            }
+            else if (processId == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComUpdateComboBoxData)
+            {
+                // 2006:【共通 - 共有メモリコンボボックスデータ更新】
+                var comboBoxData = new Dictionary<string, object>();
+                CommonProcReturn returnInfo = blogic.UpdateComboBoxData(procData, out comboBoxData);
+                if (returnInfo.IsProcEnd())
+                {
+                    //エラーの場合、エラー情報を返却
+                    return BadRequest(returnInfo);
+                }
+
+                foreach (var key in comboBoxData.Keys)
+                {
+                    // 共有メモリのコンボボックスデータを更新
+                    comMemoryData.SetData(key, comboBoxData[key]);
+                }
+
+                IList<object> retObj = new List<object>();
+                retObj.Add(returnInfo);           //[0]:処理ステータス
+                retObj.Add(procData.LoginUserId); //[1]:ﾕｰｻﾞｰID
                 return Ok(retObj);
             }
             else
@@ -840,6 +899,41 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 }
             }
         }
+
+        //★インメモリ化対応 start
+        private bool getSessionStructureList(CommonProcData procData, 
+            ref Dictionary<string, List<CommonTreeViewInfo>> structureList, ref Dictionary<string, List<CommonTreeViewInfo>> sessionStructureList)
+        {
+            // セッションからツリーデータを取得する
+            bool refreshData = false;
+            if (procData.ConditionData != null && procData.ConditionData.Count > 0)
+            {
+                var key = "Refresh";
+                if (procData.ConditionData[0].ContainsKey(key))
+                {
+                    refreshData = Convert.ToBoolean(procData.ConditionData[0][key].ToString());
+                }
+            }
+            sessionStructureList = HttpContext.Session.GetObject<Dictionary<string, List<CommonTreeViewInfo>>>(RequestManageUtil.SessionKey.TMQ_STRUCTURE_TREE_LIST);
+            if (!refreshData)
+            {
+                if (sessionStructureList != null && sessionStructureList.Count > 0)
+                {
+                    // 指定された構成グループIDのデータを抽出
+                    structureList = sessionStructureList.Where(x => procData.StructureGroupList.Contains(Convert.ToInt32(x.Key))).ToDictionary();
+                }
+            }
+            else
+            {
+                if (sessionStructureList != null && sessionStructureList.Count > 0)
+                {
+                    // 指定された構成グループID以外のデータを抽出
+                    sessionStructureList = sessionStructureList.Where(x => !procData.StructureGroupList.Contains(Convert.ToInt32(x.Key))).ToDictionary();
+                }
+            }
+            return refreshData;
+        }
+        //★インメモリ化対応 end
         #endregion
 
     }

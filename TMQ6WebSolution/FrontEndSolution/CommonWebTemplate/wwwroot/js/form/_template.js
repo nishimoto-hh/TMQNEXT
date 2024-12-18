@@ -501,8 +501,9 @@ function preRegistProcess(appPath, transDiv, conductId, pgmId, formNo, btn, cond
  *  @param {boolean}                    autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
  *  @param {boolean}                    isEdit      ：単票表示フラグ
  *  @param {List<Dictionary<string>>}   data        ：結果ﾃﾞｰﾀ
+ *  @param {Dictionary<string>}         status      ：処理ステータス
  */
-function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, status) {
 
 }
 

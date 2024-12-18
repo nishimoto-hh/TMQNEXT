@@ -20,6 +20,8 @@ using System.Runtime.Serialization.Json;
 using static CommonWebTemplate.CommonUtil.RequestManageUtil;
 using Microsoft.AspNetCore.Http;
 using CommonWebTemplate.CommonDefinitions;
+using static CommonSTDUtil.CommonDataBaseClass;
+using CommonSTDUtil;
 
 namespace CommonWebTemplate.CommonUtil
 {
@@ -31,6 +33,8 @@ namespace CommonWebTemplate.CommonUtil
         #endregion
         /// <summary>ログ出力</summary>
         protected CommonLogger logger = CommonLogger.GetInstance();
+        protected static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
+
         #endregion
 
         #region === 定数定義 ===
@@ -274,6 +278,9 @@ namespace CommonWebTemplate.CommonUtil
             procDataW.LoginUserId = procData.LoginUserId;   //IN:登録者ID
             procDataW.CtrlId = BusinessLogicIO.dllProcName_CheckAuthority;  //IN：起動処理名（CheckAuthority）
             procDataW.LanguageId = procData.LanguageId;     //IN:言語ID
+            //★インメモリ化対応 start
+            procDataW.CustomizeList = procData.CustomizeList;   //IN:ユーザカスタマイズ情報
+            //★インメモリ化対応 end
 
             //IN:実行条件
             procDataW.ConditionData = procData.ButtonDefines;
@@ -616,6 +623,9 @@ namespace CommonWebTemplate.CommonUtil
             procDataW.LanguageId = procData.LanguageId;     //IN:言語ID
             procDataW.ConductId = procData.ConductId;       //IN:機能ID
             procDataW.FormNo = procData.FormNo;             //IN:Form番号
+            //★インメモリ化対応 start
+            procDataW.CustomizeList = procData.CustomizeList;   //IN:ユーザカスタマイズ情報
+            //★インメモリ化対応 end
 
             // - 業務ロジックコール
             // - DLL名：BusinessLogic_Common.dll
@@ -832,7 +842,7 @@ namespace CommonWebTemplate.CommonUtil
             result.PageRowsList = rowsPerPage;
 
             // 言語コンボ取得
-            GetLanguageItemList(procData, out List<LanguageInfo> languageItemList);
+            GetLanguageItemList(procData, out List<Models.Common.LanguageInfo> languageItemList);
             result.LanguageComboList = languageItemList;
 
             return returnInfo;
@@ -1705,6 +1715,21 @@ namespace CommonWebTemplate.CommonUtil
                     }
                     return returnInfo;
                 }
+                //★インメモリ化対応 start
+                else
+                {
+                    Dictionary<string, object> resultsW = logicResult as Dictionary<string, object>;
+                    Dictionary<string, object> results = new Dictionary<string, object>();
+                    if (resultsW.ContainsKey("Individual"))
+                    {
+                        results.Add("Individual", resultsW["Individual"]);
+                    }
+                    if (results.Count > 0)
+                    {
+                        retResults = results;
+                    }
+                }
+                //★インメモリ化対応 end
 
                 //処理ｽﾃｰﾀｽ：正常
                 // - 処理完了ﾒｯｾｰｼﾞを設定
@@ -1741,6 +1766,7 @@ namespace CommonWebTemplate.CommonUtil
         /// <returns>処理ｽﾃｰﾀｽ情報</returns>
         public CommonProcReturn GetStructureList(CommonProcData procData, ref Dictionary<string, List<CommonTreeViewInfo>> treeViewDic)
         {
+
             //構成リストを取得
             BusinessLogicIO logicIO = new BusinessLogicIO(procData);
             Dictionary<string, List<CommonStructure>> structureDic;
@@ -1792,6 +1818,18 @@ namespace CommonWebTemplate.CommonUtil
         /// <returns>処理ｽﾃｰﾀｽ情報</returns>
         public CommonProcReturn GetComboRowsPerPage(CommonProcData procData, out List<int> comboValuesRowsPerPage)
         {
+            //★インメモリ化対応 start
+            // 共有メモリから取得する
+            var comboRowInfoList = (List<ComboRowInfo>)comMemoryData.GetData(nameof(ComboRowInfo));
+            if (comboRowInfoList != null && comboRowInfoList.Count > 0)
+            {
+                comboValuesRowsPerPage = comboRowInfoList.Where(x=>x.LanguageId == procData.LanguageId).Select(x=>x.ExData).ToList();
+                return new CommonProcReturn();
+            }
+            // 共有メモリから取得できなかった場合、再度取得する↓
+            logger.WriteLog("CommonMemoryData.GetData():" + nameof(ComboRowInfo));
+            //★インメモリ化対応 end
+
             // - 業務ロジックコール
             // - DLL名：BusinessLogic_Common.dll
             // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
@@ -1848,8 +1886,22 @@ namespace CommonWebTemplate.CommonUtil
         /// </param>
         /// <param name="comboLanguageItemList">out 言語コンボの値</param>
         /// <returns>処理ｽﾃｰﾀｽ情報</returns>
-        public CommonProcReturn GetLanguageItemList(CommonProcData procData, out List<LanguageInfo> comboLanguageItemList)
+        public CommonProcReturn GetLanguageItemList(CommonProcData procData, out List<Models.Common.LanguageInfo> comboLanguageItemList)
         {
+            //★インメモリ化対応 start
+            // 共有メモリから取得する
+            var languageItemList = (List<CommonDataBaseClass.LanguageInfo>)comMemoryData.GetData(nameof(CommonDataBaseClass.LanguageInfo));
+            if (languageItemList != null && languageItemList.Count > 0)
+            {
+                comboLanguageItemList = languageItemList
+                    .Where(x => x.LanguageId == procData.LanguageId && x.OrderFactoryId == procData.BelongingInfo.DutyFactoryId)
+                    .Select(x => new Models.Common.LanguageInfo() { LanguageCode = x.LanguageCode, LanguageLabel = x.LanguageLabel }).ToList();
+                return new CommonProcReturn();
+            }
+            // 共有メモリから取得できなかった場合、再度取得する↓
+            logger.WriteLog("CommonMemoryData.GetData():" + nameof(CommonDataBaseClass.LanguageInfo));
+            //★インメモリ化対応 end
+
             // - 業務ロジックコール
             // - DLL名：BusinessLogic_Common.dll
             // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
@@ -1893,6 +1945,34 @@ namespace CommonWebTemplate.CommonUtil
             BusinessLogicUtil blogic = new BusinessLogicUtil();
             AuthenticationUtil authU = new AuthenticationUtil(context);
             returnInfo = authU.getUserMenuInfoTranslated(conductIdList, procData, ref blogic, out resultsMenu);
+
+            //処理結果
+            return returnInfo;
+        }
+
+        /// <summary>
+        /// 共有メモリコンボボックスデータ更新
+        /// </summary>
+        /// <param name="procData">
+        /// 業務ﾛｼﾞｯｸ用ﾃﾞｰﾀ(※以下、使用項目、内(*)：必須項目)
+        /// 　ConditionData(GrpId):条件ﾃﾞｰﾀ(構成グループID)(*)
+        /// </param>
+        /// <param name="comboBoxData">コンボボックスデータ</param>
+        /// <returns></returns>
+        public CommonProcReturn UpdateComboBoxData(CommonProcData procData, out Dictionary<string, object> comboBoxData)
+        {
+
+            // - 業務ロジックコール
+            // - DLL名：BusinessLogic_Common.dll
+            // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
+            // - 起動処理名：UpdateComboBoxData
+            BusinessLogicIO logicIO = new BusinessLogicIO(procData);
+            CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_UpdateComboBoxData(procData, out comboBoxData);
+            if (returnInfo.IsProcEnd())
+            {
+                //エラーの場合、処理を中断
+                return returnInfo;
+            }
 
             //処理結果
             return returnInfo;
@@ -2300,6 +2380,9 @@ namespace CommonWebTemplate.CommonUtil
             procDataW.LoginUserId = procData.LoginUserId;   //IN:登録者ID
             procDataW.CtrlId = BusinessLogicIO.dllProcName_CheckConductAuthority;  //IN：起動処理名（CheckConductAuthority）
             procDataW.LanguageId = procData.LanguageId;     //IN:言語ID
+            //★インメモリ化対応 start
+            procDataW.CustomizeList = procData.CustomizeList;
+            //★インメモリ化対応 end
 
             BusinessLogicIO logicIO = new BusinessLogicIO(procDataW);
             CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_CheckUserConductAuthority(procDataW, ref hasAuthority);
@@ -2499,7 +2582,7 @@ namespace CommonWebTemplate.CommonUtil
                 catch (Exception ex)
                 {
                     // ログ出力
-                    logger.WriteLog(ex.Message);
+                    logger.WriteLog(ex.ToString());
                     // 画面に表示するメッセージ
                     string msg = GetMessage(CommonSTDUtil.CommonResources.ID.ID941040004, procData);
                     return new CommonProcReturn(CommonProcReturn.ProcStatus.Error, msg);

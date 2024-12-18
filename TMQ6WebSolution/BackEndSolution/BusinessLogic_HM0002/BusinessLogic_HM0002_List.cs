@@ -58,6 +58,20 @@ namespace BusinessLogic_HM0002
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, monthStartNendo);
 
+            // メニューから選択された際の初期検索は行わない
+            if (isInit)
+            {
+                // 検索結果の設定
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+                if (SetSearchResultsByDataClassForList<Dao.ListSearchResult>(pageInfo, new List<Dao.ListSearchResult>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+
+                return true;
+            }
+
             // 一覧データを取得して設定
             if (!setListData(out List<string> keyIdList))
             {

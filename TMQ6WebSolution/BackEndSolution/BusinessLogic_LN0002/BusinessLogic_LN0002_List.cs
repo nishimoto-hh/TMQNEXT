@@ -32,6 +32,20 @@ namespace BusinessLogic_LN0002
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.CtrlId.ScheduleCondition, monthStartNendo);
 
+            // メニューから選択された際の初期検索は行わない
+            if (this.CtrlId == "Init")
+            {
+                // 検索結果の設定
+                var pageInfo = GetPageInfo(ConductInfo.FormList.CtrlId.List, this.pageInfoList);
+                if (SetSearchResultsByDataClassForList<Dao.FormList.List>(pageInfo, new List<Dao.FormList.List>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+
+                return true;
+            }
+
             // 項目カスタマイズで選択されている項目のみSELECTする
             List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.CtrlId.List);
 

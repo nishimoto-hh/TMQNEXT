@@ -31,6 +31,14 @@ const EP0002_FormList = {
     UploadFile: 5                       //アップロードファイル
 };
 
+//★インメモリ化対応 start
+/** 個別対応機能ID */
+const EP0002_ConductId = {
+    /** 機種別仕様 */
+    MS0020: "MS0020"
+};
+//★インメモリ化対応 end
+
 /*
  * 機能IDを判定
  */
@@ -112,3 +120,69 @@ function clickPopupCancelBtn() {
     // 取込ファイル情報をクリア
     $(form).find("input:file").val("");
 }
+
+//★インメモリ化対応 start
+/**
+ * 【オーバーライド用関数】実行正常終了後処理
+ *  @param {string}                     appPath     ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string}                     conductId   ：機能ID
+ *  @param {string}                     pgmId       ：プログラムID
+ *  @param {number}                     formNo      ：画面NO
+ *  @param {html}                       btn         ：ボタン要素
+ *  @param {number}                     conductPtn  ：機能処理ﾊﾟﾀｰﾝ
+ *  @param {boolean}                    autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
+ *  @param {boolean}                    isEdit      ：単票表示フラグ
+ *  @param {List<Dictionary<string>>}   data        ：結果ﾃﾞｰﾀ
+ *  @param {Dictionary<string>}         status      ：処理ステータス
+ */
+function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, status) {
+    // 機能IDが「ExselPortアップロード」の場合のみ処理を行う
+    if (!EP0002_JudgeConductId()) {
+        return;
+    }
+
+    // 正常終了時のみ処理を行う
+    if (status.STATUS != procStatus.Valid) {
+        return;
+    }
+
+    // 対象の構成グループIDを取得
+    const grpId = getTargetStructureGrpId();
+    if (grpId == null) {
+        return;
+    }
+
+    if (grpId == structureGroupDef.Location || grpId == structureGroupDef.Job || grpId == structureGroupDef.FailureCausePersonality) {
+        // 場所階層、職種・機種、原因性格の場合
+
+        // ツリービューの再作成
+        refreshTreeView(appPath, conductId, grpId);
+    }
+
+    // コンボボックスの再作成
+    refreshComboBox(appPath, conductId, grpId);
+}
+
+/*
+* 対象の構成グループIDを取得
+*/
+
+/**
+ * 対象の構成グループIDを取得
+ * @returns {string} 構成グループID
+ */
+function getTargetStructureGrpId() {
+    // 機能IDを取得
+    var targetConductId = P_dicIndividual["TargetConductId"];
+    if (!targetConductId || !targetConductId.startsWith('MS')) {
+        return null;
+    }
+    // グローバルデータから構成グループIDを取得
+    var targetGrpId = P_dicIndividual["TargetGrpId"];
+    if (targetGrpId == null && targetConductId != EP0002_ConductId.MS0020) {
+        // 機種別仕様以外は機能IDから抽出
+        targetGrpId = targetConductId.replace('MS', '');
+    }
+    return targetGrpId;
+}
+//★インメモリ化対応 end

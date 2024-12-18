@@ -211,6 +211,13 @@ namespace BusinessLogic_PT0002
         protected override int InitImpl()
         {
             this.ResultList = new();
+
+            // メニューから選択された際の初期検索は行わない
+            if (this.CtrlId == "Init")
+            {
+                return ComConsts.RETURN_RESULT.OK;
+            }
+
             // 初期検索実行
             return InitSearch();
         }

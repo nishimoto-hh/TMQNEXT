@@ -486,6 +486,7 @@ function setSelectAllCntLabel(ctrlId, data) {
         // 先頭データのVAL1に詳細条件未指定時の総件数が格納されている
         // 詳細条件指定時は検索結果件数-1、未指定時は先頭データの総件数
         var totalCnt = data[0].IsDetailConditionApplied ? data.length - 1 : data[0].VAL1;
+        if (!totalCnt) { totalCnt = 0; }
         $(label).text('/' + totalCnt);
     }
 }

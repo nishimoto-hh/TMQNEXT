@@ -68,11 +68,27 @@ namespace BusinessLogic_MA0001
             // WITH句は別に取得
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, SqlName.List.GetList, out string withSql, uncommentList);
 
+            // 保全実績評価から遷移してきたかどうか
+            bool isTransedMP0001 = this.IndividualDictionary.ContainsKey(GlobalKey.MA0001JobId);
+
             //保全実績評価から遷移してきた場合、職種を再設定する
             setJobCondition();
 
             //詳細検索条件の発行日に初期値設定（機能起動時のみ。検索ボタン押下時等は設定しない）
             setInitDetaiCondition();
+
+            // メニューから選択された際かつ、保全実績評価からの遷移でない場合の初期検索は行わない
+            if (this.CtrlId == "Init" && !isTransedMP0001)
+            {
+                // 検索結果の設定
+                if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+
+                return true;
+            }
 
             // 場所分類＆職種機種＆詳細検索条件取得
             if (!GetWhereClauseAndParam2(pageInfo, baseSql, out string whereSql, out dynamic whereParam, out bool isDetailConditionApplied, isJobKindOnly: true, isDetailConditionOnly: true))

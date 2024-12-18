@@ -82,6 +82,13 @@ var P_ComboBoxJsonList = {};
 /**Public変数：コンボボックスデータ取得中リスト*/
 var P_GettingComboBoxDataList = [];
 
+/* コンボボックス制御 start ================================================ */
+// コンボボックスデータ取得済みフラグ
+var P_ComboDataAcquiredFlg = false;
+// コンボボックス情報リスト
+var P_ComboBoxMemoryItems = {}; // { ID: アイテム }
+/* コンボボックス制御 end   ================================================ */
+
 /**Public変数：1ページ当たりの件数コンボリスト*/
 var P_PageRowsCombo = [];
 
@@ -427,6 +434,8 @@ const actionkbn = {
     ComGetStructureList: 2004,
     //【共通 - 個別画面遷移】部分画面レイアウトデータ取得
     ComGetPartialView: 2005,
+    //【共通 - 】共有メモリコンボデータ更新
+    ComUpdateComboBoxData: 2006,
 
 };
 
@@ -1260,7 +1269,7 @@ function initDatePicker(selector, isReset) {
     if (!isReset) {
         //※画面初期化時
 
-        var fmt = $(selector).data("format");
+        var fmt = $(selector).data("format") + '';
 
         var viewModeVal = 2;    //年→月→日と設定
         var minViewMode = 2;    //"年"まで選択できる
@@ -1772,7 +1781,7 @@ function initYearMonthPicker(selector, isReset) {
     if (!isReset) {
         //※画面初期化時
 
-        var fmt = $(selector).data("format");
+        var fmt = $(selector).data("format") + '';
 
         //書式文字列を生成
         dateFmtStr = fmt;
@@ -1974,7 +1983,8 @@ function getComboBoxLocalData(param) {
         return [false, savedData];
     }
 
-    var params = param.split(',');
+    //SQLIDとパラメータに分割
+    var params = param.split('_');
     if (!params[0] || params[0] == '-') {
         // SQLIDが空の場合、取得対象外
         return [false, []];
@@ -1983,6 +1993,17 @@ function getComboBoxLocalData(param) {
     if (P_GettingComboBoxDataList.indexOf(param) >= 0) {
         // データ取得中の場合
         return [false, null];
+    }
+
+    var key = param;
+    //while (key.endsWith(',')) {
+    while (key.endsWith(',') || key.endsWith('_')) {
+        key = key.substring(0, key.length - 1);
+    }
+    var memoryData = P_ComboBoxMemoryItems[key];
+    if (memoryData != null && memoryData.length > 0 || key in P_ComboBoxMemoryItems) {
+        // 共有メモリに存在する場合(keyが存在してデータが0件でも再取得は行わない)
+        return [false, memoryData];
     }
 
     // データ取得実行が必要
@@ -2079,15 +2100,18 @@ function removeComboBoxDataKey(key) {
 
 /**
  *  コンボボックスの初期化処理
- *  @param {string} ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
- *  @param {string} ：対象セレクタ
- *  @param {string} ：SQL ID
- *  @param {string} ：SQLパラメータ
- *  @param {number} ：1:先頭に「全て」の項目を追加する / 0:追加しない
- *  @param {number} ：1:必須 / 0:任意
- *  @param {number}  ：-1:初期化時 / > 0:変更列番号
+ *  @param {string} appPath：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {string} selector：対象セレクタ
+ *  @param {string} sqlId：SQL ID
+ *  @param {string} param：SQLパラメータ
+ *  @param {number} option：1:先頭に「全て」の項目を追加する / 0:追加しない
+ *  @param {number} nullCheck：1:必須 / 0:任意
+ *  @param {number} changeColNo ：-1:初期化時 / > 0:変更列番号
+ *  @param {string} [changeVal=null] 
+ *  @param {Array} [factoryIdList=[]] 
+ *  @param {boolean} [resetCommonData=false] 
  */
-function initComboBox(appPath, selector, sqlId, param, option, nullCheck, changeColNo, changeVal = null, factoryIdList = []) {
+function initComboBox(appPath, selector, sqlId, param, option, nullCheck, changeColNo, changeVal = null, factoryIdList = [], resetCommonData = false) {
     // 変更前値はdata-value属性から取得する
     // 処理開始時のコンボの変更前値
     const preComboValue = $(selector).val();
@@ -2404,7 +2428,8 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
     }
 
     // コンボボックスデータの取得
-    const paramKey = sqlId + "," + paramStr;
+    //const paramKey = sqlId + "," + paramStr;
+    const paramKey = sqlId + "_" + paramStr;
     // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
     //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
     var [requiredGetData, data] = getComboBoxLocalData(paramKey);
@@ -2668,7 +2693,7 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
         P_GettingComboBoxDataList.push(paramKey);
 
         // コンボデータ取得処理実行
-        var url = encodeURI(appPath + "api/CommonSqlKanriApi/" + sqlId + "?param=" + paramStr);// 手動URLエンコード
+        var url = encodeURI(appPath + "api/CommonSqlKanriApi/" + sqlId + "?param=" + paramStr + "&reset=" + resetCommonData);// 手動URLエンコード
         $.ajax({
             url: url,
             type: 'GET',
@@ -2687,6 +2712,11 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
                 //// セッションストレージへ保存
                 //setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
                 P_ComboBoxJsonList[paramKey] = data;
+                //★インメモリ化対応 start
+                if (existsObjectDataKey(P_ComboBoxMemoryItems, paramKey) && P_ComboBoxMemoryItems[paramKey] == null) {
+                    P_ComboBoxMemoryItems[paramKey] = data;
+                }
+                //★インメモリ化対応 end
                 // データ設定処理実行
                 eventFunc();
             },
@@ -2776,7 +2806,85 @@ function callInitComboBox(appPath, cbo) {
     const param = $(cbo).data('param');
     const option = $(cbo).data('option');
     const nullCheck = $(cbo).data('nullcheck');
+    if (sqlId == null || sqlId == '' || sqlId == '-') { return; }
     initComboBox(appPath, cbo, sqlId, param, option, nullCheck, -1);
+}
+
+/**
+ * コンボボックスアイテム取得情報設定(コンボボックス、複数選択チェックボックス)
+ * @param {any} selector：要素
+ * @param {any} sqlId：SQLID
+ * @param {any} param：条件
+ * @param {any} option：1:先頭に「全て」の項目を追加する / 0:追加しない
+ * @param {any} nullcheck：1:必須 / 0:任意
+ */
+function setComboSelectBoxInfo(selector, sqlId, param, option, nullcheck) {
+    setAttrByNativeJs(selector, "data-sqlid", sqlId);
+    setAttrByNativeJs(selector, "data-param", param);
+    setAttrByNativeJs(selector, "data-option", option);
+    setAttrByNativeJs(selector, "data-nullcheck", nullcheck);
+}
+
+/**
+ * コンボボックスの初期化処理
+ * @param {string} appPath      ：アプリケーションパス
+ */
+function setComboBoxItem(appPath) {
+    // コンボボックスリストを取得
+    var comboSelectors = $("select");
+    $.each(comboSelectors, function (idx, selector) {
+        callInitComboBox(appPath, selector);
+    });
+    P_ComboDataAcquiredFlg = true;
+}
+
+/**
+ * 共有メモリ上のコンボボックスデータ更新
+ * @param {string} appPath  :ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {string} conductId :機能ID
+ * @param {string} grpId    :構成グループID
+ */
+function updateComboBoxData(appPath, conductId, grpId) {
+
+    var conditionDataList = [{ GrpId: grpId }];
+
+    // POSTデータを生成
+    var postdata = {
+       conductId: conductId,                   // メニューの機能ID
+       conditionData: conditionDataList, // 条件データ
+    };
+
+    // 登録処理実行
+    $.ajax({
+        url: appPath + 'api/CommonProcApi/' + actionkbn.ComUpdateComboBoxData, // 【共通 - 共有メモリコンボボックスデータ更新】
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify(postdata),
+        headers: { 'X-XSRF-TOKEN': getRequestVerificationToken() },
+        traditional: true,
+        cache: false
+    }).then(
+        // 1つめは通信成功時のコールバック
+        function (resultInfo) {
+            //正常時
+        },
+        // 2つめは通信失敗時のコールバック
+        function (resultInfo) {
+            //異常時
+        }
+    );
+}
+
+/**
+ * 複数選択セレクトボックスの初期化処理
+ * @param {string} appPath      ：アプリケーションパス
+ */
+function setMultiSelectBoxItem(appPath) {
+    var multiSelectors = $('ul.multiSelect:not("#mltItem")');
+    $.each(multiSelectors, function (idx, selector) {
+        callInitMultiSelectBox(appPath, selector);
+    });
 }
 
 /**
@@ -3357,7 +3465,8 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
     }
     // 2024/03/15 add 連動処理追加 by ATTS end
 
-    const paramKey = sqlId + "," + param;
+    //const paramKey = sqlId + "," + param;
+    const paramKey = sqlId + "_" + param;
     // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
     //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
     var [requiredGetData, data] = getComboBoxLocalData(paramKey);
@@ -3472,6 +3581,11 @@ function initMultiSelectBox(appPath, selector, sqlId, param, option, nullCheck, 
                 //// セッションストレージへ保存
                 //setSaveDataToSessionStorage(data, sessionStorageCode.CboMasterData, paramKey)
                 P_ComboBoxJsonList[paramKey] = data;
+                //★インメモリ化対応 start
+                if (existsObjectDataKey(P_ComboBoxMemoryItems, paramKey) && P_ComboBoxMemoryItems[paramKey] == null) {
+                    P_ComboBoxMemoryItems[paramKey] = data;
+                }
+                //★インメモリ化対応 end
 
                 // データ設定処理実行
                 eventFunc();
@@ -7245,6 +7359,8 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         locationIdList: locationIdList,         // 場所階層構成IDリスト
         jobIdList: jobIdList,                   // 職種機種構成IDリスト
         transFactoryId: transFactoryId,         // 翻訳工場ID
+
+        ComboDataAcquiredFlg: P_ComboDataAcquiredFlg, //コンボボックスデータ取得済みフラグ
     };
 
     // 初期化処理実行
@@ -7286,6 +7402,12 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
 
             // 画面定義項目の翻訳を反映
             setFormDefineTransData(conductId, formNo);
+
+            // コンボボックスアイテム設定
+            if (!P_ComboDataAcquiredFlg) {
+                setComboBoxItem(appPath);
+                setMultiSelectBoxItem(appPath);
+            }
 
             var pageRowCount = 0;
             if (conductPtn == conPtn.Bat) {
@@ -13616,7 +13738,7 @@ function clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo
             }
 
             //【オーバーライド用関数】実行正常終了後処理
-            postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+            postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, status);
 
             //ﾌｧｲﾙ情報をｸﾘｱ ※連続処理を制御
             $(P_Article).find("input:file").val("");
@@ -13656,6 +13778,7 @@ function clickExcelPortUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo
                 $(form).find("input:hidden[name='ListIndividual']").val("");
                 P_dicIndividual["TargetConductId"] = null;
                 P_dicIndividual["TargetSheetNo"] = null;
+                P_dicIndividual["TargetGrpNo"] = null;  //★インメモリ化対応
 
                 // 画面変更ﾌﾗｸﾞ初期化
                 dataEditedFlg = false;
@@ -17309,7 +17432,8 @@ function dispHonyakuSelectCol(data, selector, appPath, sqlId, param) {
                     }
                 });
 
-                const paramKey = sqlId + "," + paramStr;
+                //const paramKey = sqlId + "," + paramStr;
+                const paramKey = sqlId + "_" + paramStr;
                 // (2022/11/01) 構成マスタデータをセッションストレージには保存しない
                 //var [requiredGetData, data] = getComboBoxDataFromSessionStorage(appPath, paramKey);
                 var [requiredGetData, data] = getComboBoxLocalData(paramKey);
@@ -17410,6 +17534,17 @@ function resetComboBox(appPath, selects, factoryIdList) {
         factoryIdList = getSelectedFactoryIdList(null, true, true);
     }
 
+    resetComboBoxImpl(appPath, selects, factoryIdList);
+
+}
+
+/**
+ *  連動ｺﾝﾎﾞの選択ﾘｽﾄを再生成(実処理)
+ *  @param {string} appPath                 ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @param {Array.<Element>} selects        ：連動ｺﾝﾎﾞﾎﾞｯｸｽ
+ *  @param {Array.<number>} factoryIdList   ：工場IDリスト
+ */
+function resetComboBoxImpl(appPath, selects, factoryIdList) {
     $.each(selects, function () {
         var sqlId = $(this).data("sqlid");
         var param = $(this).data("param");
@@ -17431,7 +17566,7 @@ function resetComboBox(appPath, selects, factoryIdList) {
             setAttrByNativeJs(this, 'data-factoryid', '');
         }
 
-        initComboBox(appPath, this, sqlId, param, ctrlOption, isNullCheck, -1, null, prmFactoryIdList);
+        initComboBox(appPath, this, sqlId, param, ctrlOption, isNullCheck, -1, null, prmFactoryIdList, true);
     });
 
 }
@@ -17664,8 +17799,9 @@ function initMenu() {
  * @param {number} maxLayerNo                   ：階層番号最大値(最下位階層番号)
  * @param {Array.<object>} modalValues          ：モーダルのツリーの場合はこちらの値を使用、InitTreeViewModalParamClassメソッドで取得するクラスのリスト
  *                                              ：構成ID初期値、階層番号最小値(最上位階層番号)、階層番号最大値(最下位階層番号)
+ * @param {boolean} [refreshData=false]         ：true:ツリーデータをリフレッシュ
  */
-function initTreeView(appPath, conductId, structureGrpIdList, factoryIdList, treeViewType, modal, initStructureId, minLayerNo, maxLayerNo, modalValues) {
+function initTreeView(appPath, conductId, structureGrpIdList, factoryIdList, treeViewType, modal, initStructureId, minLayerNo, maxLayerNo, modalValues, refreshData = false) {
     var targetGrpIdList = [];
     $.each(structureGrpIdList, function (idx, grpId) {
         // ローカル端末から構成マスタデータを取得
@@ -17685,11 +17821,14 @@ function initTreeView(appPath, conductId, structureGrpIdList, factoryIdList, tre
     });
     if (targetGrpIdList.length == 0) { return; }
 
+    var conditionDataList= [{ Refresh: refreshData }];
+
     // グローバル変数に存在しない場合はサーバから取得する
     var postdata = {
         conductId: conductId,                   // メニューの機能ID
         FactoryIdList: factoryIdList,
         StructureGroupList: targetGrpIdList,
+        conditionData: conditionDataList,    // データリフレッシュフラグ
     };
 
     // 階層ツリー要素を取得
@@ -18001,7 +18140,7 @@ function getSelectedFactoryIdList(tabulatorRow, getFromArticle, isForComboBox) {
     if (factoryIdList.length == 0) {
         // 表示中の画面から取得できない場合は、場所階層ツリーから取得
         factoryIdList = deepCopyObjectArray(P_SelectedFactoryIdList);
-        if (factoryIdList == null) {
+        if (factoryIdList == null || factoryIdList.length == 0) {
             // ローカル端末から構成マスタデータを取得
             var jsonData = getTreeViewLocalData(structureGroupDef.Location);
             // ストレージから選択中の構成IDを取得
@@ -18929,27 +19068,50 @@ function refreshTreeView(appPath, conductId, grpId) {
     var selector = '#' + getTreeViewId(grpId, treeViewDef.TreeMenu.Val);
     $(selector).jstree("destroy").empty();
 
-    // ツリービューの初期化
-    initTreeView(appPath, conductId, [grpId], null, treeViewDef.TreeMenu);
+    //★インメモリ化対応 start
+    //// ツリービューの初期化
+    //initTreeView(appPath, conductId, [grpId], null, treeViewDef.TreeMenu);
 
+    //if (grpId == structureGroupDef.Location) {
+    //    // 場所階層ツリーの場合、職種機種ツリーも初期化する
+    //    refreshTreeView(appPath, conductId, structureGroupDef.Job);
+    //}
+    var grpIdList = [grpId];
     if (grpId == structureGroupDef.Location) {
         // 場所階層ツリーの場合、職種機種ツリーも初期化する
-        refreshTreeView(appPath, conductId, structureGroupDef.Job);
+        // グローバル変数のデータを削除
+        P_TreeViewJsonList[structureGroupDef.Job] = null;
+        delete P_TreeViewJsonList[structureGroupDef.Job];
+
+        // ツリービューの破棄
+        var selector = '#' + getTreeViewId(structureGroupDef.Job, treeViewDef.TreeMenu.Val);
+        $(selector).jstree("destroy").empty();
+        grpIdList.push(structureGroupDef.Job);
     }
+
+    // ツリービューの初期化
+    initTreeView(appPath, conductId, grpIdList, null, treeViewDef.TreeMenu, null, null, null, null, null, true);
+    //★インメモリ化対応 end
 }
 
 /**
  * コンボボックスの再生成
- * @param {string} appPath
- * @param {number} selects
+ * @param {string} appPath      :アプリケーションルートパス
+ * @param {string} conductId    :機能ID
+ * @param {string} grpId        :構成グループID
  */
-function refreshComboBox(appPath, grpId) {
+function refreshComboBox(appPath, conductId, grpId) {
     // コンボデータをクリア
     clearSavedComboBoxData(grpId);
 
     var selects = $('select[data-param^="' + grpId + '"]');
-    // コンボの再作成
-    resetComboBox(appPath, selects);
+    if (selects == null || selects.length == 0) {
+        // 共有メモリ上のコンボボックスデータを更新
+        updateComboBoxData(appPath, conductId, grpId);
+    } else {
+        // コンボの再作成
+        resetComboBoxImpl(appPath, selects);
+    }
 }
 
 /**
@@ -18963,12 +19125,31 @@ function clearSavedComboBoxData(grpId) {
     //        // セッションストレージデータを削除
     //        removeSaveDataFromSessionStorageByKey(key);
     //    });
-    var keys = findObjectDataKeys(P_ComboBoxJsonList, ',' + grpId);
+
+    //var keys = findObjectDataKeys(P_ComboBoxJsonList, ',' + grpId);
+    var keys = findObjectDataKeys(P_ComboBoxJsonList, '_' + grpId);
     $.each(keys, function (idx, key) {
         // グローバル変数データを削除
         P_ComboBoxJsonList[key] = null;
         delete P_ComboBoxJsonList[key];
     });
+
+    //★インメモリ化対応 start
+    keys = findObjectDataKeys(P_ComboBoxMemoryItems, '_' + grpId);
+    $.each(keys, function (idx, key) {
+        // グローバル変数の共有メモリデータをクリア(削除はしない)
+        P_ComboBoxMemoryItems[key] = null;
+    });
+    //★インメモリ化対応 end
+}
+
+/**
+ * Object配列のキーの存在チェック
+ * @param {string} key  :対象キー
+ * @return {boolean} true:存在している/false:存在しない
+ */
+function existsObjectDataKey(objectList, key) {
+    return Object.keys(objectList).indexOf(key) >= 0;
 }
 
 /**

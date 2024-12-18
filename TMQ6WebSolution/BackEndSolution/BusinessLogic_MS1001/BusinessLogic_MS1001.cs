@@ -1380,6 +1380,11 @@ namespace BusinessLogic_MS1001
             // ユーザ情報の更新が必要
             this.UpdateUserInfo = true;
 
+            //★インメモリ化対応 start
+            // 更新対象構成グループIDを設定
+            SetGlobalData("TargetGrpId", structureGroupId);
+            //★インメモリ化対応 end
+
             resultMsg = string.Empty;
             return ComConsts.RETURN_RESULT.OK;
         }

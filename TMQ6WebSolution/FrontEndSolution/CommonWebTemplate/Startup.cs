@@ -1,3 +1,4 @@
+using CommonWebTemplate.CommonUtil;
 using CommonWebTemplate.Models.Common;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
@@ -16,11 +17,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using CommonWebTemplate.CommonDefinitions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CommonWebTemplate
 {
     public class Startup
     {
+        private static CommonLogger logger = CommonLogger.GetInstance();
+        private static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
+
         public Startup(IConfiguration configuration)
         {
             AppCommonObject.SetConfiguration(configuration);
@@ -116,7 +122,7 @@ namespace CommonWebTemplate
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAntiforgery antiforgery)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAntiforgery antiforgery, IMemoryCache cache)
         {
             if (env.IsDevelopment())
             {
@@ -176,6 +182,37 @@ namespace CommonWebTemplate
                 //endpoints.MapHub<CommonWebTemplate.PushHub>("/push");
 
             });
+
+            //★インメモリ化対応 start
+            // 共通定義データの取得
+            getCommonDefineData();
+            //★インメモリ化対応 end
         }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 共通定義データの取得
+        /// </summary>
+        private void getCommonDefineData()
+        {
+            try
+            {
+                BusinessLogicIO blogic = new BusinessLogicIO(new CommonProcData());
+                var result = blogic.CallDllBusinessLogic_GetCommonDefineInfo(out Dictionary<string, object> defines);
+                if (result.STATUS != 0 || defines.Count == 0) { return; }
+
+                foreach (var define in defines)
+                {
+                    comMemoryData.SetData(define.Key, define.Value);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog(ex.ToString());
+            }
+        }
+        //★インメモリ化対応 end
+
     }
 }

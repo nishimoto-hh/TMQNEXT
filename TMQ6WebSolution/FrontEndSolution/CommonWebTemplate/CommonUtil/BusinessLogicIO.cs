@@ -129,6 +129,19 @@ namespace CommonWebTemplate.CommonUtil
         /// 起動処理名（共通処理DLL：ユーザID取得）
         /// </summary>
         const string dllProcName_GetUserIdByMailAdress = "GetUserIdByMailAdress";
+        //★インメモリ化対応 start
+        /// 起動処理名（共通処理DLL：共通定義データ取得）
+        /// </summary>
+        const string dllProcName_GetCommonDefineInfo = "GetCommonDefineInfo";
+        /// <summary>
+        /// 起動処理名（共通処理DLL：ユーザカスタマイズ情報取得）
+        /// </summary>
+        const string dllProcName_GetUserCustomizeInfo = "GetUserCustomizeInfo";
+        /// <summary>
+        /// 起動処理名（共通処理DLL：共有メモリコンボボックスデータ更新）
+        /// </summary>
+        const string dllProcName_UpdateComboBoxData = "UpdateComboBoxData";
+        //★インメモリ化対応 end
         #endregion
 
         #region === メンバ変数 ===
@@ -253,6 +266,10 @@ namespace CommonWebTemplate.CommonUtil
 
             this.inParam.GUID = procData.GUID;                      // GUID
             this.inParam.BrowserTabNo = procData.BrowserTabNo;      //ブラウザタブ識別番号
+            //★インメモリ化対応 start
+            this.inParam.CustomizeList = procData.CustomizeList;    // ユーザカスタマイズ情報
+            this.inParam.ComboDataAcquiredFlg = procData.ComboDataAcquiredFlg;  // コンボボックスデータ取得済みフラグ
+            //★インメモリ化対応 end
 
             //this.inParam.JsonCondition = String.Empty;              //実行条件(JSON文字列)※初期化
             //this.inParam.JsonPageInfo = String.Empty;               //ページ情報(JSON文字列)※初期化
@@ -267,7 +284,6 @@ namespace CommonWebTemplate.CommonUtil
             this.inParam.InputStream = null;                                        //ファイル情報（Stream）※初期化
             this.inParam.ButtonStatusList = new List<Dictionary<string, object>>(); //ﾎﾞﾀﾝｽﾃｰﾀｽ(JSON文字列)※初期化
             this.inParam.Individual = new Dictionary<string, object>();             //個別実装用データ(JSON文字列)※初期化
-
 
             //OUTパラメータを初期化
             //this.outParam = new ExpandoObject();
@@ -611,7 +627,7 @@ namespace CommonWebTemplate.CommonUtil
         /// <param name="id">SQLID</param>
         /// <param name="param">SQL実行引数</param>
         /// <returns></returns>
-        public CommonProcReturn CallDllBusinessLogic_CtrlSql(string id, string param, string code, string input, string factoryId, out object retResults)
+        public CommonProcReturn CallDllBusinessLogic_CtrlSql(string id, string param, string code, string input, string factoryId, bool reset, out object retResults)
         {
             retResults = null;
 
@@ -628,6 +644,7 @@ namespace CommonWebTemplate.CommonUtil
                 { "CTRLCODE", code },
                 { "CTRLINPUT", input },
                 { "FACTORYID", factoryId },
+                { "RESET", reset },		//★インメモリ化対応
             };
             conditionList.Add(condition);
 
@@ -826,6 +843,13 @@ namespace CommonWebTemplate.CommonUtil
                         {
                             userInfo.BelongingInfo = dicResult["belongingInfo"] as BelongingInfo;
                         }
+                        //★インメモリ化対応 start
+                        // ユーザカスタマイズ情報
+                        if (dicResult.ContainsKey("customizeList") && dicResult["customizeList"] != null)
+                        {
+                            userInfo.CustomizeList = dicResult["customizeList"] as List<COM_LISTITEM_USER_CUSTOMIZE>;
+                        }
+                        //★インメモリ化対応 end
                     }
                 }
                 else
@@ -898,7 +922,9 @@ namespace CommonWebTemplate.CommonUtil
                                 {
                                     val = item.Value.ToString();
                                 }
-                                resourceNames.Add(item.Key, val);
+                                // ※翻訳ID単位に標準翻訳、工場個別翻訳の順にソートされているため、
+                                // ※工場個別翻訳が存在する場合、そちらが採用される
+                                resourceNames[item.Key] = val;
                             }
                         }
 
@@ -1225,6 +1251,35 @@ namespace CommonWebTemplate.CommonUtil
             // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
             // - 起動処理名：SaveCustomizeListInfo
             CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_SaveCustomizeListInfo, conditionList, out object results);
+
+            //★インメモリ化対応 start
+            // 実行結果より戻り値を取得
+            if (results == null)
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+            Dictionary<string, object> dictionaryResult = results as Dictionary<string, object>;
+            if (!dictionaryResult.ContainsKey("Result"))
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+
+            var dicResults = dictionaryResult["Result"] as List<Dictionary<string, object>>;
+            if (dicResults != null && dicResults.Count > 0)
+            {
+                var dicResult = dicResults[0];
+                // ユーザカスタマイズ情報をリストで取得できる場合、戻り値に設定する
+                var key = nameof(COM_LISTITEM_USER_CUSTOMIZE);
+                if (dicResult.ContainsKey(key) && dicResult[key] != null)
+                {
+                    procData.CustomizeList = dicResult[key] as List<COM_LISTITEM_USER_CUSTOMIZE>;
+                }
+            }
+            //★インメモリ化対応 end
 
             //実行ステータスを返却
             return returnInfo;
@@ -1619,6 +1674,103 @@ namespace CommonWebTemplate.CommonUtil
             return returnInfo;
         }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※共通定義データ取得用）
+        /// </summary>
+        /// <param name="defines">(OUT)翻訳名情報</param>
+        /// <returns></returns>
+        public CommonProcReturn CallDllBusinessLogic_GetCommonDefineInfo(out Dictionary<string, object> defines)
+        {
+            //初期化
+            defines = new Dictionary<string, object>();
+
+            //業務ロジックDLLコール
+            // - DLL名：BusinessLogic_Common.dll
+            // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
+            // - 起動処理名：GetCommonDefineInfo
+            object results = null;
+            CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_GetCommonDefineInfo, null, out results);
+
+            // 実行結果より戻り値を取得
+            if (results == null)
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+            Dictionary<string, object> dictionaryResult = results as Dictionary<string, object>;
+            if (!dictionaryResult.ContainsKey("Result"))
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+
+            // -実行結果
+            // ※Dictionary<string, object>
+            // 
+            // KEY：データクラス名
+            // VALUE：共通定義データ
+            //
+            var dicResults = dictionaryResult["Result"] as List<Dictionary<string, object>>;
+            if (dicResults != null && dicResults.Count > 0)
+            {
+                defines = dicResults[0];
+            }
+
+            //実行ステータスを返却
+            return returnInfo;
+        }
+        /// <summary>
+        /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※共有メモリコンボボックスデータ更新用）
+        /// </summary>
+        /// <param name="defines">(OUT)翻訳名情報</param>
+        /// <returns></returns>
+        public CommonProcReturn CallDllBusinessLogic_UpdateComboBoxData(CommonProcData procData, out Dictionary<string, object> defines)
+        {
+            //初期化
+            defines = new Dictionary<string, object>();
+
+            //業務ロジックDLLコール
+            // - DLL名：BusinessLogic_Common.dll
+            // - 関数：ExecuteBusinessLogic(dynamic inParam, out dynamic outParam);
+            // - 起動処理名：UpdateComboBoxData
+            object results = null;
+            CommonProcReturn returnInfo = callDllBusinessLogic_Common(dllProcName_UpdateComboBoxData, procData.ConditionData, out results);
+
+            // 実行結果より戻り値を取得
+            if (results == null)
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+            Dictionary<string, object> dictionaryResult = results as Dictionary<string, object>;
+            if (!dictionaryResult.ContainsKey("Result"))
+            {
+                // 実行結果が存在しない場合処理終了、実行ステータスを返却
+                // ネストを浅くするためreturn
+                return returnInfo;
+            }
+
+            // -実行結果
+            // ※Dictionary<string, object>
+            // 
+            // KEY：データクラス名
+            // VALUE：共通定義データ
+            //
+            var dicResults = dictionaryResult["Result"] as List<Dictionary<string, object>>;
+            if (dicResults != null && dicResults.Count > 0)
+            {
+                defines = dicResults[0];
+            }
+
+            //実行ステータスを返却
+            return returnInfo;
+        }
+        //★インメモリ化対応 end
+
         #region === protected処理 ===
         /// <summary>
         /// 業務ﾛｼﾞｯｸdllｺｰﾙ（※共通処理用）
@@ -1937,6 +2089,12 @@ namespace CommonWebTemplate.CommonUtil
                     if (this.outParam.DefineTransList != null && this.outParam.DefineTransList.Count > 0)
                     {
                         retResultW.Add("DefineTransList", this.outParam.DefineTransList);
+                    }
+
+                    // コンボボックスアイテム(共有メモリから取得用)
+                    if (this.outParam.ComboBoxMemoryInfo != null && this.outParam.ComboBoxMemoryInfo.Count > 0)
+                    {
+                        retResultW.Add("ComboBoxMemoryInfo", this.outParam.ComboBoxMemoryInfo);
                     }
 
                     retResult = retResultW;

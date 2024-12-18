@@ -75,6 +75,17 @@ namespace CommonWebTemplate.CommonDefinitions
         /// <summary>翻訳工場ID</summary>
         public int TransFactoryId { get; set; }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// ユーザカスタマイズ情報
+        /// </summary>
+        public List<COM_LISTITEM_USER_CUSTOMIZE> CustomizeList { get; set; }
+        /// <summary>
+        /// コンボボックスデータ取得済みフラグ
+        /// </summary>
+        public bool ComboDataAcquiredFlg { get; set; }
+        //★インメモリ化対応 end
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -101,6 +112,9 @@ namespace CommonWebTemplate.CommonDefinitions
             this.GUID = string.Empty;
             this.BrowserTabNo = string.Empty;
             this.Status = Models.Common.CommonProcReturn.ProcStatus.Valid;
+            //★インメモリ化対応 start
+            this.CustomizeList = new List<COM_LISTITEM_USER_CUSTOMIZE>();
+            //★インメモリ化対応 end
         }
     }
 
@@ -135,6 +149,9 @@ namespace CommonWebTemplate.CommonDefinitions
 
         /// <summary>画面定義翻訳リスト</summary>
         public List<Dictionary<string, object>> DefineTransList { get; set; }
+        /// <summary>Gets or sets コンボボックス情報(共有メモリ)</summary>
+        /// <value>コンボボックス情報(共有メモリ)</value>
+        public Dictionary<string, object> ComboBoxMemoryInfo { get; set; }
 
         /// <summary>
         /// コンストラクタ
@@ -152,6 +169,7 @@ namespace CommonWebTemplate.CommonDefinitions
             this.ButtonStatusList = new List<Dictionary<string, object>>();
             this.UpdateUserInfo = false;
             this.DefineTransList = new List<Dictionary<string, object>>();
+            this.ComboBoxMemoryInfo = new Dictionary<string, object>();
         }
     }
 

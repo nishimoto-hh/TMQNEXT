@@ -19,6 +19,8 @@ using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
 using static CommonWebTemplate.CommonUtil.RequestManageUtil;
 using System.Linq;
+using Microsoft.Extensions.Caching.Memory;
+using CommonWebTemplate.CommonDefinitions;
 
 namespace CommonWebTemplate.CommonUtil
 {
@@ -833,6 +835,10 @@ namespace CommonWebTemplate.CommonUtil
                 procData.GUID = userInfo.GUID;
                 procData.AuthorityLevelId = userInfo.AuthorityLevelId;
                 procData.BelongingInfo = userInfo.BelongingInfo;
+                //★インメモリ化対応 start
+                // ユーザカスタマイズ情報
+                procData.CustomizeList = userInfo.CustomizeList;
+                //★インメモリ化対応 end
 
                 //=== 権限情報 ==
                 //ﾕｰｻﾞｰ機能権限のある機能ﾏｽﾀﾘｽﾄ

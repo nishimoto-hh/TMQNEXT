@@ -18,9 +18,20 @@ namespace CommonSTDUtil.CommonSTDUtil
         public class AutoCompleteEntity
         {
 
-            /// <summary>Gets テーブル名</summary>
-            /// <value>テーブル名</value>
-            public string TableName { get; }
+            //★インメモリ化対応 start
+            // 未使用のため削除
+            ///// <summary>Gets テーブル名</summary>
+            ///// <value>テーブル名</value>
+            //public string TableName { get; }
+
+            // 共有メモリ保持時に使用するため追加
+            /// <summary>Gets or sets パラメータキー</summary>
+            /// <value>パラメータキー</value>
+            public string ParamKey { get; set; }
+            /// <summary>Gets or sets 翻訳ID</summary>
+            /// <value>翻訳ID</value>
+            public string TranslationId { get; set; }
+            //★インメモリ化対応 end
             /// <summary>Gets or sets 工場ID</summary>
             /// <value>工場ID</value>
             public string FactoryId { get; set; }

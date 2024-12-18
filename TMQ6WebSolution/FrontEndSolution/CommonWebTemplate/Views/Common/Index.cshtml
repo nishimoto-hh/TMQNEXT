@@ -413,7 +413,8 @@
             @* コンボボックス初期化 *@
             @foreach(string key in ViewBag.CboDatas.Keys) {
                 var cboData = (List<string>)ViewBag.CboDatas[key];
-                @:initComboBox("@ViewBag.AppRoutePath", "#@key", "@cboData[0]", "@Html.Raw(cboData[1])", "@cboData[2]", "@cboData[3]", -1);
+                @*@:initComboBox("@ViewBag.AppRoutePath", "#@key", "@cboData[0]", "@Html.Raw(cboData[1])", "@cboData[2]", "@cboData[3]", -1);*@
+                @:setComboSelectBoxInfo("#@key", "@cboData[0]", "@Html.Raw(cboData[1])", "@cboData[2]", "@cboData[3]");
             }
             @*initComboBoxes("@ViewBag.AppRoutePath", @formNo, false);*@
 
@@ -434,7 +435,8 @@
             @foreach(string key in ViewBag.MltSelDatas.Keys)
             {
                 var msData = (List<string>)ViewBag.MltSelDatas[key];
-                @:initMultiSelectBox("@ViewBag.AppRoutePath", "#@key", "@msData[0]", "@Html.Raw(msData[1])", "@msData[2]", "@msData[3]");
+                @*@:initMultiSelectBox("@ViewBag.AppRoutePath", "#@key", "@msData[0]", "@Html.Raw(msData[1])", "@msData[2]", "@msData[3]");*@
+                @:setComboSelectBoxInfo("#@key", "@msData[0]", "@Html.Raw(msData[1])", "@msData[2]", "@msData[3]");
             }
             @*initMultiSelectBoxes("@ViewBag.AppRoutePath", @formNo, false);*@
 
@@ -484,6 +486,9 @@
 
             @* タブ切替の初期化処理 *@
             initTab();
+
+            @* コンボボックスデータ取得済みフラグ初期化 *@
+            P_ComboDataAcquiredFlg = false;
 
             @* 各種ボタンの初期化 *@
             initButtons('@ViewBag.AppRoutePath',

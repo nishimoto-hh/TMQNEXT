@@ -704,11 +704,11 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
         }
         else {
             // コンボボックスの再作成
-            refreshComboBox(appPath, grpId);
+            refreshComboBox(appPath, conductId, grpId);
         }
     } else {
         // コンボボックスの再作成
-        refreshComboBox(appPath, grpId);
+        refreshComboBox(appPath, conductId, grpId);
     }
 }
 

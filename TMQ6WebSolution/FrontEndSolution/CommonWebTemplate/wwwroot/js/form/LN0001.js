@@ -404,6 +404,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 一覧画面初期化時、ローカルストレージの一覧更新キーをクリア
         removeSaveDataFromLocalStorage(localStorageCode.ScheduleUpdateKeyList);
 
+        // 初期検索を行わないが、一覧ヘッダは表示する
+        var detailArea = $(P_Article).find("#" + P_formDetailId); // 明細ｴﾘｱ
+        var detailLists = $(detailArea).find(".detail_div").children().not("[id$='edit_div']"); //明細ｴﾘｱ一覧
+        setInitHide(detailLists, false);
     } else if (formNo == FormDetail.No) {
         // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormDetail);

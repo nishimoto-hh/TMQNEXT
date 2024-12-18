@@ -1245,6 +1245,19 @@ namespace BusinessLogic_MC0001
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
 
+            // メニューから選択された際の初期検索は行わない
+            if (this.CtrlId == "Init")
+            {
+                // 検索結果の設定
+                if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+
+                return true;
+            }
+
             // 項目カスタマイズで選択されている項目のみSELECTする
             List<string> uncommentList = getDisplayCustomizeCol(TargetCtrlId.SearchList);
 

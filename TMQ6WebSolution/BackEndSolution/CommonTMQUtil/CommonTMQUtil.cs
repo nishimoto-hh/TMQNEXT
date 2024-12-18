@@ -459,6 +459,7 @@ namespace CommonTMQUtil
             buttomId = -1;
             // 構成マスタの上下階層の値をすべて取得
             var list = GetStructureItemList<StructureLayerInfo.StructureGetInfo>(new List<int>() { structureId }, db, languageId);
+            if (list == null) { return true; }
             // 引数の階層IDの構成階層番号を取得
             int orgLayerNo = (list.Where(x => x.StructureId == structureId).Select(x => x.StructureLayerNo).First()) ?? -1;
             // 最大の構成階層番号を取得

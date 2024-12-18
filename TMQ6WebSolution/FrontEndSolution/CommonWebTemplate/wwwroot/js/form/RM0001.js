@@ -227,7 +227,8 @@ function changeComboValues(appPath, ctrlId, valNo) {
         var isNullCheck = $(selectFactory).hasClass("validate_required");
 
         // 工場コンボボックスのセッションストレージ上の情報をクリア
-        const paramKey = sqlId + "," + param;
+        //const paramKey = sqlId + "," + param;
+        const paramKey = sqlId + "_" + param;
         removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
 
         initComboBox(appPath, $(selectFactory), sqlId, param, ctrlOption, isNullCheck, -1);
@@ -282,7 +283,8 @@ function changeComboValues(appPath, ctrlId, valNo) {
         var isNullCheck = $(selectOutputTemplate).hasClass("validate_required");
 
         // 工場コンボボックスのセッションストレージ上の情報をクリア
-        const paramKey = sqlId + "," + param;
+        //const paramKey = sqlId + "," + param;
+        const paramKey = sqlId + "_" + param;
         removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
 
         // コンボボックスの初期化
@@ -346,7 +348,8 @@ function changeComboValues(appPath, ctrlId, valNo) {
         var isNullCheck = $(selectOutputPattern).hasClass("validate_required");
 
         // 工場コンボボックスのセッションストレージ上の情報をクリア
-        const paramKey = sqlId + "," + param;
+        //const paramKey = sqlId + "," + param;
+        const paramKey = sqlId + "_" + param;
         removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
 
         // コンボボックスの初期化
@@ -1259,7 +1262,8 @@ function RM0001_initTemplateComb(appPath, conductId, pgmId, formNo, btn, conduct
     var isNullCheck = $(selectOutputTemplate).hasClass("validate_required");
 
     // 工場コンボボックスのセッションストレージ上の情報をクリア
-    const paramKey = sqlId + "," + param;
+    //const paramKey = sqlId + "," + param;
+    const paramKey = sqlId + "_" + param;
     removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
 
     // グローバル変数に格納されているコンボボックスデータを削除する(このあとのinitComboBoxで再取得したデータをセットするため)
@@ -1332,7 +1336,8 @@ function RM0001_initPatternComb(appPath, conductId, pgmId, formNo, btn, conductP
     var isNullCheck = $(selectOutputPattern).hasClass("validate_required");
 
     // 工場コンボボックスのセッションストレージ上の情報をクリア
-    const paramKey = sqlId + "," + param;
+    //const paramKey = sqlId + "," + param;
+    const paramKey = sqlId + "_" + param;
     removeSaveDataFromSessionStorage(sessionStorageCode.CboMasterData, paramKey);
 
     // グローバル変数に格納されているコンボボックスデータを削除する(このあとのinitComboBoxで再取得したデータをセットするため)

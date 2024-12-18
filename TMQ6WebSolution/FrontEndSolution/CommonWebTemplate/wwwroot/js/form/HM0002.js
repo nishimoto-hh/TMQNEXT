@@ -305,6 +305,11 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 一覧画面の場合、新規申請ボタンにフォーカスをセット
         // 押下不能なら出力ボタン
         setFocusButtonAvailable(FormList.Button.New, FormList.Button.Output);
+
+        // 初期検索を行わないが、一覧ヘッダは表示する
+        var detailArea = $(P_Article).find("#" + P_formDetailId); // 明細ｴﾘｱ
+        var detailLists = $(detailArea).find(".detail_div").children().not("[id$='edit_div']"); //明細ｴﾘｱ一覧
+        setInitHide(detailLists, false);
     } else if (formNo == FormDetail.No) {
         // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormDetail);

@@ -18,6 +18,7 @@ using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using CommonWebTemplate.CommonDefinitions;
 
 namespace BusinessLogic_LN0001
 {
@@ -40,6 +41,20 @@ namespace BusinessLogic_LN0001
             // 非表示項目
             // 変更管理ボタンの表示制御用フラグ
             setHistoryManagementFlg(ConductInfo.FormList.ControlId.HiddenInfo);
+
+            // メニューから選択された際の初期検索は行わない
+            if (this.CtrlId == "Init")
+            {
+                // 検索結果の設定
+                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+                if (SetSearchResultsByDataClassForList<Dao.ListSearchResult>(pageInfo, new List<Dao.ListSearchResult>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+
+                return true;
+            }
 
             // 項目カスタマイズで選択されている項目のみSELECTする
             List<string> uncommentList = getDisplayCustomizeCol(ConductInfo.FormList.ControlId.List);

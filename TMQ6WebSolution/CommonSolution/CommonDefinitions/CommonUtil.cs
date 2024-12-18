@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Caching.Memory;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -324,4 +325,84 @@ namespace CommonWebTemplate.CommonDefinitions
         /// <summary>部分一致</summary>
         PartialMatch
     }
+
+    //★インメモリ化対応 start
+    /// <summary>
+    /// 画面定義や翻訳情報など、何度も取得しているデータをインメモリ化する為のクラス
+    /// </summary>
+    public class CommonMemoryData
+    {
+        private static CommonMemoryData singleton = null;
+        private static Dictionary<string, object> memoryData = new Dictionary<string, object>();
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        private CommonMemoryData()
+        {
+        }
+
+        /// <summary>
+        /// インスタンス生成
+        /// </summary>
+        /// <returns></returns>
+        public static CommonMemoryData GetInstance()
+        {
+            if (singleton == null)
+            {
+                singleton = new CommonMemoryData();
+            }
+            return singleton;
+        }
+
+        /// <summary>
+        /// ディクショナリにデータを格納する
+        /// </summary>
+        /// <param name="key">キー名称</param>
+        /// <param name="data">格納するデータ</param>
+        public void SetData(string key, object data)
+        {
+            // ディクショナリのキーに対する値を設定
+            memoryData[key] = data;
+        }
+
+        /// <summary>
+        /// キー名称を指定してディクショナリからデータを取得する
+        /// </summary>
+        /// <param name="key">キー名称</param>
+        /// <returns>キー名称をもとに取得したディクショナリのデータ</returns>
+        public object GetData(string key)
+        {
+            // キー名称を指定してディクショナリに格納されているデータを取得する(データが取得できない場合はNULLを返す)
+            return memoryData.ContainsKey(key) ? memoryData[key] : null;
+        }
+
+        public List<string> GetAllKeys()
+        {
+            return memoryData.Keys.ToList();
+        }
+
+        /// <summary>
+        /// ディクショナリからキーに指定キーワードを含むキーを取得する
+        /// </summary>
+        /// <param name="keyword">キーワード</param>
+        /// <returns>キーワードをもとに取得したディクショナリのキー</returns>
+        public List<string> GetKeysByKeyword(string keyword)
+        {
+            // キー名称を指定してディクショナリに格納されているキーを取得する
+            var keys = GetAllKeys();
+            return keys.Where(x => x.Contains(keyword)).ToList();
+        }
+
+        /// <summary>
+        /// 指定されたキーがディクショナリに含まれているかどうか判定
+        /// </summary>
+        /// <param name="key">キー名称</param>
+        /// <returns>含まれている場合：True、含まれていない場合：False</returns>
+        public bool HasKey(string key)
+        {
+            return GetAllKeys().Contains(key);
+        }
+    }
+    //★インメモリ化対応 end
 }

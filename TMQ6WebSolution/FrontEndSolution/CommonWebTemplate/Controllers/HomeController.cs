@@ -25,6 +25,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.IdentityModel.Tokens.Saml2;
 using System.IO;
 using System.IO.Compression;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CommonWebTemplate.Controllers
 {
@@ -784,11 +785,27 @@ namespace CommonWebTemplate.Controllers
                 return returnInfo;
             }
 
+            //★インメモリ化対応 start
+            // 場所階層/職種・機種ツリーデータを取得
+            var structureList = new Dictionary<string, List<CommonTreeViewInfo>>();
+            procData.StructureGroupList = new List<int> { STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Location, STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job };
+            returnInfo = blogic.GetStructureList(procData, ref structureList);
+            if (returnInfo.IsProcEnd())
+            {
+                //エラーの場合、エラー情報を返却
+                return returnInfo;
+            }
+            //★インメモリ化対応 end
+
             //== ｾｯｼｮﾝ管理 ==
             //ｾｯｼｮﾝにﾕｰｻﾞｰ情報を保存
             HttpContext.Session.SetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO, userInfo);
             //ｾｯｼｮﾝに遷移元URLを保存
             HttpContext.Session.SetString(RequestManageUtil.SessionKey.CIM_TRANS_SRC_URL, sourceURL);
+            //★インメモリ化対応 start
+            // セッションにツリーデータを保存
+            HttpContext.Session.SetObject<Dictionary<string, List<CommonTreeViewInfo>>>(RequestManageUtil.SessionKey.TMQ_STRUCTURE_TREE_LIST, structureList);
+            //★インメモリ化対応 end
 
             return new CommonProcReturn();
         }

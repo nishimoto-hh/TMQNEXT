@@ -204,6 +204,17 @@ namespace CommonWebTemplate.Models.Common
         /// </summary>
         public int TransFactoryId { get; set; }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// ユーザカスタマイズ情報
+        /// </summary>
+        public List<COM_LISTITEM_USER_CUSTOMIZE> CustomizeList { get; set; }
+        /// <summary>
+        /// コンボボックスデータ取得済みフラグ
+        /// </summary>
+        public bool ComboDataAcquiredFlg { get; set; }
+        //★インメモリ化対応 end
+
         #region === コンストラクタ ===
         /// <summary>
         /// コンストラクタ
@@ -252,6 +263,9 @@ namespace CommonWebTemplate.Models.Common
             copySource.BrowserTabNo = baseSource.BrowserTabNo;
             copySource.AuthorityLevelId = baseSource.AuthorityLevelId;
             copySource.BelongingInfo = baseSource.BelongingInfo;
+            //★インメモリ化対応 start
+            copySource.CustomizeList = baseSource.CustomizeList;
+            //★インメモリ化対応 end
 
             return copySource;
 

@@ -251,7 +251,30 @@ namespace CommonSTDUtil
             /// <summary>Gets or sets 言語ラベル</summary>
             /// <value>言語ラベル</value>
             public string LanguageLabel { get; set; }
+            //★インメモリ化対応 start
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
+            /// <summary>Gets or sets 表示順用工場ID</summary>
+            /// <value>表示順用工場ID</value>
+            public int OrderFactoryId { get; set; }
+            //★インメモリ化対応 end
         }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 1ページ当たりの行数コンボ情報クラス
+        /// </summary>
+        public class ComboRowInfo
+        {
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
+            /// <summary>Gets or sets 1ページ当たりの行数</summary>
+            /// <value>1ページ当たりの行数</value>
+            public int ExData { get; set; }
+        }
+        //★インメモリ化対応 end
 
         /// <summary>
         /// テンポラリフォルダパス情報クラス

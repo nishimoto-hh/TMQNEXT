@@ -19,6 +19,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 using CommonWebTemplate.CommonDefinitions;
 using Microsoft.EntityFrameworkCore;
 
+using Model = CommonWebTemplate.Models.Common;
+using Microsoft.Extensions.Caching.Memory;
+
 namespace CommonWebTemplate.CommonUtil
 {
     public class CommonDataUtil
@@ -110,6 +113,12 @@ namespace CommonWebTemplate.CommonUtil
         public string SqlGetFormControlDefineInfo2 = @"
                 ISNULL(uc.display_order, fcd.column_no) AS DISPLAY_ORDER,
                 ISNULL(uc.display_flg, CONVERT(BIT, 1)) AS DISPLAY_FLG
+                ,fd.group_no as GrpNo
+                ,cd.column_name as ColOrgName
+                ,cd2.column_name as DetailSearchColOrgName
+                ,ISNULL(cd2.data_type, cd.data_type) as DetailSearchDataType
+                ,cd.data_type as DataType
+                ,fcd.expansion_lock_table_name as LockTblName
 
             FROM cm_form_define fd
             LEFT JOIN cm_form_control_define fcd
@@ -128,6 +137,9 @@ namespace CommonWebTemplate.CommonUtil
             AND fcd.form_no = uc.form_no
             AND fcd.control_group_id = uc.control_group_id
             AND fcd.control_no = uc.control_no
+            LEFT JOIN cm_control_define cd2
+            ON fcd.control_id = cd2.control_id
+            AND fcd.detailed_search_control_type = cd2.control_type
 
             WHERE
                 fd.program_id = {0}
@@ -139,6 +151,12 @@ namespace CommonWebTemplate.CommonUtil
         public string SqlGetFormControlDefineInfo2Com = @"
                 fcd.column_no AS DISPLAY_ORDER,
                 CONVERT(BIT, 1) AS DISPLAY_FLG
+            ,fd.group_no as GrpNo
+            ,cd.column_name as ColOrgName
+            ,cd2.column_name as DetailSearchColOrgName
+            ,ISNULL(cd2.data_type, cd.data_type) as DetailSearchDataType
+            ,cd.data_type as DataType
+            ,fcd.expansion_lock_table_name as LockTblName
 
             FROM cm_form_define fd
             LEFT JOIN cm_form_control_define fcd
@@ -150,6 +168,9 @@ namespace CommonWebTemplate.CommonUtil
             ON fcd.location_structure_id = cu.location_structure_id
             AND fcd.control_id = cu.control_id
             AND fcd.control_type = cu.control_type
+            LEFT JOIN cm_control_define cd2
+            ON fcd.control_id = cd2.control_id
+            AND fcd.detailed_search_control_type = cd2.control_type
 
             WHERE
                 fd.program_id = {0}
@@ -159,6 +180,11 @@ namespace CommonWebTemplate.CommonUtil
             AND fcd.delete_flg != 1
                 AND cu.control_id IS NULL";
 
+        #endregion
+
+        #region === メンバ変数 ===
+        protected CommonLogger logger = CommonLogger.GetInstance();
+        protected static CommonMemoryData comMemoryData;
         #endregion
 
         #region === プロパティ ===
@@ -172,6 +198,7 @@ namespace CommonWebTemplate.CommonUtil
         public CommonDataUtil(CommonDataEntities context)
         {
             this._context = context;
+            comMemoryData = CommonMemoryData.GetInstance();
         }
         #endregion
 
@@ -370,11 +397,33 @@ namespace CommonWebTemplate.CommonUtil
             string ctrlId = "")
         {
             //①該当機能の機能ﾏｽﾀ情報取得
-            COM_CONDUCT_MST resultW = _context.COM_CONDUCT_MST
+            //★インメモリ化対応 start
+            //COM_CONDUCT_MST resultW = _context.COM_CONDUCT_MST
+            //    .Where(x =>
+            //        x.CONDUCTID == procData.ConductId &&
+            //        x.DELFLG == false
+            //    ).FirstOrDefault();
+            // 共有メモリから取得する
+            var comConductMstList = (List<COM_CONDUCT_MST>)comMemoryData.GetData(nameof(COM_CONDUCT_MST));
+            COM_CONDUCT_MST resultW;
+            if (comConductMstList != null)
+            {
+                resultW = comConductMstList
+                    .Where(x =>
+                        x.CONDUCTID == procData.ConductId
+                    ).FirstOrDefault();
+            }
+            else
+            {
+                logger.WriteLog("CommonMemoryData.GetData():" + nameof(COM_CONDUCT_MST));
+
+                resultW = _context.COM_CONDUCT_MST
                 .Where(x =>
                     x.CONDUCTID == procData.ConductId &&
                     x.DELFLG == false
                 ).FirstOrDefault();
+            }
+            //★インメモリ化対応 end
             if (resultW == null)
             {
                 return null;
@@ -387,7 +436,10 @@ namespace CommonWebTemplate.CommonUtil
             // ③画面定義(一覧)に紐づく一覧項目定義情報を取得
             // ④画面定義(一覧)に紐づく一覧項目ユーザ情報を取得
             // ⑤画面定義(一覧)に紐づくコントロールグループの画面定義情報を取得
-            result.FORMDEFINES = GetFormDefineInfo(result.CONDUCTMST.PGMID, ref formNo, areaKbn, ctrlId, procData.LoginUserId, procData.FactoryIdList, procData.BelongingInfo);
+            //★インメモリ化対応 start
+            //result.FORMDEFINES = GetFormDefineInfo(result.CONDUCTMST.PGMID, ref formNo, areaKbn, ctrlId, procData.LoginUserId, procData.FactoryIdList, procData.BelongingInfo);
+            result.FORMDEFINES = GetFormDefineInfo(result.CONDUCTMST.PGMID, ref formNo, areaKbn, ctrlId, procData);
+            //★インメモリ化対応 end
 
             //⑥共通機能の画面定義を取得
             if (!string.IsNullOrEmpty(result.CONDUCTMST.CM_CONDUCTID))
@@ -398,15 +450,23 @@ namespace CommonWebTemplate.CommonUtil
                 foreach (var conductId in conductIds)
                 {
                     // 共通機能の機能マスタ情報取得
-                    var comConductMstW = _context.COM_CONDUCT_MST.Where(x =>
-                        x.CONDUCTID == conductId &&
-                        x.DELFLG == false
+                    //★インメモリ化対応 start
+                    //var comConductMstW = _context.COM_CONDUCT_MST.Where(x =>
+                    //    x.CONDUCTID == conductId &&
+                    //    x.DELFLG == false
+                    //).FirstOrDefault();
+                    var comConductMstW = comConductMstList.Where(x =>
+                        x.CONDUCTID == conductId
                     ).FirstOrDefault();
+                    //★インメモリ化対応 end
                     if (comConductMstW == null) { continue; }
 
                     // 画面定義取得
                     CommonConductMst comConductMst = new CommonConductMst(comConductMstW);
-                    comConductMst.FORMDEFINES = GetFormDefineInfo(comConductMstW.PGMID, ref formNo, areaKbn, ctrlId, procData.LoginUserId, procData.FactoryIdList, procData.BelongingInfo);
+                    //★インメモリ化対応 start
+                    //comConductMst.FORMDEFINES = GetFormDefineInfo(comConductMstW.PGMID, ref formNo, areaKbn, ctrlId, procData.LoginUserId, procData.FactoryIdList, procData.BelongingInfo);
+                    comConductMst.FORMDEFINES = GetFormDefineInfo(comConductMstW.PGMID, ref formNo, areaKbn, ctrlId, procData);
+                    //★インメモリ化対応 end
 
                     result.CM_CONDUCTMSTS.Add(comConductMst);
                 }
@@ -428,15 +488,34 @@ namespace CommonWebTemplate.CommonUtil
         /// <param name="userId">ログインユーザID</param>
         /// <param name="belongingInfo">所属情報</param>
         /// <returns></returns>
-        public List<CommonFormDefine> GetFormDefineInfo(string pgmId, ref short formNo, short areaKbn, string ctrlId, string userId, List<int> facrotyIdList, BelongingInfo belongingInfo)
+        //★インメモリ化対応 start
+        //public List<CommonFormDefine> GetFormDefineInfo(string pgmId, ref short formNo, short areaKbn, string ctrlId, string userId, List<int> facrotyIdList, BelongingInfo belongingInfo)
+        public List<CommonFormDefine> GetFormDefineInfo(string pgmId, ref short formNo, short areaKbn, string ctrlId, CommonProcData procData)
+        //★インメモリ化対応 end
         {
             List<CommonFormDefine> resultList = new List<CommonFormDefine>();
 
             //②機能ﾏｽﾀに紐づく画面定義情報を取得
-            IQueryable<COM_FORM_DEFINE> formDefines = _context.COM_FORM_DEFINE
-                .Where(y =>
-                    y.PGMID == pgmId &&
-                    y.DELFLG == false);
+            //★インメモリ化対応 start
+            //IQueryable<COM_FORM_DEFINE> formDefines = _context.COM_FORM_DEFINE
+            //    .Where(y =>
+            //        y.PGMID == pgmId &&
+            //        y.DELFLG == false);
+            // 共有メモリから取得
+            var defines = (List<COM_FORM_DEFINE>)comMemoryData.GetData(nameof(COM_FORM_DEFINE));
+            List<COM_FORM_DEFINE> formDefines;
+            if (defines != null)
+            {
+                formDefines = defines.Where(y => y.PGMID == pgmId).ToList();
+            }
+            else
+            {
+                logger.WriteLog("CommonMemoryData.GetData():" + nameof(COM_FORM_DEFINE));
+                formDefines = _context.COM_FORM_DEFINE.Where(y =>
+                   y.PGMID == pgmId &&
+                   y.DELFLG == false).ToList();
+            }
+            //★インメモリ化対応 end
 
             //※定義区分で絞込み
             switch (areaKbn)
@@ -446,7 +525,7 @@ namespace CommonWebTemplate.CommonUtil
                     formDefines = formDefines
                         .Where(y =>
                             (y.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.List ||
-                                y.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Input));
+                                y.AREAKBN == FORM_DEFINE_CONSTANTS.AREAKBN.Input)).ToList();
                     if (string.IsNullOrEmpty(ctrlId))
                     {
                         //一覧のCtrlIdの絞込みがない場合、一覧は単票表示パターンのみとする
@@ -456,7 +535,7 @@ namespace CommonWebTemplate.CommonUtil
                             .Where(y =>
                                 (y.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||
                                     y.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Edit ||
-                                    y.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference));
+                                    y.DAT_TRANSPTN == FORM_DEFINE_CONSTANTS.DAT_TRANSPTN.Reference)).ToList();
                     }
                     else
                     {
@@ -464,7 +543,7 @@ namespace CommonWebTemplate.CommonUtil
                         formDefines = formDefines
                             .Where(y =>
                                 (y.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.ControlGroup ||
-                                    y.CTRLID == ctrlId));
+                                    y.CTRLID == ctrlId)).ToList();
                     }
                     break;
                 case FORM_DEFINE_CONSTANTS.AREAKBN.None:
@@ -474,7 +553,7 @@ namespace CommonWebTemplate.CommonUtil
                     //指定された定義区分で絞込み
                     formDefines = formDefines
                         .Where(y =>
-                            y.AREAKBN == areaKbn);
+                            y.AREAKBN == areaKbn).ToList();
                     break;
 
             }
@@ -495,202 +574,65 @@ namespace CommonWebTemplate.CommonUtil
             //TMQカスタマイズ start====================================
             //③画面定義(一覧)に紐づく一覧項目定義情報を取得
             // 対象工場
-            int locationLayerId = belongingInfo.DutyFactoryId;  // デフォルトは本務工場
-            if(facrotyIdList != null && facrotyIdList.Count > 0)
+            int locationLayerId = procData.BelongingInfo.DutyFactoryId;  // デフォルトは本務工場
+            if(procData.FactoryIdList != null && procData.FactoryIdList.Count > 0)
             {
                 // 工場指定有りの場合
-                if (!facrotyIdList.Contains(locationLayerId))
+                if (!procData.FactoryIdList.Contains(locationLayerId))
                 {
                     // 本務工場以外の選択の場合、先頭工場を設定
-                    locationLayerId = facrotyIdList[0];
+                    locationLayerId = procData.FactoryIdList[0];
                 }
             }
 
             // 直接SQLを発行してデータを取得する
+            //★インメモリ化対応 start
             // 通常レイアウト
-            var listItemList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
-                SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2, pgmId, locationLayerId, userId, 1).ToList();
-            // 共通レイアウト(カスタマイズ情報の結合無し)
-            var listItemComList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
-                SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2Com, pgmId, locationLayerId).ToList();
+            //var listItemList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
+            //    SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2, pgmId, locationLayerId, userId, 1).ToList();
+            //// 共通レイアウト(カスタマイズ情報の結合無し)
+            //var listItemComList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
+            //    SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2Com, pgmId, locationLayerId).ToList();
+            // 通常レイアウト
+            var listItemList = getComListItemDefineList(pgmId, locationLayerId, procData, false);
+            if (listItemList == null)
+            {
+                listItemList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
+                SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2, pgmId, locationLayerId, procData.LoginUserId, 1).ToList();
+            }
+            // 共通レイアウト
+            var listItemComList = getComListItemDefineList(pgmId, locationLayerId, procData, true);
+            if (listItemComList == null)
+            {
+                listItemComList = _context.COM_LISTITEM_DEFINE.FromSqlRaw(
+                    SqlGetFormControlDefineInfo + SqlGetFormControlDefineInfo2Com, pgmId, locationLayerId).ToList();
+            }
+            //★インメモリ化対応 end
 
             foreach (CommonFormDefine fd in resultList.ToList())
             {
                 if (fd.FORMDEFINE.COMM_FORMNO == null || fd.FORMDEFINE.COMM_FORMNO == 0) {
                     //共通レイアウト定義を使用しない場合
-                    //fd.LISTITEMDEFINES = (
-                    //    from formControlDefine in _context.COM_FORM_CONTROL_DEFINE.AsEnumerable()
-                    //    join controlDefine in _context.COM_CONTROL_DEFINE.AsEnumerable() //COM_CONTROL_DEFINEを外部結合
-                    //    on new { formControlDefine.CONTROL_ID, formControlDefine.CONTROL_TYPE } equals new { controlDefine.CONTROL_ID, controlDefine.CONTROL_TYPE }
-                    //    into controlJoin from control in controlJoin.DefaultIfEmpty(new COM_CONTROL_DEFINE { CONTROL_ID = "", CONTROL_TYPE = ""})
-                    //    join unusedDefine in _context.COM_CONTROL_UNUSED.AsEnumerable() //COM_CONTROL_UNUSEDを外部結合
-                    //    on new { control.CONTROL_ID, control.CONTROL_TYPE } equals new { unusedDefine.CONTROL_ID, unusedDefine.CONTROL_TYPE }
-                    //    into itemUnused from unused
-                    //    in (from locationUnused in itemUnused 
-                    //        where locationUnused.LOCATION_LAYER_ID == locationLayerId 
-                    //        select locationUnused).DefaultIfEmpty(new COM_CONTROL_UNUSED { LOCATION_LAYER_ID = 0})
-                    //    where 
-                    //        formControlDefine.PGMID == fd.FORMDEFINE.PGMID &&
-                    //        formControlDefine.FORMNO == fd.FORMDEFINE.FORMNO &&
-                    //        formControlDefine.CTRLID == fd.FORMDEFINE.CTRLID &&
-                    //        formControlDefine.DELFLG == false &&
-                    //        (formControlDefine.LOCATION_LAYER_ID == 0 || formControlDefine.LOCATION_LAYER_ID == locationLayerId) &&
-                    //        unused.CONTROL_ID == null //COM_CONTROL_UNUSEDに存在しない項目を取得
-                    //    orderby formControlDefine.DEFINETYPE, formControlDefine.COLFIXKBN descending, formControlDefine.ROWNO, formControlDefine.COLNO
-                    //    select new COM_LISTITEM_DEFINE
-                    //    {
-                    //        LOCATION_LAYER_ID = formControlDefine.LOCATION_LAYER_ID,
-                    //        PGMID = fd.FORMDEFINE.PGMID,
-                    //        FORMNO = fd.FORMDEFINE.FORMNO,
-                    //        CTRLID = fd.FORMDEFINE.CTRLID,
-                    //        DEFINETYPE = formControlDefine.DEFINETYPE,
-                    //        ITEMNO = formControlDefine.CONTROL_NO,
-                    //        CELLTYPE = formControlDefine.CONTROL_TYPE,
-                    //        ITEMID = formControlDefine.CONTROL_ID,
-                    //        DISPKBN = formControlDefine.DISPKBN,
-                    //        ROWNO = formControlDefine.ROWNO,
-                    //        COLNO = formControlDefine.COLNO,
-                    //        ROWSPAN = formControlDefine.ROWSPAN,
-                    //        COLSPAN = formControlDefine.COLSPAN,
-                    //        HEADER_ROWSPAN = formControlDefine.HEADER_ROWSPAN,
-                    //        HEADER_COLSPAN = formControlDefine.HEADER_COLSPAN,
-                    //        POSITION = formControlDefine.POSITION,
-                    //        COLWIDTH = formControlDefine.COLWIDTH,
-                    //        FROMTOKBN = formControlDefine.FROMTOKBN,
-                    //        ITEM_CNT = formControlDefine.ITEM_CNT,
-                    //        INITVAL = formControlDefine.INITVAL,
-                    //        NULLCHKKBN = formControlDefine.NULLCHKKBN,
-                    //        TXT_AUTOCOMPKBN = formControlDefine.TXT_AUTOCOMPKBN,
-                    //        BTN_CTRLID = formControlDefine.BTN_CTRLID,
-                    //        BTN_ACTIONKBN = formControlDefine.BTN_ACTIONKBN,
-                    //        BTN_AUTHCONTROLKBN = formControlDefine.BTN_AUTHCONTROLKBN,
-                    //        BTN_AFTEREXECKBN = formControlDefine.BTN_AFTEREXECKBN,
-                    //        BTN_MESSAGE = formControlDefine.BTN_MESSAGE,
-                    //        DAT_TRANSITION_PATTERN = formControlDefine.DAT_TRANSITION_PATTERN,
-                    //        DAT_TRANSITION_ACTION_DIVISION = formControlDefine.DAT_TRANSITION_ACTION_DIVISION,
-                    //        RELATIONID = formControlDefine.RELATIONID,
-                    //        RELATIONPARAM = formControlDefine.RELATIONPARAM,
-                    //        OPTIONINFO = formControlDefine.OPTIONINFO,
-                    //        UNCHANGEABLEKBN = formControlDefine.UNCHANGEABLEKBN,
-                    //        COLFIXKBN = formControlDefine.COLFIXKBN,
-                    //        FILTERUSEKBN = formControlDefine.FILTERUSEKBN,
-                    //        SORT_DIVISION = formControlDefine.SORT_DIVISION ?? 0,
-                    //        DETAILED_SEARCH_FLG = formControlDefine.DETAILED_SEARCH_FLG,
-                    //        ITEM_CUSTOMIZE_FLG = formControlDefine.ITEM_CUSTOMIZE_FLG,
-                    //        CSSNAME = formControlDefine.CSSNAME,
-                    //        EXP_KEY_NAME = formControlDefine.EXP_KEY_NAME,
-                    //        EXP_TABLE_NAME = formControlDefine.EXP_TABLE_NAME,
-                    //        EXP_COL_NAME = formControlDefine.EXP_COL_NAME,
-                    //        EXP_PARAM_NAME = formControlDefine.EXP_PARAM_NAME,
-                    //        EXP_ALIAS_NAME = formControlDefine.EXP_ALIAS_NAME,
-                    //        EXP_LIKE_PATTERN = formControlDefine.EXP_LIKE_PATTERN,
-                    //        EXP_IN_CLAUSE_KBN = formControlDefine.EXP_IN_CLAUSE_KBN,
-                    //        EXP_LOCK_TYPE = formControlDefine.EXP_LOCK_TYPE,
-                    //        DELFLG = formControlDefine.DELFLG,
-                    //        ITEMNAME = formControlDefine.CONTROL_ID,
-                    //        MINVAL = control.MINVAL,
-                    //        MAXVAL = control.MAXVAL,
-                    //        FORMAT = control.FORMAT_TRANSLATION_ID == null ? null : control.FORMAT_TRANSLATION_ID.ToString(),
-                    //        MAXLENGTH = control.MAXLENGTH ?? 0,
-                    //        TXT_PLACEHOLDER = control.TEXT_PLACEHOLDER_TRANSLATION_ID == null ? null : control.TEXT_PLACEHOLDER_TRANSLATION_ID.ToString(),
-                    //        TOOLTIP = control.TOOLTIP_TRANSLATION_ID == null ? null : control.TOOLTIP_TRANSLATION_ID.ToString(),
-                    //    }
-                    //).ToList();
-
                     fd.LISTITEMDEFINES = listItemList.Where(x => x.FORMNO == fd.FORMDEFINE.FORMNO && x.CTRLID == fd.FORMDEFINE.CTRLID)
                         .OrderBy(x => x.DEFINETYPE)
                         .ThenByDescending(x => x.COLFIXKBN)
                         .ThenBy(x => x.ROWNO)
-                        .ThenBy(x => x.DISPLAY_ORDER).ToList();
+                        .ThenBy(x => x.DISPLAY_ORDER)
+                        .ThenBy(x => x.COLNO)
+                        .ThenBy(x => x.ITEMNO)
+                        .ToList();
                 }
                 else
                 {
                     //共通レイアウト定義を使用する場合
-                    //fd.LISTITEMDEFINES = (
-                    //    from formControlDefine in _context.COM_FORM_CONTROL_DEFINE.AsEnumerable()
-                    //    join controlDefine in _context.COM_CONTROL_DEFINE.AsEnumerable() //COM_CONTROL_DEFINEを外部結合
-                    //    on new { formControlDefine.CONTROL_ID, formControlDefine.CONTROL_TYPE } equals new { controlDefine.CONTROL_ID, controlDefine.CONTROL_TYPE }
-                    //    into controlJoin from control in controlJoin.DefaultIfEmpty(new COM_CONTROL_DEFINE { CONTROL_ID = "", CONTROL_TYPE = "" })
-                    //    join unusedDefine in _context.COM_CONTROL_UNUSED.AsEnumerable() //COM_CONTROL_UNUSEDを外部結合
-                    //    on new { control.CONTROL_ID, control.CONTROL_TYPE } equals new { unusedDefine.CONTROL_ID, unusedDefine.CONTROL_TYPE }
-                    //    into itemUnused from unused
-                    //    in (from locationUnused in itemUnused 
-                    //        where locationUnused.LOCATION_LAYER_ID == locationLayerId 
-                    //        select locationUnused).DefaultIfEmpty(new COM_CONTROL_UNUSED { LOCATION_LAYER_ID = 0 })
-                    //    where
-                    //        formControlDefine.PGMID == "0" && //共通レイアウトの場合"0"が設定される
-                    //        formControlDefine.FORMNO == fd.FORMDEFINE.COMM_FORMNO &&
-                    //        formControlDefine.CTRLID == "CommonCtrl" && //共通レイアウトの場合"CommonCtrl"が設定される
-                    //        formControlDefine.DELFLG == false &&
-                    //        (formControlDefine.LOCATION_LAYER_ID == 0 || formControlDefine.LOCATION_LAYER_ID == locationLayerId) &&
-                    //        unused.CONTROL_ID == null //COM_CONTROL_UNUSEDに存在しない項目を取得
-                    //    orderby formControlDefine.DEFINETYPE, formControlDefine.COLFIXKBN descending, formControlDefine.ROWNO, formControlDefine.COLNO
-                    //    select new COM_LISTITEM_DEFINE
-                    //    {
-                    //        LOCATION_LAYER_ID = formControlDefine.LOCATION_LAYER_ID,
-                    //        PGMID = fd.FORMDEFINE.PGMID,
-                    //        FORMNO = fd.FORMDEFINE.FORMNO,
-                    //        CTRLID = fd.FORMDEFINE.CTRLID,
-                    //        DEFINETYPE = formControlDefine.DEFINETYPE,
-                    //        ITEMNO = formControlDefine.CONTROL_NO,
-                    //        CELLTYPE = formControlDefine.CONTROL_TYPE,
-                    //        ITEMID = formControlDefine.CONTROL_ID,
-                    //        DISPKBN = formControlDefine.DISPKBN,
-                    //        ROWNO = formControlDefine.ROWNO,
-                    //        COLNO = formControlDefine.COLNO,
-                    //        ROWSPAN = formControlDefine.ROWSPAN,
-                    //        COLSPAN = formControlDefine.COLSPAN,
-                    //        HEADER_ROWSPAN = formControlDefine.HEADER_ROWSPAN,
-                    //        HEADER_COLSPAN = formControlDefine.HEADER_COLSPAN,
-                    //        POSITION = formControlDefine.POSITION,
-                    //        COLWIDTH = formControlDefine.COLWIDTH,
-                    //        FROMTOKBN = formControlDefine.FROMTOKBN,
-                    //        ITEM_CNT = formControlDefine.ITEM_CNT,
-                    //        INITVAL = formControlDefine.INITVAL,
-                    //        NULLCHKKBN = formControlDefine.NULLCHKKBN,
-                    //        TXT_AUTOCOMPKBN = formControlDefine.TXT_AUTOCOMPKBN,
-                    //        BTN_CTRLID = formControlDefine.BTN_CTRLID,
-                    //        BTN_ACTIONKBN = formControlDefine.BTN_ACTIONKBN,
-                    //        BTN_AUTHCONTROLKBN = formControlDefine.BTN_AUTHCONTROLKBN,
-                    //        BTN_AFTEREXECKBN = formControlDefine.BTN_AFTEREXECKBN,
-                    //        BTN_MESSAGE = formControlDefine.BTN_MESSAGE,
-                    //        DAT_TRANSITION_PATTERN = formControlDefine.DAT_TRANSITION_PATTERN,
-                    //        DAT_TRANSITION_ACTION_DIVISION = formControlDefine.DAT_TRANSITION_ACTION_DIVISION,
-                    //        RELATIONID = formControlDefine.RELATIONID,
-                    //        RELATIONPARAM = formControlDefine.RELATIONPARAM,
-                    //        OPTIONINFO = formControlDefine.OPTIONINFO,
-                    //        UNCHANGEABLEKBN = formControlDefine.UNCHANGEABLEKBN,
-                    //        COLFIXKBN = formControlDefine.COLFIXKBN,
-                    //        FILTERUSEKBN = formControlDefine.FILTERUSEKBN,
-                    //        SORT_DIVISION = formControlDefine.SORT_DIVISION ?? 0,
-                    //        DETAILED_SEARCH_FLG = formControlDefine.DETAILED_SEARCH_FLG,
-                    //        ITEM_CUSTOMIZE_FLG = formControlDefine.ITEM_CUSTOMIZE_FLG,
-                    //        CSSNAME = formControlDefine.CSSNAME,
-                    //        EXP_KEY_NAME = formControlDefine.EXP_KEY_NAME,
-                    //        EXP_TABLE_NAME = formControlDefine.EXP_TABLE_NAME,
-                    //        EXP_COL_NAME = formControlDefine.EXP_COL_NAME,
-                    //        EXP_PARAM_NAME = formControlDefine.EXP_PARAM_NAME,
-                    //        EXP_ALIAS_NAME = formControlDefine.EXP_ALIAS_NAME,
-                    //        EXP_LIKE_PATTERN = formControlDefine.EXP_LIKE_PATTERN,
-                    //        EXP_IN_CLAUSE_KBN = formControlDefine.EXP_IN_CLAUSE_KBN,
-                    //        EXP_LOCK_TYPE = formControlDefine.EXP_LOCK_TYPE,
-                    //        DELFLG = formControlDefine.DELFLG,
-                    //        ITEMNAME = formControlDefine.CONTROL_ID,
-                    //        MINVAL = control.MINVAL,
-                    //        MAXVAL = control.MAXVAL,
-                    //        FORMAT = control.FORMAT_TRANSLATION_ID == null ? null : control.FORMAT_TRANSLATION_ID.ToString(),
-                    //        MAXLENGTH = control.MAXLENGTH ?? 0,
-                    //        TXT_PLACEHOLDER = control.TEXT_PLACEHOLDER_TRANSLATION_ID == null ? null : control.TEXT_PLACEHOLDER_TRANSLATION_ID.ToString(),
-                    //        TOOLTIP = control.TOOLTIP_TRANSLATION_ID == null ? null : control.TOOLTIP_TRANSLATION_ID.ToString(),
-                    //    }
-                    //).ToList();
-
-                    //共通レイアウトの場合
                     fd.LISTITEMDEFINES =listItemComList.Where(x => x.FORMNO == fd.FORMDEFINE.FORMNO && x.CTRLID == fd.FORMDEFINE.CTRLID)
                         .OrderBy(x => x.DEFINETYPE)
                         .ThenByDescending(x => x.COLFIXKBN)
                         .ThenBy(x => x.ROWNO)
-                        .ThenBy(x => x.DISPLAY_ORDER).ToList();
+                        .ThenBy(x => x.DISPLAY_ORDER)
+                        .ThenBy(x => x.COLNO)
+                        .ThenBy(x => x.ITEMNO)
+                        .ToList();
                 }
             }
 
@@ -703,15 +645,19 @@ namespace CommonWebTemplate.CommonUtil
                                                 y.FORMDEFINE.CTRLTYPE == FORM_DEFINE_CONSTANTS.CTRLTYPE.IchiranPtn3).ToList())
             {
 
-                fd.LISTITEMUSERS = _context.COM_LISTITEM_USER
-                    .Where(z =>
-                        z.USERID == userId &&
-                        z.PGMID == fd.FORMDEFINE.PGMID &&
-                        z.FORMNO == fd.FORMDEFINE.FORMNO &&
-                        z.CTRLID == fd.FORMDEFINE.CTRLID &&
-                        z.DEFINETYPE == 1)
-                    .OrderBy(z => z.ITEMNO)
-                    .ToList();
+                //★インメモリ化対応 start
+                // COM_LISTITEM_USERはTMQでは未使用
+                //fd.LISTITEMUSERS = _context.COM_LISTITEM_USER
+                //    .Where(z =>
+                //        z.USERID == userId &&
+                //        z.PGMID == fd.FORMDEFINE.PGMID &&
+                //        z.FORMNO == fd.FORMDEFINE.FORMNO &&
+                //        z.CTRLID == fd.FORMDEFINE.CTRLID &&
+                //        z.DEFINETYPE == 1)
+                //    .OrderBy(z => z.ITEMNO)
+                //    .ToList();
+                fd.LISTITEMUSERS = new List<COM_LISTITEM_USER>();
+                //★インメモリ化対応 end
             }
 
             //⑤画面定義(一覧)に紐づくコントロールグループの画面定義情報を取得
@@ -855,6 +801,153 @@ namespace CommonWebTemplate.CommonUtil
         #endregion
 
         #region === private処理 ===
+        /// <summary>
+        /// 画面項目定義を取得
+        /// </summary>
+        /// <param name="pgmId">プログラムID</param>
+        /// <param name="locationLayerId">場所階層ID</param>
+        /// <param name="procData">処理データ</param>
+        /// <param name="isCommonLayout">true:共通レイアウト/false:通常レイアウト</param>
+        /// <returns></returns>
+        private List<COM_LISTITEM_DEFINE> getComListItemDefineList(string pgmId, int locationLayerId, CommonProcData procData, bool isCommonLayout)
+        {
+            var keyName = nameof(COM_LISTITEM_DEFINE) + (isCommonLayout ? "_Com" : "");
+            var itemList = (List<COM_LISTITEM_DEFINE>)comMemoryData.GetData(keyName);
+            if (itemList == null)
+            {
+                logger.WriteLog("CommonMemoryData.GetData():" + keyName);
+                return null;
+            }
+            var listItemList = itemList.Where(x =>
+                x.PGMID == pgmId &&
+                (x.LOCATION_LAYER_ID == 0 || x.LOCATION_LAYER_ID == locationLayerId)).ToList();
+
+            if (!isCommonLayout)
+            {
+                // 通常レイアウトの場合、ユーザカスタマイズ情報を結合
+                var userCustomiseList = procData.CustomizeList.Where(x => x.PGMID == pgmId).ToList();
+                listItemList = listItemList.GroupJoin(userCustomiseList,
+                    item => new { item.PGMID, item.FORMNO, item.CTRLID, item.ITEMNO },
+                    custom => new { custom.PGMID, custom.FORMNO, custom.CTRLID, custom.ITEMNO },
+                    (item, custom) => new
+                    {
+                        item.PGMID,
+                        item.FORMNO,
+                        item.CTRLID,
+                        item.ITEMNO,
+                        item.DEFINETYPE,
+                        item.CELLTYPE,
+                        item.ITEMID,
+                        item.DISPKBN,
+                        item.ROWNO,
+                        item.COLNO,
+                        item.ROWSPAN,
+                        item.COLSPAN,
+                        item.HEADER_ROWSPAN,
+                        item.HEADER_COLSPAN,
+                        item.POSITION,
+                        item.COLWIDTH,
+                        item.FROMTOKBN,
+                        item.ITEM_CNT,
+                        item.INITVAL,
+                        item.NULLCHKKBN,
+                        item.TXT_AUTOCOMPKBN,
+                        item.BTN_CTRLID,
+                        item.BTN_ACTIONKBN,
+                        item.BTN_AUTHCONTROLKBN,
+                        item.BTN_AFTEREXECKBN,
+                        item.BTN_MESSAGE,
+                        item.DAT_TRANSITION_PATTERN,
+                        item.DAT_TRANSITION_ACTION_DIVISION,
+                        item.RELATIONID,
+                        item.RELATIONPARAM,
+                        item.OPTIONINFO,
+                        item.UNCHANGEABLEKBN,
+                        item.COLFIXKBN,
+                        item.FILTERUSEKBN,
+                        item.SORT_DIVISION,
+                        item.DETAILED_SEARCH_DIVISION,
+                        item.DETAILED_SEARCH_CELLTYPE,
+                        item.ITEM_CUSTOMIZE_FLG,
+                        item.CSSNAME,
+                        item.EXP_KEY_NAME,
+                        item.EXP_TABLE_NAME,
+                        item.EXP_COL_NAME,
+                        item.EXP_PARAM_NAME,
+                        item.EXP_ALIAS_NAME,
+                        item.EXP_LIKE_PATTERN,
+                        item.EXP_IN_CLAUSE_KBN,
+                        item.EXP_LOCK_TYPE,
+                        item.ITEMNAME,
+                        item.MINVAL,
+                        item.MAXVAL,
+                        item.FORMAT,
+                        item.MAXLENGTH,
+                        item.TXT_PLACEHOLDER,
+                        item.TOOLTIP,
+                        Customize = custom.DefaultIfEmpty()
+                    }).SelectMany(x => x.Customize, (x, y) => new COM_LISTITEM_DEFINE
+                    {
+                        PGMID = x.PGMID,
+                        FORMNO = x.FORMNO,
+                        CTRLID = x.CTRLID,
+                        ITEMNO = x.ITEMNO,
+                        DEFINETYPE = x.DEFINETYPE,
+                        CELLTYPE = x.CELLTYPE,
+                        ITEMID = x.ITEMID,
+                        DISPKBN = x.DISPKBN,
+                        ROWNO = x.ROWNO,
+                        COLNO = x.COLNO,
+                        ROWSPAN = x.ROWSPAN,
+                        COLSPAN = x.COLSPAN,
+                        HEADER_ROWSPAN = x.HEADER_ROWSPAN,
+                        HEADER_COLSPAN = x.HEADER_COLSPAN,
+                        POSITION = x.POSITION,
+                        COLWIDTH = x.COLWIDTH,
+                        FROMTOKBN = x.FROMTOKBN,
+                        ITEM_CNT = x.ITEM_CNT,
+                        INITVAL = x.INITVAL,
+                        NULLCHKKBN = x.NULLCHKKBN,
+                        TXT_AUTOCOMPKBN = x.TXT_AUTOCOMPKBN,
+                        BTN_CTRLID = x.BTN_CTRLID,
+                        BTN_ACTIONKBN = x.BTN_ACTIONKBN,
+                        BTN_AUTHCONTROLKBN = x.BTN_AUTHCONTROLKBN,
+                        BTN_AFTEREXECKBN = x.BTN_AFTEREXECKBN,
+                        BTN_MESSAGE = x.BTN_MESSAGE,
+                        DAT_TRANSITION_PATTERN = x.DAT_TRANSITION_PATTERN,
+                        DAT_TRANSITION_ACTION_DIVISION = x.DAT_TRANSITION_ACTION_DIVISION,
+                        RELATIONID = x.RELATIONID,
+                        RELATIONPARAM = x.RELATIONPARAM,
+                        OPTIONINFO = x.OPTIONINFO,
+                        UNCHANGEABLEKBN = x.UNCHANGEABLEKBN,
+                        COLFIXKBN = x.COLFIXKBN,
+                        FILTERUSEKBN = x.FILTERUSEKBN,
+                        SORT_DIVISION = x.SORT_DIVISION,
+                        DETAILED_SEARCH_DIVISION = x.DETAILED_SEARCH_DIVISION,
+                        DETAILED_SEARCH_CELLTYPE = x.DETAILED_SEARCH_CELLTYPE,
+                        ITEM_CUSTOMIZE_FLG = x.ITEM_CUSTOMIZE_FLG,
+                        CSSNAME = x.CSSNAME,
+                        EXP_KEY_NAME = x.EXP_KEY_NAME,
+                        EXP_TABLE_NAME = x.EXP_TABLE_NAME,
+                        EXP_COL_NAME = x.EXP_COL_NAME,
+                        EXP_PARAM_NAME = x.EXP_PARAM_NAME,
+                        EXP_ALIAS_NAME = x.EXP_ALIAS_NAME,
+                        EXP_LIKE_PATTERN = x.EXP_LIKE_PATTERN,
+                        EXP_IN_CLAUSE_KBN = x.EXP_IN_CLAUSE_KBN,
+                        EXP_LOCK_TYPE = x.EXP_LOCK_TYPE,
+                        ITEMNAME = x.ITEMNAME,
+                        MINVAL = x.MINVAL,
+                        MAXVAL = x.MAXVAL,
+                        FORMAT = x.FORMAT,
+                        MAXLENGTH = x.MAXLENGTH,
+                        TXT_PLACEHOLDER = x.TXT_PLACEHOLDER,
+                        TOOLTIP = x.TOOLTIP,
+                        DISPLAY_FLG = y != null ? y.DISPLAY_FLG : true,
+                        DISPLAY_ORDER = y != null ? y.DISPLAY_ORDER : x.COLNO
+                    }).ToList();
+            }
+            return listItemList;
+        }
         #endregion
 
         #region === public static 処理 ===

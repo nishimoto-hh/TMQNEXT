@@ -805,6 +805,8 @@ namespace CommonWebTemplate.Models.Common
             public const short ComGetUserId = 2003;
             /// <summary>【共通 - 階層ツリー】構成マスタ情報取得</summary>
             public const short ComGetStructureList = 2004;
+            /// <summary>【共通 - 】共有メモリコンボボックスデータ更新</summary>
+            public const short ComUpdateComboBoxData = 2006;
         }
 
         /// <summary>
@@ -1339,6 +1341,19 @@ namespace CommonWebTemplate.Models.Common
             public const short Administrator = 99;
         }
     }
+
+    //★インメモリ化対応 start
+    /// <summary>
+    /// システム起動時関連
+    /// </summary>
+    public static class STARTUP_CONSTANTS
+    {
+        /// <summary>
+        /// システムのデフォルト言語
+        /// </summary>
+        public static string DefaultLanguageId = "ja";
+    }
+    //★インメモリ化対応 end
 
     //2024.09 .NET8バージョンアップ対応 start
     public static class JsonSerializerOptionsDefine

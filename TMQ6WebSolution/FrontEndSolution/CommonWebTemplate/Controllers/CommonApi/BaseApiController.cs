@@ -57,6 +57,9 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 //=== 権限情報 ==
                 //ﾕｰｻﾞｰ機能権限のある機能ﾏｽﾀﾘｽﾄ
                 procData.UserAuthConducts = userInfo.UserAuthConducts;
+                //★インメモリ化対応 start
+                procData.CustomizeList = userInfo.CustomizeList;
+                //★インメモリ化対応 end
             }
         }
 

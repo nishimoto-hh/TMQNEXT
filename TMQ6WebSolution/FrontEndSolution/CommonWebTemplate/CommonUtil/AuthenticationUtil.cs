@@ -118,6 +118,9 @@ namespace CommonWebTemplate.CommonUtil
             procData.LanguageId = userInfo.LanguageId;
             procData.AuthorityLevelId = userInfo.AuthorityLevelId;
             procData.BelongingInfo = userInfo.BelongingInfo;
+            //★インメモリ化対応 start
+            procData.CustomizeList = userInfo.CustomizeList;
+            //★インメモリ化対応 end
 
             //ﾕｰｻﾞｰ権限機能ﾏｽﾀﾘｽﾄ：※ﾕｰｻﾞｰ権限のある機能IDﾘｽﾄから、機能ﾏｽﾀ情報ﾘｽﾄをここで取得して保持しておく
             BusinessLogicUtil blogic = new BusinessLogicUtil();

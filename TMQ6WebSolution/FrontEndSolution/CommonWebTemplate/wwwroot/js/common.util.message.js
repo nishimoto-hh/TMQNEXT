@@ -97,7 +97,7 @@ function clearMessage(target) {
  *  @param {Element} target :メッセージ表示対象要素
  */
 function addMessage(messageStr, messagetype, target) {
-
+    messageStr = messageStr + '';
     var messageDiv = $("#message_divid");
     if (target) {
         messageDiv = $(target).find(".message_div");

@@ -231,6 +231,8 @@ namespace BusinessLogic_MS0020
                 public const int ProccesColumnNo = 6;
                 // 仕様項目名列番号
                 public const int SpecItemNameColumnNo = 11;
+                /// <summary>構成グループID</summary>
+                public const int StructureGroupId = 1340;
             }
         }
         /// <summary>
@@ -663,6 +665,10 @@ namespace BusinessLogic_MS0020
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     return ComConsts.RETURN_RESULT.NG;
                 }
+                //★インメモリ化対応 start
+                // 更新対象構成グループIDを設定
+                SetGlobalData("TargetGrpId", ExcelPortSpecInfo.SpecItem.StructureGroupId);
+                //★インメモリ化対応 end
             }
             else if (sheetNo == TMQUtil.ComExcelPort.SheetNo.SpecRelarionSheetNo)
             {

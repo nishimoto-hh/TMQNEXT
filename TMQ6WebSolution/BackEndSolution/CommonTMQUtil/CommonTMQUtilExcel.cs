@@ -6529,7 +6529,17 @@ namespace CommonTMQUtil
             {
                 factoryIdList = new List<int>() { factoryId };
             }
-            ComUtil.MessageResources message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList, factoryIdList);
+
+            //★インメモリ化対応 start
+            //ComUtil.MessageResources message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList, factoryIdList);
+            // 共有メモリから取得
+            ComUtil.MessageResources message = ComUtil.GetMessageResourceFromComMemory(languageId, messageIdList, factoryIdList);
+            if (message == null)
+            {
+                // DBから取得
+                message = ComUtil.GetMessageResourceFromDb(db, languageId, messageIdList, factoryIdList);
+            }
+            //★インメモリ化対応 end
 
             // 該当のレコードが存在しない場合、nullを戻す
             if (message == null)

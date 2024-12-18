@@ -25,6 +25,13 @@ using System.Security.Cryptography;
 using System.Collections;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Newtonsoft.Json.Linq;
+using System.Resources;
+using CommonSTDUtil.CommonBusinessLogic;
+using static CommonSTDUtil.CommonConstants;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using static CommonSTDUtil.CommonResources;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CommonSTDUtil.CommonSTDUtil
 {
@@ -99,12 +106,36 @@ namespace CommonSTDUtil.CommonSTDUtil
             /// <summary>ユーザマスタからユーザ情報の取得</summary>
             public const string UserMstGetUserInfo = "UserMst_GetUserInfo";
 
+            //★インメモリ化対応 start
+            /// <summary>機能マスタデータの取得</summary>
+            public const string GetComConductMstList = "ComConductMst_GetList";
+            /// <summary>画面定義データの取得</summary>
+            public const string GetComFormDefineList = "ComFormDefine_GetList";
+            /// <summary>画面項目定義データ(通常レイアウト)の取得</summary>
+            public const string GetComListItemDefineList = "ComListItemDefine_GetList";
+            /// <summary>画面項目定義データ(共通レイアウト)の取得</summary>
+            public const string GetComListItemDefineComList = "ComListItemDefineCom_GetList";
+            /// <summary>保持対象SQLID情報の取得</summary>
+            public const string GetTargetSqlIdList = "TargetSqlId_GetList";
+            /// <summary>コンボボックス用関連情報データの取得</summary>
+            public const string GetRelationInfoForComboBox = "RelationInfoForComboBox_GetList";
+            /// <summary>コンボボックス用翻訳情報の取得</summary>
+            public const string GetTranslationForComboBox = "TranslationForComboBox_GetList";
+            /// <summary>ユーザカスタマイズ情報の取得</summary>
+            public const string GetComListItemUserCustomizeList = "ComListItemUserCustomize_GetList";
+
+            //★インメモリ化対応 end
+
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = "Common";
             /// <summary>SQL格納先サブディレクトリ名(オートコンプリート)</summary>
             public const string SubDirAutoComplete = SubDir + "\\AutoComplete";
             /// <summary>SQL格納先サブディレクトリ名(コンボボックス)</summary>
             public const string SubDirComboBox = SubDir + "\\ComboBox";
+            //★インメモリ化対応 start
+            /// <summary>SQL格納先サブディレクトリ名(システム起動時)</summary>
+            public const string SubDirForStartUp = SubDir + "\\StartUp";
+            //★インメモリ化対応 end
 
             /// <summary>SQL名：登録</summary>
             public const string Batch_Get_Status = "Com_bat_sch_GetStatus";
@@ -177,6 +208,7 @@ namespace CommonSTDUtil.CommonSTDUtil
 
         /// <summary>ログ出力</summary>
         private static CommonLogger.CommonLogger logger = CommonLogger.CommonLogger.GetInstance("logger");
+        private static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
         #endregion
 
         #region コンストラクタ
@@ -782,31 +814,13 @@ namespace CommonSTDUtil.CommonSTDUtil
             var ctrlCode = "";
             var ctrlInput = "";
             var factoryId = "";
+            var reset = false;
 
             var dicList = new Dictionary<string, object>();
             dynamic results = null;
 
             // 検索条件を再設定
             dynamic searchCondition = null;
-
-            // 検索結果名のペアを生成(Key:検索結果SQL側カラム名、 Value:共通FW側カラム名)
-            var resultNamesPair = new Dictionary<string, string>
-            {
-                { "FactoryId", "FactoryId" },
-                { "TranslationFactoryId", "TranslationFactoryId" },
-                { "Values", "VALUE1" },
-                { "Labels", "VALUE2" },
-                { "DeleteFlg", "DeleteFlg" },
-                { "OrderFactoryId", "OrderFactoryId" },
-            };
-
-            // 拡張コードを追加
-            // 増やす場合、データクラスにも追加すること
-            for (int i = 1; i <= 30; i++)
-            {
-                string strIndex = i.ToString();
-                resultNamesPair.Add("Exparam" + strIndex, "EXPARAM" + strIndex);
-            }
 
             try
             {
@@ -840,6 +854,12 @@ namespace CommonSTDUtil.CommonSTDUtil
                     {
                         factoryId = dic["FACTORYID"].ToString();
                     }
+					//★インメモリ化対応 start
+                    if (dic.ContainsKey("RESET") && dic["RESET"] != null)
+                    {
+                        reset = Convert.ToBoolean(dic["RESET"]);
+                    }
+					//★インメモリ化対応 end
                 }
 
                 // 検索条件名のペアを生成(Key:カラム名、 Value:検索SQL側パラメータ名)
@@ -890,9 +910,9 @@ namespace CommonSTDUtil.CommonSTDUtil
 
                 // SQL格納フォルダ(初期値はコンボ)
                 string sqlDir = SqlName.SubDirComboBox;
-
+                bool isAutoComplete = ctrlSQLId.StartsWith(AutoComplete);
                 // オートコンプリートの場合、表示行上限を設定する
-                if (ctrlSQLId.StartsWith(AutoComplete))
+                if (isAutoComplete)
                 {
                     // オートコンプリートの場合、格納フォルダを変更
                     sqlDir = SqlName.SubDirAutoComplete;
@@ -945,6 +965,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                         condition.Add("rowLimit", rowLimit);
                     }
                 }
+
                 if (!string.IsNullOrEmpty(factoryId))
                 {
                     // 工場ID指定の場合
@@ -1022,36 +1043,23 @@ namespace CommonSTDUtil.CommonSTDUtil
                 if (results != null && results.Count > 0)
                 {
                     // 検索結果の列名を、resultNamesPairに定義された変換後名称に変換し、結果リストへ値を登録する
-                    foreach (var result in results)
+                    list = ConvertDicListFromEntityList(results);
+					//★インメモリ化対応 start
+                    if (!isAutoComplete && reset)
                     {
-                        // 初期化
-                        dicList = new Dictionary<string, object>();
-
-                        var properties = typeof(Dao.AutoCompleteEntity).GetProperties();
-                        Type t = typeof(Dao.AutoCompleteEntity);
-
-                        foreach (var item in resultNamesPair)
+                        // オートコンプリート以外の場合、共有メモリのコンボデータを更新
+                        var key = ctrlSQLId + "_" + ctrlSQLParam;
+                        while (key.StartsWith(","))
                         {
-                            object value = t.GetProperty(item.Key).GetValue(result);
-                            //dicList.Add(item.Value, !CommonUtil.IsNullOrEmpty(value) ? value : "");
-                            if (CommonUtil.IsNullOrEmpty(value))
-                            {
-                                // 値が空の場合
-                                if (item.Value.StartsWith("EXPARAM"))
-                                {
-                                    // 拡張項目の場合は結果リストに格納しない
-                                    continue;
-                                }
-                                else
-                                {
-                                    // 拡張項目以外の場合は空文字をセットして返す
-                                    value = "";
-                                }
-                            }
-                            dicList.Add(item.Value, value);
+                            // 末尾のカンマを除去
+                            key = key.Substring(0, key.Length - 1);
                         }
-                        list.Add(dicList);
+                        if (comMemoryData.HasKey(key))
+                        {
+                            comMemoryData.SetData(key, results);
+                        }
                     }
+					//★インメモリ化対応 end
                 }
             }
             catch (Exception ex)
@@ -1061,6 +1069,84 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
             return true;
         }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// コンボボックス用SQL実行
+        /// </summary>
+        /// <param name="db">DB接続</param>
+        /// <param name="sqlId">SQLID</param>
+        /// <returns></returns>
+        public static List<Dao.AutoCompleteEntity> ExecKanriSql(ComDB db, string sqlId, string grpId = "", string languageId = "ja")
+        {
+            var relationParam = string.IsNullOrEmpty(grpId) ? "" : grpId + "%";
+            // SQL実行
+            var results = db.GetListByOutsideSql<Dao.AutoCompleteEntity>(sqlId, SqlName.SubDirForStartUp, 
+                new { RelationParam = relationParam, LanguageId = languageId });
+            return results.ToList();
+
+        }
+
+        /// <summary>
+        /// 検索結果を検索結果リスト値に変換
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        public static List<Dictionary<string, object>> ConvertDicListFromEntityList(List<Dao.AutoCompleteEntity> list)
+        {
+            var results = new List<Dictionary<string, object>>();
+
+            // 検索結果名のペアを生成(Key:検索結果SQL側カラム名、 Value:共通FW側カラム名)
+            var resultNamesPair = new Dictionary<string, string>
+            {
+                { "FactoryId", "FactoryId" },
+                { "TranslationFactoryId", "TranslationFactoryId" },
+                { "Values", "VALUE1" },
+                { "Labels", "VALUE2" },
+                { "DeleteFlg", "DeleteFlg" },
+                { "OrderFactoryId", "OrderFactoryId" },
+            };
+
+            // 拡張コードを追加
+            // 増やす場合、データクラスにも追加すること
+            for (int i = 1; i <= 30; i++)
+            {
+                string strIndex = i.ToString();
+                resultNamesPair.Add("Exparam" + strIndex, "EXPARAM" + strIndex);
+            }
+
+            foreach (var entity in list)
+            {
+                // 初期化
+                var dic = new Dictionary<string, object>();
+
+                var properties = typeof(Dao.AutoCompleteEntity).GetProperties();
+                Type t = typeof(Dao.AutoCompleteEntity);
+
+                foreach (var item in resultNamesPair)
+                {
+                    object value = t.GetProperty(item.Key).GetValue(entity);
+                    if (CommonUtil.IsNullOrEmpty(value))
+                    {
+                        // 値が空の場合
+                        if (item.Value.StartsWith("EXPARAM"))
+                        {
+                            // 拡張項目の場合は結果リストに格納しない
+                            continue;
+                        }
+                        else
+                        {
+                            // 拡張項目以外の場合は空文字をセットして返す
+                            value = "";
+                        }
+                    }
+                    dic.Add(item.Value, value);
+                }
+                results.Add(dic);
+            }
+            return results;
+        }
+        //★インメモリ化対応 end
 
         /// <summary>
         /// パスワード変更
@@ -1292,6 +1378,12 @@ namespace CommonSTDUtil.CommonSTDUtil
                     conductList.AddRange(resultList.Select(x => x.ConductId));
                 }
 
+                //★インメモリ化対応 start
+                // ユーザカスタマイズ情報取得
+                var customizeList = db.GetListByOutsideSqlByDataClass<COM_LISTITEM_USER_CUSTOMIZE>(SqlName.GetComListItemUserCustomizeList, SqlName.SubDir, new { UserId = result.UserId });
+                dicList.Add("customizeList", customizeList);
+                //★インメモリ化対応 end
+
                 // トランザクション開始
                 // トランザクション開始
                 db.BeginTransaction();
@@ -1392,11 +1484,13 @@ namespace CommonSTDUtil.CommonSTDUtil
             outList = new List<Dictionary<string, object>>();
             try
             {
-                // DB接続
-                if (!db.Connect())
-                {
-                    return -1;
-                }
+                //★インメモリ化対応 start
+                //// DB接続
+                //if (!db.Connect())
+                //{
+                //    return -1;
+                //}
+                //★インメモリ化対応 end
 
                 //// ■ユーザ権限マスタからユーザ権限情報を取得
                 //var sbSql = new StringBuilder();
@@ -1486,9 +1580,34 @@ namespace CommonSTDUtil.CommonSTDUtil
                 {
                     factoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
                 }
-                IList<BtnAuthority> results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
-                    new { ConductId = conductId, FactoryIdList = factoryIdList });
-                if (results != null && results.Count > 0)
+                //★インメモリ化対応 start
+                //IList<BtnAuthority> results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
+                //    new { ConductId = conductId, FactoryIdList = factoryIdList });
+                // 共有メモリから取得
+                var btnAuthList = (List<BtnAuthority>)comMemoryData.GetData(nameof(BtnAuthority));
+                List<BtnAuthority> results;
+                if (btnAuthList != null)
+                {
+                    results = btnAuthList.Where(x => x.PgmId == conductId && factoryIdList.Contains(x.FactoryId)).ToList();
+                }
+                else
+                {
+                    logger.Info("CommonMemoryData.GetData():" + nameof(COM_CONDUCT_MST));
+                    results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
+                                new { ConductId = conductId, FactoryIdList = factoryIdList }).ToList();
+                    var resultsCom = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
+                        new { ConductId = conductId, IsCommonLayout = true, FactoryIdList = factoryIdList }).ToList();
+                    if (results != null)
+                    {
+                        results.AddRange(resultsCom);
+                    }
+                    else
+                    {
+                        results = resultsCom;
+                    }
+                }
+                //★インメモリ化対応 end
+                if (results != null)
                 {
                     foreach (var result in results)
                     {
@@ -1512,37 +1631,49 @@ namespace CommonSTDUtil.CommonSTDUtil
                     }
                 }
 
-                // ■画面コントロールマスタから共通レイアウトのボタン管理区分を取得
-                results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
-                    new { ConductId = conductId, IsCommonLayout = true, FactoryIdList = factoryIdList });
-                if (results != null && results.Count > 0)
-                {
-                    foreach (var result in results)
-                    {
-                        var dic = new Dictionary<string, object>();
-                        // 画面No、ボタンコントロールID、権限区分を設定
-                        dic.Add("FORMNO", result.FormNo);
-                        dic.Add("CTRLID", result.BtnCtrlId);
-                        dic.Add("AUTHDIV", result.BtnAuthDiv);
-                        if (result.BtnAuthDiv != LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free)
-                        {
-                            // 権限管理有りの場合、ボタンの表示区分を取得して設定
-                            var dispDiv = GetBtnDispDivision(authorityLevelId, result.BtnActionDiv, result.TransActionDiv);
-                            dic.Add("DISPKBN", dispDiv);
-                        }
-                        else
-                        {
-                            // 権限管理無しの場合、活性を設定
-                            dic.Add("DISPKBN", USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Active);
-                        }
-                        outList.Add(dic);
-                    }
-                }
+                //★インメモリ化対応 start
+                // 共有メモリ上からは共通レイアウトもまとめて取得しているため不要
+                //// ■画面コントロールマスタから共通レイアウトのボタン管理区分を取得
+                //results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDir,
+                //    new { ConductId = conductId, IsCommonLayout = true, FactoryIdList = factoryIdList });
+                //if (results != null)
+                //{
+                //    foreach (var result in results)
+                //    {
+                //        var dic = new Dictionary<string, object>();
+                //        // 画面No、ボタンコントロールID、権限区分を設定
+                //        dic.Add("FORMNO", result.FormNo);
+                //        dic.Add("CTRLID", result.BtnCtrlId);
+                //        dic.Add("AUTHDIV", result.BtnAuthDiv);
+                //        if (result.BtnAuthDiv != LISTITEM_DEFINE_CONSTANTS.BTN_AUTHCONTROLKBN.Free)
+                //        {
+                //            // 権限管理有りの場合、ボタンの表示区分を取得して設定
+                //            var dispDiv = GetBtnDispDivision(authorityLevelId, result.BtnActionDiv, result.TransActionDiv);
+                //            dic.Add("DISPKBN", dispDiv);
+                //        }
+                //        else
+                //        {
+                //            // 権限管理無しの場合、活性を設定
+                //            dic.Add("DISPKBN", USER_AUTH_SHORI_CONSTANTS.BTN_DISPKBN_DEF.Active);
+                //        }
+                //        outList.Add(dic);
+                //    }
+                //}
+                //★インメモリ化対応 end
 
                 // ■画面レイアウトマスタから行編集情報を取得GetTblRowEditInfo
-                IList<TblRowAuthority> resultsTbl = db.GetListByOutsideSqlByDataClass<TblRowAuthority>(SqlName.GetTblRowEditInfo, SqlName.SubDir,
-                    new { ConductId = conductId });
-                if (resultsTbl != null && resultsTbl.Count > 0)
+                //★インメモリ化対応 start
+                //IList<TblRowAuthority> resultsTbl = db.GetListByOutsideSqlByDataClass<TblRowAuthority>(SqlName.GetTblRowEditInfo, SqlName.SubDir,
+                //    new { ConductId = conductId });
+                var resultsTbl = (List<TblRowAuthority>)comMemoryData.GetData(nameof(TblRowAuthority));
+                //★インメモリ化対応 end
+                if (resultsTbl == null)
+                {
+                    logger.Info("CommonMemoryData.GetData():" + nameof(TblRowAuthority));
+                    resultsTbl = db.GetListByOutsideSqlByDataClass<TblRowAuthority>(SqlName.GetTblRowEditInfo, SqlName.SubDir,
+                    new { ConductId = conductId }).ToList();
+                }
+                if (resultsTbl != null)
                 {
                     foreach (var result in resultsTbl)
                     {
@@ -1574,6 +1705,45 @@ namespace CommonSTDUtil.CommonSTDUtil
                 }
             }
         }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// ボタン権限情報の取得
+        /// </summary>
+        /// <param name="db">DB操作クラス</param>
+        /// <returns>ボタン権限情報リスト</returns>
+        public static List<BtnAuthority> GetButtonAuthority(ComDB db)
+        {
+            var resultList = new List<BtnAuthority>();
+            // ■画面コントロールマスタからボタン管理区分を取得
+            var results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDirForStartUp);
+            if (results != null && results.Count > 0)
+            {
+                resultList.AddRange(results);
+            }
+
+            // ■画面コントロールマスタから共通レイアウトのボタン管理区分を取得
+            results = db.GetListByOutsideSqlByDataClass<BtnAuthority>(SqlName.GetBtnAuthority, SqlName.SubDirForStartUp,
+                new { IsCommonLayout = true });
+            if (results != null && results.Count > 0)
+            {
+                resultList.AddRange(results);
+            }
+            return resultList;
+        }
+
+        /// <summary>
+        /// 行編集情報の取得
+        /// </summary>
+        /// <param name="db">DB操作クラス</param>
+        /// <returns>ボタン権限情報リスト</returns>
+        public static List<TblRowAuthority> GetTblRowAuthority(ComDB db)
+        {
+            // ■画面レイアウトマスタから行編集情報を取得
+            var results = db.GetListByOutsideSqlByDataClass<TblRowAuthority>(SqlName.GetTblRowEditInfo, SqlName.SubDirForStartUp);
+            return results.ToList();
+        }
+        //★インメモリ化対応 end
 
         /// <summary>
         /// ボタン表示区分の取得
@@ -1839,13 +2009,26 @@ namespace CommonSTDUtil.CommonSTDUtil
                 return GetPropertiesMessageFile(key, languageId);
             }
 
+            //★インメモリ化対応 start
+            //var msgRes = paramMsg;
+            //if (paramMsg == null)
             var msgRes = paramMsg;
             if (paramMsg == null)
+            {
+                // 共有メモリから取得
+                msgRes = GetMessageResourceFromComMemory(languageId, new string[] { key }, factoryIdList);
+            }
+            if (msgRes == null && db != null)
+            //★インメモリ化対応 end
             {
                 // メッセージリソースが取得できない場合はDBより取得
                 msgRes = GetMessageResourceFromDb(db, languageId, new string[] { key }, factoryIdList);
             }
-
+            if (msgRes == null)
+            {
+                // どちらもNullの場合はファイルより取得する
+                return GetPropertiesMessageFile(key, languageId);
+            }
             return msgRes.GetMessage(key, languageId); ;
         }
 
@@ -1866,11 +2049,25 @@ namespace CommonSTDUtil.CommonSTDUtil
                 return GetPropertiesMessageFile(keys, languageId);
             }
 
+            //★インメモリ化対応 start
+            //var msgRes = paramMsg;
+            //if (paramMsg == null)
             var msgRes = paramMsg;
-            if (paramMsg == null)
+            if (msgRes == null)
+            {
+                // 共有メモリから取得
+                msgRes = GetMessageResourceFromComMemory(languageId, keys, factoryIdList);
+            }
+            if (msgRes == null && db != null)
+            //★インメモリ化対応 end
             {
                 // メッセージリソースが取得できない場合はDBより取得
                 msgRes = GetMessageResourceFromDb(db, languageId, keys, factoryIdList);
+            }
+            if (msgRes == null)
+            {
+                // どちらもNullの場合はファイルより取得する
+                return GetPropertiesMessageFile(keys, languageId);
             }
 
             return msgRes.GetMessageJoin(keys, languageId);
@@ -1888,6 +2085,15 @@ namespace CommonSTDUtil.CommonSTDUtil
         public static List<Dictionary<string, object>> GetPropertiesMessages(string[] keys, string languageId = "ja", MessageResources paramMsg = null, ComDB db = null, List<int> factoryIdList = null)
         {
             Dictionary<string, object> resource = new Dictionary<string, object>();
+
+            //★インメモリ化対応 start
+            // 共有メモリから取得
+            var messages = GetMessageResourceFromComMemoryVerDic(languageId, keys, factoryIdList);
+            if(messages.Count > 0)
+            {
+                return messages;
+            }
+            //★インメモリ化対応 end
 
             // リソースファイルからメッセージを取得
             if (db == null)
@@ -1908,6 +2114,14 @@ namespace CommonSTDUtil.CommonSTDUtil
         public static List<Dictionary<string, object>> GetPropertiesAllMessage(string languageId = "ja", ComDB db = null, List<int> factoryIdList = null)
         {
             Dictionary<string, object> resource = new Dictionary<string, object>();
+            //★インメモリ化対応 start
+            // 共有メモリから取得
+            var messages = GetMessageResourceFromComMemoryVerDic(languageId, null, factoryIdList);
+            if (messages.Count > 0)
+            {
+                return messages;
+            }
+            //★インメモリ化対応 end
 
             // リソースファイルからメッセージを取得
             if (db == null)
@@ -2086,25 +2300,28 @@ namespace CommonSTDUtil.CommonSTDUtil
                     mergeGroupIdList.Add(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job);
                     structureGroupIdList.Remove(STRUCTURE_CONSTANTS.STRUCTURE_GROUP.Job);
                 }
+                // 構成リストを取得
+                var structureList = new List<Dao.VStructureItemEntity>();
+                if (structureGroupIdList.Count > 0)
+                {
                 //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
 
-                // 構成リストを取得
-                var structureList = db.GetListByOutsideSql<Dao.VStructureItemEntity>(sqlName, SqlName.SubDir,
-                      new
-                      {
-                          LanguageId = languageId,
-                          FactoryIdList = factoryIdList,
-                          StructureIdList = structureIdList,
-                          StructureGroupIdList = structureGroupIdList,
-                          ExceptCommonFactory = exceptCommonFactory,
-                          NarrowHistoryFactory = narrowHistoryFactory,
-                          IsTransFactoryOrderTree = isTransFactoryOrderTree,
-                          //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
-                          MergeStructureList = false
-                          //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
-                      }).ToList();
-
+                    structureList = db.GetListByOutsideSql<Dao.VStructureItemEntity>(sqlName, SqlName.SubDir,
+                          new
+                          {
+                              LanguageId = languageId,
+                              FactoryIdList = factoryIdList,
+                              StructureIdList = structureIdList,
+                              StructureGroupIdList = structureGroupIdList,
+                              ExceptCommonFactory = exceptCommonFactory,
+                              NarrowHistoryFactory = narrowHistoryFactory,
+                              IsTransFactoryOrderTree = isTransFactoryOrderTree,
+                              //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+                              MergeStructureList = false
+                              //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add end
+                          }).ToList();
                 //★2024/06/26 TMQ応急対応 SQL側でマージ処理実行 Add start
+                }
                 if (mergeGroupIdList.Count > 0)
                 {
                     // マージされた構成リストを取得
@@ -2156,7 +2373,7 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
             catch (Exception ex)
             {
-                logger.ErrorLog(belongingInfo.DutyFactoryInfo.StructureId.ToString(), userId, "", ex);
+                logger.ErrorLog(belongingInfo.DutyFactoryId.ToString(), userId, "", ex);
                 // 取得結果(失敗)
                 outList.Add(dicList);
                 return -1;
@@ -3675,6 +3892,106 @@ namespace CommonSTDUtil.CommonSTDUtil
             return resources;
         }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// メッセージリソースを共有メモリより取得
+        /// </summary>
+        /// <param name="languageId">取得する言語、省略した場合は全て</param>
+        /// <param name="messageIdList">取得するメッセージID、省略した場合は全て</param>
+        /// <returns>取得したメッセージリソース</returns>
+        public static MessageResources GetMessageResourceFromComMemory(string languageId = "", string[] messageIdList = null, List<int> factoryIdList = null)
+        {
+            // 共有メモリより取得
+            var messageList = (List<MessageResources.Translation>)comMemoryData.GetData(nameof(MessageResources.Translation));
+            if (messageList == null)
+            {
+                logger.Info("CommonMemoryData.GetData():" + nameof(MessageResources.Translation));
+                return null;
+            }
+            // 省略時は全件取得
+            if (!string.IsNullOrEmpty(languageId))
+            {
+                // 言語指定時
+                messageList = messageList.Where(x => x.languageCd == languageId).ToList();
+            }
+
+            // 省略時は全件取得
+            if (messageIdList != null)
+            {
+                // 指定したメッセージIDのみのリスト
+                messageList = messageList.Where(x => messageIdList.Contains(x.messageId)).ToList();
+            }
+
+            // 省略時は全件取得
+            List<int> paramFactoryIdList = new List<int>();
+            if (factoryIdList != null)
+            {
+                paramFactoryIdList = factoryIdList;
+                if (!paramFactoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
+                {
+                    paramFactoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
+                }
+                // 指定した工場IDのみのリスト
+                messageList = messageList.Where(x => paramFactoryIdList.Contains(x.factoryId)).ToList();
+            }
+            // メッセージリソースクラスを宣言して返す
+            return new MessageResources(messageList);
+        }
+
+        /// <summary>
+        /// メッセージリソースを共有メモリより取得
+        /// </summary>
+        /// <param name="languageId">取得する言語、省略した場合は全て</param>
+        /// <returns>取得したメッセージリソース</returns>
+        public static List<Dictionary<string, object>> GetMessageResourceFromComMemoryVerDic(string languageId = "", string[] messageIdList = null, List<int> factoryIdList = null)
+        {
+            List<Dictionary<string, object>> resources = new List<Dictionary<string, object>>();
+            Dictionary<string, object> dicRes = new Dictionary<string, object>();
+
+            // 共有メモリより取得
+            var messageList = (List<MessageResources.Translation>)comMemoryData.GetData(nameof(MessageResources.Translation));
+            if (messageList == null)
+            {
+                logger.Info("CommonMemoryData.GetData():" + nameof(MessageResources.Translation));
+                return resources;
+            }
+            messageList = messageList.Where(x=>x.languageCd == languageId).ToList();
+
+            // 省略時は全件取得
+            if (messageIdList != null)
+            {
+                // 指定したメッセージIDのみのリスト
+                messageList = messageList.Where(x => messageIdList.Contains(x.messageId)).ToList();
+            }
+
+            // 省略時は全件取得
+            List<int> paramFactoryIdList = new List<int>();
+            if (factoryIdList != null)
+            {
+                paramFactoryIdList = factoryIdList;
+                if (!paramFactoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
+                {
+                    paramFactoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
+                }
+                // 指定した工場IDのみのリスト
+                // メモリ上にはメッセージID単位に工場IDの降順で保持している
+                // .First()で抽出すると工場IDが指定されていた場合は指定工場、未指定の場合は標準工場の翻訳が取得できる
+                messageList = messageList
+                                .Where(x => paramFactoryIdList.Contains(x.factoryId))
+                                .GroupBy(x => x.messageId, (y, z) => z.First()).ToList();
+            }
+            for (int i = 0; i < messageList.Count; i++)
+            {
+                dicRes = new Dictionary<string, object>();
+                dicRes.Add(messageList[i].messageId, messageList[i].value);
+                resources.Add(dicRes);
+            }
+
+            // メッセージリソースクラスを宣言して返す
+            return resources;
+        }
+        //★インメモリ化対応 end
+
         /// <summary>
         /// 第一引数がNullまたは空文字なら第二引数、そうでなければ第一引数を返す
         /// </summary>
@@ -4603,6 +4920,25 @@ namespace CommonSTDUtil.CommonSTDUtil
             }
         }
 
+        public class DBMappingInfoComparer : IEqualityComparer<DBMappingInfo>
+        {
+            public bool Equals(DBMappingInfo x, DBMappingInfo y)
+            {
+                if (Object.ReferenceEquals(x, y)) return true;
+                if (x == null || y == null) return false;
+                return x.PgmId == y.PgmId && x.GrpNo == y.GrpNo && x.CtrlId == y.CtrlId && x.CtrlType == y.CtrlType && x.ItemNo == y.ItemNo;
+            }
+
+            public int GetHashCode(DBMappingInfo obj)
+            {
+                return (string.IsNullOrEmpty(obj.PgmId) ? 0 : obj.PgmId.GetHashCode()) ^ 
+                        obj.GrpNo.GetHashCode() ^
+                        (string.IsNullOrEmpty(obj.CtrlId) ? 0 :obj.CtrlId.GetHashCode()) ^
+                        (string.IsNullOrEmpty(obj.CtrlType) ? 0 :obj.CtrlType.GetHashCode()) ^ 
+                        obj.ItemNo.GetHashCode();
+            }
+        }
+
         /// <summary>
         /// DBカラム情報クラス
         /// </summary>
@@ -4650,18 +4986,25 @@ namespace CommonSTDUtil.CommonSTDUtil
             /// <remarks>翻訳マスタの1行に相当する</remarks>
             public class Translation
             {
+                //★インメモリ化対応 start
                 /// <summary>
                 /// メッセージID
                 /// </summary>
-                public string messageId { get; }
+                public int factoryId { get; set; }
+                //★インメモリ化対応 end
+
+                /// <summary>
+                /// メッセージID
+                /// </summary>
+                public string messageId { get; set; }
                 /// <summary>
                 /// 言語コード
                 /// </summary>
-                public string languageCd { get; }
+                public string languageCd { get; set; }
                 /// <summary>
                 /// 翻訳値
                 /// </summary>
-                public string value { get; }
+                public string value { get; set; }
 
                 /// <summary>
                 /// コンストラクタ
@@ -4732,6 +5075,16 @@ namespace CommonSTDUtil.CommonSTDUtil
             {
                 return new MessageResources(this.value.Where(x => x.languageCd == languageCd).ToList());
             }
+
+            /// <summary>
+            /// 言語を指定して、翻訳データリストを取得
+            /// </summary>
+            /// <param name="languageCd">言語コード</param>
+            /// <returns>指定した言語の翻訳データリスト</returns>
+            public List<Translation> GetTranslationList(string languageCd)
+            {
+                return this.value.Where(x => x.languageCd == languageCd).ToList();
+            }
         }
 
         /// <summary>
@@ -4739,6 +5092,13 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// </summary>
         public class BtnAuthority
         {
+            //★インメモリ化対応 start
+            /// <summary>Gets or sets 工場ID</summary>
+            /// <value>工場ID</value>
+            public int FactoryId { get; set; }
+            /// <value>プログラムID</value>
+            public string PgmId { get; set; }
+            //★インメモリ化対応 end
             /// <summary>Gets or sets 画面No</summary>
             /// <value>画面No</value>
             public int FormNo { get; set; }
@@ -4761,6 +5121,11 @@ namespace CommonSTDUtil.CommonSTDUtil
         /// </summary>
         public class TblRowAuthority
         {
+            //★インメモリ化対応 start
+            /// <summary>Gets or sets プログラムID</summary>
+            /// <value>プログラムID</value>
+            public string PgmId { get; set; }
+            //★インメモリ化対応 end
             /// <summary>Gets or sets 画面No</summary>
             /// <value>画面No</value>
             public int FormNo { get; set; }
@@ -5273,6 +5638,20 @@ namespace CommonSTDUtil.CommonSTDUtil
             return result.ToList();
         }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 1ページ当たりの行数コンボ取得処理(システム起動時用言語指定なし)
+        /// </summary>
+        /// <param name="db">DB接続</param>
+        /// <returns></returns>
+        public static List<CommonDataBaseClass.ComboRowInfo> GetComboRowsPerPage(ComDB db)
+        {
+            // SQL実行
+            IList<CommonDataBaseClass.ComboRowInfo> result = db.GetListByOutsideSqlByDataClass<CommonDataBaseClass.ComboRowInfo>(SqlName.GetComboRowsPerPage, SqlName.SubDirForStartUp);
+            return result.ToList();
+        }
+        //★インメモリ化対応 end
+
         /// <summary>
         /// 項目カスタマイズ情報保存処理
         /// </summary>
@@ -5342,6 +5721,20 @@ namespace CommonSTDUtil.CommonSTDUtil
             return result.ToList();
         }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 言語コンボ取得処理(システム起動時用言語指定なし)
+        /// </summary>
+        /// <param name="db">DB接続</param>
+        /// <returns></returns>
+        public static List<CommonDataBaseClass.LanguageInfo> GetLanguageItemList(ComDB db)
+        {
+            // SQL実行
+            IList<CommonDataBaseClass.LanguageInfo> result = db.GetListByOutsideSqlByDataClass<CommonDataBaseClass.LanguageInfo>(SqlName.GetLanguageList, SqlName.SubDirForStartUp);
+            return result.ToList();
+        }
+        //★インメモリ化対応 end
+
         /// <summary>
         /// 機能IDリスト取得処理
         /// </summary>
@@ -5374,8 +5767,304 @@ namespace CommonSTDUtil.CommonSTDUtil
             // SQL実行
             var param = new { StructureGroupId = StructureGroupId };
             IList<CommonDataBaseClass.TempFolderPathInfo> result = db.GetListByOutsideSqlByDataClass<CommonDataBaseClass.TempFolderPathInfo>(SqlName.GetTemporaryFolderPath, SqlName.SubDir, param);
+            return result != null ? result.ToList() : null;
+        }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// 機能マスタデータ取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<COM_CONDUCT_MST> GetComConductMstList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<COM_CONDUCT_MST>(SqlName.GetComConductMstList, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 画面定義データ取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<COM_FORM_DEFINE> GetComFormDefineList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<COM_FORM_DEFINE>(SqlName.GetComFormDefineList, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 画面項目定義データ(通常レイアウト)取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<COM_LISTITEM_DEFINE> GetComListItemDefineList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<COM_LISTITEM_DEFINE>(SqlName.GetComListItemDefineList, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 画面項目定義データ(共通レイアウト)取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<COM_LISTITEM_DEFINE> GetComListItemDefineComList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<COM_LISTITEM_DEFINE>(SqlName.GetComListItemDefineComList, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 画面項目翻訳データ取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<MessageResources.Translation> GetTranslationList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<MessageResources.Translation>(SqlName.GetTranslation, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 保持対象SQLID情報取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<string> GetTargetSqlIdList(ComDB db)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<string>(SqlName.GetTargetSqlIdList, SqlName.SubDirForStartUp);
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// コンボボックス項目翻訳データ取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<MessageResources.Translation> GetTranslationListForComboBox(ComDB db, string languageId)
+        {
+            try
+            {
+                // SQL実行
+                var result = db.GetListByOutsideSqlByDataClass<MessageResources.Translation>(SqlName.GetTranslationForComboBox, SqlName.SubDirForStartUp,
+                    new { languageId = languageId });
+                return result != null ? result.ToList() : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("", "", "", ex);    // 工場IDとユーザIDは指定できない
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// コンボボックス取得
+        /// </summary>
+        /// <param name="db">DB接続情報</param>
+        /// <param name="rootPath">ルートパス</param>
+        /// <param name="conductId">機能ID</param>
+        /// <param name="langugaeId">言語ID</param>
+        /// <param name="userId">ユーザID</param>
+        /// <param name="factoryId">本務工場ID</param>
+        /// <param name="belongingFactoryIdList">所属工場IDリスト</param>
+        /// <returns>コンボボックス情報</returns>
+        public static Dictionary<string, object> GetComboBoxItems(ComDB db, string rootPath, string conductId, string langugaeId, string userId, string factoryId, List<int> belongingFactoryIdList)
+        {
+            // 戻り値を初期化
+            var returnDic = new Dictionary<string, object>();
+
+            // 画面定義からコンボボックスアイテム取得に必要なデータを取得
+            var relationInfoList = db.GetListByOutsideSqlByDataClass<COM_LISTITEM_DEFINE>(SqlName.GetRelationInfoForComboBox, SqlName.SubDir, new { PgmId = conductId });
+            if(relationInfoList == null || relationInfoList.Count == 0)
+            {
+                return returnDic;
+            }
+
+            // 共有メモリ保持対象SQLIDを取得
+            var targetIdList = GetTargetSqlIdList(db);
+
+            //システム共通の階層も併せて取得する
+            if (!belongingFactoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
+            {
+                belongingFactoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
+            }
+
+            var listFromComMemory = relationInfoList.Where(x => targetIdList.Contains(x.RELATIONID)).ToList();
+            if (listFromComMemory.Count > 0)
+            {
+                var translationList = new List<MessageResources.Translation>();
+                if (langugaeId != STARTUP_CONSTANTS.DefaultLanguageId)
+                {
+                    // デフォルト言語以外の場合、共有メモリから翻訳データを取得
+                    var translationListW = comMemoryData.GetData(nameof(MessageResources.Translation) + "_Combo");
+                    if (translationListW != null)
+                    {
+                        translationList = (List<MessageResources.Translation>)translationListW;
+                        translationList = translationList.Where(x => x.languageCd == langugaeId).ToList();
+                    }
+                }
+                foreach (var info in listFromComMemory)
+                {
+                    // 共有メモリからコンボデータを取得
+                    var key = getSqlKey(info.RELATIONID, info.RELATIONPARAM);
+                    var dataW = comMemoryData.GetData(key);
+                    if (dataW != null)
+                    {
+                        var data = (List<AutoCompleteEntity>)dataW;
+                        //所属工場のデータを取得
+                        data = data.Where(x => belongingFactoryIdList.Contains(Convert.ToInt32(x.FactoryId)) && belongingFactoryIdList.Contains(Convert.ToInt32(x.TranslationFactoryId)) 
+                            && belongingFactoryIdList.Contains(Convert.ToInt32(x.OrderFactoryId))).ToList();
+                        if (translationList.Count > 0)
+                        {
+                            // 翻訳データが存在する場合、翻訳データを結合
+                            data = data.GroupJoin(translationList,
+                                item => item.TranslationId,
+                                trans => trans.messageId,
+                                (item, trans) => new { item, translated = trans.DefaultIfEmpty() })
+                                .SelectMany(x => x.translated, (x, y) => new AutoCompleteEntity
+                                {
+                                    FactoryId = x.item.FactoryId,
+                                    TranslationFactoryId = x.item.TranslationFactoryId,
+                                    OrderFactoryId = x.item.OrderFactoryId,
+                                    Values = x.item.Values,
+                                    Labels = y != null ? y.value : x.item.Labels,
+                                    DeleteFlg = x.item.DeleteFlg,
+                                    Exparam1 = x.item.Exparam1,
+                                    Exparam2 = x.item.Exparam2,
+                                    Exparam3 = x.item.Exparam13,
+                                    Exparam4 = x.item.Exparam14,
+                                    Exparam5 = x.item.Exparam15,
+                                    Exparam6 = x.item.Exparam16,
+                                    Exparam7 = x.item.Exparam17,
+                                    Exparam8 = x.item.Exparam18,
+                                    Exparam9 = x.item.Exparam19,
+                                    Exparam10 = x.item.Exparam10,
+                                    Exparam11 = x.item.Exparam11,
+                                    Exparam12 = x.item.Exparam12,
+                                    Exparam13 = x.item.Exparam13,
+                                    Exparam14 = x.item.Exparam14,
+                                    Exparam15 = x.item.Exparam15,
+                                    Exparam16 = x.item.Exparam16,
+                                    Exparam17 = x.item.Exparam17,
+                                    Exparam18 = x.item.Exparam18,
+                                    Exparam19 = x.item.Exparam19,
+                                    Exparam20 = x.item.Exparam20,
+                                    Exparam21 = x.item.Exparam21,
+                                    Exparam22 = x.item.Exparam22,
+                                    Exparam23 = x.item.Exparam23,
+                                    Exparam24 = x.item.Exparam24,
+                                    Exparam25 = x.item.Exparam25,
+                                    Exparam26 = x.item.Exparam26,
+                                    Exparam27 = x.item.Exparam27,
+                                    Exparam28 = x.item.Exparam28,
+                                    Exparam29 = x.item.Exparam29,
+                                    Exparam30 = x.item.Exparam30
+                                }).ToList();
+                        }
+                        var resultList = ConvertDicListFromEntityList(data);
+                        returnDic.Add(key, resultList);
+                        // 関連情報リストから削除
+                        relationInfoList.Remove(info);
+                    }
+                }
+            }
+
+            // 共有メモリ保持対象外のコンボデータをDBから取得
+            var conditionList = new List<Dictionary<string, object>>();
+            // 所属工場IDをカンマ区切りにしてパラメータとして渡す
+            string belongingFactoryIds = string.Join(',', belongingFactoryIdList);
+            foreach (var info in relationInfoList)
+            {
+                conditionList.Add(
+                new Dictionary<string, object>()
+                {
+                    {"CTRLSQLID", info.RELATIONID},
+                    {"CTRLSQLPARAM", info.RELATIONPARAM},
+                    {"FACTORYID", belongingFactoryIds},
+                });
+                // SQL実行
+                var resultList = new List<Dictionary<string, object>>();
+                if (ExecKanriSql(db, conditionList, rootPath, ref resultList, factoryId, userId, langugaeId))
+                {
+                    returnDic.Add(getSqlKey(info.RELATIONID, info.RELATIONPARAM), resultList);
+                }
+            }
+            return returnDic;
+
+            string getSqlKey(string id, string param)
+            {
+                // 末尾のカンマは取り除く
+                return id + (string.IsNullOrEmpty(param) ? "" : "_" + string.Join(",", param.Split(',')));
+            }
+        }
+
+        /// <summary>
+        /// ユーザカスタマイズ情報取得
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static List<COM_LISTITEM_USER_CUSTOMIZE> GetComListItemUserCustomizeList(ComDB db, string userId)
+        {
+            // SQL実行
+            var result = db.GetListByOutsideSqlByDataClass<COM_LISTITEM_USER_CUSTOMIZE>(SqlName.GetComListItemUserCustomizeList, SqlName.SubDirForStartUp, new { UserId = userId });
             return result.ToList();
         }
+        //★インメモリ化対応 end
 
         /// <summary>
         /// 画像ファイル情報認証・取得

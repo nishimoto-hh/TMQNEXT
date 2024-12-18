@@ -49,15 +49,27 @@ namespace BusinessLogic_HM0001
                 return false;
             }
 
+            // 一覧のページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+
+            // メニューから選択された際の初期検索は行わない
+            if (isInit)
+            {
+                // 検索結果の設定
+                if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
+                {
+                    // 正常終了
+                    this.Status = CommonProcReturn.ProcStatus.Valid;
+                }
+                return true;
+            }
+
             // 「自分の件名のみ表示」がチェックされていたらSQLの該当箇所をアンコメント
             List<string> listUnComment = new();
             if (dispOnlyMySubject == IsDispOnlyMySubject)
             {
                 listUnComment.Add("DispOnlyMySubject");
             }
-
-            // 一覧のページ情報取得
-            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
 
             // SQLを取得
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.List.GetHistoryMachineList, out string baseSql);

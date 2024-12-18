@@ -463,6 +463,8 @@ namespace BusinessLogic_MC0002
             switch (this.FormNo)
             {
                 case ConductInfo.FormList.FormNo:                          // 標準一覧画面
+                    // メニューから選択された際の初期検索は行わない
+                    return ComConsts.RETURN_RESULT.OK;
                 case ConductInfo.FormDetail.FormNo:                        // 標準詳細画面
                 case ConductInfo.FormEdit.FormNo:                          // 標準詳細編集画面
                 case ConductInfo.FormEditManagemantStandardsDetail.FormNo: // 保全項目編集画面

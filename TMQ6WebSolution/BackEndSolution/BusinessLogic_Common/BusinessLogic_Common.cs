@@ -15,6 +15,9 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using CommonWebTemplate.CommonDefinitions;
 using System.Diagnostics;
+using CommonSTDUtil;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
+using System.Data.SqlTypes;
 
 namespace BusinessLogic_Common
 {
@@ -33,6 +36,7 @@ namespace BusinessLogic_Common
         /// <summary>ログ出力</summary>
         private static CommonLogger logger = CommonLogger.GetInstance("logger");
         private static CommonLogger loggerLogin = CommonLogger.GetInstance("loggerLogin");
+        private static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
         #endregion
 
         #region プロパティ
@@ -189,6 +193,20 @@ namespace BusinessLogic_Common
                         case "GetUserIdByMailAdress":
                             result = this.GetUserIdByMailAdress();
                             break;
+                        //★インメモリ化対応 start
+                        // 共通定義データ取得処理
+                        case "GetCommonDefineInfo":
+                            result = this.GetCommonDefineInfo();
+                            break;
+                        // ユーザカスタマイズ情報取得処理
+                        case "GetUserCustomizeInfo":
+                            result = this.GetUserCustomizeInfo();
+                            break;
+                        // 共有メモリコンボボックスデータ更新処理
+                        case "UpdateComboBoxData":
+                            result = this.UpdateComboBoxData();
+                            break;
+                        //★インメモリ化対応 end
                         default:
                             break;
                     }
@@ -205,7 +223,7 @@ namespace BusinessLogic_Common
                     // エラーログ出力
                     logger.ErrorLog(this.FactoryId, this.UserId, ex.ToString());
                     // エラーが発生しました。システム管理者に問い合わせてください。
-                    string msg = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941040004, this.LanguageId);
+                    string msg = getMessage(CommonSTDUtil.CommonResources.ID.ID941040004);
 
                     outParam.Status = CommonProcReturn.ProcStatus.Error;
                     outParam.MsgId = msg;
@@ -218,7 +236,7 @@ namespace BusinessLogic_Common
                 // エラーログ出力
                 logger.ErrorLog(this.FactoryId, this.UserId, ex.ToString());
                 // エラーが発生しました。システム管理者に問い合わせてください。
-                string msg = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941040004, this.LanguageId);
+                string msg = getMessage(CommonSTDUtil.CommonResources.ID.ID941040004);
 
                 outParam.Status = CommonProcReturn.ProcStatus.Error;
                 outParam.MsgId = msg;
@@ -271,7 +289,7 @@ namespace BusinessLogic_Common
                     {
                         this.Status = CommonProcReturn.ProcStatus.Error;
                         //コンボ、オートコンプリート処理に失敗しました。
-                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941100002, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(this.FactoryId) });
+                        this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941100002, new List<int> { Convert.ToInt32(this.FactoryId) });
 
                         return -1;
                     }
@@ -377,7 +395,7 @@ namespace BusinessLogic_Common
                         this.Status = CommonProcReturn.ProcStatus.Error;
                         string factoryId = string.IsNullOrWhiteSpace(this.FactoryId) ? null : this.FactoryId;
                         //ログイン認証処理に失敗しました。
-                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941430003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(factoryId) });
+                        this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941430003, new List<int> { Convert.ToInt32(factoryId) });
 
                         return -1;
                     }
@@ -444,7 +462,7 @@ namespace BusinessLogic_Common
                     {
                         this.Status = CommonProcReturn.ProcStatus.Error;
                         //権限チェック処理に失敗しました。
-                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941090003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(this.FactoryId) });
+                        this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941090003, new List<int> { Convert.ToInt32(this.FactoryId) });
 
                         return -1;
                     }
@@ -489,7 +507,7 @@ namespace BusinessLogic_Common
                 {
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     //権限チェック処理に失敗しました。
-                    this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941090003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(this.FactoryId) });
+                    this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941090003, new List<int> { Convert.ToInt32(this.FactoryId) });
 
                     return -1;
                 }
@@ -596,6 +614,17 @@ namespace BusinessLogic_Common
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// メッセージ文字列の取得
+        /// </summary>
+        /// <param name="messageId">メッセージID</param>
+        /// <param name="factoryIdList">工場IDリスト</param>
+        /// <returns></returns>
+        private string getMessage(string messageId, List<int> factoryIdList = null)
+        {
+            return ComUtil.GetPropertiesMessage(messageId, this.LanguageId, null, this.db, factoryIdList);
         }
         #endregion
 
@@ -755,10 +784,15 @@ namespace BusinessLogic_Common
                     {
                         this.Status = CommonProcReturn.ProcStatus.Error;
                         // 項目カスタマイズ情報の登録に失敗しました。
-                        this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941100003, this.LanguageId, null, this.db, new List<int> { Convert.ToInt32(this.FactoryId) });
+                        this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941100003, new List<int> { Convert.ToInt32(this.FactoryId) });
                         writeErrorLog(this.MsgId);
                         return -1;
                     }
+
+                    //★インメモリ化対応 start
+                    // ユーザカスタマイズ情報の取得
+                    GetUserCustomizeInfo();
+                    //★インメモリ化対応 end
                 }
             }
             finally
@@ -1046,9 +1080,9 @@ namespace BusinessLogic_Common
         protected void setDBConnectionErrorLogAndMessage()
         {
             // 「DB接続に失敗しました。」
-            logger.ErrorLog(this.FactoryId, this.UserId, ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941190004, this.LanguageId));
+            logger.ErrorLog(this.FactoryId, this.UserId, getMessage(CommonSTDUtil.CommonResources.ID.ID941190004));
             // エラーが発生しました。システム管理者に問い合わせてください。
-            this.MsgId = ComUtil.GetPropertiesMessage(CommonSTDUtil.CommonResources.ID.ID941040004, this.LanguageId);
+            this.MsgId = getMessage(CommonSTDUtil.CommonResources.ID.ID941040004);
 
         }
         #endregion
@@ -1183,7 +1217,216 @@ namespace BusinessLogic_Common
             }
 
             return 0;
-            #endregion
         }
+        #endregion
+
+        //★インメモリ化対応 start
+        #region 共通定義データ取得
+        /// <summary>
+        /// 共通定義データ取得
+        /// </summary>
+        /// <returns></returns>
+        private int GetCommonDefineInfo()
+        {
+            try
+            {
+                // DB接続
+                this.db = new CommonDBManager(this.rootPath, logger, this.FactoryId, this.UserId);
+                if (!this.db.Connect())
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    // DB接続エラーログ＆メッセージ設定
+                    setDBConnectionErrorLogAndMessage();
+                    return -1;
+                }
+
+                List<Dictionary<string, object>> list = new();
+                Dictionary<string, object> dic = new();
+
+                // 機能マスタデータ取得
+                var conductList = ComUtil.GetComConductMstList(this.db);
+                dic.Add(nameof(COM_CONDUCT_MST), conductList);
+
+                // 画面定義データ取得
+                var formDelineList = ComUtil.GetComFormDefineList(this.db);
+                dic.Add(nameof(COM_FORM_DEFINE), formDelineList);
+
+                // 画面項目定義データ(通常レイアウト)取得
+                var listItemList = ComUtil.GetComListItemDefineList(this.db);
+                dic.Add(nameof(COM_LISTITEM_DEFINE), listItemList);
+
+                // 画面項目定義データ(共通レイアウト)取得
+                var listItemComList = ComUtil.GetComListItemDefineComList(this.db);
+                dic.Add(nameof(COM_LISTITEM_DEFINE) + "_Com", listItemComList);
+
+                // 画面項目翻訳データ取得
+                var translationList = ComUtil.GetTranslationList(this.db);
+                dic.Add(nameof(MessageResources.Translation), translationList);
+
+                // ボタン権限データ取得
+                var btnAuthList = ComUtil.GetButtonAuthority(this.db);
+                dic.Add(nameof(BtnAuthority), btnAuthList);
+
+                // 行編集データ取得
+                var tblRowAuthList = ComUtil.GetTblRowAuthority(this.db);
+                dic.Add(nameof(TblRowAuthority), tblRowAuthList);
+
+                // 1ページ当たりの行数コンボデータ取得
+                var rowCntList = ComUtil.GetComboRowsPerPage(this.db);
+                dic.Add(nameof(CommonDataBaseClass.ComboRowInfo), rowCntList);
+
+                // 言語コンボデータ取得
+                var langList = ComUtil.GetLanguageItemList(this.db);
+                dic.Add(nameof(CommonDataBaseClass.LanguageInfo), langList);
+
+                // 保持対象SQLID取得
+                var sqlIdList = ComUtil.GetTargetSqlIdList(this.db);
+                // コンボアイテムデータ取得
+                foreach (var sqlId in sqlIdList)
+                {
+                    var itemList = ComUtil.ExecKanriSql(db, sqlId, "", STARTUP_CONSTANTS.DefaultLanguageId);
+                    // パラメータキー単位でグループ化
+                    foreach (var grp in itemList.GroupBy(x => x.ParamKey))
+                    {
+                        dic.Add(sqlId + "_" + grp.Key, grp.ToList());
+                    }
+                }
+
+                // コンボボックス項目翻訳データ取得
+                translationList = ComUtil.GetTranslationListForComboBox(this.db, STARTUP_CONSTANTS.DefaultLanguageId);
+                dic.Add(nameof(MessageResources.Translation) + "_Combo", translationList);
+
+                list.Add(dic);
+
+                this.resultInfoDictionary = list;
+            }
+            finally
+            {
+                if (this.db != null)
+                {
+                    this.db.Close();
+                }
+            }
+
+            return 0;
+        }
+        #endregion
+
+        #region ユーザカスタマイズ情報取得
+        /// <summary>
+        /// ユーザカスタマイズ情報取得
+        /// </summary>
+        /// <returns></returns>
+        private int GetUserCustomizeInfo()
+        {
+            try
+            {
+                // DB接続
+                if (this.db == null)
+                {
+                    this.db = new CommonDBManager(this.rootPath, logger, this.FactoryId, this.UserId);
+                    if (!this.db.Connect())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        // DB接続エラーログ＆メッセージ設定
+                        setDBConnectionErrorLogAndMessage();
+                        return -1;
+                    }
+                }
+
+                // ユーザカスタマイズ情報取得
+                var customizeList = ComUtil.GetComListItemUserCustomizeList(this.db, this.UserId);
+
+                List<Dictionary<string, object>> list = new();
+                Dictionary<string, object> dic = new();
+                dic.Add(nameof(COM_LISTITEM_USER_CUSTOMIZE), customizeList);
+                list.Add(dic);
+
+                this.resultInfoDictionary = list;
+            }
+            finally
+            {
+                if (this.db != null)
+                {
+                    this.db.Close();
+                }
+            }
+
+            return 0;
+        }
+        #endregion
+
+        #region 共有メモリコンボボックスデータ更新
+        /// <summary>
+        /// 共有メモリコンボボックスデータ更新
+        /// </summary>
+        /// <returns></returns>
+        private int UpdateComboBoxData()
+        {
+            try
+            {
+                if(this.searchConditionDictionary.Count == 0)
+                {
+                    return 0;
+                }
+                string grpId = this.searchConditionDictionary[0].GetValueOrDefault("GrpId", "").ToString();
+                if (string.IsNullOrEmpty(grpId))
+                {
+                    return 0;
+                }
+
+                // 構成グループIDを元に共有メモリからキーを取得
+                var targetKeys = comMemoryData.GetKeysByKeyword("_" + grpId.ToString());
+                // 共有メモリにキーが存在しない場合、更新対象外
+                if (targetKeys.Count == 0) { return 0; }
+
+                // DB接続
+                if (this.db == null)
+                {
+                    this.db = new CommonDBManager(this.rootPath, logger, this.FactoryId, this.UserId);
+                    if (!this.db.Connect())
+                    {
+                        this.Status = CommonProcReturn.ProcStatus.Error;
+                        // DB接続エラーログ＆メッセージ設定
+                        setDBConnectionErrorLogAndMessage();
+                        return -1;
+                    }
+                }
+
+                List<Dictionary<string, object>> list = new();
+                Dictionary<string, object> dic = new();
+                // コンボアイテムデータ取得
+                foreach (var key in targetKeys)
+                {
+                    var keys = key.Split('_');
+                    var sqlId = keys[0];
+                    var itemList = ComUtil.ExecKanriSql(db, sqlId, grpId, STARTUP_CONSTANTS.DefaultLanguageId);
+                    // パラメータキー単位でグループ化
+                    foreach (var grp in itemList.GroupBy(x => x.ParamKey))
+                    {
+                        dic.Add(sqlId + "_" + grp.Key, grp.ToList());
+                    }
+                }
+
+                // コンボボックス項目翻訳データ取得
+                var translationList = ComUtil.GetTranslationListForComboBox(this.db, STARTUP_CONSTANTS.DefaultLanguageId);
+                dic.Add(nameof(MessageResources.Translation) + "_Combo", translationList);
+
+                list.Add(dic);
+
+                this.resultInfoDictionary = list;
+            }
+            finally
+            {
+                if (this.db != null)
+                {
+                    this.db.Close();
+                }
+            }
+
+            return 0;
+        }
+        #endregion
+        //★インメモリ化対応 end
     }
 }

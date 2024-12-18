@@ -15,6 +15,7 @@ using CommonWebTemplate.CommonUtil;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
+using CommonWebTemplate.CommonDefinitions;
 
 namespace CommonWebTemplate.Controllers.CommonApi
 {
@@ -32,11 +33,11 @@ namespace CommonWebTemplate.Controllers.CommonApi
         /// <param name="input">ｵｰﾄｺﾝﾌﾟﾘｰﾄの入力文字</param>
         /// <returns>取得データ</returns>
         /// <remarks>
-        /// 取得用URL:http://localhost:****/api/CommonSqlKanriApi/[SQLID]?param=[SQLPARAM]
-        ///      (例):http://localhost:****/api/CommonSqlKanriApi/CC001?param='S12'
+        /// 取得用URL:http://localhost:****/api/CommonSqlKanriApi/[SQLID]?param=[SQLPARAM]&reset=[共有メモリデータリセット有無]
+        ///      (例):http://localhost:****/api/CommonSqlKanriApi/CC001?param='S12'&reset=false
         /// </remarks>
         [HttpGet("{id}")]
-        public ActionResult Get(string id, [FromQuery] string param = "", [FromQuery] string code = "", [FromQuery] string input = "", [FromQuery] string factoryId = "")
+        public ActionResult Get(string id, [FromQuery] string param = "", [FromQuery] string code = "", [FromQuery] string input = "", [FromQuery] string factoryId = "", [FromQuery] bool reset = false)
         {
             try
             {
@@ -63,7 +64,7 @@ namespace CommonWebTemplate.Controllers.CommonApi
                 //SQLIDで管理されたﾃﾞｰﾀを取得する
                 BusinessLogicIO logicIO = new BusinessLogicIO(procData);
                 object results = null;
-                CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_CtrlSql(id, param, code, input, prmFactoryId, out results);
+                CommonProcReturn returnInfo = logicIO.CallDllBusinessLogic_CtrlSql(id, param, code, input, prmFactoryId, reset, out results);
 
                 if (returnInfo.IsProcEnd())
                 {

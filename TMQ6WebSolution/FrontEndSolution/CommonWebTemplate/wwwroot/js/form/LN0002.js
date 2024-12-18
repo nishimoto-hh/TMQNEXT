@@ -85,6 +85,11 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         controlVisibleScheduleCond(FormList);
 
         setFocusButton(FormList.Button.Output);
+
+        // 初期検索を行わないが、一覧ヘッダは表示する
+        var detailArea = $(P_Article).find("#" + P_formDetailId); // 明細ｴﾘｱ
+        var detailLists = $(detailArea).find(".detail_div").children().not("[id$='edit_div']"); //明細ｴﾘｱ一覧
+        setInitHide(detailLists, false);
     }
 }
 

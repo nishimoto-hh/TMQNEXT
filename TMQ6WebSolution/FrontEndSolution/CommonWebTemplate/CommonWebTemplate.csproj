@@ -7,12 +7,16 @@
 
   <ItemGroup>
     <Compile Remove="logs\**" />
+    <Compile Remove="Models\Common\CommonData\**" />
     <Compile Remove="Template\0\RP0450\4081\**" />
     <Content Remove="logs\**" />
+    <Content Remove="Models\Common\CommonData\**" />
     <Content Remove="Template\0\RP0450\4081\**" />
     <EmbeddedResource Remove="logs\**" />
+    <EmbeddedResource Remove="Models\Common\CommonData\**" />
     <EmbeddedResource Remove="Template\0\RP0450\4081\**" />
     <None Remove="logs\**" />
+    <None Remove="Models\Common\CommonData\**" />
     <None Remove="Template\0\RP0450\4081\**" />
   </ItemGroup>
 
@@ -206,6 +210,7 @@
     <None Remove="sql\Common\ComboBox\C0038.sql" />
     <None Remove="sql\Common\ComboBox\C0039.sql" />
     <None Remove="sql\Common\ComboBox\C0040.sql" />
+    <None Remove="sql\Common\ComListItemUserCustomize_GetList.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0003.sql" />
@@ -226,8 +231,26 @@
     <None Remove="sql\Common\ItemCustomizeInfoList_Delete.sql" />
     <None Remove="sql\Common\ItemCustomizeInfoList_Insert.sql" />
     <None Remove="sql\Common\MappingInfo_GetList.sql" />
+    <None Remove="sql\Common\RelationInfoForComboBox_GetList.sql" />
     <None Remove="sql\Common\SessionInfo_Insert.sql" />
     <None Remove="sql\Common\SessionInfo_Update.sql" />
+    <None Remove="sql\Common\StartUp\BtnAuthInfo_GetList.sql" />
+    <None Remove="sql\Common\StartUp\C0001.sql" />
+    <None Remove="sql\Common\StartUp\C0002.sql" />
+    <None Remove="sql\Common\StartUp\C0014.sql" />
+    <None Remove="sql\Common\StartUp\C0035.sql" />
+    <None Remove="sql\Common\StartUp\ComConductMst_GetList.sql" />
+    <None Remove="sql\Common\StartUp\ComFormDefine_GetList.sql" />
+    <None Remove="sql\Common\StartUp\ComListItemDefineCom_GetList.sql" />
+    <None Remove="sql\Common\StartUp\ComListItemDefine_GetList.sql" />
+    <None Remove="sql\Common\StartUp\ComListItemUserCustomize_GetList.sql" />
+    <None Remove="sql\Common\StartUp\GetComboRowsPerPage.sql" />
+    <None Remove="sql\Common\StartUp\GetLanguageList.sql" />
+    <None Remove="sql\Common\StartUp\StructureOrder_GetList.sql" />
+    <None Remove="sql\Common\StartUp\TargetSqlId_GetList.sql" />
+    <None Remove="sql\Common\StartUp\TblRowEditInfo_GetList.sql" />
+    <None Remove="sql\Common\StartUp\TranslationForComboBox_GetList.sql" />
+    <None Remove="sql\Common\StartUp\Translation_GetList.sql" />
     <None Remove="sql\Common\Structure_GetAllList.sql" />
     <None Remove="sql\Common\Structure_GetFactoryAndJob.sql" />
     <None Remove="sql\Common\Structure_GetInfoList.sql" />
@@ -302,7 +325,67 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="sql\Common\ComListItemUserCustomize_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\ComListItemDefineCom_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="sql\Common\RelationInfoForComboBox_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="sql\Common\ComboBox\C0040.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\BtnAuthInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\C0001.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\C0002.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\C0014.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\C0035.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\ComConductMst_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\ComFormDefine_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\ComListItemDefine_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\ComListItemUserCustomize_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\GetComboRowsPerPage.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\GetLanguageList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\StructureOrder_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\TargetSqlId_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\TblRowEditInfo_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\TranslationForComboBox_GetList.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sql\Common\StartUp\Translation_GetList.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\0\RP0450\4114\template_RP0450.xlsx">
@@ -1022,6 +1105,13 @@
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_SP0001\BusinessLogic_SP0001.csproj" />
     <ProjectReference Include="..\..\BackEndSolution\BusinessLogic_SU0001\BusinessLogic_SU0001.csproj" />
     <ProjectReference Include="..\..\CommonSolution\CommonDefinitions\CommonDefinitions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Views\Common\Error.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

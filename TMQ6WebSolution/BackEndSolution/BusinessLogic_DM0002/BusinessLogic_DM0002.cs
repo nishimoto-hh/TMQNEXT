@@ -506,7 +506,7 @@ namespace BusinessLogic_DM0002
             string getValNoByKey(MappingInfo info, string keyName)
             {
                 // 項目名と一致する項目番号を返す
-                return info.Value.First(x => x.KeyName.Equals(keyName)).ValName;
+                return info.Value.First(x => keyName.Equals(x.KeyName)).ValName;
             }
         }
 

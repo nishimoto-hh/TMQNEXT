@@ -15,6 +15,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using CommonWebTemplate.Models.Common;
 using CommonWebTemplate.CommonDefinitions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BusinessLogicProtoType
 {
@@ -39,6 +40,7 @@ namespace BusinessLogicProtoType
 
         /// <summary>ログ出力</summary>
         private static CommonLogger logger = CommonLogger.GetInstance("logger");
+        protected static CommonMemoryData comMemoryData = CommonMemoryData.GetInstance();
         #endregion
 
         #region コンストラクタ

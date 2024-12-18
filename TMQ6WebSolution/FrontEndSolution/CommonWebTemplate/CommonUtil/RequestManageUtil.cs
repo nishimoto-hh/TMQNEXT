@@ -44,6 +44,12 @@ namespace CommonWebTemplate.CommonUtil
             /// URL直接起動時遷移キー(※シングルサインオン用)
             /// </summary>
             public const string TMQ_SSO_ACCESS_KEY = "TMQ_SSO_ACCESS_KEY";
+            //★インメモリ化対応 start
+            /// <summary>
+            /// 構成マスタツリーデータ
+            /// </summary>
+            public const string TMQ_STRUCTURE_TREE_LIST = @"TMQ_STRUCTURE_TREE_LIST";
+            //★インメモリ化対応 end
         }
         #endregion
 
@@ -97,6 +103,13 @@ namespace CommonWebTemplate.CommonUtil
         /// 所属情報
         /// </summary>
         public BelongingInfo BelongingInfo { get; set; }
+
+        //★インメモリ化対応 start
+        /// <summary>
+        /// ユーザカスタマイズ情報
+        /// </summary>
+        public List<COM_LISTITEM_USER_CUSTOMIZE> CustomizeList { get; set; }
+        //★インメモリ化対応 end
 
         #region === コンストラクタ ===
         /// <summary>

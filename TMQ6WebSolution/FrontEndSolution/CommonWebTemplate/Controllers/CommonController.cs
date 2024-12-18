@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
 using System.IO;
 using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CommonWebTemplate.Controllers.Common
 {
@@ -783,6 +784,13 @@ namespace CommonWebTemplate.Controllers.Common
                     //例外ｴﾗｰ画面に遷移
                     return actionResult;
                 }
+                //★インメモリ化対応 start
+                // セッションのユーザ情報を取得し、ユーザカスタマイズ情報を更新
+                UserInfoDef userInfo = HttpContext.Session.GetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO);
+                userInfo.CustomizeList = procData.CustomizeList;
+                // セッションのユーザ情報を更新
+                HttpContext.Session.SetObject<UserInfoDef>(RequestManageUtil.SessionKey.CIM_USER_INFO, userInfo);
+                //★インメモリ化対応 end
 
                 //=== 画面レイアウトデータの取得 ===
                 List<CommonConductMst> results = null;

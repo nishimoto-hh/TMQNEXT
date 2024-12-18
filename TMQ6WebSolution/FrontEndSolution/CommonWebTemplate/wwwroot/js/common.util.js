@@ -285,6 +285,10 @@ function separateDicReturn(dicReturn, conductId) {
             P_DefineTransList = [];
         }
 
+        // コンボボックスアイテム取得用（共有メモリ）
+        if (dicReturn["ComboBoxMemoryInfo"] && !P_ComboDataAcquiredFlg) {
+            P_ComboBoxMemoryItems = dicReturn["ComboBoxMemoryInfo"];
+        }
     }
     return resultData;
 

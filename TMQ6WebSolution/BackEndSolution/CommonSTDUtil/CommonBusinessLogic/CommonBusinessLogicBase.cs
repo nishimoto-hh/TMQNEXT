@@ -130,7 +130,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <summary>ページ情報リスト</summary>
         protected List<PageInfo> pageInfoList;
         /// <summary>マッピング情報リスト</summary>
-        protected IList<ComUtil.DBMappingInfo> mapInfoList;
+        protected List<ComUtil.DBMappingInfo> mapInfoList;
         /// <summary>DB操作クラス</summary>
         protected CommonDBManager.CommonDBManager db;
         /// <summary>メッセージリソース</summary>
@@ -148,6 +148,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
 
         /// <summary>ログ出力</summary>
         protected static CommonLogger.CommonLogger logger = CommonLogger.CommonLogger.GetInstance("logger");
+        protected static CommonMemoryData comMemoryData =CommonMemoryData.GetInstance();
         #endregion
 
         #region コンストラクタ
@@ -221,6 +222,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected bool NeedsTotalCntCheck { get; set; }
         /// <summary>翻訳工場ID</summary>
         protected int TransFactoryId { get; set; }
+        //★インメモリ化対応 start
+        /// <summary>ユーザカスタマイズ情報</summary>
+        protected List<COM_LISTITEM_USER_CUSTOMIZE> CustomizeList { get; set; }
+        /// <summary>コンボボックスデータ取得済みフラグ</summary>
+        protected bool ComboDataAcquiredFlg { get; set; }
+        /// <summary>コンボボックス情報</summary>
+        protected Dictionary<string, object> ComboBoxMemoryInfo { get; set; }
+        //★インメモリ化対応 end
         #endregion
 
         #region publicメソッド
@@ -368,11 +377,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
                         return -1;
                     }
 
-                    // 項目定義からマッピング情報を取得
-                    GetDBMappingList();
-
                     // メッセージリソースリストを取得
                     getMessageResources(this.LanguageId, new List<int> { this.BelongingInfo.DutyFactoryId });
+
+                    // 項目定義からマッピング情報を取得
+                    GetDBMappingList();
 
                     // 各処理に分岐する前に、実行、削除、出力(同期、非同期)の場合、現状のページ情報を一時テーブルに保存する
                     if (this.ActionKbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.Execute ||
@@ -526,6 +535,10 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 outParam.DefineTransList = this.DefineTransList;
 
                 //logger.Debug(string.Format("ResultJson : {0}", JsonSerializer.Serialize(this.ResultList)));
+
+                //★インメモリ化対応 start
+                outParam.ComboBoxMemoryInfo = this.ComboBoxMemoryInfo;
+                //★インメモリ化対応 end
 
                 return result;
             }
@@ -887,6 +900,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 // アクション区分=初期化処理、且つステータスが確認でない場合は総件数チェックが必要
                 this.NeedsTotalCntCheck = this.ActionKbn == LISTITEM_DEFINE_CONSTANTS.ACTIONKBN.ComInitForm &&
                     this.Status < CommonProcReturn.ProcStatus.Confirm;
+
+                //★インメモリ化対応 start
+                if (!this.ComboDataAcquiredFlg)
+                {
+                    // コンボボックス情報取得
+                    this.ComboBoxMemoryInfo = ComUtil.GetComboBoxItems(this.db, this.rootPath, this.ConductId, this.LanguageId, this.UserId, this.FactoryId, this.BelongingInfo.BelongingFactoryIdList);
+                }
+                //★インメモリ化対応 end
 
                 // 初期化処理
                 return InitImpl();
@@ -1831,7 +1852,10 @@ namespace CommonSTDUtil.CommonBusinessLogic
             this.GUID = param.GUID;
             this.BrowserTabNo = param.BrowserTabNo;
             this.TransFactoryId = param.TransFactoryId;
-
+            //★インメモリ化対応 start
+            this.CustomizeList = param.CustomizeList;
+            this.ComboDataAcquiredFlg = param.ComboDataAcquiredFlg;
+            //★インメモリ化対応 end
             return true;
         }
 
@@ -1841,9 +1865,9 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected void setDBConnectionErrorLogAndMessage()
         {
             // 「DB接続に失敗しました。」
-            logger.ErrorLog(this.FactoryId, this.UserId, ComUtil.GetPropertiesMessage(CommonResources.ID.ID941190004, this.LanguageId));
+            logger.ErrorLog(this.FactoryId, this.UserId, getMessage(CommonResources.ID.ID941190004));
             // エラーが発生しました。システム管理者に問い合わせてください。
-            this.MsgId = ComUtil.GetPropertiesMessage(CommonResources.ID.ID941040004, this.LanguageId);
+            this.MsgId = getMessage(CommonResources.ID.ID941040004);
 
         }
 
@@ -2444,7 +2468,8 @@ namespace CommonSTDUtil.CommonBusinessLogic
             /// <returns>ValName(VALn)の値</returns>
             public string getValName(string keyName)
             {
-                return this.Value.First(x => x.KeyName.Equals(keyName)).ValName;
+                var val = this.Value.FirstOrDefault(x => keyName.Equals(x.KeyName));
+                return (val != null ? val.ValName: string.Empty);
             }
 
             /// <summary>
@@ -4208,7 +4233,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 foreach (var mapInfo in mappingList)
                 {
                     string key = mapInfo.ParamName.ToUpper();
-                    if (!string.IsNullOrEmpty(key))
+                    if (!string.IsNullOrEmpty(key) && !mapDic.ContainsKey(key))
                     {
                         mapDic.Add(key, mapInfo);
                     }
@@ -5445,7 +5470,7 @@ namespace CommonSTDUtil.CommonBusinessLogic
         protected void writeDBConnectionErrorLog()
         {
             // 「DB接続に失敗しました。」
-            logger.ErrorLog(this.FactoryId, this.UserId, ComUtil.GetPropertiesMessage(CommonResources.ID.ID941190004, this.LanguageId));
+            logger.ErrorLog(this.FactoryId, this.UserId, getMessage(CommonResources.ID.ID941190004));
         }
 
         /// <summary>
@@ -5588,12 +5613,32 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <returns></returns>
         protected List<ComUtil.DBMappingInfo> GetDBMappingList(string ctrlId = "")
         {
+            //★インメモリ化対応 start
             if (this.mapInfoList == null || this.mapInfoList.Count == 0 || string.IsNullOrEmpty(ctrlId))
             {
                 // マッピング情報リストが空、またはコントロールID未指定の場合、マッピング情報を取得
-                this.mapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(
-                SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = this.PgmId, LanguageId = this.LanguageId, UserId = this.UserId });
+                // 通常レイアウト取得
+                this.mapInfoList = getMappingList(this.PgmId, Convert.ToInt32(this.FactoryId), this.CustomizeList, false);
+                // 共通レイアウト取得
+                this.mapInfoList.AddRange(getMappingList(this.PgmId, Convert.ToInt32(this.FactoryId), this.CustomizeList, true));
             }
+            //if (this.mapInfoList == null || this.mapInfoList.Count == 0 || string.IsNullOrEmpty(ctrlId))
+            //{
+            //    // マッピング情報リストが空、またはコントロールID未指定の場合、マッピング情報を取得
+            //★インメモリ化対応 end
+            if (this.mapInfoList == null || this.mapInfoList.Count == 0)
+            {
+                // マッピング情報リストが空の場合、DBからマッピング情報を取得
+                this.mapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(
+                SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = this.PgmId, LanguageId = this.LanguageId, UserId = this.UserId }).ToList();
+            }
+            //★インメモリ化対応 start
+            else
+            {
+                // 翻訳データを設定
+                setTranslationTextToMappingList(this.messageResources, ref this.mapInfoList);
+            }
+            //★インメモリ化対応 end
             if (this.mapInfoList == null || this.mapInfoList.Count == 0 || string.IsNullOrEmpty(ctrlId))
             { return null; }
 
@@ -5607,8 +5652,20 @@ namespace CommonSTDUtil.CommonBusinessLogic
         /// <remarks>共通系画面では自身の画面の定義しかマッピング情報を持っていないので、これで追加する</remarks>
         protected void AddMappingListOtherPgmId(string pgmId)
         {
-            // DBより取得
-            var addMapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = pgmId, LanguageId = this.LanguageId });
+            //★インメモリ化対応 start
+            //// DBより取得
+            //var addMapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = pgmId, LanguageId = this.LanguageId }).ToList();
+            // 通常レイアウト取得
+            var addMapInfoList = getMappingList(pgmId, Convert.ToInt32(this.FactoryId), this.CustomizeList, false);
+            // 共通レイアウト取得
+            addMapInfoList.AddRange(getMappingList(pgmId, Convert.ToInt32(this.FactoryId), this.CustomizeList, true));
+            if (addMapInfoList == null || addMapInfoList.Count == 0)
+            {
+                // DBより取得
+                addMapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = pgmId, LanguageId = this.LanguageId }).ToList();
+            }
+            //★インメモリ化対応 end
+
             // 現在のマッピング情報の有無に応じて切り替え
             if (this.mapInfoList == null || this.mapInfoList.Count == 0)
             {
@@ -5622,6 +5679,136 @@ namespace CommonSTDUtil.CommonBusinessLogic
             }
         }
 
+        //★インメモリ化対応 start
+        /// <summary>
+        /// マッピング情報を取得
+        /// </summary>
+        /// <param name="pgmId">プログラムID</param>
+        /// <param name="locationLayerId">場所階層ID</param>
+        /// <param name="customizeList">ユーザカスタマイズ情報</param>
+        /// <param name="isCommonLayout">true:共通レイアウト/false:通常レイアウト</param>
+        /// <returns></returns>
+        private List<DBMappingInfo> getMappingList(string pgmId, int locationLayerId, List<COM_LISTITEM_USER_CUSTOMIZE> customizeList, bool isCommonLayout)
+        {
+            var keyName = nameof(COM_LISTITEM_DEFINE) + (isCommonLayout ? "_Com" : "");
+            var itemList = (List<COM_LISTITEM_DEFINE>)comMemoryData.GetData(keyName);
+            if (itemList == null) {
+                logger.Info("CommonMemoryData.GetData():" + keyName);
+                return null; 
+            }
+            var listItemList = itemList.Where(x =>
+                x.PGMID == pgmId &&
+                x.DEFINETYPE == LISTITEM_DEFINE_CONSTANTS.DEFINETYPE.DataRow &&
+                (x.LOCATION_LAYER_ID == 0 || x.LOCATION_LAYER_ID == locationLayerId)).ToList();
+
+            List<DBMappingInfo> mappingList;
+            if (!isCommonLayout)
+            {
+                // 通常レイアウトの場合、ユーザカスタマイズ情報を結合
+                var userCustomiseList = customizeList.Where(x => x.PGMID == pgmId).ToList();
+                mappingList = listItemList.GroupJoin(userCustomiseList,
+                    item => new { item.PGMID, item.FORMNO, item.CTRLID, item.ITEMNO },
+                    custom => new { custom.PGMID, custom.FORMNO, custom.CTRLID, custom.ITEMNO },
+                    (item, custom) => new { item, customized = custom.DefaultIfEmpty() })
+                    .SelectMany(x => x.customized, (x, y) => new DBMappingInfo
+                    {
+                        PgmId = x.item.PGMID,
+                        GrpNo = x.item.GrpNo,
+                        CtrlId = x.item.CTRLID,
+                        ItemNo = x.item.ITEMNO,
+                        CtrlType = x.item.CELLTYPE,
+                        DetailSearchCtrlType = x.item.DETAILED_SEARCH_CELLTYPE,
+                        FromToKbn = x.item.FROMTOKBN,
+                        Format = x.item.FORMAT,
+                        TblName = x.item.EXP_TABLE_NAME,
+                        ColOrgName = x.item.ColOrgName,
+                        DataType = x.item.DataType,
+                        DetailSearchColOrgName = x.item.DetailSearchColOrgName,
+                        DetailSearchDataType = x.item.DetailSearchDataType,
+                        AliasName = x.item.EXP_ALIAS_NAME,
+                        ParamOrgName = x.item.EXP_PARAM_NAME,
+                        KeyName = x.item.EXP_KEY_NAME,
+                        LikePattern = x.item.EXP_LIKE_PATTERN,
+                        InClauseKbn = x.item.EXP_IN_CLAUSE_KBN,
+                        LockType = x.item.EXP_LOCK_TYPE,
+                        LockTblName = x.item.LockTblName,
+                        DisplayFlg = y != null ? y.DISPLAY_FLG : true
+                    }).ToList();
+            }
+            else
+            {
+                // 共通レイアウトの場合、そのまま変換
+                mappingList = listItemList.Select(x => new DBMappingInfo
+                {
+                    PgmId = x.PGMID,
+                    GrpNo = x.GrpNo,
+                    CtrlId = x.CTRLID,
+                    ItemNo = x.ITEMNO,
+                    CtrlType = x.CELLTYPE,
+                    DetailSearchCtrlType = x.DETAILED_SEARCH_CELLTYPE,
+                    FromToKbn = x.FROMTOKBN,
+                    Format = x.FORMAT,
+                    TblName = x.EXP_TABLE_NAME,
+                    ColOrgName = x.ColOrgName,
+                    DataType = x.DataType,
+                    DetailSearchColOrgName = x.DetailSearchColOrgName,
+                    DetailSearchDataType = x.DetailSearchDataType,
+                    AliasName = x.EXP_ALIAS_NAME,
+                    ParamOrgName = x.EXP_PARAM_NAME,
+                    KeyName = x.EXP_KEY_NAME,
+                    LikePattern = x.EXP_LIKE_PATTERN,
+                    InClauseKbn = x.EXP_IN_CLAUSE_KBN,
+                    LockType = x.EXP_LOCK_TYPE,
+                    LockTblName = x.LockTblName,
+                    DisplayFlg = x.DISPLAY_FLG
+                }).ToList();
+            }
+            if (mappingList != null)
+            {
+                mappingList = mappingList.Distinct(new DBMappingInfoComparer()).ToList();
+            }
+            return mappingList != null ? mappingList : new List<DBMappingInfo>();
+        }
+
+        /// <summary>
+        /// マッピング情報へ翻訳データを設定
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="mappingList"></param>
+        private void setTranslationTextToMappingList(MessageResources resources, ref List<DBMappingInfo> mappingList)
+        {
+            mappingList = mappingList.GroupJoin(
+                resources.GetTranslationList(this.LanguageId),
+                mapInfo => mapInfo.Format,
+                trans => trans.messageId,
+                (mapInfo, trans) => new { mapInfo, translated = trans.DefaultIfEmpty() })
+                .SelectMany(x => x.translated, (x, y) => new DBMappingInfo
+                {
+                    PgmId = x.mapInfo.PgmId,
+                    GrpNo = x.mapInfo.GrpNo,
+                    CtrlId = x.mapInfo.CtrlId,
+                    ItemNo = x.mapInfo.ItemNo,
+                    CtrlType = x.mapInfo.CtrlType,
+                    DetailSearchCtrlType = x.mapInfo.DetailSearchCtrlType,
+                    FromToKbn = x.mapInfo.FromToKbn,
+                    Format = y != null ? y.value : x.mapInfo.Format,
+                    TblName = x.mapInfo.TblName,
+                    ColOrgName = x.mapInfo.ColOrgName,
+                    DataType = x.mapInfo.DataType,
+                    DetailSearchColOrgName = x.mapInfo.DetailSearchColOrgName,
+                    DetailSearchDataType = x.mapInfo.DetailSearchDataType,
+                    AliasName = x.mapInfo.AliasName,
+                    ParamOrgName = x.mapInfo.ParamOrgName,
+                    KeyName = x.mapInfo.KeyName,
+                    LikePattern = x.mapInfo.LikePattern,
+                    InClauseKbn = x.mapInfo.InClauseKbn,
+                    LockType = x.mapInfo.LockType,
+                    LockTblName = x.mapInfo.LockTblName,
+                    DisplayFlg = x.mapInfo.DisplayFlg
+                }).ToList();
+        }
+        //★インメモリ化対応 end
+
         /// <summary>
         /// メッセージリソースの取得
         /// </summary>
@@ -5631,6 +5818,14 @@ namespace CommonSTDUtil.CommonBusinessLogic
         {
             if (this.messageResources == null)
             {
+                //★インメモリ化対応 start
+                // 共有メモリより対象の言語の翻訳マスタのレコードを取得
+                this.messageResources = ComUtil.GetMessageResourceFromComMemory(languageId, factoryIdList: factoryIdList);
+                if (this.messageResources != null)
+                {
+                    return this.messageResources;
+                }
+                //★インメモリ化対応 end
                 // データベースより対象の言語の翻訳マスタのレコードを取得
                 this.messageResources = ComUtil.GetMessageResourceFromDb(this.db, languageId, factoryIdList: factoryIdList);
             }
@@ -5645,6 +5840,16 @@ namespace CommonSTDUtil.CommonBusinessLogic
             return this.messageResources.GetLanguageResources(languageId);
         }
 
+        /// <summary>
+        /// メッセージ文字列の取得
+        /// </summary>
+        /// <param name="messageId">メッセージID</param>
+        /// <returns></returns>
+        protected string getMessage(string messageId)
+        {
+            return ComUtil.GetPropertiesMessage(messageId, this.LanguageId);
+        }
+        
         /// <summary>
         /// 検索結果ヘッダ情報を取得する
         /// </summary>
