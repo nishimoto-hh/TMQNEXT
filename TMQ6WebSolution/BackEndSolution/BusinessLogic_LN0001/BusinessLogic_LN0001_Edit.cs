@@ -60,7 +60,12 @@ namespace BusinessLogic_LN0001
                 param.JobStructureId = getTreeValue(false);
                 // 取得した結果に対して、地区と職種の情報を設定する
                 IList<Dao.ListSearchResult> paramList = new List<Dao.ListSearchResult> { param };
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref paramList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+
+                // 画面左側で選択されていた情報が変更履歴対象外の場合は設定する
+                if (!isHistoryManagement(param.LocationStructureId))
+                {
+                    TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.ListSearchResult>(ref paramList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+                }
 
                 initFormByParam(param, toCtrlIdList);
                 // ツリーの階層IDの値が単一の場合その値を返す処理
@@ -94,6 +99,19 @@ namespace BusinessLogic_LN0001
             }
 
             return true;
+
+            // 工場が変更履歴の対象かどうかを判定(変更履歴の対象の場合はTrueを返す)
+            bool isHistoryManagement(int? locationStructureId)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDirHistoryManagement, SqlName.IsHistoryManagementFactory, out string sql);
+
+                // 工場に紐付く変更履歴の承認者のユーザーIDを取得
+                string userId = db.GetEntity<string>(sql, new { LocationStructureId = locationStructureId });
+
+                // 変更履歴対象(ユーザーIDが取得できた)の場合はTrueを返す
+                return !string.IsNullOrEmpty(userId);
+            }
         }
 
         /// <summary>

@@ -100,6 +100,7 @@
     <None Remove="Resources\sql\Common\HistoryManagement\GetWarningComment.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagement.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\InsertHistoryManagementDetail.sql" />
+    <None Remove="Resources\sql\Common\HistoryManagement\IsHistoryManagementFactory.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatus.sql" />
     <None Remove="Resources\sql\Common\HistoryManagement\UpdateApplicationStatusApproval.sql" />
     <None Remove="Resources\sql\Common\InsertTempJob.sql" />
@@ -1058,6 +1059,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetWarningComment.sql" />
+    <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\IsHistoryManagementFactory.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\WITH_GetLongPlanList.sql" />

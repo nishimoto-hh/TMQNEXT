@@ -166,9 +166,13 @@ namespace BusinessLogic_MC0001
             public const string CreateTempForGetList = "CreateTableTempGetMachineList";
             /// <summary>SQL名：一時テーブル登録：一覧取得用</summary>
             public const string InsertTempForGetList = "InsertTempGetMachineList";
+            /// <summary>SQL名：工場の変更履歴承認者を取得するSQL(工場が変更履歴の対象かどうかを確認するためのもの)</summary>
+            public const string IsHistoryManagementFactory = "IsHistoryManagementFactory";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"Machine";
+            /// <summary>SQL格納先サブディレクトリ名(変更履歴用)</summary>
+            public const string SubDirHistoryManagement = @"Common\HistoryManagement";
         }
         /// <summary>
         /// テンプレート名称
@@ -1751,7 +1755,11 @@ namespace BusinessLogic_MC0001
             IList<Dao.searchResult> paramList = new List<Dao.searchResult> { param };
             if (loc != null || job != null)
             {
-                TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref paramList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+                // 画面左側で選択されていた情報が変更履歴対象外の場合は設定する
+                if(!isHistoryManagement(param.LocationStructureId))
+                {
+                    TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.searchResult>(ref paramList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
+                }
             }
             initFormByParam(param, toCtrlIdList);
 
@@ -1816,6 +1824,18 @@ namespace BusinessLogic_MC0001
                 }
             }
 
+            // 工場が変更履歴の対象かどうかを判定(変更履歴の対象の場合はTrueを返す)
+            bool isHistoryManagement(int? locationStructureId)
+            {
+                // SQLを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDirHistoryManagement, SqlName.IsHistoryManagementFactory, out string sql);
+
+                // 工場に紐付く変更履歴の承認者のユーザーIDを取得
+                string userId = db.GetEntity<string>(sql, new { LocationStructureId = locationStructureId });
+
+                // 変更履歴対象(ユーザーIDが取得できた)の場合はTrueを返す
+                return !string.IsNullOrEmpty(userId);
+            }
         }
 
         /// <summary>

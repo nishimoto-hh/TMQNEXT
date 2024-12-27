@@ -64,6 +64,11 @@ namespace BusinessLogic_LN0001
         {
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = @"LongPlan";
+            /// <summary>SQL格納先サブディレクトリ名(変更履歴用)</summary>
+            public const string SubDirHistoryManagement = @"Common\HistoryManagement";
+
+            /// <summary>SQL名：工場の変更履歴承認者を取得するSQL(工場が変更履歴の対象かどうかを確認するためのもの)</summary>
+            public const string IsHistoryManagementFactory = "IsHistoryManagementFactory";
 
             /// <summary>
             /// 一覧画面で使用するSQL

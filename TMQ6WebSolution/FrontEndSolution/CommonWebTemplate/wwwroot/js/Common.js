@@ -12408,9 +12408,9 @@ function uploadSubmitSetting(formNo, btn, formElement, isEdit) {
                 //入力ｴﾗｰ
                 return false;
             }
-        }
 
-        setSubmitDataList(formElement, formNo);                 //submit用に明細ｴﾘｱﾃﾞｰﾀを取得してｾｯﾄ
+            setSubmitDataList(formElement, formNo);                 //submit用に明細ｴﾘｱﾃﾞｰﾀを取得してｾｯﾄ
+        }      
     }
 
 
