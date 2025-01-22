@@ -4155,3 +4155,24 @@ function setListPagination(appPath, conductId, pgmId, status, ctrlId, formNo, al
         addMessage(status.MESSAGE, status.STATUS);
     }
 }
+
+/**
+ * 詳細検索条件エリアを表示状態にする
+ */
+function dispDetailConditionArea() {
+
+    // グローバル変数にキー「InitDispDetailCondition」が格納されているか判定
+    // →メニューからの初期表示かつ、有効な詳細検索条件が設定されていない場合はバックエンド側の検索処理でキーが格納される
+    if ("InitDispDetailCondition" in P_dicIndividual) {
+
+        // 格納されている場合
+        // グローバル変数からキーを削除
+        operatePdicIndividual("InitDispDetailCondition", true);
+
+        // 検索結果一覧の虫眼鏡マークをクリックして詳細検索条件エリアを表示状態にする
+        $(P_Article).find("a[data-actionkbn='" + actionkbn.ComDetailSearch + "']").click();
+    }
+
+    // 格納されていない場合は何もしない(詳細検索条件エリアは非表示のまま)
+    return;
+}

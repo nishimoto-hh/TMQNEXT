@@ -1,6 +1,7 @@
 ﻿using CommonExcelUtil;
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -18,14 +19,13 @@ using ComRes = CommonSTDUtil.CommonResources;
 using ComUtil = CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using Dao = BusinessLogic_MC0001.BusinessLogicDataClass_MC0001;
 using DbTransaction = System.Data.IDbTransaction;
+using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
+using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureType;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using TMQDao = CommonTMQUtil.CommonTMQUtilDataClass;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
-using FunctionTypeId = CommonTMQUtil.CommonTMQConstants.Attachment.FunctionTypeId;
-using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
-using CommonWebTemplate.CommonDefinitions;
 
 namespace BusinessLogic_MC0001
 {
@@ -1249,8 +1249,8 @@ namespace BusinessLogic_MC0001
             // ページ情報取得
             var pageInfo = GetPageInfo(TargetCtrlId.SearchList, this.pageInfoList);
 
-            // メニューから選択された際の初期検索は行わない
-            if (this.CtrlId == "Init")
+            // メニューから選択された場合かつ、有効な詳細検索条件が設定されていない場合は初期検索は行わない
+            if (this.CtrlId == "Init" && isNotConfiguredDetailCondition())
             {
                 // 検索結果の設定
                 if (SetSearchResultsByDataClassForList<Dao.searchResult>(pageInfo, new List<Dao.searchResult>(), 0))
@@ -1258,6 +1258,10 @@ namespace BusinessLogic_MC0001
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
                 }
+
+                // 一覧画面の詳細検索を表示状態(虫眼鏡マークをクリックした後の状態)にするため、グローバル変数にキーを格納
+                // キーが格納されているかどうかなので値は空とする
+                SetGlobalData("InitDispDetailCondition", string.Empty);
 
                 return true;
             }
@@ -1333,6 +1337,7 @@ namespace BusinessLogic_MC0001
 
             return true;
 
+            // 一時テーブルの作成・データを登録
             void setTempTable(List<string> uncommentList)
             {
                 if (uncommentList == null)
@@ -1375,6 +1380,18 @@ namespace BusinessLogic_MC0001
                 listPf.SetParamLanguageId();
                 listPf.AddTempTable(SqlName.SubDir, SqlName.CreateTempForGetList, SqlName.InsertTempForGetList, uncommentList);
                 listPf.RegistTempTable(); // 登録
+            }
+
+            // 有効な詳細検索条件が設定されているかどうか判定
+            bool isNotConfiguredDetailCondition()
+            {
+                // 詳細検索条件を取得する
+                var list = this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x.ContainsKey("CTRLID")).ToList();
+                var dic = list.Where(x => x["IsDetailCondition"].Equals(true) && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault();
+
+                // ディクショナリを絞り込んだ結果がNULLかどうかで詳細検索が設定されているかどうかとする
+                // NULL：詳細検索が設定されていない、NULLでない：詳細検索が設定されている
+                return dic == null;
             }
         }
 

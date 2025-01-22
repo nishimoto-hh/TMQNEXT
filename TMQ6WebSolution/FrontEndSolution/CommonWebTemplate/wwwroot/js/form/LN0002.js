@@ -81,6 +81,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
 
     if (formNo == FormList.No) {
+
+        // 詳細検索条件エリアを表示する
+        dispDetailConditionArea();
+
         // 両方表示されている場合は制御
         controlVisibleScheduleCond(FormList);
 

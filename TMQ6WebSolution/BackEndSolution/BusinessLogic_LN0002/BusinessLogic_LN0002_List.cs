@@ -32,16 +32,22 @@ namespace BusinessLogic_LN0002
             // システム年度初期化処理
             SetSysFiscalYear<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.CtrlId.ScheduleCondition, monthStartNendo);
 
-            // メニューから選択された際の初期検索は行わない
-            if (this.CtrlId == "Init")
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.CtrlId.List, this.pageInfoList);
+
+            // メニューから選択された場合かつ、有効な詳細検索条件が設定されていない場合は初期検索は行わない
+            if (this.CtrlId == "Init" && isNotConfiguredDetailCondition())
             {
                 // 検索結果の設定
-                var pageInfo = GetPageInfo(ConductInfo.FormList.CtrlId.List, this.pageInfoList);
                 if (SetSearchResultsByDataClassForList<Dao.FormList.List>(pageInfo, new List<Dao.FormList.List>(), 0))
                 {
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
                 }
+
+                // 一覧画面の詳細検索を表示状態(虫眼鏡マークをクリックした後の状態)にするため、グローバル変数にキーを格納
+                // キーが格納されているかどうかなので値は空とする
+                SetGlobalData("InitDispDetailCondition", string.Empty);
 
                 return true;
             }
@@ -161,6 +167,7 @@ namespace BusinessLogic_LN0002
                 }
             }
 
+            // スケジュールデータの設定
             void setSchedule(List<string> keyIdList, IList<Dao.FormList.List> resultsWithHead, List<string> longPlanIdList)
             {
                 // 画面の条件を取得
@@ -304,6 +311,18 @@ namespace BusinessLogic_LN0002
                     startMonth = TMQUtil.GetYearStartMonth(this.db, factoryId ?? -1);
                 }
                 return startMonth;
+            }
+
+            // 有効な詳細検索条件が設定されているかどうか判定
+            bool isNotConfiguredDetailCondition()
+            {
+                // 詳細検索条件を取得する
+                var list = this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x.ContainsKey("CTRLID")).ToList();
+                var dic = list.Where(x => x["IsDetailCondition"].Equals(true) && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault();
+
+                // ディクショナリを絞り込んだ結果がNULLかどうかで詳細検索が設定されているかどうかとする
+                // NULL：詳細検索が設定されていない、NULLでない：詳細検索が設定されている
+                return dic == null;
             }
         }
     }

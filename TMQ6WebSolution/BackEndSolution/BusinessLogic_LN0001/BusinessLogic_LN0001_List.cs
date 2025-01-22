@@ -42,16 +42,22 @@ namespace BusinessLogic_LN0001
             // 変更管理ボタンの表示制御用フラグ
             setHistoryManagementFlg(ConductInfo.FormList.ControlId.HiddenInfo);
 
-            // メニューから選択された際の初期検索は行わない
-            if (this.CtrlId == "Init")
+            // ページ情報取得
+            var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+
+            // メニューから選択された場合かつ、有効な詳細検索条件が設定されていない場合は初期検索は行わない
+            if (this.CtrlId == "Init" && isNotConfiguredDetailCondition())
             {
                 // 検索結果の設定
-                var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
                 if (SetSearchResultsByDataClassForList<Dao.ListSearchResult>(pageInfo, new List<Dao.ListSearchResult>(), 0))
                 {
                     // 正常終了
                     this.Status = CommonProcReturn.ProcStatus.Valid;
                 }
+
+                // 一覧画面の詳細検索を表示状態(虫眼鏡マークをクリックした後の状態)にするため、グローバル変数にキーを格納
+                // キーが格納されているかどうかなので値は空とする
+                SetGlobalData("InitDispDetailCondition", string.Empty);
 
                 return true;
             }
@@ -177,6 +183,18 @@ namespace BusinessLogic_LN0001
 
                 // 画面に設定
                 SetScheduleDataToResult(setScheduleData, ConductInfo.FormList.ControlId.List);
+            }
+
+            // 有効な詳細検索条件が設定されているかどうか判定
+            bool isNotConfiguredDetailCondition()
+            {
+                // 詳細検索条件を取得する
+                var list = this.searchConditionDictionary.Where(x => x.ContainsKey("IsDetailCondition") && x.ContainsKey("CTRLID")).ToList();
+                var dic = list.Where(x => x["IsDetailCondition"].Equals(true) && x["CTRLID"].Equals(pageInfo.CtrlId)).FirstOrDefault();
+
+                // ディクショナリを絞り込んだ結果がNULLかどうかで詳細検索が設定されているかどうかとする
+                // NULL：詳細検索が設定されていない、NULLでない：詳細検索が設定されている
+                return dic == null;
             }
         }
     }

@@ -383,6 +383,10 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     }
 
     if (formNo == FormList.No) {
+
+        // 詳細検索条件エリアを表示する
+        dispDetailConditionArea();
+
         // スケジュールの検索条件コンボが両方表示されている場合は制御
         controlVisibleScheduleCond(FormList);
 
@@ -824,6 +828,13 @@ function postTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     if (isMaintListForm(transTarget)) {
         // 保全活動一覧を表示する画面の場合、表示制御
         setVisibleMaintList(getFormInfoByFormNo(transTarget));
+    }
+
+    // 一覧画面の詳細リンクから詳細画面に遷移した後
+    if (formNo == FormList.No && transTarget == FormDetail.No) {
+        // 詳細検索メニュー・項目カスタマイズメニューを非表示
+        setHide('#detail_search', true);
+        setHide('#item_customize', true);
     }
 }
 

@@ -631,6 +631,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     if (formNo == SearchList.No) {
         //一覧画面
 
+        // 詳細検索条件エリアを表示する
+        dispDetailConditionArea();
+
         //フォーカス設定
         var btn = isUnAvailableButton(SearchList.ForcusId);
         if (btn) {
