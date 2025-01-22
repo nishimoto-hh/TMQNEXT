@@ -2475,6 +2475,7 @@ namespace BusinessLogic_MA0001
             List<TMQUtil.StructureItemEx.StructureItemExInfo> list = getFactoryExDataList(HistoryIndividualDivision.Seq);
             foreach (Dao.excelPortMaintenance result in resultList)
             {
+                result.LanguageId = this.LanguageId;
                 // 送信時処理IDが設定されているもののみ
                 if (result.ProcessId == null)
                 {
@@ -3183,7 +3184,7 @@ namespace BusinessLogic_MA0001
             foreach (long summaryId in summaryIdList)
             {
                 //件名IDに紐づく対象機器を取得
-                List<Dao.excelPortInspectionMachine> machineList = TMQUtil.SqlExecuteClass.SelectList<Dao.excelPortInspectionMachine>(SqlName.Detail.GetInspectionMachineList, SqlName.SubDir, new { SummaryId = summaryId }, this.db);
+                List<Dao.excelPortInspectionMachine> machineList = TMQUtil.SqlExecuteClass.SelectList<Dao.excelPortInspectionMachine>(SqlName.Detail.GetInspectionMachineList, SqlName.SubDir, new { SummaryId = summaryId, LanguageId = this.LanguageId }, this.db);
                 if (machineList == null || machineList.Count == 0)
                 {
                     continue;
@@ -3382,7 +3383,7 @@ namespace BusinessLogic_MA0001
         private bool checkDuplicationMachine(Dao.excelPortInspectionMachine result, ref List<ComDao.UploadErrorInfo> errorInfoList)
         {
             //件名IDに紐づく対象機器を取得
-            List<Dao.excelPortInspectionMachine> machineList = TMQUtil.SqlExecuteClass.SelectList<Dao.excelPortInspectionMachine>(SqlName.Detail.GetInspectionMachineList, SqlName.SubDir, new { SummaryId = result.SummaryId }, this.db);
+            List<Dao.excelPortInspectionMachine> machineList = TMQUtil.SqlExecuteClass.SelectList<Dao.excelPortInspectionMachine>(SqlName.Detail.GetInspectionMachineList, SqlName.SubDir, new { SummaryId = result.SummaryId, LanguageId = this.LanguageId }, this.db);
             //処理対象データを除く
             machineList.RemoveAll(x => x.HistoryInspectionSiteId == result.HistoryInspectionSiteId && x.HistoryInspectionContentId == result.HistoryInspectionContentId);
             if (machineList == null || machineList.Count == 0)
