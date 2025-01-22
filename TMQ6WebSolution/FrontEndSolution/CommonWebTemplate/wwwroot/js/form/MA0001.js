@@ -676,6 +676,8 @@ const FormRegist = {
         ConstructionPersonnel: 6,
         //施工担当者
         ConstructionPersonnelName: 12,
+        //施工担当者ID
+        ConstructionPersonnelLN: 14
     },
     //履歴情報(個別工場)
     HistoryIndividualList: {
@@ -694,6 +696,8 @@ const FormRegist = {
         ConstructionPersonnelName: 12,
         //製造担当者名
         ManufacturingName: 13,
+        //施工担当者ID
+        ConstructionPersonnelLN: 14
     },
     //故障分析情報タブ
     FailureTab: {
@@ -1242,6 +1246,27 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 指定のキーでグローバル変数から値を削除
         delete P_dicIndividual[KeyNameFromScheduleLink];
 
+        // 施工担当者にログインユーザIDを設定する※通常の履歴タブ
+        // ログインユーザIDを取得
+        var loginUserId = getValue(FormRegist.HistoryList.Id, FormRegist.HistoryList.ConstructionPersonnelLN, 1, CtrlFlag.Label, false, false);
+
+        if (loginUserId) {
+            // 取得したIDを施工担当者(コード+翻訳)のコントロールに設定する
+            // 長期計画から遷移してきた場合は値の保持ができていないためトリガーにより変更イベントを実施する
+            setValueAndTrigger(FormRegist.HistoryList.Id, FormRegist.HistoryList.ConstructionPersonnel, 1, CtrlFlag.TextBox, loginUserId);
+        }
+        loginUserId = null;
+
+        // 施工担当者にログインユーザIDを設定する※個別工場の履歴タブ
+        // ログインユーザIDを取得
+        loginUserId = getValue(FormRegist.HistoryIndividualList.Id, FormRegist.HistoryIndividualList.ConstructionPersonnelLN, 1, CtrlFlag.Label, false, false);
+
+        if (loginUserId) {
+            // 取得したIDを施工担当者(コード+翻訳)のコントロールに設定する
+            // 長期計画から遷移してきた場合は値の保持ができていないためトリガーにより変更イベントを実施する
+            setValueAndTrigger(FormRegist.HistoryIndividualList.Id, FormRegist.HistoryIndividualList.ConstructionPersonnel, 1, CtrlFlag.TextBox, loginUserId);
+        }
+       
     } else if (formNo == FormReplace.No) {
         // 機器交換画面
 
@@ -3498,6 +3523,9 @@ function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrl
 
     // 担当者検索画面
     SU0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
+
+    // 文書管理詳細画面
+    DM0002_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
 }
 
 /**

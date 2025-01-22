@@ -98,6 +98,10 @@ namespace BusinessLogic_PT0006
             /// <value>数量管理単位ID</value>
             public long UnitStructureId { get; set; }
 
+            /// <summary>Gets or sets 出庫数</summary>
+            /// <value>出庫数</value>
+            public long NumberShipments { get; set; }
+
         }
 
         /// <summary>

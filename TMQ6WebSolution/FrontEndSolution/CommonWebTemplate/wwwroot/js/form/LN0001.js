@@ -1783,6 +1783,9 @@ function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrl
 
     // 担当者検索画面
     SU0001_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
+
+    // 文書管理詳細画面
+    DM0002_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
 }
 
 /**

@@ -24,6 +24,20 @@ document.write("<script src=\"" + getPath() + "/DM0002.js\"></script>");
 // 一覧のVALの値をJavaScriptではよく使いますが、値をそのまま記載すると後でどの項目を見ているか分からなくなります。
 // また、VALの値を詰めるなどで変更することが大変になりますので、まとめて定義してください。
 
+/** 機能ID*/
+const ConductId_DM0001 = "DM0001";
+
+/** グローバル変数のキー、一覧画面の表示データを更新する用*/
+const DM0001_UpdateListData = "DM0001_UpdateListData";
+/** グローバル変数のキー、文書管理画面で添付情報が更新された場合true*/
+const DM0001_UpdateAttachmentFlg = "DM0001_UpdateAttachmentFlg";
+/** グローバル変数のキー、一覧画面用の総件数*/
+const DM0001_AllListCount = "DM0001_AllListCount";
+/** グローバル変数のキー、一覧画面の表示データ更新用のキー */
+const DM0001_UpdateKey = "DM0001_UpdateKey";
+/** グローバル変数のキー、一覧画面の選択行番号 */
+const DM0001_SelectedRowNo = "DM0001_SelectedRowNo";
+
 /**
  *  初期化処理(表示中画面用)
  *  @param appPath   　　 ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
@@ -43,7 +57,12 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 
         // 「出力」ボタンにフォーカス設定(ボタンを画面に表示しないのでコメント)
         //setFocusButton(DM0001_FormList.ButtonOutputId);
-    }
+
+    } else if (conductId == DM0002_FormDetail.ConductId) {
+        // 詳細画面の場合
+        // 更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+        DM0002_setUpdateDataForList(conductId, false, false);
+   }
 }
 
 /**
@@ -145,16 +164,32 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
  *  @param autoBackFlg ：ajax正常終了後、自動戻るフラグ　false:戻らない、true:自動で戻る
  *  @param isEdit      ：単票表示フラグ
  *  @param data        ：結果ﾃﾞｰﾀ
- */
-function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data) {
+ *  @param status      ：処理ステータス
+*/
+function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, status) {
     // 共通-文書管理詳細画面の実行正常終了後処理
     DM0002_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+
+    var btnName = $(btn).attr('name');
+    if (btnName == DM0002_FormDetail.BtnDeleteId) {
+        // 削除ボタンの場合、削除データを一覧画面から削除
+        DM0002_setUpdateDataForList(conductId, true, false);
+    }
 
     if (conductId == DM0001_FormList.ConductId) {
         // 一覧画面
 
         // 「出力」ボタンにフォーカス設定(ボタンを画面に表示しないのでコメント)
         //setFocusButton(DM0001_FormList.ButtonOutputId);
+
+        if (btnName == DM0002_FormDetail.BtnUploadId) {
+            // 登録ボタンの場合、更新データを一覧画面へ反映
+            DM0002_setUpdateDataForList(conductId, false, false);
+            if (status.MESSAGE) {
+                // 処理メッセージを一覧画面へ設定
+                setMessage(status.MESSAGE, status.STATUS);
+            }
+        }
     }
 }
 
@@ -242,8 +277,18 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     // 共通-文書管理詳細画面を閉じたときの再表示処理はこちらで行うので、各機能での呼出は不要
     DM0002_beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
     // 単票画面を閉じた場合
-    // 単票で、「登録」ボタンを閉じたときに再検索を行う
-    InitFormDataByOwnModal(DM0001_FormList.ConductId, DM0001_FormList.No, DM0001_FormList.Id, DM0002_FormDetail.BtnUploadId, appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    // 単票で、「登録」ボタンを閉じたときに再検索を行う⇒再検索は行わない
+    //InitFormDataByOwnModal(DM0001_FormList.ConductId, DM0001_FormList.No, DM0001_FormList.Id, DM0002_FormDetail.BtnUploadId, appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+
+    if (btnCtrlId == DM0002_FormDetail.BtnBackId) {
+        //文書管理画面を閉じた場合
+        if (conductId == DM0001_FormList.ConductId && formNo == DM0001_FormList.No) {
+            // グローバル変数から削除
+            delete P_dicIndividual[DM0001_SelectedRowNo];
+           //ページング再設定
+            setListPagination(appPath, conductId, pgmId, status, DM0001_FormList.Id, DM0001_FormList.No, DM0001_AllListCount);
+        }
+    }
 }
 
 /**
@@ -255,9 +300,34 @@ function postBuiltTabulator(tbl, id) {
 
     DM0002_postBuitTabulator(tbl, id);
 
-    // 一覧画面
     if (id == '#' + DM0001_FormList.Id + getAddFormNo()) {
+        // 一覧画面の場合
         // 一覧フィルタ処理実施
         callExecuteListFilter(DM0001_FormList.Id, DM0001_FormList.FilterId, DM0001_FormList.Filter);
+
+    } else if (id == '#' + DM0002_FormDetail.Id + getAddFormNo()) {
+
+        // 詳細画面の場合
+        // 更新データを一覧画面に反映する（再検索を行わず、一覧データに反映。新規登録時に詳細一覧の添付IDの値を参照する為ここで行う）
+        DM0002_setUpdateDataForList(getConductId(), false, true);
     }
+}
+
+/**
+*【オーバーライド用関数】
+* 共通機能へデータを渡す
+* @param {string}                      appPath         :ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+* @param {number}                      conductId       :共通機能ID
+* @param {number}                      parentNo        :親画面NO
+* @param {Array.<Dictionary<string, string>>}  conditionDataList   :条件ﾃﾞｰﾀ
+* @param {string}                      ctrlId          :遷移元の一覧ctrlid
+* @param {string}                      btn_ctrlId      :ボタンのbtn_ctrlid
+* @param {number}                      rowNo           :遷移元の一覧の選択行番号（一覧行でない場合は-1）
+* @param {Element}                     element         :ｲﾍﾞﾝﾄ発生要素
+* @param {string}                      parentConductId :遷移元の個別機能ID
+*/
+function passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId) {
+
+    // 文書管理詳細画面
+    DM0002_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId);
 }

@@ -48,7 +48,44 @@ const FormList = {
         Enter: "Enter",                       // 入庫
         Issue: "Issue",                       // 出庫
         Move: "Move"                          // 移庫
-    }
+    },
+    PartsNo: 4,                               // 予備品No.
+    PartsName: 5,                             // 予備品名
+    ManufactureName: 6,                       // メーカー
+    ModelType: 7,                             // 型式
+    Materials: 8,                             // 材質
+    StandardSize: 9,                          // 規格・寸法
+    PartsFactoryName: 10,                     // 管理工場
+    DepartmentName: 11,                       // 標準部門
+    DepartmentStructureId: 12,                // 標準部門ID(非表示)
+    JobName: 13,                              // 職種
+    PartsServiceSpace: 14,                    // 使用場所
+    DistrictName: 15,                         // 地区
+    FactoryName: 16,                          // 標準工場
+    WarehouseName: 17,                        // 標準予備品倉庫
+    RackName: 18,                             // 標準棚番
+    LeadTime: 19,                             // 発注点(単位有り)
+    OrderQuantity: 20,                        // 発注量(単位有り)
+    LeadTimeExceptUnit: 21,                   // 発注点(単位無し)
+    OrderQuantityExceptUnit: 22,              // 発注量(単位無し)
+    UnitName: 23,                             // 数量管理単位
+    VenderName: 24,                           // 標準仕入先
+    CurrencyName: 25,                         // 金額管理単位
+    UnitPrice: 26,                            // 標準単価(単位有り)
+    UnitPriceExceptUnit: 27,                  // 標準単価(単位無し)
+    AccountName: 28,                          // 標準勘定科目
+    AccountStructureId: 29,                   // 標準勘定科目ID
+    StockQuantity: 30,                        // 最新在庫数(単位有り)
+    StockQuantityExceptUnit: 31,              // 最新在庫数(単位無し)
+    PurchasingNo: 33,                         // 購買システムコード
+    UseSegmentStructureId: 34,                // 使用区分
+    SpareDocument: 35,                        // 文書
+    SpareImage: 36,                           // 画像
+    SpareMap: 37,                             // 予備品地図
+
+    RfIdTag: 39,                              // RFIDタグ
+    RfCount: 42,                              // RFIDタグ件数
+    RfCountExceptUnit: 43,                    // RFIDタグ件数(単位無し)
 };
 
 // 詳細画面 コントロール項目番号
@@ -56,10 +93,46 @@ const FormDetail = {
     No: 1,                                    // 画面番号
     PartsInfo: "BODY_010_00_LST_1",           // 予備品情報
     PartsFactoryId: 10,                       // 管理工場コンボボックス
-    LocationInfo: "BODY_020_00_LST_1",        // 標準保管場所情報
+    PartsNo: 1,                               // 予備品No.
+    PartsName: 2,                             // 予備品名
+    ManufacturerStructureId: 3,               // メーカー
+    ModelType: 4,                             // 型式
+    Materials: 5,                             // 材質
+    StandardSize: 6,                          // 規格・寸法
+    JobName: 7,                               // 職種
+    PartsServiceSpace: 8,                     // 使用場所
+    PartsId: 9,                               // 予備品ID
+    PartsFactoryName: 10,                     // 管理工場
+    UpdateSerialId: 11,                       // 更新シリアルID
+    RfCount: 12,                              // RFIDタグ件数
+    DistrictName: 13,                         // 地区
+    LastUpdateDate: 14,                       // 最大更新日時
+    DepartmentName: 15,                       // 標準部門
+
+
+    LocationInfo: {                          // 標準保管場所情報
+        Id: "BODY_020_00_LST_1",             // 一覧ID    
+        DistrictName: 1,                     // 地区
+        FactoryName: 2,                      // 標準工場
+        WarehouseName: 3,                    // 標準予備品倉庫
+        RackName: 4,                         // 標準棚
+        RackBranchNo: 5                      // 標準枝番
+    },
     PurchaseInfo: {                           // 購買管理工場
         Id: "BODY_040_00_LST_1",              // 一覧ID
-        IsRegistedRequiredItemToOutLabel: 10  // 詳細画面上部のラベル出力ボタン用フラグ(予備品情報「標準棚番」「標準部門」「標準勘定科目」がすべて登録されている場合はTrue)
+        IsRegistedRequiredItemToOutLabel: 10, // 詳細画面上部のラベル出力ボタン用フラグ(予備品情報「標準棚番」「標準部門」「標準勘定科目」がすべて登録されている場合はTrue)
+        LeadTime: 1,                         // 発注点(単位有り)
+        UnitName: 2,                         // 数量管理単位
+        CurrencyName: 3,                     // 金額管理単位
+        StockQuantity: 4,                    // 最新在庫数(単位有り)
+        OrderQuantity: 5,                    // 発注量(単位有り)
+        VenderStructureId: 6 ,               // 標準仕入先
+        UnitPrice: 7,                        // 標準単価(単位有り)
+        PurchasingNo: 8,                     // 購買システムコード
+        AccountName: 9,                      // 標準勘定科目
+        AccountStructureId: 12,              // 標準勘定科目ID
+        RackName: 13,                        // 棚番
+        RackBranchNo: 14                     // 棚枝番
     },
     InventoryParentList: {                    // 棚別在庫一覧(親一覧)
         Id: "BODY_080_00_LST_1",              // 一覧ID
@@ -120,6 +193,7 @@ const FormDetail = {
     Button: {
         Edit: "Edit",                         // 修正
         Copy: "Copy",                         // 複写
+        Delete: "Delete",                     // 削除
         Image: "Image",                       // 画像
         Document: "Document",                 // 添付
         Map: "Map",                           // 予備品地図
@@ -174,6 +248,7 @@ const FormEdit = {
     DepartmentStructureId: 16,                // 予備品情報の標準部門(構成ID)
     Button: {
         Regist: "Regist",                     // 登録
+        Back: "Back"                          // 戻る
     },
     Purchase: {                               // 購買管理情報
         Id: "BODY_050_00_LST_2",
@@ -195,7 +270,10 @@ const FormLabel = {
     No: 3,                                    // 画面番号
     SubjectList: "BODY_000_00_LST_3",         // 勘定科目選択一覧
     CategoryList: "BODY_010_00_LST_3",        // 部門選択一覧
-    PartsIdList: "BODY_020_00_LST_3"          // 予備品ID一覧
+    PartsIdList: "BODY_020_00_LST_3",         // 予備品ID一覧
+    Button: {
+        Back: "Back"                          // 戻る
+    }
 };
 
 // RFタグ取込画面
@@ -219,6 +297,14 @@ const FormRFUpload = {
         Back: "BackUpload",
     }
 };
+
+/** 入庫/出庫/移庫入力画面 コントロール項目番号 */
+const FormInoutEdit = {
+    Button: {
+        Cancel: "Cancel",                     // 取消
+    }
+}
+
 // 入出庫区分コンボボックスの拡張アイテム番号
 const InoutDivisionNo =
 {
@@ -231,14 +317,24 @@ const InoutDivisionNo =
     InventoryIssue: "6"  // 棚卸出庫
 };
 
-// グローバルリストで使用するキー名称(フロントのみで仕様)
+// グローバルリストで使用するキー名称
 const GlobalKeys =
 {
-    FactoryId: "FactoryId",                         // 工場ID
-    PartsId: "PartsId",                             // 予備品ID
-    DefaultDepartmentCode: "DefaultDepartmentCode", // 標準部門コード
-    DefaultAccountCode: "DefaultAccountCode"        // 標準勘定科目コード
+    FactoryId: "FactoryId",                             // 工場ID
+    PartsId: "PartsId",                                 // 予備品ID
+    DefaultDepartmentCode: "DefaultDepartmentCode",     // 標準部門コード
+    DefaultAccountCode: "DefaultAccountCode",           // 標準勘定科目コード
+    UpdateListData: "PT0001_UpdateListData",            // 一覧画面の表示データを更新する用
+    UpdateAttachmentFlg: "PT0001_UpdateAttachmentFlg",  // 文書管理画面で添付情報が更新された場合true
+    AllListCount: "PT0001_AllListCount",                // 一覧画面用の総件数
+    Matter: "PT0001_Matter",                            // RFIDタグ件数の単位文字列
+    TransParent: "PT0001_TransParentNo",                // 予備品一覧からの遷移元画面番号
+    OrderAlertJudgeFlg: "PT0001_OrderAlertJudgeFlg",    // 発注アラーム判定用フラグ
+    ExecPostSearchList: "PT0001_ExecPostSearchList"     // 発注アラームによる背景色変更フラグ
 };
+
+/** 発注アラーム判定用フラグ(在庫数 < 発注点の場合に発注アラームON) */
+const OrderAlertJudgeFlg_LessThan = "2";
 
 /*==94:初期化処理==*/
 /**
@@ -271,6 +367,26 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
     if (getConductId() == RM00001_ConductId) {
         return RM0001_initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus, actionCtrlId, data);
     }
+
+    if (conductId != ConductId_PT0001) {
+        // 共通画面の場合
+
+        if (conductId == DM0002_FormDetail.ConductId) {
+            // 文書管理画面の場合
+            // 機能タイプIDを取得
+            var typeId = getValue(DM0002_Subject.Id, DM0002_Subject.FunctionTypeId, 1, CtrlFlag.TextBox, false);
+            // 予備品IDを取得
+            var patrsId = getValueByOtherForm(1, FormDetail.PartsInfo, FormDetail.PartsId, 1, CtrlFlag.Label);
+            if (P_dicIndividual[GlobalKeys.UpdateAttachmentFlg] && P_dicIndividual[GlobalKeys.UpdateAttachmentFlg].TYPEID == typeId) {
+                //添付情報更新後は処理なし
+                return;
+            }
+            //文書管理画面の初期表示時に機能タイプID、予備品IDを設定
+            P_dicIndividual[GlobalKeys.UpdateAttachmentFlg] = { TYPEID: typeId, KEYID: patrsId, UPDATE: false };
+        }
+        return;
+    }
+    delete P_dicIndividual[GlobalKeys.UpdateAttachmentFlg];
 
     // 画面番号を判定
     if (formNo == FormList.No) { // 一覧画面
@@ -306,11 +422,21 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         setDispYear();
 
         // 標準保管場所情報の「棚枝番」を非表示にする
-        var parsLocationDetailNo = $(P_Article).find("#" + FormDetail.LocationInfo + getAddFormNo()).find("*[data-name='VAL" + FormDetail.LocationDetailNo + "']");
+        var parsLocationDetailNo = $(P_Article).find("#" + FormDetail.LocationInfo.Id + getAddFormNo()).find("*[data-name='VAL" + FormDetail.LocationDetailNo + "']");
         parsLocationDetailNo.hide();
 
         // 詳細画面上部のラベル出力ボタンの活性/非活性を切り替える
         changeOutLabelBtnStatus();
+
+        if (actionCtrlId != FormDetail.Button.RegistRfidTag && actionCtrlId != FormDetail.Button.DeleteRfid) {
+            if (P_dicIndividual[GlobalKeys.UpdateListData] && conductId == ConductId_PT0001) {
+                setTimeout(function () {
+                    // 登録更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+                    // メーカーのオートコンプリートの完了を待つためタイミングをずらす
+                    setUpdateDataForList(conductId, false, false);
+                }, 500); //500ミリ秒
+           }
+        }
     }
     else if (formNo == FormEdit.No) { // 詳細編集画面
 
@@ -462,6 +588,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
 function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element) {
 
     var conditionDataList = [];
+	
+	// 遷移元の画面NOをクリア
+    operatePdicIndividual(GlobalKeys.TransParent, true);
 
     // 共通-文書管理詳細画面の遷移前処理を行うかどうか判定し、Trueの場合は行う
     if (IsExecDM0002_PrevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ctrlId, btn_ctrlId, rowNo, element)) {
@@ -514,17 +643,18 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
             // 入庫入力画面の検索条件をセット
             conditionDataList.push(getParamToPT0005(getValueBySelectedRow(element, FormList.PartsId, false), 0, PartsTransFlg.New));
+            P_dicIndividual[GlobalKeys.TransParent] = formNo;   // 予備品一覧からの遷移
         }
         else if (btn_ctrlId == FormList.Button.Issue) { // 出庫
 
             // 出庫入力画面の検索条件をセット
             conditionDataList.push(getParamToPT0006(getValueBySelectedRow(element, FormList.PartsId, false), 0, PartsTransFlg.New));
+            P_dicIndividual[GlobalKeys.TransParent] = formNo;   // 予備品一覧からの遷移
         }
         else if (btn_ctrlId == FormList.Button.Move) { // 移庫
 
             // 移庫入力画面の検索条件をセット
             conditionDataList.push(getParamToPT0007FromPT0001(FormList.Id, getValueBySelectedRow(element, FormList.PartsId, false)));
-
         }
     }
     else if (formNo == FormDetail.No) { // 詳細画面
@@ -558,11 +688,13 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
 
             // 入庫入力画面の検索条件をセット
             conditionDataList.push(getParamToPT0005(getValue(FormDetail.PartsInfo, FormDetail.PartsId, 1, CtrlFlag.TextBox, false, false), getValueBySelectedRow(element, FormDetail.InoutHistory.InoutHistoryId, true), PartsTransFlg.Edit));
-        }
+            P_dicIndividual[GlobalKeys.TransParent] = formNo;   // 予備品詳細からの遷移
+       }
         else if (btn_ctrlId == FormDetail.Button.HistoryIssue) { // 出庫(入出庫履歴)
 
             // 出庫入力画面の検索条件をセット
             conditionDataList.push(getParamToPT0006(getValue(FormDetail.PartsInfo, FormDetail.PartsId, 1, CtrlFlag.TextBox, false, false), getValueBySelectedRow(element, FormDetail.InoutHistory.InoutHistoryId, true), PartsTransFlg.Edit));
+            P_dicIndividual[GlobalKeys.TransParent] = formNo;   // 予備品詳細からの遷移
         }
         else if (btn_ctrlId == FormDetail.Button.HistoryShelf) { // 棚番移庫(入出庫履歴)
 
@@ -666,7 +798,7 @@ function postBuiltTabulator(tbl, id) {
         // 一覧フィルタ処理実施
         callExecuteListFilter(FormList.Id, FormList.FilterId, FormList.Filter);
 
-        // 予備品一覧の背景色変更、画像の高さ変更
+        //// 予備品一覧の背景色変更、画像の高さ変更
         postSearchList(tbl);
 
     }
@@ -682,6 +814,10 @@ function postBuiltTabulator(tbl, id) {
 
         // 繰越のデータのリンクを無効にする
         noneLinkCarryData();
+    }
+    else if (id == "#" + FormDetail.Rfid.Id + getAddFormNo()) {  // 詳細画面 RFIDタグ
+        //登録更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+        setUpdateDataForList(getConductId(), false, true);
     }
 }
 
@@ -857,6 +993,16 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
     if (btnCtrlId == FormDetail.Button.RegistRfidTag && targetCtrlId == FormDetail.Rfid.Id) {
         initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);
     }
+
+    if (conductId == ConductId_PT0001 && formNo == FormList.No) {
+        // 予備品一覧の場合、ページング再設定
+        setListPagination(appPath, conductId, pgmId, status, FormList.Id, FormList.No, GlobalKeys.AllListCount);
+    }
+
+    if (backFrom == DM0002_ConductId) {
+        // 文書管理画面を閉じた場合
+        setAttachmentForList();
+    }
 }
 
 /**
@@ -981,6 +1127,12 @@ function postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, a
 
     if (formNo == FormDetail.No) {
         setDispYear();
+
+        var btnName = $(btn).attr('name');
+        if (btnName == FormDetail.Button.Delete) {
+            //削除データを一覧画面から削除（登録・更新は詳細画面表示後のタイミングで反映）
+            setUpdateDataForList(conductId, true, false);
+        }
     } else if (formNo == FormRFUpload.No) {
         //RFタグ取込画面
 
@@ -1074,6 +1226,10 @@ function addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn) 
 
     // 共通-文書管理詳細画面の登録前追加条件取得処理を行うかどうか判定し、Trueの場合は行う
     if (IsExecDM0002_AddSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn)) {
+
+        // 添付情報が更新された場合（一覧データに反映用のフラグ）
+        P_dicIndividual[GlobalKeys.UpdateAttachmentFlg].UPDATE = true;
+
         return DM0002_addSearchConditionDictionaryForRegist(appPath, conductId, formNo, btn);
     }
 
@@ -1226,12 +1382,27 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
  */
 function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
     var formNo = getFormNo();
-    if (formNo == FormEdit.No && btnCtrlId == FormEdit.Button.Regist) {
+    if (formNo == FormEdit.No) {
+        if (btnCtrlId == FormEdit.Button.Regist) {
+            //新規登録画面から登録後、参照画面に渡すキー情報をセット
+            var conditionDataList = getListDataByCtrlIdList([FormEdit.PartsInfo], FormEdit.No, 0);
+            // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
+            setSearchCondition(ConductId_PT0001, FormDetail.No, conditionDataList);
 
-        //新規登録画面から登録後、参照画面に渡すキー情報をセット
-        var conditionDataList = getListDataByCtrlIdList([FormEdit.PartsInfo], FormEdit.No, 0);
-        // 一覧から参照へ遷移する場合と同様に、参照画面の検索条件を追加
-        setSearchCondition(ConductId_PT0001, FormDetail.No, conditionDataList);
+        } else if (btnCtrlId == FormEdit.Button.Back) {
+            // 戻るボタンで戻る場合、再検索は行わない
+            return false;
+        }
+    } else if (formNo == FormDetail.No) {
+        // 詳細画面から戻る場合、再検索は行わない
+        return false;
+
+    } else if (formNo == FormLabel.No && btnCtrlId == FormLabel.Button.Back) {
+        // ラベル出力から戻るボタンで戻る場合、再検索は行わない
+        return false;
+    } else if (formNo == FormRFUpload.No && btnCtrlId == FormRFUpload.Button.Back) {
+        // RFタグ情報取込画面から戻るボタンで戻る場合、再検索は行わない
+        return false;
     }
     return true;
 }
@@ -1615,6 +1786,8 @@ function postSearchList(tbl) {
             // 在庫数 <= 発注点(発注アラーム列の値が「Y」)の場合は背景色を黄色に変更する
             if ($($(row).find("div[tabulator-field=VAL" + FormList.OrderAlert.CtrlNo + "]").children()[0]).hasClass('checked')) {
                 $(row).addClass(FormList.OrderAlert.CssClass);
+            } else {
+                $(row).removeClass(FormList.OrderAlert.CssClass);
             }
         });
     }
@@ -1896,4 +2069,364 @@ function preDeleteRowCommonForRfid(targetId, arrListIds) {
     }
     // 合致しない場合は通常の処理
     return true;
+}
+
+/**
+* 添付情報を一覧画面のデータに反映する
+*/
+function setAttachmentForList() {
+    // 添付情報が更新された場合、一覧画面のデータに反映する
+
+    if (!P_dicIndividual[GlobalKeys.UpdateAttachmentFlg] || !P_dicIndividual[GlobalKeys.UpdateAttachmentFlg].UPDATE) {
+        return;
+    }
+
+    // 機能タイプIDを取得
+    var typeId = P_dicIndividual[GlobalKeys.UpdateAttachmentFlg].TYPEID;
+    // 予備品IDを取得
+    var partsId = P_dicIndividual[GlobalKeys.UpdateAttachmentFlg].KEYID;
+
+    // 一覧の表示項目か
+    var col = 0;
+    switch (typeId.toString()) {
+        case AttachmentStructureGroupID.SpareDocument.toString(): // 文書
+            col = FormList.SpareDocument;
+            break;
+        case AttachmentStructureGroupID.SpareImage.toString(): // 画像
+            col = FormList.SpareImage;
+            break;
+        case AttachmentStructureGroupID.SpareMap.toString(): // 予備品地図
+            col = FormList.SpareMap;
+            break;
+    }
+    if (col == 0) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+    var define = P_listData['#' + FormList.Id + '_' + FormList.No].getColumnDefinitions().find(x => x.field == "VAL" + col);
+    if (!define) {
+        //一覧の表示項目ではないため終了
+        return;
+    }
+
+    //添付情報文字列
+    var attachment = "";
+
+    //文書管理画面の添付情報を取得
+    var dm0002List = P_listData['#' + DM0002_FormDetail.Id + '_' + DM0002_FormDetail.No].getData();
+    if (dm0002List && dm0002List.length > 0) {
+        // 文書番号でソート
+        var list = dm0002List.sort((a, b) => a["VAL" + DM0002_FormDetail.DocumentNo] > b["VAL" + DM0002_FormDetail.DocumentNo] ? 1 : -1);
+        attachment = list.map(x => x["VAL" + DM0002_FormDetail.DownloadLink]).join("");
+    }
+
+    //更新前のデータを取得
+    var table = P_listData["#" + FormList.Id + "_" + FormList.No];
+    var oldData = table.searchData("VAL" + FormList.PartsId, "=", partsId);
+    if (oldData && oldData.length > 0) {
+        var updateData = {};
+        updateData.ROWNO = oldData[0].ROWNO;
+        updateData["VAL" + col] = attachment;
+        //添付情報を更新（ROWNOがキー）
+        table.updateRow(oldData[0].ROWNO, updateData);
+    }
+
+    //詳細画面再描画時に復活するので、initFormOriginal内で消す
+    //delete P_dicIndividual[GlobalKeys.UpdateAttachmentFlg];
+}
+
+/**
+ * 更新データを一覧画面に反映する
+ *  @param conductId   ：機能ID
+ *  @param isDelete    ：削除の場合true
+ */
+function setUpdateDataForList(conductId, isDelete, fromPostBuiltTabulator) {
+    if (!P_dicIndividual[GlobalKeys.UpdateListData] || conductId != ConductId_PT0001) {
+        //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[GlobalKeys.UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    if (isDelete && status != rowStatusDef.Delete) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録・更新処理を行う
+        return;
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + FormList.Id + "_" + FormList.No];
+    if (!table) {
+        // 一覧画面を生成していない場合(別タブ遷移で一覧画面を経由していない場合)、処理終了
+        return;
+    }
+
+    switch (status) {
+        case rowStatusDef.New: //新規
+            //一覧画面のデータのROWNO最大値を取得
+            var maxRowNo = 0;
+            var list = table.getData();
+            if (list && list.length > 0) {
+                var rowNoList = list.map(x => x.ROWNO);
+                //maxRowNo = Math.max.apply(null, rowNoList);
+                maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
+            }
+            //ROWNOに一覧データの最大値以降の値を設定
+            data.ROWNO = maxRowNo + 1;
+            //詳細画面から値取得
+            if (!setLabelValueToListData(data, status, fromPostBuiltTabulator)) {
+                return;
+            }
+            //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
+            table.addRow(data, true, 1);
+            break;
+
+        case rowStatusDef.Edit: //更新
+            //データの予備品IDを取得
+            var partsId = data["VAL" + FormList.PartsId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.PartsId, "=", partsId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                //詳細画面から値取得
+                if (!setLabelValueToListData(data, status, fromPostBuiltTabulator)) {
+                    return;
+                }
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        case rowStatusDef.Delete: //削除
+            //データの保全活動件名IDを取得
+            var partsId = data["VAL" + FormList.PartsId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.PartsId, "=", partsId);
+            if (oldData && oldData.length > 0) {
+                table.deleteRow(oldData[0].ROWNO);
+            }
+            break;
+
+        default:
+            break;
+    }
+    delete P_dicIndividual[GlobalKeys.UpdateListData];
+}
+
+/**
+* 詳細画面の値から一覧用データに値を反映する
+* @param data 一覧用データ
+* @param status ステータス(新規or更新)
+*/
+function setLabelValueToListData(data, status, fromPostBuiltTabulator) {
+
+    if (fromPostBuiltTabulator) {
+        // tabulator一覧の更新イベントの場合、RFIDタグ情報/入出庫情報の更新のみを行う
+        var rfCount = data["VAL" + FormList.RfCount];
+        if (rfCount == "-1") {
+            // RFIDタグ件数が-1の場合、RFIDタグ情報の更新
+            setLabelValueToListDataForRfid(data, status);
+            return true;
+        }
+
+        var stockQuantity = data["VAL" + FormList.StockQuantity];
+        if (stockQuantity == "+") {
+            // 最新在庫数が"+"の場合、入庫更新
+            PT0005_setLabelValueToListData(data, status);
+            // 一覧画面に戻る際に背景色の変更処理を呼び出す
+            P_dicIndividual[GlobalKeys.ExecPostSearchList] = true;
+            return true;
+        } else if (stockQuantity == "-") {
+            // 最新在庫数が"-"の場合、出庫更新
+            PT0006_setLabelValueToListData(data, status);
+            // 一覧画面に戻る際に背景色の変更処理を呼び出す
+            P_dicIndividual[GlobalKeys.ExecPostSearchList] = true;
+            return true;
+        }
+        return false;
+    }
+
+
+    // 単位文字列を取得
+    var unitName = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.UnitName, 1, CtrlFlag.Label);
+    var currencyName = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.CurrencyName, 1, CtrlFlag.Label);
+
+    // 数量/金額の値を取得
+    var leadTime = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.LeadTime, 1, CtrlFlag.Label);
+    var orderQuantity = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.OrderQuantity, 1, CtrlFlag.Label);
+    var unitPrice = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.UnitPrice, 1, CtrlFlag.Label);
+    var stockQuantity = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.StockQuantity, 1, CtrlFlag.Label);
+    var leadTimeVal = parseInt(leadTime.replace(unitName, ""));
+    var stockQuantityVal = parseInt(stockQuantity.replace(unitName, ""));
+
+    //一覧に表示している列に詳細画面の対応する項目値を設定
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+
+        switch (key) {
+            case "VAL" + FormList.ManufactureName: // メーカー
+                data[key] = getItemLabelValue(FormDetail.PartsInfo, FormDetail.ManufacturerStructureId, 1, CtrlFlag.TextBox);
+                break;
+            case "VAL" + FormList.PartsFactoryName: // 管理工場
+                data[key] = getItemLabelValue(FormDetail.PartsInfo, FormDetail.PartsFactoryName, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.DepartmentName: // 標準部門(部門コード+部門の翻訳)
+                data[key] = getValue(FormDetail.PartsInfo, FormDetail.DepartmentName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.JobName: // 職種
+                data[key] = getValue(FormDetail.PartsInfo, FormDetail.JobName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.DistrictName: // 地区
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.DistrictName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.FactoryName: // 標準工場
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.FactoryName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.WarehouseName: // 標準予備品倉庫
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.WarehouseName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.RackName: // 標準棚番(棚番の翻訳+枝番)
+                data[key] = getValue(FormDetail.LocationInfo.Id, FormDetail.LocationInfo.RackName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.LeadTime: // 発注点(単位有り)
+                data[key] = leadTime;
+                break;
+            case "VAL" + FormList.OrderQuantity: // 発注量(単位有り)
+                data[key] = orderQuantity;
+                break;
+            case "VAL" + FormList.LeadTimeExceptUnit: // 発注点(単位無し)(発注点(単位有り)から数量管理単位を削除)
+                data[key] = leadTimeVal;
+                break;
+            case "VAL" + FormList.OrderQuantityExceptUnit: // 発注量(単位無し)(発注点(単位有り)から数量管理単位を削除)
+                data[key] = orderQuantity.replace(unitName, "");
+                break;
+            case "VAL" + FormList.UnitName: // 数量管理単位
+                data[key] = unitName;
+                break;
+            case "VAL" + FormList.VenderName: // 標準仕入先
+                data[key] = getItemLabelValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.VenderStructureId, 1, CtrlFlag.Combo);
+                break;
+            case "VAL" + FormList.CurrencyName: // 金額管理単位
+                data[key] = currencyName;
+                break;
+            case "VAL" + FormList.UnitPrice: // 標準単価(単位有り)
+                data[key] = unitPrice;
+                break;
+            case "VAL" + FormList.UnitPriceExceptUnit: // 標準単価(単位無し)(標準単価(単位有り)から金額管理単位を削除)
+                data[key] = unitPrice.replace(currencyName, "");
+                break;
+            case "VAL" + FormList.AccountName: // 標準勘定科目(勘定科目コード+勘定科目の翻訳)
+                data[key] = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.AccountName, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.OrderAlert.CtrlNo: // 発注アラーム
+                data[key] = isOrderAlertOn(stockQuantityVal, leadTimeVal);
+                break;
+            case "VAL" + FormList.StockQuantity: // 最新在庫数
+                data[key] = stockQuantity;
+                data["VAL" + FormList.StockQuantityExceptUnit] = stockQuantity.replace(unitName, "");
+                break;
+            case "VAL" + FormList.RfCount: // RFIDタグ件数(単位有り)
+                data[key] = getValue(FormDetail.PartsInfo, FormDetail.RfCount, 1, CtrlFlag.Label);
+                break;
+            case "VAL" + FormList.SpareDocument:    // 文書
+            case "VAL" + FormList.SpareImage:       // 画像
+            case "VAL" + FormList.SpareMap:         // 予備品地図
+                if (status == rowStatusDef.Edit) {
+                    // 添付情報は更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + FormList.RfIdTag: // RFIDタグ
+            case "VAL" + FormList.RfCountExceptUnit:    // RFIDタグ件数(単位無し)
+                // RFIDタグ/RFIDタグ件数(単位無し)は更新しない
+                delete data[key];
+                break;
+            default:
+                break;
+        }
+    });
+    P_dicIndividual[GlobalKeys.ExecPostSearchList] = true;
+    return true;
+}
+
+function setLabelValueToListDataForRfid(data, status) {
+    // RFIDタグ情報のみを更新する
+    var rfCount = getValue(FormDetail.PartsInfo, FormDetail.RfCount, 1, CtrlFlag.Label);
+    var matter = P_dicIndividual[GlobalKeys.Matter];
+
+    //詳細画面のRFID一覧情報を取得
+    var rfidList = P_listData['#' + FormDetail.Rfid.Id + '_' + FormDetail.No].getData();
+    var rfid = "";
+    if (rfidList && rfidList.length > 0) {
+        // RFIDタグをカンマ区切りで結合
+        rfid = rfidList.map(x => x["VAL" + FormDetail.Rfid.RfidTag]).join(",");
+    }
+
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+
+        switch (key) {
+            case "VAL" + FormList.RfIdTag: // RFIDタグ
+                data[key] = rfid;
+                break;
+            case "VAL" + FormList.RfCount: // RFIDタグ件数(単位有り)
+                data[key] = rfCount;
+                break;
+            case "VAL" + FormList.RfCountExceptUnit: // RFIDタグ件数(単位無し)(RFIDタグ件数(単位有り)から単位文字列を削除)
+                data[key] = rfCount.replace(matter, "");
+                break;
+            default:
+                delete data[key];
+                break;
+        }
+    });
+}
+
+/**
+ * 発注アラームの判定
+ * @param {number} stockQty：在庫数
+ * @param {number} leadTime：発注点
+ * @returns true:発注アラームON/false:発注アラームOFF
+ */
+function isOrderAlertOn(stockQty, leadTime) {
+    var orderAlertFlg = P_dicIndividual[GlobalKeys.OrderAlertJudgeFlg];
+    if (orderAlertFlg == OrderAlertJudgeFlg_LessThan) {
+        // 在庫数 < 発注点の場合ON
+        return stockQty < leadTime;
+    } else {
+        // 在庫数 <= 発注点の場合ON
+        return stockQty <= leadTime;
+    }
+}
+
+/**
+*【オーバーライド用関数】
+*  閉じる処理の後
+*/
+function postBackBtnProcess() {
+    if (P_dicIndividual[GlobalKeys.ExecPostSearchList]) {
+        // 一覧の背景色変更処理呼び出しフラグがONの場合
+        // フラグを削除
+        operatePdicIndividual(GlobalKeys.ExecPostSearchList, true);
+        // setTimeoutでタイミングをずらし一覧が表示された後に実行されるようにする
+        setTimeout(function () {
+            var table = P_listData["#" + FormList.Id + "_" + FormList.No];  // 一覧画面 予備品一覧
+            if (table) {
+                // 予備品一覧の背景色変更、画像の高さ変更
+                postSearchList(table);
+            }
+        }, 100); //100ミリ秒
+    }
 }

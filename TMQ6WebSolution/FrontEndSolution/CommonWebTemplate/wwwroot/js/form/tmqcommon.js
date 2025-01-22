@@ -399,7 +399,15 @@ function getCtrlByOtherForm(formNo, ctrlId, val, rowNo, flg) {
             return $(trs).find("input[type='checkbox']")[0];
         }
     } else {
-        var tr = $(trs).find("tbody tr:not([class^='base_tr'])").find("td[data-name='VAL" + val + "']")[rowNo];
+        //var tr = $(trs).find("tbody tr:not([class^='base_tr'])").find("td[data-name='VAL" + val + "']")[rowNo];
+        var tr;
+        if ($(trs).data("ctrltype") == ctrlTypeDef.IchiranPtn3) {
+            // Tabulatorの一覧の場合
+            tr = $(trs).find("div.tabulator-table").find("div[tabulator-field='VAL" + val + "']")[rowNo];
+        } else {
+            // そうでない場合
+            tr = $(trs).find("tbody tr:not([class^='base_tr'])").find("td[data-name='VAL" + val + "']")[rowNo];
+        }
         if (flg == CtrlFlag.TextBox) {
             return $(tr).find("input[type='text']")[0];
         } else if (flg == CtrlFlag.Label) {
@@ -1722,7 +1730,8 @@ function InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, 
         return;
     }
     // 対象の共通画面リスト
-    var listCommonConductId = [DM0002_ConductId, PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId, ConductId_HM0003];
+    //var listCommonConductId = [DM0002_ConductId, PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId, ConductId_HM0003];
+    var listCommonConductId = [PT0005_ConsuctId, PT0006_ConsuctId, PT0007_ConsuctId, ConductId_HM0003];
     if (listCommonConductId.indexOf(backFrom) > -1 && btnCtrlId == BtnCtrlId_Back) {
         // 対象の共通画面から戻るボタンが押下された場合、再検索
         initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status);

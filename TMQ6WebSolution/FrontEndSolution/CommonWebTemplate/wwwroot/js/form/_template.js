@@ -285,6 +285,13 @@ function prevBackBtnProcessForEditUnderList(appPath, backBtn) {
 
 }
 
+/**
+ *【オーバーライド用関数】
+ *  閉じる処理の後
+ */
+function postBackBtnProcess() {
+
+}
 
 /**
  *【オーバーライド用関数】

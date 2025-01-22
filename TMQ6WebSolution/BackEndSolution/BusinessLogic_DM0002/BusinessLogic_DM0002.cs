@@ -19,6 +19,8 @@ using Dao = BusinessLogic_DM0002.BusinessLogicDataClass_DM0002;
 using DbTransaction = System.Data.IDbTransaction;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
+using CommonWebTemplate.CommonDefinitions;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 
 namespace BusinessLogic_DM0002
 {
@@ -119,6 +121,31 @@ namespace BusinessLogic_DM0002
         public static class ConductInfo
         {
             /// <summary>
+            /// 文書管理一覧画面(DM0001)
+            /// </summary>
+            public static class FormList
+            {
+                /// <summary>
+                /// 機能ID
+                /// </summary>
+                public const string ConductId = "DM0001";
+                /// <summary>
+                /// フォーム番号
+                /// </summary>
+                public const short FormNo = 0;
+                /// <summary>
+                /// コントロールID
+                /// </summary>
+                public static class ControlId
+                {
+                    /// <summary>
+                    /// 一覧
+                    /// </summary>
+                    public const string List = "BODY_020_00_LST_0";
+                }
+            }
+
+            /// <summary>
             /// 詳細画面
             /// </summary>
             public static class FormDetail
@@ -203,7 +230,7 @@ namespace BusinessLogic_DM0002
         /// <summary>
         /// 予備品一覧の詳細画面の入出庫履歴タブの表示年度を保持するためのキー名称
         /// </summary>
-        private class DispYearKeyName
+        private static class DispYearKeyName
         {
             /// <summary>
             /// 表示年度(From)
@@ -213,6 +240,33 @@ namespace BusinessLogic_DM0002
             /// 表示年度(To)
             /// </summary>
             public const string YearTo = "YearTo";
+        }
+
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            /// <summary>
+            /// グローバル変数のキー、遷移元の機能ID
+            /// </summary>
+            public const string DM0002ParentConductId = "DM0002_ParentConductId";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の選択行番号
+            /// </summary>
+            public const string DM0001SelectedRowNo = "DM0001_SelectedRowNo";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の表示データを更新する用
+            /// </summary>
+            public const string DM0001UpdateListData = "DM0001_UpdateListData";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面用の総件数
+            /// </summary>
+            public const string DM0001AllListCount = "DM0001_AllListCount";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の表示データ更新用のキー
+            /// </summary>
+            public const string DM0001UpdateKey = "DM0001_UpdateKey";
         }
         #endregion
 
@@ -307,6 +361,7 @@ namespace BusinessLogic_DM0002
             }
 
             // 行削除
+            var deleteKeys = new List<long>();
             foreach (var deleteRow in deleteList)
             {
                 Dao.searchResult delCondition = new();
@@ -319,6 +374,7 @@ namespace BusinessLogic_DM0002
                     setError();
                     return ComConsts.RETURN_RESULT.NG;
                 }
+                deleteKeys.Add(delCondition.AttachmentId);
             }
 
             // 件名情報を取得
@@ -335,6 +391,9 @@ namespace BusinessLogic_DM0002
 
             // 再検索処理
             searchDetail(true);
+
+            // 一覧画面のデータ更新用の値を設定
+            setDeleteRowDataToGlobalData();
 
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -353,6 +412,26 @@ namespace BusinessLogic_DM0002
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911110001 });
                 }
             }
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData()
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //削除対象のキーIDのVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormDetail.ControlId.List) && x.ParamName.Equals(nameof(Dao.searchResult.AttachmentId))).Select(x => x.ItemNo).FirstOrDefault();
+                //削除行のキーIDの配列を設定
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, deleteKeys } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.DM0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.DM0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                long newCount = count > deleteKeys.Count ? count - deleteKeys.Count : 0;
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.DM0001AllListCount, newCount);
+            }
         }
 
         /// <summary>
@@ -366,7 +445,9 @@ namespace BusinessLogic_DM0002
             string actionMsg = ComRes.ID.ID911100002;
 
             // 登録・ファイルアップロード処理実行
-            resultRegist = executeRegistDetail(ref actionMsg);
+            var registInfo = new Dao.searchResult();
+            bool isRegist = false;
+            resultRegist = executeRegistDetail(ref registInfo, ref actionMsg, ref isRegist);
 
             // 登録処理結果によりエラー処理を行う
             if (!resultRegist)
@@ -381,6 +462,10 @@ namespace BusinessLogic_DM0002
                 }
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+            getListRowData(registInfo, isRegist);
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「登録処理/更新処理に成功しました。」
@@ -435,6 +520,14 @@ namespace BusinessLogic_DM0002
             {
                 // 初期表示時はDM0001の一覧の画面定義を用いて引き継いだ値を取得するが、その定義がDM0002にないため追加する
                 AddMappingListOtherPgmId(ParentConductId);
+
+                // グローバルデータから遷移元の機能IDを取得
+                var parentConductId = GetGlobalData(GlobalKey.DM0002ParentConductId);
+                if (ConductInfo.FormList.ConductId.Equals(parentConductId))
+                {
+                    // 遷移元が文書管理一覧の場合、グローバルデータに文書管理一覧の選択行番号を保持
+                    SetGlobalData(GlobalKey.DM0001SelectedRowNo, result["ROWNO"]);
+                }
             }
             SetDataClassFromDictionary(result, ctrlId, param);
 
@@ -599,7 +692,7 @@ namespace BusinessLogic_DM0002
         /// </summary>
         /// <param name="msgId">メッセージID</param>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistDetail(ref string msgId)
+        private bool executeRegistDetail(ref Dao.searchResult registInfo, ref string msgId, ref bool isRegist)
         {
             // 排他チェック
             if (isErrorExclusive(ConductInfo.FormDetail.ControlId.List))
@@ -608,10 +701,11 @@ namespace BusinessLogic_DM0002
             }
 
             DateTime now = DateTime.Now;
+            var userId = "-1";
             // 入力された内容を取得
-            Dao.searchResult registInfo = getRegistInfo<Dao.searchResult>(ConductInfo.FormDetail.ControlId.List, now, this.UserId);
+            registInfo = getRegistInfo<Dao.searchResult>(ConductInfo.FormDetail.ControlId.List, now, ref isRegist, ref userId);
             // 件名情報一覧に隠しで登録されている値(登録条件)取得
-            Dao.subject subjectInfo = getUploadCondition<Dao.subject>(ConductInfo.FormDetail.ControlId.Subject, now, this.UserId);
+            Dao.subject subjectInfo = getUploadCondition<Dao.subject>(ConductInfo.FormDetail.ControlId.Subject, now, userId);
 
             // 登録情報を設定
             registInfo.LocationStructureId = subjectInfo.LocationStructureId;           // 場所階層ID
@@ -636,20 +730,18 @@ namespace BusinessLogic_DM0002
                 return false;
             }
 
-            bool updateFlg = true;
             // 新規登録の場合
-            if (registInfo.AttachmentId == IdIsNone)
+            if (isRegist)
             {
                 // メッセージ「登録処理」
                 msgId = ComRes.ID.ID911200003;
-                updateFlg = false;
             }
 
             // アップロード処理
             uploadFile(ref registInfo, this.InputStream);
 
             // 登録・更新処理
-            if (!registDb(registInfo, updateFlg, this.InputStream, this.db))
+            if (!registDb(registInfo, !isRegist, this.InputStream, this.db))
             {
                 return false;
             }
@@ -724,7 +816,7 @@ namespace BusinessLogic_DM0002
         /// <param name="now">システム日時</param>
         /// <param name="userId">ユーザーID</param>
         /// <returns>登録内容のデータクラス</returns>
-        private T getRegistInfo<T>(string ctrlId, DateTime now, string userId = "-1")
+        private T getRegistInfo<T>(string ctrlId, DateTime now, ref bool isRegist, ref string userId)
             where T : CommonDataBaseClass.CommonTableItem, new()
         {
             // コントロールIDにより画面の項目(一覧)を取得
@@ -735,9 +827,11 @@ namespace BusinessLogic_DM0002
             string attachmentIdVal = getValNoByParam(mappingInfo, "AttachmentId"); // 添付IDの項目番号
 
             // 添付IDが変換できるかどうか(変換できない = 新規登録)
-            if (!int.TryParse(result[attachmentIdVal].ToString(), out int resulst))
+            if (!int.TryParse(result[attachmentIdVal].ToString(), out int id))
             {
                 result[attachmentIdVal] = IdIsNone;
+                userId = this.UserId;
+                isRegist = true;
             }
 
             // TODO:ユーザIDを数値に変換するのは共通化
@@ -932,6 +1026,57 @@ namespace BusinessLogic_DM0002
                 }
             }
             return ComConsts.RETURN_RESULT.NG;
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="isRegist">新規登録の場合true</param>
+        private void getListRowData(Dao.searchResult registInfo, bool isRegist)
+        {
+            // 検索は行わず、登録値と一覧画面の選択行の値から取得する（速度改善）
+            Dao.searchResult result = new();
+            result.KeyId = registInfo.KeyId;
+            result.FunctionTypeId = registInfo.FunctionTypeId;
+            result.DocumentTypeStructureId = registInfo.DocumentTypeStructureId;
+            result.AttachmentId = registInfo.AttachmentId;
+            result.AttachmentTypeStructureId = registInfo.AttachmentTypeStructureId;
+            result.DocumentNo = registInfo.DocumentNo;
+            result.AttachmentNote = registInfo.AttachmentNote;
+            result.AttachmentDate = registInfo.AttachmentDate;
+            result.AttachmentUserName = registInfo.AttachmentUserName;
+            result.PersonName = registInfo.AttachmentUserName;
+            result.FileName = registInfo.FileName;
+            result.UpdateSerialid = isRegist ? 0 : registInfo.UpdateSerialid + 1;  // 新規登録の場合:0、更新の場合:現在値+1
+            result.ExtensionData = registInfo.AttachmentTypeNo;
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.List;
+            // 一覧画面のマッピング情報を取得
+            AddMappingListOtherPgmId(ConductInfo.FormList.ConductId);
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<Dao.searchResult>() { result });
+
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で一覧画面と詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.DM0001UpdateListData, dicList);
+            if (isRegist)
+            {
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.DM0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.DM0001AllListCount, count + 1);
+            }
         }
         #endregion
     }

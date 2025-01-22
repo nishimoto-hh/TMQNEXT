@@ -94,6 +94,12 @@ namespace BusinessLogic_PT0001
             selectSql.AppendLine("parts_no");    // 予備品No. 昇順
             selectSql.AppendLine(",parts_name"); // 予備品名  昇順
 
+            // グローバルデータにRFIDタグ件数の単位が存在しない場合は取得して保持
+            if (GetGlobalData(GlobalKey.PT0001Matter) == null)
+            {
+                SetGlobalData(GlobalKey.PT0001Matter, GetResMessage(ResourceKey.Matter));
+            }
+
             // 一覧検索実行
             IList<Dao.searchResult> results = db.GetListByDataClass<Dao.searchResult>(selectSql.ToString(), whereParam);
             if (results == null || results.Count == 0)
@@ -119,6 +125,12 @@ namespace BusinessLogic_PT0001
             if (message != null)
             {
                 this.MsgId = message.ToString();
+            }
+
+            // グローバルデータに発注アラーム判定用フラグを保持
+            if (GetGlobalData(GlobalKey.PT0001OrderAlertJudgeFlg) == null)
+            {
+                SetGlobalData(GlobalKey.PT0001OrderAlertJudgeFlg, results.First().OrderAlertJudgeFlg);
             }
 
             // 正常終了

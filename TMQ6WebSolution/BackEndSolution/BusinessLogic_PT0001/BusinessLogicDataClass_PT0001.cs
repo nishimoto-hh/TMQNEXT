@@ -47,6 +47,7 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets ユーザーの本務工場</summary>
             /// <value>ユーザーの本務工場</value>
             public long UserFactoryId { get; set; }
+
         }
 
         /// <summary>
@@ -99,6 +100,9 @@ namespace BusinessLogic_PT0001
             /// <summary>Gets or sets 発注アラーム</summary>
             /// <value>発注アラーム</value>
             public bool? OrderAlert { get; set; }
+            /// <summary>Gets or sets 発注アラーム判定用フラグ</summary>
+            /// <value>発注アラーム判定用フラグ</value>
+            public string OrderAlertJudgeFlg { get; set; }
             /// <summary>Gets or sets 予備品№(変更前)</summary>
             /// <value>予備品№(変更前)</value>
             public string PartsNoBefore { get; set; }
@@ -330,6 +334,7 @@ namespace BusinessLogic_PT0001
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkDocument, nameof(this.FileLinkDocument), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkImage, nameof(this.FileLinkImage), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufactureName, nameof(this.ManufactureName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ManufacturerStructureId, nameof(this.ManufacturerStructureId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.VenderName, nameof(this.VenderName), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsParentStructureId, nameof(this.PartsParentStructureId), mapDic);
                 IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsFactoryName, nameof(this.PartsFactoryName), mapDic);

@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BusinessLogic_PT0001\BusinessLogic_PT0001.csproj" />
     <ProjectReference Include="..\CommonExcelUtil\CommonExcelUtil.csproj" />
     <ProjectReference Include="..\CommonSTDUtil\CommonSTDUtil.csproj" />
     <ProjectReference Include="..\CommonTMQUtil\CommonTMQUtil.csproj" />

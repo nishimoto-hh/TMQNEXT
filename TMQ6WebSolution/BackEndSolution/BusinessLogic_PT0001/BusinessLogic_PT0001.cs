@@ -1,6 +1,7 @@
 ﻿using CommonExcelUtil;
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -49,6 +50,8 @@ namespace BusinessLogic_PT0001
                 public const string GetPartsList = "GetPartsList";
                 /// <summary>SQL名：RFタグ情報を取得するSQL</summary>
                 public const string GetRftagOutputData = "GetRftagOutputData";
+                /// <summary>SQL名：RFIDタグ件数の単位を取得するSQL</summary>
+                public const string GetMatter = "GetMatter";
             }
 
             /// <summary>
@@ -458,6 +461,31 @@ namespace BusinessLogic_PT0001
             }
         }
 
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            /// <summary>グローバル変数のキー、一覧画面の表示データを更新する用</summary>
+            public const string PT0001UpdateListData = "PT0001_UpdateListData";
+            /// <summary>グローバル変数のキー、一覧画面用の総件数</summary>
+            public const string PT0001AllListCount = "PT0001_AllListCount";
+            /// <summary>グローバル変数のキー、一覧画面の表示データ更新用のキー</summary>
+            public const string PT0001UpdateKey = "PT0001_UpdateKey";
+            /// <summary>グローバル変数のキー、RFID件数の単位</summary>
+            public const string PT0001Matter = "PT0001_Matter";
+            /// <summary>グローバル変数のキー、発注アラーム判定用フラグ</summary>
+            public const string PT0001OrderAlertJudgeFlg = "PT0001_OrderAlertJudgeFlg";
+        }
+
+        /// <summary>
+        /// リソースメッセージキー
+        /// </summary>
+        private static class ResourceKey
+        {
+            /// <summary>RFIDタグ件数単位</summary>
+            public const string Matter = "111090061";
+        }
         #endregion
 
         #region コンストラクタ
@@ -1278,6 +1306,51 @@ namespace BusinessLogic_PT0001
                 return true;
             }
 
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        /// <param name="isRegist">新規登録/複写の場合true</param>
+        private void getListRowData(Dao.editResult registInfo, bool isRegist)
+        {
+            //検索は行わず、詳細画面の値から取得する（速度改善）
+            Dao.searchResult result = new();
+            result.PartsId = registInfo.PartsId;            // 予備品ID
+            result.PartsNo = registInfo.PartsNo;            // 予備品No.
+            result.PartsName = registInfo.PartsName;        // 予備品名
+            result.ModelType = registInfo.ModelType;        // 型式
+            result.Materials = registInfo.Materials;        // 材質
+            result.StandardSize = registInfo.StandardSize;  // 規格・寸法
+            result.DepartmentStructureId = registInfo.DepartmentStructureId;    // 標準部門ID(非表示)
+            result.AccountStructureId = registInfo.AccountStructureId;          // 標準勘定科目ID(非表示)
+            result.PartsServiceSpace = registInfo.PartsServiceSpace;            // 使用場所
+            result.PurchasingNo = registInfo.PurchasingNo;                      // 購買システムコード
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.List;
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<Dao.searchResult>() { result });
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", isRegist ? TMPTBL_CONSTANTS.ROWSTATUS.New : TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.PT0001UpdateListData, dicList);
+            if (isRegist)
+            {
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.PT0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.PT0001AllListCount, count + 1);
+            }
         }
         #endregion
     }

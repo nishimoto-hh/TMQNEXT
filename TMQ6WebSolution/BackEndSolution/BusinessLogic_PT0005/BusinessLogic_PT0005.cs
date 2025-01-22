@@ -1,6 +1,7 @@
 ﻿using CommonExcelUtil;
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using BusinessLogic_PT0001;
+
 using ComConsts = CommonSTDUtil.CommonConstants;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
@@ -58,6 +61,51 @@ namespace BusinessLogic_PT0005
         }
 
         /// <summary>
+        /// 予備品一覧
+        /// </summary>
+        private static class PT0001
+        {
+            public static class ConductInfo
+            {
+                /// <summary>
+                /// 機能ID
+                /// </summary>
+                public const string Id = "PT0001";
+
+                /// <summary>
+                /// 一覧画面
+                /// </summary>
+                public static class FormList
+                {
+                    /// <summary>
+                    /// フォーム番号
+                    /// </summary>
+                    public const short FormNo = 0;
+                    /// <summary>
+                    /// コントロールID
+                    /// </summary>
+                    public static class ControlId
+                    {
+                        /// <summary>
+                        /// 予備品一覧
+                        /// </summary>
+                        public const string List = "BODY_020_00_LST_0";
+                    }
+                }
+                /// <summary>
+                /// 詳細画面
+                /// </summary>
+                public static class FormDetail
+                {
+                    /// <summary>
+                    /// フォーム番号
+                    /// </summary>
+                    public const short FormNo = 1;
+                }
+            }
+        }
+
+        /// <summary>
         /// 処理対象コントロールID
         /// </summary>
         private static class TargetCtrlId
@@ -103,6 +151,7 @@ namespace BusinessLogic_PT0005
             /// </summary>
             public const string StorageInfo5 = "CBODY_060_00_LST_5";
         }
+
 
         /// <summary>
         /// SQLファイル名称
@@ -183,6 +232,17 @@ namespace BusinessLogic_PT0005
         /// 新規で初回表示の場合はこのキー名称のデータがグローバルリストに格納されている(予備品倉庫コンボボックスをブランクにするためのもの)
         /// </summary>
         private const string IsNewAndFirst = "IsNewAndFirst";
+
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            /// <summary>グローバル変数のキー、一覧画面の表示データを更新する用</summary>
+            public const string PT0001UpdateListData = "PT0001_UpdateListData";
+            /// <summary>グローバル変数のキー、予備品一覧からの遷移元画面番号</summary>
+            public const string PT0001TransParentNo = "PT0001_TransParentNo";
+        }
         #endregion
 
         #region コンストラクタ
@@ -533,7 +593,7 @@ namespace BusinessLogic_PT0005
                 ComDao.MsStructureEntity structureInfo = new ComDao.MsStructureEntity().GetEntity((int)partsInfo.PartsLocationId, this.db);
 
                 // 取得したデータの階層番号が棚(3)の場合は画面に設定する
-                if(structureInfo.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack)
+                if (structureInfo.StructureLayerNo == (int)TMQConst.MsStructure.StructureLayerNo.SpareLocation.Rack)
                 {
                     result.PartsLocationId = partsInfo.PartsLocationId;             // 棚番
                     result.PartsLocationDetailNo = partsInfo.PartsLocationDetailNo; // 棚枝番
@@ -1215,6 +1275,21 @@ namespace BusinessLogic_PT0005
                 this.IndividualDictionary[DispYearKeyName.YearTo] = partsInfo.DispYearTo;     // 表示年度(To)
             }
 
+            var transParent = GetGlobalData(GlobalKey.PT0001TransParentNo);
+            if (transParent != null)
+            {
+                // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+                if (PT0001.ConductInfo.FormList.FormNo.ToString().Equals(transParent.ToString()))
+                {
+                    // 予備品一覧からの遷移の場合
+                    getListRowData(condInp, true);
+                }
+                else if (PT0001.ConductInfo.FormDetail.FormNo.ToString().Equals(transParent.ToString()))
+                {
+                    // 予備品詳細からの遷移の場合
+                    getListRowData(condInp, false);
+                }
+            }
             return true;
 
             void setRegistInfo(Dao.searchResultStorageInfo result, ref TMQDao.PartsInventory.Input condInp)
@@ -1244,6 +1319,47 @@ namespace BusinessLogic_PT0005
 
             // 取得した値を返して終了
             return initInfo;
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得
+        /// </summary>
+        /// <param name="registInfo">登録情報</param>
+        private void getListRowData(TMQDao.PartsInventory.Input registInfo, bool transFromList)
+        {
+            //検索は行わず、詳細画面の値から取得する（速度改善）
+            BusinessLogicDataClass_PT0001.searchResult result = new();
+            result.PartsId = registInfo.PartsId;        // 予備品ID
+            if (transFromList)
+            {
+                // 予備品一覧からの遷移の場合、新規登録のみ
+                // ⇒在庫数に入庫数を設定する
+                result.StockQuantity = registInfo.InoutQuantity.ToString();
+            }
+            else
+            {
+                // 詳細画面からの遷移の場合、更新または取消
+                // ⇒詳細画面の最新在庫数/単価を取得する
+                result.StockQuantity = "+"; // 入庫
+            }
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(PT0001.ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = PT0001.ConductInfo.FormList.ControlId.List;
+            // 一覧画面のマッピング情報を取得
+            AddMappingListOtherPgmId(PT0001.ConductInfo.Id);
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<BusinessLogicDataClass_PT0001.searchResult>() { result });
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.PT0001UpdateListData, dicList);
         }
 
         #endregion

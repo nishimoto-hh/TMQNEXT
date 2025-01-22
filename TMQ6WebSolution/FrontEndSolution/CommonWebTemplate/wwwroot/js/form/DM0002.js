@@ -21,9 +21,30 @@ const DM0001_FormList = {
     ButtonOutputId: "Output",           // 出力ボタン
     Div: "BODY_020_00_LST_0_0_div",     // 一覧タイトル用
     FileName: 20,                       // 登録済ファイル名
-    FunctionTypeId: 1,                  // 機能タイプID
     KeyId: 25,                          // キーID
-    AttachmentExData: 30                // 添付種類拡張項目
+    AttachmentExData: 30,               // 添付種類拡張項目
+
+    FunctionTypeId: 1,                  // 機能タイプID
+    ConductName: 2,                     // 添付元
+    FunctionName: 3,                    // アクション
+    DocumentNo: 6,                      // 文書番号
+    Subject: 7,                         // 件名
+    FileLinkName: 8,                    // ファイル/リンク
+    AttachmentTypeStructureId: 9,       // 添付種類
+    AttachmentNote: 10,                 // 文書説明
+    AttachmentDate: 11,                 // 作成日
+    PersonName: 12,                     // 作成者
+    DistrictName: 13,                   // 地区名称
+    FactoryName: 14,                    // 工場名称
+    PlantName: 15,                      // プラント名称
+    SeriesName: 16,                     // 系列名称
+    StrokeName: 17,                     // 工程名称
+    JobName: 18,                        // 職種名称
+    AttachmentNoteHide: 23,             // 文書説明(非表示)
+    AttachmentDateHide: 24,             // 作成日(非表示)
+    AttachmentId: 26,                   // 添付ID
+    UpdateSerialId: 27,                 // 更新シリアルID
+    LocationStructureId:28,             // 場所階層ID
 };
 
 // 詳細画面-添付情報一覧 コントロール項目番号
@@ -40,7 +61,11 @@ const DM0002_FormDetail = {
     FileName: 21,                        // 登録済ファイル名
     AttachmentExData: 30,                // 添付種類拡張項目
     MakeDate: 25,                        // 作成日
-    BtnUploadId: "Upload"                // 登録ボタン(アップロード)
+    AttachmentId: 27,                    // 添付ID
+    KeyId: 29,                           // キーID
+    BtnUploadId: "Upload",               // 登録ボタン(アップロード)
+    BtnBackId: "Back",                   // 戻るボタン
+    BtnDeleteId: "Delete"                // 削除ボタン(行削除時)
 };
 
 // 詳細画面-件名情報 コントロール項目番号
@@ -78,6 +103,9 @@ const AttachmentTypeId =
     File: "1", // ファイル
     Link: "2"  // リンク
 };
+
+/** グローバル変数のキー、遷移元の機能ID*/
+const DM0002_ParentConductId = "DM0002_ParentConductId";
 
 /*
  *  初期化処理(表示中画面用)
@@ -657,4 +685,220 @@ function DM0002_postBackBtnProcessForPopup(conductId) {
 
     // グローバル変数に格納
     P_dicIndividual[DispYearKeyName.YearTo] = val;
+}
+
+/**
+*【オーバーライド用関数】
+* 共通機能へデータを渡す
+* @param {string}                      appPath         :ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+* @param {number}                      conductId       :共通機能ID
+* @param {number}                      parentNo        :親画面NO
+* @param {Array.<Dictionary<string, string>>}  conditionDataList   :条件ﾃﾞｰﾀ
+* @param {string}                      ctrlId          :遷移元の一覧ctrlid
+* @param {string}                      btn_ctrlId      :ボタンのbtn_ctrlid
+* @param {number}                      rowNo           :遷移元の一覧の選択行番号（一覧行でない場合は-1）
+* @param {Element}                     element         :ｲﾍﾞﾝﾄ発生要素
+* @param {string}                      parentConductId :遷移元の個別機能ID
+*/
+function DM0002_passDataCmConduct(appPath, conductId, parentNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, parentConductId) {
+
+    // 機能IDが「文書管理詳細」ではない場合は何もしない
+    if (conductId != DM0002_FormDetail.ConductId) {
+        return;
+    }
+
+    // 遷移元の機能IDをグローバルリストに格納
+    operatePdicIndividual(DM0002_ParentConductId, false, parentConductId);
+}
+
+/**
+ * 更新データを一覧画面に反映する
+ *  @param conductId   ：機能ID
+ *  @param isDelete    ：削除の場合true
+ *  @param {boolean} calledFromTabulatorEvent postBuiltTabulatorから呼ばれたかどうか
+*/
+function DM0002_setUpdateDataForList(conductId, isDelete, calledFromTabulatorEvent) {
+    if (!P_dicIndividual[DM0001_UpdateListData]) {
+        //更新データが存在しない場合
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[DM0001_UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    if ((isDelete && status != rowStatusDef.Delete) ||
+        (!calledFromTabulatorEvent && status == rowStatusDef.New)) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録処理を行う
+        //initFormOriginalから呼ばれた場合は更新処理を行う
+        return;
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + DM0001_FormList.Id + "_" + DM0001_FormList.No];
+    if (!table) {
+        // 一覧画面を生成していない場合(別タブ遷移で一覧画面を経由していない場合)、処理終了
+        return;
+    }
+
+    switch (status) {
+        case rowStatusDef.New: //新規
+            //一覧画面のデータのROWNO最大値を取得
+            var maxRowNo = 0;
+            var list = table.getData();
+            if (list && list.length > 0) {
+                var rowNoList = list.map(x => x.ROWNO);
+                maxRowNo = rowNoList.reduce((a, b) => Math.max(a, b));
+            }
+            //ROWNOに一覧データの最大値以降の値を設定
+            data.ROWNO = maxRowNo + 1;
+            //一覧画面から値取得
+            DM0002_setLabelValueToListData(data, status, calledFromTabulatorEvent);
+            //先頭行に追加（ソートが指定されている場合はソートに従った行に表示される）
+            table.addRow(data, true, 1);
+            //ページングボタンを非表示にする(この場合だけここに入れないと表示されたままになるので)
+            $('.tabulator-page').hide();
+           break;
+
+        case rowStatusDef.Edit: //更新
+            //データの添付IDを取得
+            var attachmentId = data["VAL" + DM0001_FormList.AttachmentId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + DM0001_FormList.AttachmentId, "=", attachmentId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                //一覧画面から値取得
+                DM0002_setLabelValueToListData(data, status, calledFromTabulatorEvent);
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        case rowStatusDef.Delete: //削除
+            //データのキーID配列を取得
+            var itemNo = conductId == ConductId_DM0001 ? DM0001_FormList.AttachmentId : DM0002_FormDetail.AttachmentId;
+            var attachmentIdList = data["VAL" + itemNo];
+            $.each(attachmentIdList, function (idx, attachmentId) {
+                //更新前のROWNOを取得（ROWNOがキー）
+                var oldData = table.searchData("VAL" + DM0001_FormList.AttachmentId, "=", attachmentId);
+                if (oldData && oldData.length > 0) {
+                    table.deleteRow(oldData[0].ROWNO);
+                }
+            });
+            break;
+
+        default:
+            break;
+    }
+
+    delete P_dicIndividual[DM0001_UpdateListData];
+}
+
+/**
+* 一覧用データに値を反映する
+* @param data 一覧用データ
+* @param status ステータス(新規or更新)
+* @param {boolean} calledFromTabulatorEvent postBuiltTabulatorから呼ばれたかどうか
+*/
+function DM0002_setLabelValueToListData(data, status, calledFromTabulatorEvent) {
+
+    // 編集画面遷移時の一覧の選択行データの項目値を設定
+    var oldData;
+    if (status == rowStatusDef.New) {
+        // 新規登録の場合
+        // 遷移元の選択行データを取得
+        var selectedRowNo = P_dicIndividual[DM0001_SelectedRowNo];
+        if (selectedRowNo == null || selectedRowNo < 0) {
+            return;
+        }
+        var table = P_listData["#" + DM0001_FormList.Id + "_" + DM0001_FormList.No];
+        var oldData = table.searchData("ROWNO", "=", selectedRowNo)
+        if (oldData == null || oldData.length < 0) {
+            return;
+        }
+    }
+
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+        switch (key) {
+            case "VAL" + DM0001_FormList.ConductName:   // 添付元
+            case "VAL" + DM0001_FormList.FunctionName:  // アクション
+            case "VAL" + DM0001_FormList.Subject:       // 件名
+            case "VAL" + DM0001_FormList.DistrictName:  // 地区
+            case "VAL" + DM0001_FormList.FactoryName:   // 工場
+            case "VAL" + DM0001_FormList.PlantName:     // プラント
+            case "VAL" + DM0001_FormList.SeriesName:    // 系列
+            case "VAL" + DM0001_FormList.StrokeName:    // 工程
+            case "VAL" + DM0001_FormList.JobName:       // 職種
+            case "VAL" + DM0001_FormList.LocationStructureId:   // 場所階層ID
+                if (status == rowStatusDef.New) {
+                    // 新規登録の場合、選択行の値をそのまま設定
+                    data[key] = oldData[0][key];
+                } else {
+                    // 更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + DM0001_FormList.DocumentHide:  // 文書種類(非表示)
+                // 文書種類にも同じ値を設定
+                data["VAL" + DM0001_FormList.Document] = data[key];
+                break;
+            case "VAL" + DM0001_FormList.FileLinkName:  // ファイル／リンク
+                if (status == rowStatusDef.New &&
+                    (data["VAL" + DM0001_FormList.AttachmentId] == null || data["VAL" + DM0001_FormList.AttachmentId] == -1)) {
+                    // 新規登録で添付IDが未設定の場合、添付IDに詳細画面の値を設定
+                    data["VAL" + DM0001_FormList.AttachmentId] = getValue(DM0002_FormDetail.Id, DM0002_FormDetail.AttachmentId, 1, CtrlFlag.Label)
+                }
+                if (data["VAL" + DM0001_FormList.FileName]) {
+                    // ファイル名が更新された場合のみ
+                    // [ファイル名]|[添付ID]_[機能タイプID]_[キーID]_[ファイル/リンク区分 (1:ファイル、2:リンク)]
+                    data[key] = data["VAL" + DM0001_FormList.FileName] + "|" +
+                        data["VAL" + DM0001_FormList.AttachmentId] + "_" +
+                        data["VAL" + DM0001_FormList.FunctionTypeId] + "_" +
+                        data["VAL" + DM0001_FormList.KeyId] + "_" +
+                        data["VAL" + DM0001_FormList.AttachmentExData];
+                } else {
+                    // 更新しない
+                    delete data[key];
+                }
+                break;
+            case "VAL" + DM0001_FormList.AttachmentTypeStructureId:  // 添付種類
+                data["VAL" + DM0001_FormList.Attachment] = data[key];
+                break;
+            case "VAL" + DM0001_FormList.FileName:  // 登録済みファイル名
+                data["VAL" + DM0001_FormList.File] = data[key];
+                break;
+            case "VAL" + DM0001_FormList.AttachmentDate:  // 作成日
+                data["VAL" + DM0001_FormList.AttachmentDateHide] = data[key];
+                break;
+            case "VAL" + DM0001_FormList.AttachmentNote:  // 文書説明
+                data["VAL" + DM0001_FormList.AttachmentNoteHide] = data[key];
+                break;
+            case "VAL" + DM0001_FormList.AttachmentId:  // 添付ID
+                if (status == rowStatusDef.New) {
+                    // 新規登録の場合
+                    if (data[key] == null || data[key] == "-1") {
+                        // 添付IDが未設定の場合、詳細画面の値を設定
+                        data[key] = getValue(DM0002_FormDetail.Id, DM0002_FormDetail.AttachmentId, 1, CtrlFlag.Label);
+                    }
+                } else {
+                    // 更新しない
+                    delete data[key];
+                }
+                break;
+            default:
+                break;
+        }
+    });
+    // ここで削除せず、詳細画面を閉じる際に削除する
+    //delete P_dicIndividual[DM0001_SelectedRowNo];
 }

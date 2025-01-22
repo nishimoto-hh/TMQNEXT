@@ -784,7 +784,10 @@ const FilterUseKbnDef = {
 }
 
 /** 定義 一覧画面へ戻る際に再検索しない機能IDリスト */
-const notSearchConductIdList = ["MA0001", "MC0001", "MC0002", "LN0001"];
+const notSearchConductIdList = ["MA0001", "MC0001", "MC0002", "LN0001", "DM0001", "PT0001"];
+
+/** 定義 実行処理完了後に再検索しない機能IDとコントロールIDのペアのリスト */
+const notSearchIdListForExecute = [["DM0001","Delete"]];
 
 //jquery-ui-datepickerとの競合防止
 //var bootstrapDatepicker = $.fn.datepicker.noConflict();
@@ -9216,7 +9219,9 @@ function setExecuteResults(appPath, conductId, pgmId, formNo, ctrlId, conductPtn
         //一覧(Index)画面の場合
 
         // 検索結果をクリア
-        clearSearchResult();
+        if (notSearchIdListForExecute.join(",").indexOf(conductId + "," + ctrlId) < 0) { //再検索を行わない機能のボタンは検索結果をクリアしない
+            clearSearchResult();
+        }
 
         // ページ状態の初期化
         initPageStatus();
@@ -10306,6 +10311,8 @@ function initBackBtn(appPath, btn, isClose) {
                 // 戻る
                 divisionBackBtn(appPath, element, btnCtrlId);
             }
+            //【オーバーライド用関数】閉じる処理の後
+            postBackBtnProcess();
         }
 
         if (confirmKbn == confirmKbnDef.Disp && dataEditedFlg) {
@@ -13428,6 +13435,8 @@ function clickComUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrl
     }
     //個別実装用データリストを再設定（オーバライド用関数内で設定する場合を考慮）
     formData.set("ListIndividual", JSON.stringify(P_dicIndividual));
+    //ブラウザタブ識別番号を設定
+    formData.set("browserTabNo", P_BrowserTabNo);
 
     var formNo = 0;
     var ctrlId = "";
@@ -13477,7 +13486,7 @@ function clickComUploadBtnConfirmOK(appPath, btn, conductId, pgmId, formNo, ctrl
             }
 
             //【オーバーライド用関数】実行正常終了後処理
-            postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data);
+            postRegistProcess(appPath, conductId, pgmId, formNo, btn, conductPtn, autoBackFlg, isEdit, data, status);
 
             //ﾌｧｲﾙ情報をｸﾘｱ ※連続処理を制御
             $(P_Article).find("input:file").val("");
@@ -15488,6 +15497,7 @@ function transForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo, ct
             }
             conditionDataList.push(conditionData);
         }
+
         //共通機能表示処理
         transCmConduct(appPath, transDiv, transTarget, formNo, conditionDataList, ctrlId, btn_ctrlId, rowNo, element, modalNo);
     }
@@ -18005,11 +18015,11 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                     var jobData = getTreeViewLocalData(structureGroupDef.Job);
                     // ツリーメニューより選択中の工場IDを取得
                     var factoryIdList = getSelectedFactoryIdListFromLocationTree();
-                    if (P_SelectedFactoryIdList == null || JSON.stringify(P_SelectedFactoryIdList) != JSON.stringify(factoryIdList)) {
-                        if (P_SelectedFactoryIdList != null || factoryIdList.length > 0) {
+                    //if (P_SelectedFactoryIdList == null || JSON.stringify(P_SelectedFactoryIdList) != JSON.stringify(factoryIdList)) {
+                        //if (P_SelectedFactoryIdList != null || factoryIdList.length > 0) {
                             // 選択中の工場が変更された場合、グローバル変数に保存
                             P_SelectedFactoryIdList = factoryIdList;
-                        }
+                        //}
                         // 工場IDで絞り込み
                         var filteredList = filterTreeViewJsonDataByFactoryId(jobData, factoryIdList);
                         //★2024/06/12 TMQ応急対応 C#側でマージ処理実行 start
@@ -18055,7 +18065,7 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                                 selector = null;
                             });
                         }
-                    }
+                    //}
 
                 }
             });

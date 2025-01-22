@@ -982,6 +982,7 @@
     <None Remove="Resources\sql\Parts\GetLabelDepartmentList.sql" />
     <None Remove="Resources\sql\Parts\GetLabelSubjectList.sql" />
     <None Remove="Resources\sql\Parts\GetLocationInventoryList.sql" />
+    <None Remove="Resources\sql\Parts\GetMatter.sql" />
     <None Remove="Resources\sql\Parts\GetMaxDateByPartsId.sql" />
     <None Remove="Resources\sql\Parts\GetNewPartsNo.sql" />
     <None Remove="Resources\sql\Parts\GetParentIdByLocationId.sql" />
@@ -1281,6 +1282,7 @@
     <EmbeddedResource Include="Resources\sql\Parts\GetRftagOutputData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetRoundDivision.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetSerialNoForRfid.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetMatter.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertNewPartsNoData.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertRfidTag.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\InsertRftagPartsLink.sql" />

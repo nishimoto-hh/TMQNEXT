@@ -5664,6 +5664,11 @@ namespace CommonSTDUtil.CommonBusinessLogic
                 // DBより取得
                 addMapInfoList = this.db.GetListByOutsideSql<ComUtil.DBMappingInfo>(SqlName.GetMappingInfoList, SqlName.SubDir, new { PgmId = pgmId, LanguageId = this.LanguageId }).ToList();
             }
+            else
+            {
+                // 翻訳データを設定
+                setTranslationTextToMappingList(this.messageResources, ref addMapInfoList);
+            }
             //★インメモリ化対応 end
 
             // 現在のマッピング情報の有無に応じて切り替え

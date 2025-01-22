@@ -66,11 +66,16 @@ const PT0006_FormList = {
     PT0002Results: "BODY_050_00_LST_0"          // 出庫一覧
 };
 
-// 一覧画面 コントロール項目番号
+// 予備品一覧画面 コントロール項目番号
 const PT0001_FormList = {
     ConductId: "PT0001",                        // 機能ID
     No: 0                                       // 画面番号
 };
+// 予備品詳細画面 コントロール項目番号
+const PT0001_FormDetail = {
+    ConductId: "PT0001",                        // 機能ID
+    No: 1                                       // 画面番号
+}
 
 // 一覧画面 コントロール項目番号
 const PT0002_FormCtrlList = {
@@ -341,6 +346,12 @@ function PT0006_postRegistProcess(appPath, conductId, pgmId, formNo, btn, conduc
         PT0006_postBackBtnProcessForPopup(PT0006_FormList.ConductId);
     }
 
+    if (P_dicIndividual[GlobalKeys.TransParent] == FormList.No) {
+        // 一覧画面からの遷移の場合、登録更新データを一覧画面に反映する（再検索を行わず、一覧データに反映）
+        // 詳細画面からの遷移の場合は詳細画面の再検索後に反映する
+        PT0006_setUpdateDataForList(conductId, false);
+    }
+
     // 登録・取消ボタン実行正常終了後画面を閉じて遷移元に移動
     var modal = $(btn).closest('section.modal_form');
     $(modal).modal('hide');
@@ -391,8 +402,11 @@ function PT0006_beforeCallInitFormData(appPath, conductId, pgmId, formNo, origin
     if (listConductId.indexOf(backFrom) < 0) {
         return;
     }
-    // 共通画面を閉じた場合、指定した画面ならば再検索を行う
-    InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    if (conductId != ConductId_PT0001 || formNo != PT0001_FormList.No) {
+        // 予備品一覧画面以外に戻る場合
+        // 共通画面を閉じた場合、指定した画面ならば再検索を行う
+        InitFormDataByCommonModal(appPath, conductId, pgmId, formNo, originNo, btnCtrlId, conductPtn, selectData, targetCtrlId, listData, skipGetData, status, selFlg, backFrom);
+    }
 }
 
 /**
@@ -723,10 +737,8 @@ function PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, 
     }
 
     // バックエンド側に渡す条件を作成
-    var conditionData = {};
     // 棚別部門別在庫一覧のデータを取得
-    conditionData['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
-    P_dicIndividual = conditionData;
+    P_dicIndividual['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
 
     return true;
 }
@@ -744,10 +756,8 @@ function PT0006_checkSelectedRowBeforeSearchBtnProcess(appPath, btn, conductId, 
 function PT0006_getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) {
 
     // バックエンド側に渡す条件を作成
-    var conditionData = {};
     // 棚別部門別在庫一覧のデータを取得
-    conditionData['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
-    P_dicIndividual = conditionData;
+    P_dicIndividual['deaprtment'] = P_listData["#" + PT0006_FormList.Department.Id + getAddFormNo()].getData();
 
     // 何もしていないのでそのまま返す
     return listData;
@@ -799,4 +809,118 @@ function PT0006_postBackBtnProcessForPopup(conductId) {
 
     // グローバル変数に格納
     P_dicIndividual[DispYearKeyName.YearTo] = val;
+}
+
+/**
+* 更新データを一覧画面に反映する
+*  @param conductId   ：機能ID
+*  @param isDelete    ：削除の場合true
+*/
+function PT0006_setUpdateDataForList(conductId, isDelete) {
+    if (!P_dicIndividual[GlobalKeys.UpdateListData] || conductId != PT0006_FormList.ConductId) {
+        //更新データが存在しない場合(添付情報の反映は別のタイミングで行う)
+        return;
+    }
+
+    //反映するデータ
+    var updateData = P_dicIndividual[GlobalKeys.UpdateListData];
+    if (!updateData || updateData.length < 1) {
+        //処理終了
+        return;
+    }
+    //1行目：ステータス（新規、更新、削除）
+    var status = updateData[0].STATUS;
+    //2行目：一覧画面用の反映データ
+    var data = updateData[1];
+
+    if (isDelete && status != rowStatusDef.Delete) {
+        //postRegistProcessから呼ばれた場合は削除処理だけ行う
+        //postBuiltTabulatorから呼ばれた場合は登録・更新処理を行う
+        return;
+    }
+
+    //一覧画面のデータ
+    var table = P_listData["#" + FormList.Id + "_" + FormList.No];
+    if (!table) {
+        // 一覧画面を生成していない場合(別タブ遷移で一覧画面を経由していない場合)、処理終了
+        return;
+    }
+
+    switch (status) {
+        case rowStatusDef.Edit: //更新
+            //データの予備品IDを取得
+            var partsId = data["VAL" + FormList.PartsId];
+            //更新前のROWNOを取得（ROWNOがキー）
+            var oldData = table.searchData("VAL" + FormList.PartsId, "=", partsId);
+            if (oldData && oldData.length > 0) {
+                data.ROWNO = oldData[0].ROWNO;
+                //詳細画面から値取得
+                PT0006_setLabelValueToListData(data, status, oldData[0]);
+                table.updateRow(data.ROWNO, data);
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    // 予備品一覧の背景色変更
+    postSearchList(table);
+
+    delete P_dicIndividual[GlobalKeys.UpdateListData];
+}
+
+/**
+* 詳細画面の値から一覧用データに値を反映する
+* @param data 一覧用データ
+* @param status ステータス(新規or更新)
+*/
+function PT0006_setLabelValueToListData(data, status, oldData) {
+    var unitName;
+    var stockQuantity;
+    var stockQuantityVal;
+    var inoutQuantity = data["VAL" + FormList.StockQuantity];
+    var leadTime;
+    var leadTimeVal;
+    if (oldData) {
+        // 一覧の選択行データが渡ってきた場合は一覧画面からの出庫登録
+        // 最新在庫数には出庫数が入っていて単位文字列が付加されていないため、一覧の選択行から取得して付加する
+        unitName = oldData["VAL" + FormList.UnitName];
+        var oldStockQuantity = oldData["VAL" + FormList.StockQuantityExceptUnit];
+        stockQuantityVal = parseInt(oldStockQuantity) - parseInt(inoutQuantity);
+        stockQuantity = stockQuantityVal + unitName;
+        leadTimeVal = parseInt(oldData["VAL" + FormList.LeadTimeExceptUnit]);
+    } else {
+        // 数量管理単位を取得
+        unitName = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.UnitName, 1, CtrlFlag.Label);
+        // 最新在庫数の値を取得
+        stockQuantity = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.StockQuantity, 1, CtrlFlag.Label);
+        stockQuantityVal = parseInt(stockQuantity.replace(unitName, ""));
+        // 発注点
+        leadTime = getValue(FormDetail.PurchaseInfo.Id, FormDetail.PurchaseInfo.LeadTime, 1, CtrlFlag.Label);
+        leadTimeVal = parseInt(leadTime.replace(unitName, ""));
+    }
+
+    //一覧に表示している列に詳細画面の対応する項目値を設定
+    $.each(Object.keys(data), function (index, key) {
+        if (!key.startsWith("VAL")) {
+            return true; // continue
+        }
+
+        switch (key) {
+            case "VAL" + FormList.StockQuantity: // 最新在庫数(単位有り)
+                data[key] = stockQuantity;
+                break;
+            case "VAL" + FormList.StockQuantityExceptUnit: // 最新在庫数(単位無し)
+                data[key] = stockQuantityVal;
+                break;
+            default:
+                // 最新在庫数以外は更新しない
+                delete data[key];
+                break;
+        }
+    });
+
+    // 発注アラームを設定
+    data["VAL" + FormList.OrderAlert.CtrlNo] = isOrderAlertOn(stockQuantityVal, leadTimeVal);
 }

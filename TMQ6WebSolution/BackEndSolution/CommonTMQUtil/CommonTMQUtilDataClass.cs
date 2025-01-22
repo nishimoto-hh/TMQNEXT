@@ -12,6 +12,8 @@ using System.Reflection;
 using System;
 using System.Collections.Generic;
 using TMQDao = CommonTMQUtil.TMQCommonDataClass;
+using IListAccessor = CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil.IListAccessor;
+using System.Dynamic;
 
 namespace CommonTMQUtil
 {
@@ -753,7 +755,7 @@ namespace CommonTMQUtil
             /// <summary>
             /// 入庫入力登録用クラス
             /// </summary>
-            public class Input : ComDataBaseClass.CommonTableItem, IInoutHistory
+            public class Input : ComDataBaseClass.CommonTableItem, IInoutHistory, IListAccessor
             {
                 #region 呼出時に機能側で設定が必要な項目
                 /// <summary>Gets or sets 予備品id</summary>
@@ -860,6 +862,17 @@ namespace CommonTMQUtil
                     InoutDivision = GetEnumNumberToString((int)ExData.InoutDivision.In);
                     // 作業区分：入庫
                     WorkDivision = GetEnumNumberToString((int)ExData.WorkDivision.In);
+                }
+
+                public dynamic GetTmpTableData(Dictionary<string, ComUtil.DBMappingInfo> mapDic)
+                {
+                    dynamic paramObj;
+
+                    paramObj = new ExpandoObject() as IDictionary<string, object>;
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.PartsId, nameof(this.PartsId), mapDic);
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.StockQuantity, nameof(this.StockQuantity), mapDic);
+
+                    return paramObj;
                 }
             }
 

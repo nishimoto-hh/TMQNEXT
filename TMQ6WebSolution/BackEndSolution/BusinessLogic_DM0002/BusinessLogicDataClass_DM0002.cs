@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonSTDUtil.CommonBusinessLogic.CommonBusinessLogicBase.AccessorUtil;
+using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtil;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 
 namespace BusinessLogic_DM0002
@@ -15,7 +18,7 @@ namespace BusinessLogic_DM0002
         /// <summary>
         /// 検索結果のデータクラス
         /// </summary>
-        public class searchResult : ComDao.AttachmentEntity
+        public class searchResult : ComDao.AttachmentEntity, IListAccessor
         {
             /// <summary>Gets or sets 添付元</summary>
             /// <value>添付元</value>
@@ -107,6 +110,48 @@ namespace BusinessLogic_DM0002
             /// <summary>Gets or sets 添付種類拡張項目</summary>
             /// <value>添付種類拡張項目</value>
             public int ExtensionData { get; set; }
+
+            /// <summary>
+            /// 一時テーブルレイアウト作成処理(性能改善対応)
+            /// </summary>
+            /// <param name="mapDic">マッピング情報のディクショナリ</param>
+            /// <returns>一時テーブルレイアウト</returns>
+            public dynamic GetTmpTableData(Dictionary<string, DBMappingInfo> mapDic)
+            {
+                dynamic paramObj;
+                paramObj = new ExpandoObject() as IDictionary<string, object>;
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FunctionTypeId, nameof(this.FunctionTypeId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ConductName, nameof(this.ConductName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FunctionName, nameof(this.FunctionName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.KeyId, nameof(this.KeyId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentTypeStructureId, nameof(this.AttachmentTypeStructureId), mapDic);
+                if (!string.IsNullOrWhiteSpace(this.FileName))
+                {
+                    // ファイル名が設定された場合のみ
+                    IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileName, nameof(this.FileName), mapDic);
+                }
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DocumentTypeStructureId, nameof(this.DocumentTypeStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DocumentNo, nameof(this.DocumentNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentNote, nameof(this.AttachmentNote), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentDate, nameof(this.AttachmentDate), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.Subject, nameof(this.Subject), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FileLinkName, nameof(this.FileLinkName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.Link, nameof(this.Link), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PersonName, nameof(this.PersonName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.DistrictName, nameof(this.DistrictName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.FactoryName, nameof(this.FactoryName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.PlantName, nameof(this.PlantName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.SeriesName, nameof(this.SeriesName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.StrokeName, nameof(this.StrokeName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.JobName, nameof(this.JobName), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.LocationStructureId, nameof(this.LocationStructureId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentId, nameof(this.AttachmentId), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.UpdateSerialid, nameof(this.UpdateSerialid), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.AttachmentTypeNo, nameof(this.AttachmentTypeNo), mapDic);
+                IListAccessor.SetParamKeyAndValue(ref paramObj, this.ExtensionData, nameof(this.ExtensionData), mapDic);
+                return paramObj;
+            }
+
         }
 
         /// <summary>

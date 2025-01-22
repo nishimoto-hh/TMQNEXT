@@ -39,6 +39,7 @@ SELECT
             ELSE 0
         END
     END AS order_alert,                                                                                          -- 発注アラーム
+    judge_flg.extension_data AS order_alert_judge_flg,                                                           -- 発注アラーム判定用フラグ
     parts.purchasing_no,                                                                                         -- 購買システムコード
     parts.use_segment_structure_id AS use_segment_structure_id,                                                  -- 使用区分
     newest_image.file_path AS image,                                                                             -- 画像

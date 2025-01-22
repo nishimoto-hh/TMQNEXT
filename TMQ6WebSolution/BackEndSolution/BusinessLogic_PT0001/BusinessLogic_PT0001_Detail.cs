@@ -1,6 +1,7 @@
 ﻿using CommonExcelUtil;
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using System;
 using System.Collections.Generic;
@@ -567,6 +568,27 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
+            //一覧画面のデータ更新用の値を設定（一覧画面に戻った際、再検索をせず一覧表示データを直接削除する）
+            setDeleteRowDataToGlobalData();
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData()
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //保全活動件名IDのVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormList.ControlId.List) && x.ParamName.Equals(nameof(Dao.searchResult.PartsId))).Select(x => x.ItemNo).FirstOrDefault();
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, condition.PartsId } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.PT0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.PT0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.PT0001AllListCount, count - 1);
+            }
+
             return true;
 
         }
@@ -862,6 +884,9 @@ namespace BusinessLogic_PT0001
                 return false;
             }
 
+            // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+            getListRowDataForRfIdTag(registInfo.PartsId);
+
             return true;
 
             // 連番 を採番して取得
@@ -891,6 +916,7 @@ namespace BusinessLogic_PT0001
 
             // 行削除
             ComDao.PtRftagPartsLinkEntity tag = new();
+            long partsId = -1;
             foreach (var deleteRow in deleteList)
             {
                 // 選択されたレコードをデータクラスに変換
@@ -910,6 +936,12 @@ namespace BusinessLogic_PT0001
                 {
                     return false;
                 }
+
+                if(partsId == -1)
+                {
+                    // 予備品IDを保持
+                    partsId = delCondition.PartsId;
+                }
             }
 
             // 詳細画面の再検索
@@ -917,6 +949,9 @@ namespace BusinessLogic_PT0001
             {
                 return false;
             }
+
+            // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+            getListRowDataForRfIdTag(partsId);
 
             return true;
         }
@@ -940,5 +975,34 @@ namespace BusinessLogic_PT0001
 
             return data;
         }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得（RFIDタグ件数更新用）
+        /// </summary>
+        /// <param name="partsId">登録情報</param>
+        private void getListRowDataForRfIdTag(long partsId)
+        {
+            //検索は行わず、詳細画面の値から取得する（速度改善）
+            Dao.searchResult result = new();
+            result.PartsId = partsId;   // 予備品ID
+            result.RfCount = "-1";      // RFIDタグ件数
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.List;
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<Dao.searchResult>() { result });
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.PT0001UpdateListData, dicList);
+        }
+
     }
 }

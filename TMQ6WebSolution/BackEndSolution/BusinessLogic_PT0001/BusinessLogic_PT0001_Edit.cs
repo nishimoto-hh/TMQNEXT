@@ -223,20 +223,22 @@ namespace BusinessLogic_PT0001
             //登録した予備品IDを設定（詳細画面を表示するための情報設定）
             var pageInfo = GetPageInfo(ConductInfo.FormEdit.ControlId.PartsInfo, this.pageInfoList);
             ComDao.PtPartsEntity info = new ComDao.PtPartsEntity();
-            if (pattern == EditDispType.Update)
+            var isUpdate = pattern == EditDispType.Update;
+            if (isUpdate)
             {
                 info.PartsId = registInfo.PartsId;
             }
             else
             {
                 info.PartsId = partsId;
+                registInfo.PartsId = partsId;
             }
 
             SetSearchResultsByDataClass<ComDao.PtPartsEntity>(pageInfo, new List<ComDao.PtPartsEntity> { info }, 1);
 
             // 修正の場合かつ非表示の表示年度の値が空ではない場合、表示年度の値をグローバルリストに格納する
             // ※新規の場合は詳細画面から画面遷移してきていないため考慮不要
-            // ※複写の場合は詳細画面からの遷移だが、予備品を新たに作成する多面考慮不要
+            // ※複写の場合は詳細画面からの遷移だが、予備品を新たに作成するため考慮不要
             if (getEditType() == EditDispType.Update &&
                 !string.IsNullOrEmpty(registInfo.DispYearFrom) &&
                 !string.IsNullOrEmpty(registInfo.DispYearTo))
@@ -244,6 +246,9 @@ namespace BusinessLogic_PT0001
                 this.IndividualDictionary[DispYearKeyName.YearFrom] = registInfo.DispYearFrom; // 表示年度(From)
                 this.IndividualDictionary[DispYearKeyName.YearTo] = registInfo.DispYearTo;     // 表示年度(To)
             }
+
+            // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+            getListRowData(registInfo, !isUpdate);
 
             return true;
 

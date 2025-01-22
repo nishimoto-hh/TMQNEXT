@@ -1,6 +1,7 @@
 ﻿using CommonExcelUtil;
 using CommonSTDUtil;
 using CommonSTDUtil.CommonBusinessLogic;
+using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
 using System;
 using System.Collections.Generic;
@@ -79,6 +80,29 @@ namespace BusinessLogic_DM0001
                     public const string List = "BODY_020_00_LST_0";
                 }
             }
+        }
+
+        /// <summary>
+        /// グローバル変数キー
+        /// </summary>
+        private static class GlobalKey
+        {
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の選択行番号
+            /// </summary>
+            public const string DM0001SelectedRowNo = "DM0001_SelectedRowNo";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の表示データを更新する用
+            /// </summary>
+            public const string DM0001UpdateListData = "DM0001_UpdateListData";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面用の総件数
+            /// </summary>
+            public const string DM0001AllListCount = "DM0001_AllListCount";
+            /// <summary>
+            /// グローバル変数のキー、一覧画面の表示データ更新用のキー
+            /// </summary>
+            public const string DM0001UpdateKey = "DM0001_UpdateKey";
         }
         #endregion
 
@@ -170,6 +194,7 @@ namespace BusinessLogic_DM0001
             }
 
             // 行削除
+            var deleteKeys = new List<long>();
             foreach (var deleteRow in deleteList)
             {
                 CommonDaoDM.searchResult delCondition = new();
@@ -182,10 +207,15 @@ namespace BusinessLogic_DM0001
                     setError();
                     return ComConsts.RETURN_RESULT.NG;
                 }
+                deleteKeys.Add(delCondition.AttachmentId);
             }
 
-            // 一覧画面再検索処理
-            searchList(true);
+            // 再検索は行わない
+            //// 一覧画面再検索処理
+            //searchList(true);
+
+            // 一覧画面のデータ更新用の値を設定
+            setDeleteRowDataToGlobalData();
 
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
@@ -204,6 +234,26 @@ namespace BusinessLogic_DM0001
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911110001 });
                 }
             }
+
+            //一覧画面のデータ更新用の値を設定
+            void setDeleteRowDataToGlobalData()
+            {
+                List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+                //削除
+                dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.None } });
+                //削除対象のキーIDのVAL値を取得
+                int itemNo = mapInfoList.Where(x => x.CtrlId.Equals(ConductInfo.FormList.ControlId.List) && x.ParamName.Equals(nameof(CommonDaoDM.searchResult.AttachmentId))).Select(x => x.ItemNo).FirstOrDefault();
+                //削除行のキーIDの配列を設定
+                dicList.Add(new Dictionary<string, object>() { { "VAL" + itemNo, deleteKeys } });
+                //グローバルリストへ設定
+                SetGlobalData(GlobalKey.DM0001UpdateListData, dicList);
+                //総件数を取得
+                object oldCount = GetGlobalData(GlobalKey.DM0001AllListCount);
+                long count = oldCount == null ? 0 : Convert.ToInt64(oldCount);
+                long newCount = count > deleteKeys.Count ? count - deleteKeys.Count : 0;
+                //グローバルリストへ総件数を設定
+                SetGlobalData(GlobalKey.DM0001AllListCount, newCount);
+            }
         }
 
         /// <summary>
@@ -215,7 +265,8 @@ namespace BusinessLogic_DM0001
             bool resultRegist = false;  // 登録処理戻り値、エラーならFalse
 
             // 登録・ファイルアップロード処理実行
-            resultRegist = executeRegistList();
+            CommonDaoDM.searchResult registInfo = new();
+            resultRegist = executeRegistList(ref registInfo);
 
             // 登録処理結果によりエラー処理を行う
             if (!resultRegist)
@@ -230,6 +281,10 @@ namespace BusinessLogic_DM0001
                 }
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // 一覧画面用のデータ取得（登録・更新データのみ。一覧画面に戻った際、再検索をせず一覧表示データを直接更新する）
+            getListRowData(registInfo);
+
             // 正常終了
             this.Status = CommonProcReturn.ProcStatus.Valid;
             //「更新処理に成功しました。」
@@ -354,7 +409,7 @@ namespace BusinessLogic_DM0001
         /// 一覧画面　更新処理
         /// </summary>
         /// <returns>エラーの場合False</returns>
-        private bool executeRegistList()
+        private bool executeRegistList(ref CommonDaoDM.searchResult registInfo)
         {
             // 排他チェック
             if (isErrorExclusive(ConductInfo.FormList.ControlId.List))
@@ -364,7 +419,7 @@ namespace BusinessLogic_DM0001
 
             DateTime now = DateTime.Now;
             // 入力された内容を取得
-            CommonDaoDM.searchResult registInfo = getRegistInfo<CommonDaoDM.searchResult>(ConductInfo.FormList.ControlId.List, now);
+            registInfo = getRegistInfo<CommonDaoDM.searchResult>(ConductInfo.FormList.ControlId.List, now);
 
             // 登録情報を設定
             registInfo.AttachmentUserId = this.UserId;                    // 作成者ID
@@ -572,6 +627,46 @@ namespace BusinessLogic_DM0001
                 }
             }
             return ComConsts.RETURN_RESULT.NG;
+        }
+
+        /// <summary>
+        /// 一覧画面用のデータを1件取得
+        /// </summary>
+        /// <param name="registInfo">登録データ</param>
+        private void getListRowData(CommonDaoDM.searchResult registInfo)
+        {
+            // 検索は行わず、登録値と一覧画面の選択行の値から取得する（速度改善）
+            CommonDaoDM.searchResult result = new();
+            result.KeyId = registInfo.KeyId;
+            result.FunctionTypeId = registInfo.FunctionTypeId;
+            result.DocumentTypeStructureId = registInfo.DocumentTypeStructureId;
+            result.AttachmentId = registInfo.AttachmentId;
+            result.AttachmentTypeStructureId = registInfo.AttachmentTypeStructureId;
+            result.DocumentNo = registInfo.DocumentNo;
+            result.AttachmentNote = registInfo.AttachmentNote;
+            result.AttachmentDate = registInfo.AttachmentDate;
+            result.AttachmentUserName = registInfo.AttachmentUserName;
+            result.PersonName = registInfo.AttachmentUserName;
+            result.FileName = registInfo.FileName;
+            result.UpdateSerialid = registInfo.UpdateSerialid + 1;  // 更新シリアルID:現在値+1
+            result.ExtensionData = registInfo.AttachmentTypeNo;
+
+            // ページ情報取得
+            PageInfo pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
+            pageInfo.CtrlId = ConductInfo.FormList.ControlId.List;
+            var list = ConvertResultsToTmpTableListByDataClassForList(pageInfo, new List<CommonDaoDM.searchResult>() { result });
+
+            List<Dictionary<string, object>> dicList = new List<Dictionary<string, object>>();
+            //ステータスを設定(１行目)
+            dicList.Add(new Dictionary<string, object>() { { "STATUS", TMPTBL_CONSTANTS.ROWSTATUS.Edit } });
+            foreach (var obj in list)
+            {
+                //データを設定(２行目)　値はjavascript側で詳細画面の値を取得する
+                Dictionary<string, object> dic = new Dictionary<string, object>(obj as IDictionary<string, object>);
+                dicList.Add(dic);
+            }
+            //グローバルリストへ設定
+            SetGlobalData(GlobalKey.DM0001UpdateListData, dicList);
         }
         #endregion
     }
