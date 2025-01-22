@@ -1274,6 +1274,9 @@ namespace BusinessLogic_MC0001
                 return false;
             }
 
+            // 詳細検索条件の保全方式のカラム名を実カラム名に戻す
+            whereSql = whereSql.Replace("inspection_site_conservation_structure_id", "conservation_structure_id");
+
             // 一時テーブル設定
             setTempTable(uncommentList);
 

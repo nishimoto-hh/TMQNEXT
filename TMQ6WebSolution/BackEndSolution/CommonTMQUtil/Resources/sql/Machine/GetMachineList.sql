@@ -489,3 +489,25 @@ FOR XML PATH(''))) AS applicable_laws_name
 FROM (SELECT mc.*,location_factory_structure_id as factoryId FROM mc_machine mc) mc
 LEFT JOIN mc_equipment eq
 ON mc.machine_id = eq.machine_id
+
+LEFT JOIN (
+    SELECT
+        machine.machine_id
+        , REPLACE ( 
+            ( 
+                SELECT
+                    STR(applicable_laws_structure_id) + '|' 
+                FROM
+                    mc_applicable_laws ma 
+                WHERE
+                    ma.machine_id = machine.machine_id 
+                ORDER BY
+                    ma.applicable_laws_structure_id FOR XML PATH ('')
+            ) 
+            , ' '
+            , ''
+        ) AS applicable_laws_structure_id 
+    FROM
+        mc_machine machine
+    ) ma
+ON mc.machine_id = ma.machine_id
