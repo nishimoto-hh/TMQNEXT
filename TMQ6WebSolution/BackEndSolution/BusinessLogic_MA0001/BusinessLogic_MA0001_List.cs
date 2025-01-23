@@ -41,6 +41,9 @@ namespace BusinessLogic_MA0001
             // 件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた場合は値をグローバル変数に格納する
             setValFromScheduleLink(out bool isFromScheduleLink);
 
+            // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた場合は値をグローバル変数に格納する
+            setValFromMC0001MtaintainanceTab(out bool isFromMC0001MtaintainanceTab);
+
             // ページ情報取得
             var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.HiddenItemId, this.pageInfoList);
             Dao.userRole role = new Dao.userRole();
@@ -50,9 +53,12 @@ namespace BusinessLogic_MA0001
             setDailyReportBtnDispFlg(role);
             // ユーザ役割の設定
             SetSearchResultsByDataClass<Dao.userRole>(pageInfo, new List<Dao.userRole>() { role }, 1);
-            if (isFromScheduleLink)
+
+            // 一覧画面の検索を実施するか判定
+            if (isFromScheduleLink || isFromMC0001MtaintainanceTab)
             {
-                // 「○」リンクで遷移した場合は新規登録画面を表示するので、一覧の検索は不要。処理終了する
+                // 長期計画の「○」リンクで遷移した場合 または 機器台帳-詳細画面-保全活動タブの 新規 ボタンによって遷移してきた場合
+                // は新規登録画面を表示するので、一覧の検索は不要。処理終了する
                 return true;
             }
 
@@ -257,6 +263,27 @@ namespace BusinessLogic_MA0001
                     // クリックされた○リンクのデータのみ表示
                     SetGlobalData(ConductInfo.FormList.ParamFromLongPlan.TransParamForMA0001ByLink, ConductInfo.FormList.ParamFromLongPlan.MsgClickedBtn.Cancel);
                 }
+
+                return;
+            }
+
+            // 機器台帳-詳細画面-保全活動タブにある「新規」ボタンで遷移してきたかを判定(遷移してきた場合はtrueを返す)
+            void setValFromMC0001MtaintainanceTab(out bool isFromMC0001MtaintainanceTab)
+            {
+                isFromMC0001MtaintainanceTab = false;
+
+                // パラメータに遷移元の情報が存在しない場合は何もしない
+                var dic = this.searchConditionDictionary.Where(x => x.ContainsKey(ConductInfo.FormList.MaintainanceTabNew)).FirstOrDefault();
+                if (dic == null)
+                {
+                    return;
+                }
+
+                isFromMC0001MtaintainanceTab = true;
+
+                // パラメータに遷移元の情報が格納されている場合はパラメータ内の値をグローバル変数に設定
+                // 値には遷移元の機器の機番IDが格納されている
+                SetGlobalData(ConductInfo.FormList.MaintainanceTabNew, dic[ConductInfo.FormList.MaintainanceTabNew]);
 
                 return;
             }

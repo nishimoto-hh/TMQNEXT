@@ -202,6 +202,8 @@ namespace BusinessLogic_MA0001
                 public const string DeleteHistoryFailureForHistoryId = "DeleteHistoryFailureForHistoryId";
                 /// <summary>SQL名：○リンククリック時に保全スケジュール詳細IDから機器情報を取得</summary>
                 public const string GetEquipmentInfoByScheduleDetailId = "GetEquipmentInfoByScheduleDetailId";
+                /// <summary>SQL名：機器台帳-詳細画面-保全活動タブの新規ボタンから遷移してきたときに機番IDから機器情報を取得</summary>
+                public const string GetMachineListFromMachine = "GetMachineListFromMachine";
             }
 
             /// <summary>
@@ -335,6 +337,9 @@ namespace BusinessLogic_MA0001
                         public const string Cancel = "1";
                     }
                 }
+
+                // グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキー
+                public const string MaintainanceTabNew = "MaintainanceTabNew";
             }
 
             /// <summary>

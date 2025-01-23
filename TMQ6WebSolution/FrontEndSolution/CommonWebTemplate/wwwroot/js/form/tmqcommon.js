@@ -2574,6 +2574,19 @@ function getParamToPT0001(partsId) {
 }
 
 /**
+ * 機器台帳-詳細画面-保全活動タブから保全活動詳細編集画面への画面遷移パラメータを設定する処理
+ * @param {string} machineId 遷移元の機器の機番ID
+ */
+function getParamToMA0001FromMachine(machineId) {
+    var conditionDataList = [];
+    var conditionData = {};
+    conditionData['MaintainanceTabNew'] = machineId;
+
+    conditionDataList.push(conditionData);
+    return conditionDataList;
+}
+
+/**
  * コンボの変更時に拡張項目の値を隠し項目に設定するコンボで、
  * 初期表示時にイベントを発生させる処理
  * @param {any} conditionDataList オーバーライド関数「PrevInitFormData」の引数、隠し項目の値をセットする

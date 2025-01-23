@@ -32,3 +32,29 @@
 .updateScheduleError {
     background-color: #ffb6c1 !important;
 }
+
+/*詳細画面-保全活動タブの保全活動一覧に設定*/
+.MaintainanceTabList {
+    /*位置を変更する*/
+    position: relative;
+    top: -40px;
+}
+
+/*詳細画面-保全活動タブの 新規 ボタンに設定*/
+/*保全活動一覧にレコードが表示されている場合*/
+.MaintainanceListHasData {
+    /*位置を変更する*/
+    position: relative;
+    left: 500px;
+    z-index:1;
+}
+
+/*詳細画面-保全活動タブの 新規 ボタンに設定*/
+/*保全活動一覧にレコードが表示されていない場合*/
+.MaintainanceListHasNotData {
+    /*位置を変更する*/
+    position: relative;
+    left: 500px;
+    top: -10px;
+    z-index: 1;
+}

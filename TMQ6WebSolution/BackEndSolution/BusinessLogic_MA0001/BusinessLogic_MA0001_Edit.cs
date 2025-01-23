@@ -78,13 +78,37 @@ namespace BusinessLogic_MA0001
                 resultFromLongPlan = outResultFromLongPlan;
             }
 
+            // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた場合はTrue
+            bool isTransedFromMC0001 = this.IndividualDictionary.ContainsKey(ConductInfo.FormList.MaintainanceTabNew);
+
             //MQ分類：設備工事、撤去工事の構成IDをカンマ区切りで設定
             result.MqNotRequiredStructureId = setMqNotRequiredStructureId();
 
             //場所階層、職種の取得
             Dao.detailSummaryInfo structureLayer = new();
-            structureLayer.LocationStructureId = getTreeValue(true);
-            structureLayer.JobStructureId = getTreeValue(false);
+
+            // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきたか判定
+            long? machineId = null;
+            if (isTransedFromMC0001)
+            {
+                //遷移してきた場合はパラメータの機番IDを条件に、機器の情報を取得する
+                machineId = long.Parse(this.IndividualDictionary[ConductInfo.FormList.MaintainanceTabNew].ToString());
+                ComDao.McMachineEntity machineinfo = new ComDao.McMachineEntity().GetEntity((long)machineId, this.db);
+
+                // グローバルリストからキーを削除
+                this.IndividualDictionary.Remove(ConductInfo.FormList.MaintainanceTabNew);
+
+                // 機器の場所階層・職種機種を設定する
+                structureLayer.LocationStructureId = machineinfo.LocationStructureId;
+                structureLayer.JobStructureId = machineinfo.JobStructureId;
+            }
+            else
+            {
+                // 遷移してきていない場合はツリーの選択状態を取得
+                structureLayer.LocationStructureId = getTreeValue(true);
+                structureLayer.JobStructureId = getTreeValue(false);
+            }
+
             // 取得した結果に対して、場所階層、職種の情報を設定する
             IList<Dao.detailSummaryInfo> structureLayerList = new List<Dao.detailSummaryInfo> { structureLayer };
             TMQUtil.StructureLayerInfo.SetStructureLayerInfoToDataClass<Dao.detailSummaryInfo>(ref structureLayerList, new List<StructureType> { StructureType.Location, StructureType.Job }, this.db, this.LanguageId, true);
@@ -159,6 +183,13 @@ namespace BusinessLogic_MA0001
             {
                 return ComConsts.RETURN_RESULT.NG;
                 this.Status = CommonProcReturn.ProcStatus.Error;
+            }
+
+            // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた場合
+            if (isTransedFromMC0001)
+            {
+                // 遷移元の機器の情報を表示する
+                setMachineList<Dao.detailMachine>(new Dao.searchCondition() { MachineId = machineId, LanguageId = this.LanguageId}, ConductInfo.FormRegist.ControlId.MachineList, SqlName.Regist.GetMachineListFromMachine, result.ActivityDivision);
             }
 
             // 施工担当者の初期値設定

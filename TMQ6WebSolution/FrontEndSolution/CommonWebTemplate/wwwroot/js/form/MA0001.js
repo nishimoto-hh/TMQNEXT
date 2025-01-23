@@ -42,6 +42,9 @@ const StopSystemVal = 0;
 //件名別長期計画・機器別長期計画の白丸「○」リンクから遷移してきた際にグローバル変数に値を格納するキー
 const KeyNameFromScheduleLink = "MakeScheduleFromLongPlan";
 
+//機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた際にグローバル変数に値を格納するキー
+const MaintainanceTabNew = "MaintainanceTabNew";
+
 // 個別工場表示対象フラグ(非表示：0、表示：1)
 const IndividualFlg = {
     Hide: "0",
@@ -1018,6 +1021,9 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         // 件名別長期計画・機器別長期計画で白丸「○」がクリックされて遷移してきた場合、新規登録画面(点検情報)を表示する
         dispFormEditFromScheduleLink();
 
+        // 機器台帳-詳細画面-保全活動タブの 新規 ボタンがクリックされて遷移してきた場合、新規登録画面を表示する
+        dispFormEditFromMC0001MtaintainanceTab();
+
     } else if (formNo == FormDetail.No) {
         //詳細画面
 
@@ -1790,6 +1796,13 @@ function prevBackBtnProcess(appPath, btnCtrlId, status, codeTransFlg) {
             const conditionDataList = getListDataByCtrlIdList([FormRegist.HideInfo.Id], FormRegist.No, 0);
             setSearchCondition(ConductId_MA0001, FormDetail.No, conditionDataList);
         } else if (btnCtrlId == FormRegist.ButtonId.Back) {
+
+            // 機器台帳-詳細画面の保全活動タブの新規ボタンから遷移してきた際のキーがグローバルリストに格納されていれば削除する
+            // 遷移後、詳細編集画面の戻るボタンがクリックされた場合にキーが格納されている
+            if (MaintainanceTabNew in P_dicIndividual == true) {
+                delete P_dicIndividual[MaintainanceTabNew];
+            }
+
             //登録画面から戻るボタンで戻る際、再検索は行わない
             return false;
         }
@@ -3976,6 +3989,20 @@ function dispFormEditFromScheduleLink() {
     $(button).click();
 }
 
+/**
+ * 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた場合、新規登録画面を表示する
+ * */
+function dispFormEditFromMC0001MtaintainanceTab() {
+
+    // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた際のキーがグローバルリストに存在するか判定
+    if (MaintainanceTabNew in P_dicIndividual == false) {
+        //存在しなければ何もしない
+        return;
+    }
+
+    // 新規ボタンをクリック
+    $(getButtonCtrl(FormList.ButtonId.New)).click();
+}
 
 /**
  * 対象機器一覧 機器使用期間の入力可能なレコードを制限する

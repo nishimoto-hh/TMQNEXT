@@ -214,7 +214,8 @@ const MachineDatail = {
         Delete: "Delete",
         Back: "Back",
         SpecUpdate: "SpecUpdate",
-        HistoryManagementDetail: "HistoryManagementDetail"
+        HistoryManagementDetail: "HistoryManagementDetail",
+        MaintainanceTabNew: "MaintainanceTabNew"
     },
     TabNo: {
         LongPlan: 4
@@ -389,6 +390,11 @@ const DatailMaintainanceActivity = {
             Subject: 2,
             SummaryId: 12,
         },
+    },
+    CssClass: { // CSSクラス
+        MaintainanceTabList: "MaintainanceTabList", // 保全活動一覧に設定
+        MaintainanceListHasData: "MaintainanceListHasData",      // 保全活動一覧にデータが存在する場合に 新規　ボタンに設定
+        MaintainanceListHasNotData: "MaintainanceListHasNotData" // 保全活動一覧にデータが存在しない場合に 新規　ボタンに設定
     }
 }
 
@@ -719,6 +725,12 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         //一覧画面に反映する添付情報をクリア
         delete P_dicIndividual[MC0001_UpdateAttachmentFlg];
 
+        // 保全活動タブの保全活動一覧の要素取得
+        var maintainanceList = $(P_Article).find("#" + DatailMaintainanceActivity.MaintainanceActivityList.Id + getAddFormNo() + "_div");
+
+        // CSSクラスを付与
+        $(maintainanceList).addClass(DatailMaintainanceActivity.CssClass.MaintainanceTabList);
+
     } else if (formNo == MachineEditDetail.No) {
         //詳細画面
 
@@ -977,6 +989,14 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         else if (btn_ctrlId == MachineDatail.ButtonId.HistoryManagementDetail) {
             // 変更管理(非表示の機番IDを取得し条件に設定)
             conditionDataList.push(getParamToHM0001FormDetail(getValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false)));
+        } else if (btn_ctrlId == MachineDatail.ButtonId.MaintainanceTabNew) {
+            // 保全活動タブの 新規 ボタンクリック
+
+            // 画面に表示されている機器の機番IDを取得
+            var machineId = getValue(MachineDatail.MachineDatail20.Id, MachineDatail.MachineDatail20.ColumnNo.MachineId, 1, CtrlFlag.Label, false, false);
+
+            // 取得した機番IDを遷移パラメータに設定※保全活動詳細編集画面で使用
+            conditionDataList = getParamToMA0001FromMachine(machineId);
         }
     } else if (formNo == MachineEditDetail.No) {
         // 参照画面
@@ -2614,6 +2634,20 @@ function rowNoLinkChangeMa() {
             var target = getCtrl(DatailMaintainanceActivity.MaintainanceActivityList.Id, 1, idx, CtrlFlag.Link, false, false);
             target.innerHTML = '<span class="glyphicon glyphicon-file"></span>';
         });
+
+        // 保全活動タブの新規ボタン要素を取得(保全活動一覧にデータが存在する場合)
+        var btn = getButtonCtrl(MachineDatail.ButtonId.MaintainanceTabNew);
+        // 取得した要素のtableタグにCSSクラスを付与
+        $(btn).closest("table").removeClass(DatailMaintainanceActivity.CssClass.MaintainanceListHasNotData);
+        $(btn).closest("table").addClass(DatailMaintainanceActivity.CssClass.MaintainanceListHasData);
+    }
+    else {
+
+        // 保全活動タブの新規ボタン要素を取得(保全活動一覧にデータが存在しない場合)
+        var btn = getButtonCtrl(MachineDatail.ButtonId.MaintainanceTabNew);
+        // 取得した要素のtableタグにCSSクラスを付与
+        $(btn).closest("table").removeClass(DatailMaintainanceActivity.CssClass.MaintainanceListHasData);
+        $(btn).closest("table").addClass(DatailMaintainanceActivity.CssClass.MaintainanceListHasNotData);
     }
 }
 
