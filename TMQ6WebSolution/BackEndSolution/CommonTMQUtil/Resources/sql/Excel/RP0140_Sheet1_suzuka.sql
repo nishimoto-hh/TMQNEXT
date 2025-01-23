@@ -60,7 +60,7 @@ AND language_id = @key2;
 	'' as buis,		--	9.部位小分類
 	'' as zairyou,	--	10.材料費(機器)
 	mp.total_budget_cost,--11.予算費用(任意)
-	hi.expenditure,--12.実績費用(任意)
+	hi.expenditure as expenditure1,--12.実績費用(任意)
 
             (
                 SELECT
@@ -313,26 +313,7 @@ AND language_id = @key2;
 			'' as machine_work_time,--	作業時間(機器)
 			'' as machineself_time,--	自社時間(機器)
 			'' as machine_sekougaisya,--	施工会社（機器）
-
-            (
-                SELECT
-                    tra.translation_text
-                FROM
-                    v_structure_item_all AS tra
-                WHERE
-                    tra.language_id = temp.languageId
-                AND tra.location_structure_id = (
-                        SELECT
-                            MAX(st_f.factory_id)
-                        FROM
-                            #temp_structure_factory AS st_f
-                        WHERE
-                            st_f.structure_id = hf.failure_cause_structure_id
-                        AND st_f.factory_id IN(0, su.location_factory_structure_id)
-                    )
-                AND tra.structure_id = hf.failure_cause_structure_id
-            ) AS failure_cause_structure_name,--故障原因
-
+            failure_cause_addition_note AS failure_cause_structure_name,--故障原因
 			hi.total_working_time,--修理時間(総計)
 			hi.working_time_research,--調査
 			hi.working_time_procure,--調達
@@ -358,7 +339,7 @@ AND language_id = @key2;
                 AND tra.structure_id = hf.treatment_measure_structure_id
             ) AS treatment_measure_structure_name,--処置・対策
 
-			hi.expenditure,--実績金額
+			hi.expenditure as expenditure2,--実績金額
 
             (
                 SELECT
@@ -518,11 +499,14 @@ AND language_id = @key2;
                     )
                 AND tra.structure_id = su.location_factory_structure_id
             ) AS factory_name,--工場
-
 			mc.machine_no,--機器番号
 			hi.call_count,--呼出
-			hi.failure_time--故障時間(年)
-
+			hi.failure_time,--故障時間(年)
+            su.summary_id,
+			mc.machine_id,
+			ROW_NUMBER() OVER(PARTITION BY su.summary_id ORDER BY mc.machine_id ASC) Num1,
+			ROW_NUMBER() OVER(ORDER BY su.completion_date ASC,su.summary_id ASC,mc.machine_id ASC) Num2
+		into #temp_excel
 
 		FROM
 			ma_summary su
@@ -530,7 +514,7 @@ AND language_id = @key2;
 		LEFT JOIN ma_history hi
 			ON hi.summary_id = su.summary_id
 
-	    LEFT JOIN (select max(machine_id) as machine_id , history_id from  ma_history_machine hm group by history_id) hm
+	    LEFT JOIN ma_history_machine hm
 			ON hi.history_id = hm.history_id 
 
 		LEFT JOIN ma_history_failure hf
@@ -565,4 +549,53 @@ AND language_id = @key2;
         INNER JOIN #temp temp
         ON su.summary_id = temp.Key1
         ORDER BY
-		completion_date ASC , occurrence_date ASC;
+		completion_date ASC , summary_id ASC;
+
+update
+#temp_excel
+set 
+construction_personnel_name  = null,
+subject  = null,
+occurrence_date  = null,
+completion_date  = null,
+plan_implementation_content  = null,
+work_failure_division_name  = null,
+total_budget_cost  = null,
+expenditure1   = null,
+location_plant_name  = null,
+location_series_structure_name  = null,
+failure_equipment_model_structure_name  = null,
+job_small_classfication_structure_name  = null,
+parts_existence_flg  = 0,
+history_importance_structure_name  = null,
+history_conservation_structure_name  = null,
+discovery_personnel  = null,
+discovery_methods_structure_name  = null,
+recovery_action  = null,
+failure_personality_factor_structure_name  = null,
+failure_personality_class_structure_name  = null,
+effect_production_structure_name = null,
+effect_quality_structure_name = null,
+stop_count = null,
+stop_time = null,
+failure_cause_structure_name = null,
+total_working_time = null,
+working_time_research = null,
+working_time_procure = null,
+working_time_repair = null,
+working_time_test = null,
+treatment_measure_structure_name = null,
+expenditure2 = null,
+job_name = null,
+failure_cause_report_name  = null ,
+improvement_measure = null,
+measure_class1_name = null,
+measure_class2_name = null,
+measure_plan_date = null,
+necessity_measure_name = null,
+factory_name = null,
+call_count = null,
+failure_time = null
+where num1 > 1
+
+select * from #temp_excel order by num2
