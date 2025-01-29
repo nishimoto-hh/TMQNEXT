@@ -275,10 +275,8 @@ namespace BusinessLogic_MP0001
                 // 戻る
                 return InitSearch();
             }
-            //// 初期検索実行
-            //return InitSearch();
-            // 初期検索は行わない
-            return ComConsts.RETURN_RESULT.OK;
+            // 初期検索実行
+            return InitSearch();
         }
 
         /// <summary>
