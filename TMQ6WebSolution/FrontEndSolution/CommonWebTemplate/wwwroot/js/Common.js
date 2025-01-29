@@ -2024,7 +2024,7 @@ function filterStructureItemByFactory(data, factoryIdList) {
     }
 
     // 工場IDを含まない場合に絞込を行わない
-    if (data.length == data.filter(x => { return x.FactoryId == "" && x.TranslationFactoryId == "" }).length) {
+    if (data.length == data.filter(x => { return (x.FactoryId == "" && x.TranslationFactoryId == "") || (x.FactoryId == null && x.TranslationFactoryId == null) }).length) {
         return data;
     }
 
