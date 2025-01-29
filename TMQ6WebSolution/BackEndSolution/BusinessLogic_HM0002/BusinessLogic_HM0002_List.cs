@@ -41,7 +41,7 @@ namespace BusinessLogic_HM0002
         private bool searchList(bool isInit)
         {
             // 初期検索時は「自分の申請のみ表示」をチェック状態にする
-            if (!getSearchCondition(isInit, out int dispOnlyMySubject))
+            if (!getSearchCondition(isInit, out int dispOnlyMySubject, out bool isTransedTop))
             {
                 return false;
             }
@@ -61,8 +61,8 @@ namespace BusinessLogic_HM0002
             // 警告コメントを設定する
             setWarningComment();
 
-            // メニューから選択された際の初期検索は行わない
-            if (isInit)
+            // メニューから選択された際の初期検索は行わない(ただしTOP画面のリンクから遷移してきた場合を除く)
+            if (isInit && !isTransedTop)
             {
                 // 検索結果の設定
                 var pageInfo = GetPageInfo(ConductInfo.FormList.ControlId.List, this.pageInfoList);
@@ -202,9 +202,11 @@ namespace BusinessLogic_HM0002
         /// </summary>
         /// <param name="isInit">初期表示の場合はTrue</param>
         /// <param name="outDispOnlyMySubject">チェック状態</param>
+        /// <param name="isTransedTop">TOP画面の件数リンクから遷移してきた場合はTrue</param>
         /// <returns>エラーの場合False</returns>
-        private bool getSearchCondition(bool isInit, out int outDispOnlyMySubject)
+        private bool getSearchCondition(bool isInit, out int outDispOnlyMySubject, out bool isTransedTop)
         {
+            isTransedTop = false;
             outDispOnlyMySubject = new();
 
             // 検索条件を取得する一覧のコントロールID
@@ -220,7 +222,7 @@ namespace BusinessLogic_HM0002
             if (isInit)
             {
                 // トップ画面から遷移した場合、遷移元のリンクに応じた「自分の件名のみ表示」のチェック状態を使用する
-                TMQUtil.HistoryManagement.IsDispOnlyMySubjectFromTop(ref this.searchConditionDictionary, out bool isTop, out bool isDispOnlyMySubject);
+                TMQUtil.HistoryManagement.IsDispOnlyMySubjectFromTop(ref this.searchConditionDictionary, out bool isTop, out bool isDispOnlyMySubject, out isTransedTop);
                 // チェック状態を設定
                 // トップ画面からの場合、戻り値に応じて設定。そうでない場合、チェック状態を設定
                 outDispOnlyMySubject = isTop ? (isDispOnlyMySubject ? IsDispOnlyMySubject : 0) : IsDispOnlyMySubject;

@@ -1763,17 +1763,20 @@ namespace CommonTMQUtil
             /// <param name="searchConditionDictionary">ref 画面の検索条件</param>
             /// <param name="isFromTop">out トップ画面フラグ トップ画面から遷移していない場合はFalse</param>
             /// <param name="isDispOnlyMySubject">out チェック状態 トップ画面から遷移した場合、この値を使用する 申請件数からならTrue、承認件数からならFalse</param>
-            public static void IsDispOnlyMySubjectFromTop(ref List<Dictionary<string, object>> searchConditionDictionary, out bool isFromTop, out bool isDispOnlyMySubject)
+            /// <param name="isTransedTop">TOP画面のリンクから遷移してきた場合True(申請件数か承認件数かは関係なし)</param>
+            public static void IsDispOnlyMySubjectFromTop(ref List<Dictionary<string, object>> searchConditionDictionary, out bool isFromTop, out bool isDispOnlyMySubject, out bool isTransedTop)
             {
                 // グローバルリストのキー、1なら申請中件数、2なら承認待ち件数
                 const string CM00001_GlobalKeyHistory = "CM00001_HistoryParam";
                 isFromTop = false;
                 isDispOnlyMySubject = false;
+                isTransedTop = true;
 
                 var targetInfo = searchConditionDictionary.Where(x => x.ContainsKey(CM00001_GlobalKeyHistory));
                 if (!targetInfo.Any())
                 {
                     // 画面の検索条件にトップ画面から遷移時にセットされるキーが無い場合、終了
+                    isTransedTop = false;
                     return;
                 }
 
