@@ -120,6 +120,6 @@ AND
         AND unused.structure_id = st.structure_id
     )
 
-ORDER BY st.structure_group_id,st.structure_layer_no,
+ORDER BY st.structure_group_id, coalesce(st.structure_layer_no, 0),
 -- 工場ID毎の表示順
 row_number() OVER(PARTITION BY coalesce(ft.factory_id, 0) ORDER BY coalesce(coalesce(order_factory.display_order, order_common.display_order), 32768), st.structure_id)

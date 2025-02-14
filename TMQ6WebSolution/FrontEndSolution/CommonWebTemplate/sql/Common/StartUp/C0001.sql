@@ -120,6 +120,6 @@ AND
 
 and (st.factory_id = 0 and st.location_structure_id in (coalesce(ft.factory_id, 0), 0) OR coalesce(ft.factory_id, 0) in (st.factory_id, 0))
 
-ORDER BY st.structure_group_id,st.structure_layer_no
+ORDER BY st.structure_group_id, coalesce(st.structure_layer_no, 0)
 -- 工場ID毎の表示順
 ,row_number() over(partition BY coalesce(ft.factory_id, 0) ORDER BY coalesce(coalesce(order_factory.display_order, order_common.display_order), 32768), st.structure_id)
