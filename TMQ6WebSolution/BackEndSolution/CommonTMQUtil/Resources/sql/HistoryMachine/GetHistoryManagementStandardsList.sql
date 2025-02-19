@@ -141,7 +141,17 @@ schedule_start_date_history AS(
     FROM
         hm_mc_maintainance_schedule AS sc
     WHERE
-		sc.history_management_id = @HistoryManagementId 
+        NOT EXISTS(
+            SELECT
+                *
+            FROM
+                hm_mc_maintainance_schedule AS sub
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id
+            AND sc.start_date < sub.start_date
+            AND sub.history_management_id = @HistoryManagementId
+        )
+        AND sc.history_management_id = @HistoryManagementId
 ),
 -- 上で取得した保全スケジュール(変更管理)を機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
 schedule_content_history AS(
