@@ -1,15 +1,28 @@
-﻿using CommonExcelUtil;
+﻿using ClosedXML.Excel;
+using CommonExcelUtil;
 using CommonSTDUtil.CommonBusinessLogic;
 using CommonSTDUtil.CommonDBManager;
 using CommonWebTemplate.CommonDefinitions;
 using CommonWebTemplate.Models.Common;
+using Dapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http;
+using Microsoft.VisualBasic.FileIO;
+using StackExchange.Profiling.Data;
+using StackExchange.Profiling;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using static CommonSTDUtil.CommonSTDUtil.CommonSTDUtillDataClass;
 using ComBase = CommonSTDUtil.CommonDataBaseClass;
 using ComConsts = CommonSTDUtil.CommonConstants;
@@ -21,6 +34,7 @@ using ExcelUtil = CommonExcelUtil.CommonExcelUtil;
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using TMQConsts = CommonTMQUtil.CommonTMQConstants;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
+using static CommonTMQUtil.CommonTMQUtil.ComMaster;
 
 namespace CommonTMQUtil
 {
@@ -150,7 +164,8 @@ namespace CommonTMQUtil
                 public const int ErrorInfoDownloaded = 2;
 
                 // 機能個別シート
-
+                /// <summary>機器台帳</summary>
+                public const int Machine = 1;
                 /// <summary>長期計画</summary>
                 public const int LongPlan = 3;
                 /// <summary>長期計画 機器別管理基準</summary>
@@ -509,6 +524,8 @@ namespace CommonTMQUtil
             /// </summary>
             public static class RowNo
             {
+                /// <summary>行番号：入力シートデータ開始行</summary>
+                public const int InputSheetDataStart = 4;
                 /// <summary>行番号：エラー情報シートデータ開始行</summary>
                 public const int ErrorInfoSheetDataStart = 3;
             }
@@ -939,6 +956,21 @@ namespace CommonTMQUtil
                     }
                 }
             }
+
+            /// <summary>
+            /// プロシージャ実行結果
+            /// </summary>
+            public static class Result
+            {
+                /// <summary>正常終了</summary>
+                public const int OK = 0;
+                /// <summary>異常終了(ファイル全体のエラー)</summary>
+                public const int NG = -1;
+                /// <summary>異常終了(行単位のエラー)</summary>
+                public const int NGPerRow = -2;
+                /// <summary>異常終了(例外)</summary>
+                public const int NGEx = -999;
+            }
             #endregion
 
             #region コンストラクタ
@@ -1063,7 +1095,7 @@ namespace CommonTMQUtil
             /// <param name="detailMsg">詳細メッセージ</param>
             /// <param name="isUpload"></param>
             /// <returns></returns>
-            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg, bool isUpload = false, Dictionary<string, object> dic = null, bool isJobNullAble = false)
+            public bool InitializeExcelPortTemplateFile(out string resultMsg, out string detailMsg, bool isUpload = false, Dictionary<string, object> dic = null, bool isJobNullAble = false, bool isCreateTempTbl = true)
             {
                 //==========
                 // 初期化
@@ -1273,16 +1305,20 @@ namespace CommonTMQUtil
                 this.TargetJobInfoListAll = this.TargetJobInfoListAll.Where(x =>
                     this.TargetFactoryIdListAll.Contains(x.FactoryId) || x.FactoryId == STRUCTURE_CONSTANTS.CommonFactoryId).ToList();
 
-                // 場所階層、職種機種絞り込み用一時テーブルを生成
-                if (!createTempTableForTargetStructureInfo(true))
+                // パラメータのフラグに応じて一時テーブルを作成する(デフォルトは作成する)
+                if(isCreateTempTbl)
                 {
-                    detailMsg = "Failed to create the temporary table.";
-                    return false;
-                }
-                if (!createTempTableForTargetStructureInfo(false))
-                {
-                    detailMsg = "Failed to create the temporary table.";
-                    return false;
+                    // 場所階層、職種機種絞り込み用一時テーブルを生成
+                    if (!createTempTableForTargetStructureInfo(true))
+                    {
+                        detailMsg = "Failed to create the temporary table.";
+                        return false;
+                    }
+                    if (!createTempTableForTargetStructureInfo(false))
+                    {
+                        detailMsg = "Failed to create the temporary table.";
+                        return false;
+                    }
                 }
 
                 // 職種がNullのデータを検索対象に含める場合(予備品仕様の検索で仕様)
@@ -1752,6 +1788,327 @@ namespace CommonTMQUtil
                 return true;
             }
 
+            public static class SqlForExcelPortProc
+            {
+                /// <summary>SQL格納先サブディレクトリ名</summary>
+                public const string SubDir = "ExcelPort";
+                /// <summary>
+                /// 登録処理のプロシージャを実行するSQL
+                /// </summary>
+                public const string RegistExcelPortByProc = "RegistExcelPortByProc";
+                /// <summary>
+                /// エラー情報を格納する一時テーブルを作成するSQL
+                /// </summary>
+                public const string CreateTempErrorTable = "CreateTempErrorTable";
+                /// <summary>
+                /// エラー情報が格納されている一時テーブルからデータを取得するSQL
+                /// </summary>
+                public const string GetErrorInfoForExcelPort = "GetErrorInfoForExcelPort";
+
+                /// <summary>
+                /// 機器台帳の入力チェック、登録チェックに使用する一時テーブルを作成するSQL
+                /// </summary>
+                public const string CreateTempTableForMC0001 = "CreateTempTableForMC0001";
+                /// <summary>
+                /// 保全活動の入力チェック、登録チェックに使用する一時テーブルを作成するSQL
+                /// </summary>
+                public const string CreateTempTableForMA0001 = "CreateTempTableForMA0001";
+                /// <summary>
+                /// 「Sheet_Item」シートのデータを格納する一時テーブルを作成するSQL
+                /// </summary>
+                public const string CreateTempTableForItem = "CreateTempTableForItem";
+            }
+
+            /// <summary>
+            /// ExcelPortアップロード処理(プロシージャで実施)
+            /// </summary>
+            /// <param name="ctrlGrpId"></param>
+            /// <param name="file"></param>
+            /// <param name="sheetNo"></param>
+            /// <param name="resultMsg"></param>
+            /// <param name="fileType"></param>
+            /// <param name="fileName"></param>
+            /// <param name="ms"></param>
+            /// <returns></returns>
+            public bool registExcelDataByProc(string ctrlGrpId ,IFormFile file, int sheetNo, ref string resultMsg, ref string fileType, ref string fileName, ref MemoryStream ms)
+            {
+                // 一時テーブルの列数
+                const int sheetItemTempColCount = 26; // 「Sheet_Item」のデータを格納する一時テーブルの列数
+                const int MC0001TempColCount = 54;    // 機器台帳用の一時テーブルの列数
+                const int MA0001TempColCount = 125;   // 保全活動用の一時テーブルの列数
+
+                // Excel読み込み
+                this.ExcelCmd = TMQUtil.FileOpen(file.OpenReadStream());           
+
+                //シートを取得
+                var worksheet = this.ExcelCmd.GetWorkSheet(string.Empty, 1); // 機能個別のシート
+                var itemsheet = this.ExcelCmd.GetWorkSheet(string.Empty, 4); // コンボボックスアイテムのシート
+
+                //フィルタ解除
+                worksheet.AutoFilter.Clear();
+                itemsheet.AutoFilter.Clear();
+
+                // 定義情報シートからExcelPortバージョン番号を取得
+                var versionNo = getCellValue(SheetName.DefineInfo, DefineSheetInfo.ColNoHeaderVal, DefineSheetInfo.RowNoVersion);
+                if (!string.IsNullOrEmpty(versionNo))
+                {
+                    this.UploadCondition.ExcelPortVersion = Convert.ToDecimal(versionNo);
+                }
+
+                // 一時テーブルを作成するSQLを取得
+                string sqlFileName = string.Empty;
+                int columnCount = 0; // 読み取るExcelの列数
+
+                // 処理を行う機能に応じて一時テーブルを作成するためのSQLを取得
+                if (sheetNo == SheetNo.Machine)
+                {
+                    // 機器台帳
+                    sqlFileName = SqlForExcelPortProc.CreateTempTableForMC0001; // 機器台帳用の一時テーブル作成SQL
+                    columnCount = MC0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
+                }
+                else
+                {
+                    // 保全活動
+                    sqlFileName = SqlForExcelPortProc.CreateTempTableForMA0001; // 保全活動用の一時テーブル作成SQL
+                    columnCount = MA0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
+                }
+
+                // 一時テーブルを作成するSQL取得
+                TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, sqlFileName, out string createTmpTbl);
+                TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.CreateTempTableForItem, out string createItemTmpTbl);
+
+
+                // 読み取るExcelの列数分データテーブルに列を追加
+                DataTable table = new();
+                table.Columns.Add("row_no");
+                for (int col = 1; col <= columnCount; col++)
+                {
+                    table.Columns.Add("col" + col.ToString(), typeof(string));
+                }
+
+                // 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
+                string range = "A4:" + ToAlphabet(columnCount) + (worksheet.RowsUsed().Count() + 2).ToString();
+                var data = worksheet.Range(range).AsTable();
+                int rowNo = RowNo.InputSheetDataStart; // Excel上でユーザーが入力可能なレコードの開始行
+                foreach (var row in data.Rows())
+                {
+                    var dataRow = table.NewRow();
+                    for (int i = 0; i <= row.CellCount(); i++)
+                    {
+                        if (i == 0)
+                        {
+                            // 初回は行番号を設定
+                            dataRow[i] = rowNo.ToString();
+                        }
+                        else
+                        {
+                            // 文字が入力されているかを判定
+                            if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
+                            {
+                                // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
+                                dataRow[i] = DBNull.Value;
+                            }
+                            else
+                            {
+                                // 入力された文字列を格納
+                                dataRow[i] = row.Cell(i).Value;
+                            }
+                        }
+                    }
+                    table.Rows.Add(dataRow);
+
+                    // 行番号加算
+                    rowNo++;
+                }
+
+
+                // 「Sheet_Item」シートのデータを格納するためのデータテーブルを作成
+                DataTable tableItem = new();
+                for (int col = 1; col <= sheetItemTempColCount; col++)
+                {
+                    tableItem.Columns.Add("col" + col.ToString(), typeof(string));
+                }
+                // 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
+                range = "A3:" + ToAlphabet(sheetItemTempColCount) + itemsheet.RowsUsed().Count().ToString();
+                data = itemsheet.Range(range).AsTable();
+                foreach (var row in data.Rows())
+                {
+                    var dataRow = tableItem.NewRow();
+                    for (int i = 1; i < row.CellCount(); i++)
+                    {
+                            // 文字が入力されているかを判定
+                            if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
+                            {
+                                // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
+                                dataRow[i - 1] = DBNull.Value;
+                            }
+                            else
+                            {
+                                // 入力された文字列を格納
+                                dataRow[i - 1] = row.Cell(i).Value;
+                            }
+                        
+                    }
+                    tableItem.Rows.Add(dataRow);
+                }
+
+                // 登録処理
+                using (SqlConnection connection = new SqlConnection(this.db.Connection.ConnectionString.ToString()))
+                {
+                    connection.Open();
+                    SqlTransaction transaction = connection.BeginTransaction();
+
+                    // 「Sheet_Item」シート用一時テーブル作成SQLを実行
+                    SqlCommand sqlItemCmd = new SqlCommand(createItemTmpTbl, connection);
+                    sqlItemCmd.Transaction = transaction;
+
+                    // 機能個別のシート用一時テーブル作成SQLを実行
+                    SqlCommand sqlCmd = new SqlCommand(createTmpTbl, connection);
+                    sqlCmd.Transaction = transaction;
+                    try
+                    {
+                        //// 一時テーブル作成SQLを実行
+                        sqlCmd.ExecuteNonQuery();     // 機能個別のシート用一時テーブル
+                        sqlItemCmd.ExecuteNonQuery(); // 「Sheet_Item」シート用一時テーブル
+
+                        // 作成した一時テーブルに対してデータテーブルの内容を一括登録
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+                        {
+                            // タイムアウト時間
+                            bulkCopy.BulkCopyTimeout = (int)this.db.TimeOutSeconds;
+
+                            // 機能個別のシート用一時テーブル
+                            bulkCopy.DestinationTableName = "#temp";
+                            bulkCopy.WriteToServer(table);
+
+                            // 「Sheet_Item」シート用一時テーブル
+                            bulkCopy.DestinationTableName = "#sheet_item";
+                            bulkCopy.WriteToServer(tableItem);
+                        }
+
+                        //// エラー情報を格納する一時テーブルを作成
+                        TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.CreateTempErrorTable, out string createErrTmp);
+                        sqlCmd = new SqlCommand(createErrTmp, connection);
+                        sqlCmd.Transaction = transaction;
+                        sqlCmd.ExecuteNonQuery();
+
+                        // プロシージャを実行するためのSQLを取得
+                        TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.RegistExcelPortByProc, out string registSql);
+
+                        // コマンドにパラメータを設定
+                        sqlCmd = new SqlCommand(registSql, connection);
+                        sqlCmd.Transaction = transaction;
+                        sqlCmd.Parameters.Add("@ConductId", SqlDbType.NVarChar).Value = UploadCondition.ConductId;                          // 機能ID
+                        sqlCmd.Parameters.Add("@DateTime", SqlDbType.NVarChar).Value = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff");    // 登録日時
+                        sqlCmd.Parameters.Add("@UserId", SqlDbType.Int).Value = this.userId;                                                // ユーザーID
+                        sqlCmd.Parameters.Add("@LanguageId", SqlDbType.NVarChar).Value = this.languageId;                                   // 言語ID
+                        sqlCmd.Parameters.Add("@ReportId", SqlDbType.NVarChar).Value = Template.ReportId;                                   // ExcelPortテンプレートファイルID
+                        sqlCmd.Parameters.Add("@SheetNo", SqlDbType.Int).Value = this.UploadCondition.SheetNo;                              // シート番号
+                        sqlCmd.Parameters.Add("@ControlGroupId", SqlDbType.NVarChar).Value = ctrlGrpId;                                     // コントロールグループID
+                        sqlCmd.CommandTimeout = (int)this.db.TimeOutSeconds;                                                                // タイムアウト時間
+
+                        // 実行結果格納用
+                        int result = 0;
+                        int errorColNo = 0;
+                        string errorInfo = string.Empty;
+
+                        // プロシージャ実行
+                        using (SqlDataReader reader = sqlCmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                // プロシージャの実行結果を取得
+                                result = int.Parse(reader["result"].ToString()); // 実行結果
+                                errorColNo = int.Parse(reader["error_col"].ToString()); // エラー有無列番号
+                                errorInfo = reader["error_info"].ToString();     // エラーメッセージ
+                            }
+                        }
+
+                        // プロシージャの実行エラーが発生している場合、エラー情報用の一時テーブルに格納されているエラー情報を取得
+                        if(result < 0)
+                        {
+                            resultMsg = errorInfo;
+                            if (result == Result.NGPerRow)
+                            {
+                                // 行単位のエラーの場合
+                                List<ComDao.UploadErrorInfo> errorInfoList = new();
+
+                                // エラー情報取得用のSQLを取得
+                                TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.GetErrorInfoForExcelPort, out string errInfoSql);
+                                sqlCmd = new SqlCommand(errInfoSql, connection);
+                                sqlCmd.Transaction = transaction;
+
+                                // エラー情報を取得
+                                using (SqlDataReader reader = sqlCmd.ExecuteReader())
+                                {
+                                    while (reader.Read())
+                                    {
+                                        // エラー情報リストに格納
+                                        errorInfoList.Add(TMQUtil.setTmpErrorInfo(
+                                            int.Parse(reader["row_no"].ToString())
+                                            , int.Parse(reader["column_no"].ToString())
+                                            , string.Empty
+                                            , reader["error"].ToString()
+                                            , int.Parse(reader["data_direction"].ToString())
+                                            , reader["proc_div"].ToString()
+                                            , reader["proc_div_name"].ToString()));
+                                    }
+                                }
+
+                                // エラー情報シートの最終行を取得
+                                int lastRowNo = this.ExcelCmd.GetLastRowNo(SheetNo.ErrorInfoDownloaded.ToString());
+                                List<string> errorRangeList = new();
+                                if (RowNo.ErrorInfoSheetDataStart <= lastRowNo)
+                                {
+                                    // エラー情報シートからエラー設定先のセル範囲情報を取得
+                                    errorRangeList = getErrorCellRangeList(lastRowNo);
+                                    // エラー情報シートをクリア
+                                    this.ExcelCmd.Clear(new string[] { RowNo.ErrorInfoSheetDataStart.ToString() + ":" + lastRowNo.ToString(), "1", SheetNo.ErrorInfoDownloaded.ToString() });
+                                }
+
+                                // エラー情報が設定されているセルのみクリアする
+                                foreach (string errRange in errorRangeList)
+                                {
+                                    // 先頭シートのコメントをクリア
+                                    this.ExcelCmd.ClearCellComment(new string[] { errRange });
+                                    // 先頭シートのエラー背景色をクリア
+                                    this.ExcelCmd.BackgroundColor(new string[] { errRange, "NOCOLOR" });
+                                }
+
+                                // 先頭シートの最終行を取得
+                                lastRowNo = this.ExcelCmd.GetLastRowNo(sheetNo.ToString());
+                                // 先頭シートのエラー有無列をクリア
+                                string errorColLetter = ToAlphabet(errorColNo);
+                                if (!string.IsNullOrEmpty(errorColLetter))
+                                {
+                                    // 値のみをクリア
+                                    this.ExcelCmd.Clear(new string[] { string.Format("{0}{1}:{0}{2}", errorColLetter, RowNo.InputSheetDataStart, lastRowNo), "2" });
+                                }
+
+                                // エラー情報シートに格納
+                                this.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms, errorColLetter);
+                            }
+
+                            //失敗
+                            // ロールバックして終了
+                            transaction.Rollback();
+                            return false;
+                        }
+
+                        // コミットして終了
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        // ロールバックして終了
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             /// <summary>
             /// ExcelPortアップロード用データの取得
             /// </summary>
@@ -1833,6 +2190,7 @@ namespace CommonTMQUtil
                 return true;
             }
 
+
             /// <summary>
             /// ExcelPort出力可能最大行数チェック
             /// </summary>
@@ -1870,12 +2228,12 @@ namespace CommonTMQUtil
             /// <param name="fileName">ファイル名</param>
             /// <param name="ms">メモリストリーム</param>
             /// <returns></returns>
-            public bool SetErrorInfoSheet(IFormFile file, List<ComBase.UploadErrorInfo> errorInfoList, ref string fileType, ref string fileName, ref MemoryStream ms)
+            public bool SetErrorInfoSheet(IFormFile file, List<ComBase.UploadErrorInfo> errorInfoList, ref string fileType, ref string fileName, ref MemoryStream ms, string errColLatter = "")
             {
                 // エラー情報シートへ設定
                 int startDataIdx = this.ErrorInfoList.Count;
                 this.ErrorInfoList.AddRange(errorInfoList);
-                return setErrorInfoSheet(file, startDataIdx, ref fileType, ref fileName, ref ms);
+                return setErrorInfoSheet(file, startDataIdx, ref fileType, ref fileName, ref ms, errColLatter);
             }
 
             /// <summary>
@@ -2865,7 +3223,7 @@ namespace CommonTMQUtil
                                 setCellValueToDataClass<T>(define, properites, tmpResult, key);
                                 keys.Add(key);
                             }
-                            catch(Exception ex)
+                            catch (Exception ex)
                             {
                                 // 不正な値が入力されている場合、処理を戻す
                                 // 「入力内容が不正です。再ダウンロードしてください。」
@@ -3037,7 +3395,7 @@ namespace CommonTMQUtil
                                 var unuseFactoryIdList = factoryIdStr.Split("|", StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string unuseFactoryId in unuseFactoryIdList)
                                 {
-                                    if(!int.TryParse(unuseFactoryId, out int factoryId))
+                                    if (!int.TryParse(unuseFactoryId, out int factoryId))
                                     {
                                         // 不正な値が入力されている場合、処理を戻す
                                         // 「入力内容が不正です。再ダウンロードしてください。」
@@ -3747,6 +4105,865 @@ namespace CommonTMQUtil
             }
 
             /// <summary>
+            /// アップロード条件のチェック(プロシージャで実施)
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="ctrlGrpId"></param>
+            /// <param name="resultList"></param>
+            /// <param name="errorMsg"></param>
+            /// <param name="checkFlg"></param>
+            /// <returns></returns>
+            private List<ComBase.UploadErrorInfo> checkUploadConditionByProcedure<T>(string ctrlGrpId, List<string> errorRangeList, ref List<T> resultList, ref string errorMsg, bool checkFlg = true)
+            {
+                // エラー内容格納クラス
+                List<ComBase.UploadErrorInfo> errorInfo = new List<ComBase.UploadErrorInfo>();
+
+                // ファイル入力項目定義情報を取得
+                ComBase.InputDefineCondition param = new ComBase.InputDefineCondition()
+                {
+                    ReportId = Template.ReportId,
+                    SheetNo = this.UploadCondition.SheetNo,
+                    ControlGroupId = ctrlGrpId,
+                    LanguageId = this.languageId,
+                    FactoryId = TMQConsts.CommonFactoryId
+                };
+                var reportInfoList = TMQUtil.SqlExecuteClass.SelectList<InputDefineForExcelPort>(SqlName.GetInputControlDefineForExcelPort, SqlName.SubDirName, param, db);
+                if (reportInfoList == null || reportInfoList.Count == 0)
+                {
+                    // 取得できない場合、処理を戻す
+                    // 「指定されたEXCELのフォーマットが不正です。」
+                    errorMsg = GetResMessage(ComRes.ID.ID141120010, this.languageId, this.msgResources);
+                    return errorInfo;
+                }
+
+                // 検索結果クラスのプロパティを列挙
+                var properites = typeof(T).GetProperties();
+                // 1レコード分の行数を取得する
+                int addRow = reportInfoList[0].RecordCount;
+                // 入力方式を取得
+                int dataDirection = reportInfoList[0].DataDirection;
+                // 開始行番号を取得
+                int rowNo = reportInfoList[0].StartRowNo;
+
+                // 先頭シートの最終行を取得
+                int lastRowNo = this.ExcelCmd.GetLastRowNo();
+                string rowRange = string.Format("{0}:{1}", rowNo, lastRowNo);
+
+                // エラー情報が設定されているセルのみクリアする
+                foreach (string range in errorRangeList)
+                {
+                    // 先頭シートのコメントをクリア
+                    this.ExcelCmd.ClearCellComment(new string[] { range });
+                    // 先頭シートのエラー背景色をクリア
+                    this.ExcelCmd.BackgroundColor(new string[] { range, "NOCOLOR" });
+                }
+                // 先頭シートのエラー有無列をクリア
+                var errorColInfo = reportInfoList.Where(x => x.EpColumnDivision == ColumnDivision.Error).ToList();
+                if (errorColInfo != null)
+                {
+                    foreach (var errorCol in errorColInfo)
+                    {
+                        // エラー有無の列番号を取得
+                        this.ErrorColNoDic.Add(errorCol.ControlGroupId, errorCol.StartColumnNo);
+                        string errorColLetter = GetErrorColLetter(errorCol.ControlGroupId);
+                        if (!string.IsNullOrEmpty(errorColLetter))
+                        {
+                            // 値のみをクリア
+                            this.ExcelCmd.Clear(new string[] { string.Format("{0}{1}:{0}{2}", errorColLetter, rowNo, lastRowNo), "2" });
+                        }
+                    }
+                }
+
+                // キー項目、送信時処理ID、工場IDの項目定義を取得
+                var keyDefines = reportInfoList.Where(x => x.EpColumnDivision == ColumnDivision.Key).ToList();
+                var sendProcIdDefine = reportInfoList.Where(x => x.EpColumnDivision == ColumnDivision.SendProcId).FirstOrDefault();
+                var sendProcNameDefine = reportInfoList.Where(x => x.EpSelectIdColumnNo == sendProcIdDefine.StartColumnNo).FirstOrDefault();
+                var factoryIdDefine = reportInfoList.Where(x => x.EpColumnDivision == ColumnDivision.FactoryId).FirstOrDefault();
+                var factoryNameDefine = reportInfoList.Where(x => x.EpSelectIdColumnNo == factoryIdDefine.StartColumnNo).FirstOrDefault();
+
+                // 選択項目の出力定義を抽出
+                var selectItemDefineList = reportInfoList.Where(
+                    x => x.ColumnType == ColumnType.ComboBox ||
+                    x.ColumnType == ColumnType.MultiListBox ||
+                    x.ColumnType == ColumnType.FormSelect).ToList();
+
+                var factoryIdList = new List<int>();
+                factoryIdList.AddRange(this.TargetFactoryIdList);
+                //システム共通の階層も併せて取得する
+                if (!factoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
+                {
+                    factoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
+                }
+
+                var itemDataDic = new Dictionary<string, List<Dictionary<string, object>>>();
+                foreach (var define in selectItemDefineList)
+                {
+                    string grpId = define.EpSelectGroupId;
+                    string relationId = define.EpRelationId;
+                    string relationParam = define.EpRelationParameters;
+                    if (itemDataDic.ContainsKey(grpId))
+                    {
+                        // 取得済みの場合、スキップ
+                        continue;
+                    }
+                    // コンボ選択アイテムデータの取得
+                    var selectItemList = getComboBoxData(grpId, relationId, relationParam, factoryIdList);
+                    if (selectItemList.Count > 0)
+                    {
+                        itemDataDic.Add(grpId, selectItemList);
+                    }
+                }
+
+                // 送信時処理用翻訳リストを取得
+                if (itemDataDic.ContainsKey(sendProcNameDefine.EpSelectGroupId))
+                {
+                    this.procDivItemList = itemDataDic[sendProcNameDefine.EpSelectGroupId];
+                }
+
+                int index = 0;
+                int sheetNo = Template.OutputSheetNo;
+
+
+                while (true)
+                {
+                    // エラー内容一時格納クラス
+                    List<ComBase.UploadErrorInfo> tmpErrorInfo = new List<ComBase.UploadErrorInfo>();
+
+                    bool flg = false; // データ存在チェックフラグ
+                    object tmpResult = Activator.CreateInstance<T>();
+                    bool rowCheckFlg = checkFlg; // 行の入力チェック実施フラグ
+
+                    if (index > 0)
+                    {
+                        rowNo += addRow;
+                    }
+
+                    // 送信時処理IDを取得
+                    string sendProcIdStr = getCellValueBySheetNo(sheetNo, sendProcIdDefine.StartColumnNo, rowNo);
+
+                    string sendProcIdName = getCellValueBySheetNo(sheetNo, sendProcNameDefine.StartColumnNo, rowNo);
+                    if (!string.IsNullOrEmpty(sendProcIdName))
+                    {
+                        //ラベルを正とする
+                        var tmpId = getItemValue(procDivItemList, TMQConsts.CommonFactoryId, ColName.Name, sendProcIdName, ColName.Id).ToString();
+                        if (tmpId != null)
+                        {
+                            sendProcIdStr = tmpId.ToString();
+                        }
+                    }
+                    else
+                    {
+                        //ラベルが空の場合、ラベルを正として処理対象外とする
+                        sendProcIdStr = string.Empty;
+                    }
+
+                    // キー列値を取得
+                    List<string> keys = new List<string>();
+                    foreach (var define in keyDefines)
+                    {
+                        var key = getCellValueBySheetNo(sheetNo, define.StartColumnNo, rowNo);
+                        if (!string.IsNullOrEmpty(key))
+                        {
+                            try
+                            {
+                                // キー列値をデータクラスへセット
+                                setCellValueToDataClass<T>(define, properites, tmpResult, key);
+                                keys.Add(key);
+                            }
+                            catch (Exception ex)
+                            {
+                                // 不正な値が入力されている場合、処理を戻す
+                                // 「入力内容が不正です。再ダウンロードしてください。」
+                                errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                return errorInfo;
+                            }
+                        }
+                    }
+                    if (string.IsNullOrEmpty(sendProcIdStr))
+                    {
+                        // 送信時処理ID列が空の場合
+                        if (keys.Count == 0)
+                        {
+                            // キー列が空の場合はデータ未設定行とみなし、処理終了
+                            break;
+                        }
+
+                        // 処理対象外のためスキップ
+                        index++;
+                        continue;
+                    }
+                    var sendProcId = Convert.ToInt32(sendProcIdStr);
+                    if (keys.Count < keyDefines.Count)
+                    {
+                        // 新規行の場合
+                        if (sendProcId != TMQConsts.SendProcessId.Regist)
+                        {
+                            // 送信時処理IDが登録でない場合、送信時処理列にメッセージをセットする
+                            // 「新規追加データに対して内容更新・削除は指定できません。」
+                            var msg = GetResMessage(ComRes.ID.ID141120014, languageId, msgResources);
+                            tmpErrorInfo.Add(setTmpErrorInfo(rowNo, sendProcNameDefine.StartColumnNo, sendProcNameDefine.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                            setErrorInfo(ref errorInfo, tmpErrorInfo);
+                            index++;
+                        }
+                    }
+                    else
+                    {
+                        // 既存行の場合
+                        if (sendProcId != TMQConsts.SendProcessId.Update && sendProcId != TMQConsts.SendProcessId.Delete)
+                        {
+                            // 「既存データに対して登録は指定できません。」
+                            var msg = GetResMessage(ComRes.ID.ID141070006, languageId, msgResources);
+                            tmpErrorInfo.Add(setTmpErrorInfo(rowNo, sendProcNameDefine.StartColumnNo, sendProcNameDefine.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                            setErrorInfo(ref errorInfo, tmpErrorInfo);
+                            index++;
+                        }
+                    }
+                    if (sendProcId == TMQConsts.SendProcessId.Delete)
+                    {
+                        //削除行は入力チェックしない
+                        rowCheckFlg = false;
+                    }
+
+                    // 工場IDを取得
+                    var targetFactoryId = -1;
+                    if (factoryIdDefine != null)
+                    {
+                        string factoryIdStr = getCellValueBySheetNo(sheetNo, factoryIdDefine.StartColumnNo, rowNo);
+                        if (factoryNameDefine != null)
+                        {
+                            //ラベルを正として工場IDを取得する
+                            string factoryName = getCellValueBySheetNo(sheetNo, factoryNameDefine.StartColumnNo, rowNo);
+                            if (!string.IsNullOrEmpty(factoryName))
+                            {
+                                var tmpId = getItemValueWithoutFactoryId(itemDataDic[factoryNameDefine.EpSelectGroupId], ColName.Name, factoryName, ColName.Id);
+                                if (tmpId != null)
+                                {
+                                    factoryIdStr = tmpId.ToString();
+                                }
+                            }
+                        }
+
+                        if ((string.IsNullOrEmpty(factoryIdStr) || !int.TryParse(factoryIdStr, out int result)) && factoryIdDefine.EpSelectLinkColumnNo > 0 && factoryIdDefine.EpAutoExtentionColumnNo != null)
+                        {
+                            //工場IDが取得出来ていないかつ他の列の拡張により工場IDが決まる場合、そのアイテムデータから工場IDを取得する
+
+                            InputDefineForExcelPort reportInfo = reportInfoList.Where(x => x.EpSelectIdColumnNo == factoryIdDefine.EpSelectLinkColumnNo).FirstOrDefault();
+                            // 行番号をセット
+                            reportInfo.StartRowNo = rowNo;
+
+                            // 設定値を取得
+                            string val = getCellValueBySheetNo(sheetNo, reportInfo.StartColumnNo, reportInfo.StartRowNo);
+                            // 連動元列番号値を取得
+                            string linkColumnVal = getLinkColumnVal(reportInfo, tmpErrorInfo);
+                            // 連動元による絞り込み有無（連動元が工場IDの場合は除外）
+                            bool linkColumnFlg = reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
+                            
+                            // コンボボックス、複数選択リストボックス、画面選択列の場合
+                            // 対象行の選択項目IDを取得
+                            var selectId = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectIdColumnNo, reportInfo.StartRowNo);
+                            var selectIdDefine = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectIdColumnNo).FirstOrDefault();
+
+                            if (itemDataDic.ContainsKey(reportInfo.EpSelectGroupId))
+                            {
+                                var itemList = itemDataDic[reportInfo.EpSelectGroupId];
+                                if (itemList.Count > 0)
+                                {
+                                    if (!string.IsNullOrEmpty(val))
+                                    {
+                                        if (!val.Contains(","))
+                                        {
+                                            //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                            List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal, false);
+                                            if (targetItemList != null && targetItemList.Count > 0)
+                                            {
+                                                if (targetItemList.Count == 1)
+                                                {
+                                                    //1件の場合
+                                                    //工場IDが設定されている拡張列のキー（exparam1等）
+                                                    string exparamKey = targetItemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                    factoryIdStr = targetItemList[0].ContainsKey(exparamKey) ? targetItemList[0][exparamKey].ToString() : null;
+                                                }
+                                                else
+                                                {
+                                                    //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                    bool existsFlg = targetItemList.Exists(x => x[ColName.Id].ToString() == selectId);
+                                                    if (existsFlg)
+                                                    {
+                                                        //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                        targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId, linkColumnFlg, linkColumnVal, false);
+                                                        if (targetItemList != null && targetItemList.Count == 1)
+                                                        {
+                                                            //IDにより１件に絞れた場合
+                                                            //工場IDが設定されている拡張列のキー（exparam1等）
+                                                            string exparamKey = targetItemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                            factoryIdStr = targetItemList[0].ContainsKey(exparamKey) ? targetItemList[0][exparamKey].ToString() : null;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 選択値が空の場合
+                                        if (true.Equals(reportInfo.RequiredFlg))
+                                        {
+                                            // 必須項目の場合
+                                            if (itemList.Count == 1)
+                                            {
+                                                // 選択候補が1件の場合、その値をセットする
+                                                //工場IDが設定されている拡張列のキー（exparam1等）
+                                                string exparamKey = itemList[0].Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + factoryIdDefine.EpAutoExtentionColumnNo)).FirstOrDefault();
+                                                factoryIdStr = itemList[0].ContainsKey(exparamKey) ? itemList[0][exparamKey].ToString() : null;
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        var msg = string.Empty;
+
+                        if (!string.IsNullOrEmpty(factoryIdStr))
+                        {
+                            // 工場IDが取得できた場合のみ以下のチェックを実行
+                            if (!int.TryParse(factoryIdStr, out int factoryId))
+                            {
+                                // 不正な値が入力されている場合、処理を戻す
+                                // 「入力内容が不正です。再ダウンロードしてください。」
+                                errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                return errorInfo;
+                            }
+                            if (this.ApprovalFactoryIdList.Count > 0 && this.ApprovalFactoryIdList.Contains(factoryId))
+                            {
+                                // 変更履歴管理対象工場の場合
+                                // 「変更履歴管理対象の工場データは登録できません。」
+                                msg = GetResMessage(ComRes.ID.ID141290007, languageId, msgResources);
+                            }
+
+                            if (!string.IsNullOrEmpty(msg))
+                            {
+                                tmpErrorInfo.Add(setTmpErrorInfo(rowNo, sendProcNameDefine.StartColumnNo, sendProcNameDefine.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                setErrorInfo(ref errorInfo, tmpErrorInfo);
+                                index++;
+                                continue;
+                            }
+                            targetFactoryId = factoryId;
+
+                            // 工場IDをデータクラスへセット
+                            setCellValueToDataClass<T>(factoryIdDefine, properites, tmpResult, factoryIdStr);
+                        }
+                    }
+                    if (targetFactoryId < 0)
+                    {
+                        targetFactoryId = TMQConsts.CommonFactoryId;
+                    }
+
+                    // 送信時処理IDをデータクラスへセット
+                    setCellValueToDataClass<T>(sendProcIdDefine, properites, tmpResult, sendProcIdStr);
+
+                    // 取得できた項目定義分処理を行う
+                    foreach (InputDefineForExcelPort reportInfo in reportInfoList)
+                    {
+                        if (reportInfo.EpColumnDivision != null)
+                        {
+                            // 列区分が設定されている列は別にチェックを行うためスキップ
+                            continue;
+                        }
+                        if (reportInfo.EpSelectLinkColumnNo > 0 && reportInfo.EpAutoExtentionColumnNo != null)
+                        {
+                            // 自動表示拡張列番号が設定されている列は連動元のチェック時に値を設定するためスキップ
+                            continue;
+                        }
+
+                        // 行番号をセット
+                        reportInfo.StartRowNo = rowNo;
+
+                        // 設定値を取得
+                        string val = getCellValueBySheetNo(sheetNo, reportInfo.StartColumnNo, reportInfo.StartRowNo);
+                        // 連動元列番号値を取得
+                        string linkColumnVal = getLinkColumnVal(reportInfo, tmpErrorInfo);
+                        // 連動元による絞り込み有無（連動元が工場IDの場合は除外）
+                        bool linkColumnFlg = factoryIdDefine != null && reportInfo.EpSelectLinkColumnNo != factoryIdDefine.StartColumnNo && reportInfo.EpSelectLinkColumnNo > 0;
+
+                        if (string.IsNullOrEmpty(val))
+                        {
+                            // 値が取得できない場合
+                            if (reportInfo.ColumnType != ColumnType.ComboBox &&
+                                reportInfo.ColumnType != ColumnType.MultiListBox &&
+                                reportInfo.ColumnType != ColumnType.FormSelect)
+                            {
+                                // 選択項目でない場合、スキップ
+                                if (rowCheckFlg)
+                                {
+                                    if (reportInfo.RequiredFlg != null && (bool)reportInfo.RequiredFlg)
+                                    {
+                                        // 必須入力項目の場合、エラー内容を設定
+                                        // 「必須項目です。入力してください。」
+                                        var msg = GetResMessage(ComRes.ID.ID941270001, languageId, msgResources);
+                                        tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                    }
+                                }
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            // 入力項目が存在する場合、フラグをたてる
+                            flg = true;
+                        }
+
+                        //コンボボックス、複数選択リストボックス、画面選択列の場合の対象アイテムデータ
+                        Dictionary<string, object> targetItem = null;
+
+                        if (reportInfo.ColumnType != ColumnType.ComboBox &&
+                            reportInfo.ColumnType != ColumnType.MultiListBox &&
+                            reportInfo.ColumnType != ColumnType.FormSelect)
+                        {
+                            if (rowCheckFlg)
+                            {
+                                // アップロード共通チェック実行
+                                if (!ExecuteCommonUploadCheck(reportInfo, val, dataDirection, languageId, msgResources, this.db, tmpErrorInfo))
+                                {
+                                    if (reportInfo.StartColumnNo < sendProcIdDefine.StartColumnNo)
+                                    {
+                                        // 送信時処理ID列より前の列（非表示列）でエラーがある場合、処理を戻す
+                                        // 「入力内容が不正です。再ダウンロードしてください。」
+                                        errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                                        return errorInfo;
+                                    }
+                                    tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDiv = sendProcIdStr;
+                                    tmpErrorInfo[tmpErrorInfo.Count - 1].ProcDivName = sendProcIdName;
+                                    continue;
+                                }
+
+                                //書式チェック
+                                if (!string.IsNullOrEmpty(reportInfo.FormatText))
+                                {
+                                    if (!checkFormat(reportInfo, val))
+                                    {
+                                        // 書式チェックエラーの場合、エラーを設定し、スキップ
+                                        // 「{0}で入力してください。」
+                                        string error = GetResMessage(new string[] { ComRes.ID.ID941190002, reportInfo.FormatText }, languageId, msgResources);
+                                        tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, error, dataDirection, sendProcIdStr, sendProcIdName));
+                                        continue;
+                                    }
+
+                                }
+                            }
+                            else
+                            {
+                                //型チェックのみ行う（データクラスへの設定時にエラーとならないようにする）
+                                string error = string.Empty;
+                                if (!checkCellType(reportInfo, val, languageId, msgResources, ref error))
+                                {
+                                    // 型が異なる場合、スキップ
+                                    continue;
+                                }
+                            }
+
+                            if (reportInfo.ColumnType == ColumnType.Text)
+                            {
+                                // 文字列の場合、改行コード(\r,\n)を削除
+                                val = val.Replace("\r", "").Replace("\n", "");
+                            }
+                            else if (reportInfo.ColumnType == ColumnType.TextArea)
+                            {
+                                // テキストエリアの場合、改行コード(\r)を削除
+                                val = val.Replace("\r", "");
+                            }
+                            else if (reportInfo.DataType == ComReport.DataTypeInt || reportInfo.DataType == ComReport.DataTypeNum)
+                            {
+                                // 数値の場合、桁区切りを削除
+                                if (ComUtil.ConvertDecimal(val) != null)
+                                {
+                                    val = ComUtil.ConvertDecimal(val).ToString();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // コンボボックス、複数選択リストボックス、画面選択列の場合
+                            // 対象行の選択項目IDを取得
+                            var selectId = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectIdColumnNo, reportInfo.StartRowNo);
+                            var selectIdDefine = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectIdColumnNo).FirstOrDefault();
+
+                            //画面選択列のエラー設定フラグ
+                            bool formSelectError = false;
+
+                            if (itemDataDic.ContainsKey(reportInfo.EpSelectGroupId))
+                            {
+                                var itemList = itemDataDic[reportInfo.EpSelectGroupId];
+                                if (itemList.Count > 0)
+                                {
+                                    // 選択項目の場合、ここで必須チェックする
+                                    if (!string.IsNullOrEmpty(val))
+                                    {
+                                        //翻訳を正として、翻訳からIDを取得
+                                        object tmpId = null;
+                                        // 複数選択項目の場合、いずれかが不正なアイテムであればエラー
+                                        bool multErrorFlg = false;
+                                        if (reportInfo.ControlType != "0501" || !val.Contains(","))
+                                        {
+                                            if (targetFactoryId == TMQConsts.CommonFactoryId)
+                                            {
+                                                //工場IDが取得できていない場合
+
+                                                //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                                List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal, false);
+                                                if (targetItemList != null && targetItemList.Count > 0)
+                                                {
+                                                    if (targetItemList.Count == 1)
+                                                    {
+                                                        targetItem = targetItemList.FirstOrDefault();
+                                                        tmpId = targetItem[ColName.Id].ToString();
+                                                    }
+                                                    else
+                                                    {
+                                                        //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                        bool existsFlg = targetItemList.Exists(x => x[ColName.Id].ToString() == selectId);
+                                                        if (existsFlg)
+                                                        {
+                                                            //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                            targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId, linkColumnFlg, linkColumnVal, false);
+                                                            if (targetItemList != null && targetItemList.Count == 1)
+                                                            {
+                                                                //IDにより１件に絞れた場合
+                                                                targetItem = targetItemList.FirstOrDefault();
+                                                                tmpId = selectId;
+                                                            }
+                                                        }
+
+                                                        if (ComUtil.IsNullOrEmpty(tmpId))
+                                                        {
+                                                            //１件に絞れないためエラー
+                                                            // 「名称により項目を絞り込むことができません。画面より項目を指定してください。」
+                                                            var msg = GetResMessage(ComRes.ID.ID141340001, languageId, msgResources);
+                                                            tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                                            formSelectError = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                //翻訳に紐づくアイテムデータが複数存在するかチェック
+                                                List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, val, linkColumnFlg, linkColumnVal);
+                                                if (targetItemList != null && targetItemList.Count > 0)
+                                                {
+                                                    if (targetItemList.Count == 1)
+                                                    {
+                                                        targetItem = targetItemList.FirstOrDefault();
+                                                        tmpId = targetItem[ColName.Id].ToString();
+                                                    }
+                                                    else
+                                                    {
+                                                        //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                        object checkId = getItemValue(targetItemList, targetFactoryId, ColName.Id, selectId, ColName.Id);
+                                                        if (!ComUtil.IsNullOrEmpty(checkId))
+                                                        {
+                                                            //設定されているIDが正しい場合、そのアイテムデータを取得
+                                                            targetItem = getItemList(targetItemList, targetFactoryId, ColName.Id, selectId).FirstOrDefault();
+                                                            tmpId = checkId;
+                                                        }
+                                                        else
+                                                        {
+                                                            //設定されているIDが正しくない場合、翻訳に一致する先頭アイテムデータを取得
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId = targetItem[ColName.Id].ToString();
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // カンマ区切りの場合、分割して取得
+                                            var vals = val.Split(",");
+                                            foreach (var tmpVal in vals)
+                                            {
+                                                if (targetFactoryId == TMQConsts.CommonFactoryId)
+                                                {
+                                                    //工場IDが取得できていない場合
+
+                                                    //翻訳に紐づくアイテムデータが複数存在するかチェック(工場IDによる絞り込みは行わない)
+                                                    List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, tmpVal, linkColumnFlg, linkColumnVal, false);
+                                                    if (targetItemList != null && targetItemList.Count > 0)
+                                                    {
+                                                        if (targetItemList.Count == 1)
+                                                        {
+                                                            if (tmpId != null)
+                                                            {
+                                                                tmpId += "|";
+                                                            }
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId += targetItem[ColName.Id].ToString();
+                                                        }
+                                                        else
+                                                        {
+                                                            //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                            string tmpSelectId = targetItemList.Where(x => selectId.Split("|").Contains(x[ColName.Id].ToString())).Select(x => x[ColName.Id].ToString()).FirstOrDefault();
+                                                            if (!string.IsNullOrEmpty(tmpSelectId))
+                                                            {
+                                                                //設定されているIDが正しい場合、そのアイテムデータを取得(工場IDによる絞り込みは行わない)
+                                                                targetItemList = getItemList(targetItemList, targetFactoryId, ColName.Id, tmpSelectId, linkColumnFlg, linkColumnVal, false);
+                                                                if (targetItemList != null && targetItemList.Count == 1)
+                                                                {
+                                                                    //IDにより１件に絞れた場合
+                                                                    if (tmpId != null)
+                                                                    {
+                                                                        tmpId += "|";
+                                                                    }
+                                                                    targetItem = targetItemList.FirstOrDefault();
+                                                                    tmpId += tmpSelectId;
+                                                                }
+                                                            }
+
+                                                            if (string.IsNullOrEmpty(tmpSelectId) || targetItemList == null || targetItemList.Count != 1)
+                                                            {
+                                                                //１件に絞れないためエラー
+                                                                // 「名称により項目を絞り込むことができません。画面より項目を指定してください。」
+                                                                var msg = GetResMessage(ComRes.ID.ID141340001, languageId, msgResources);
+                                                                tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                                                formSelectError = true;
+                                                                multErrorFlg = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 選択項目IDが取得できない場合
+                                                        multErrorFlg = true;
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    //翻訳に紐づくアイテムデータが複数存在するかチェック
+                                                    List<Dictionary<string, object>> targetItemList = getItemList(itemList, targetFactoryId, ColName.Name, tmpVal, linkColumnFlg, linkColumnVal);
+                                                    if (targetItemList != null && targetItemList.Count > 0)
+                                                    {
+                                                        if (targetItemList.Count == 1)
+                                                        {
+                                                            if (tmpId != null)
+                                                            {
+                                                                tmpId += "|";
+                                                            }
+                                                            targetItem = targetItemList.FirstOrDefault();
+                                                            tmpId += targetItem[ColName.Id].ToString();
+                                                        }
+                                                        else
+                                                        {
+                                                            //複数ヒットした場合は設定されているIDが正しいかチェックする
+                                                            string tmpSelectId = targetItemList.Where(x => selectId.Split("|").Contains(x[ColName.Id].ToString())).Select(x => x[ColName.Id].ToString()).FirstOrDefault();
+                                                            if (!ComUtil.IsNullOrEmpty(tmpSelectId))
+                                                            {
+                                                                if (tmpId != null)
+                                                                {
+                                                                    tmpId += "|";
+                                                                }
+                                                                //設定されているIDが正しい場合、そのアイテムデータを取得
+                                                                targetItem = getItemList(targetItemList, targetFactoryId, ColName.Id, tmpSelectId).FirstOrDefault();
+                                                                tmpId += tmpSelectId;
+                                                            }
+                                                            else
+                                                            {
+                                                                //設定されているIDが正しくない場合、翻訳に一致する先頭アイテムデータを取得
+                                                                targetItem = targetItemList.FirstOrDefault();
+                                                                tmpId += targetItem[ColName.Id].ToString();
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 選択項目IDが取得できない場合
+                                                        multErrorFlg = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (!ComUtil.IsNullOrEmpty(tmpId) && !multErrorFlg)
+                                        {
+                                            // 選択項目IDが取得できた場合、Excelへ値をセット
+                                            selectId = tmpId.ToString();
+                                            setCellValueBySheetNo(sheetNo, selectIdDefine.StartColumnNo, reportInfo.StartRowNo, selectId);
+
+                                            //拡張項目の値をExcelに設定
+                                            setExParamValueToExcel(reportInfo, targetItem);
+                                        }
+                                        else
+                                        {
+                                            selectId = string.Empty;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 選択値が空の場合
+                                        if (true.Equals(reportInfo.RequiredFlg))
+                                        {
+                                            // 必須項目の場合
+                                            if (itemList.Count == 1)
+                                            {
+                                                // 選択候補が1件の場合、その値をセットする
+                                                val = itemList[0][ColName.Name].ToString();
+                                                selectId = itemList[0][ColName.Id].ToString();
+                                                targetItem = itemList[0];
+                                                // 入力項目が存在する場合、フラグをたてる
+                                                flg = true;
+                                            }
+                                            else
+                                            {
+                                                if (rowCheckFlg)
+                                                {
+                                                    // 選択項目でない場合、エラー内容を設定
+                                                    // 「必須項目です。入力してください。」
+                                                    var msg = GetResMessage(ComRes.ID.ID941270001, languageId, msgResources);
+                                                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                                }
+                                                continue;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            selectId = string.Empty;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                selectId = string.Empty;
+                            }
+                            if (!string.IsNullOrEmpty(selectId))
+                            {
+                                // 選択項目IDをデータクラスへセット
+                                setCellValueToDataClass<T>(selectIdDefine, properites, tmpResult, selectId);
+                            }
+                            else
+                            {
+                                // 選択項目IDが空の場合
+                                if (rowCheckFlg && !string.IsNullOrEmpty(val) && !formSelectError)
+                                {
+                                    // 選択項目が空でない場合
+                                    // 「選択内容が不正です。」
+                                    var msg = GetResMessage(ComRes.ID.ID141140004, languageId, msgResources);
+                                    tmpErrorInfo.Add(setTmpErrorInfo(reportInfo.StartRowNo, reportInfo.StartColumnNo, reportInfo.TranslationText, msg, dataDirection, sendProcIdStr, sendProcIdName));
+                                }
+
+                                continue;
+                            }
+                        }
+
+                        try
+                        {
+                            // 値をデータクラスに設定
+                            setCellValueToDataClass<T>(reportInfo, properites, tmpResult, val);
+
+                            //拡張項目の値をデータクラスに設定
+                            setExParamValueToDataClass(reportInfo, targetItem, tmpResult);
+                        }
+                        catch (Exception ex)
+                        {
+                            // 不正な値が入力されている場合、処理を戻す
+                            // 「入力内容が不正です。再ダウンロードしてください。」
+                            errorMsg = GetResMessage(ComRes.ID.ID141220009, this.languageId, this.msgResources);
+                            return errorInfo;
+                        }
+                    }
+
+                    // データが1件も取得できなかった場合、処理を抜ける
+                    if (!flg)
+                    {
+                        break;
+                    }
+
+                    // 行番号を設定する
+                    setDataClassValue(properites, tmpResult, "ROWNO", rowNo);
+
+                    // エラーがある場合、エラーフラグを立てる
+                    if (tmpErrorInfo.Count > 0)
+                    {
+                        setDataClassValue(properites, tmpResult, "ERRORFLG", true);
+                    }
+
+                    // データが存在する場合、リストに追加する
+                    setErrorInfo(ref errorInfo, tmpErrorInfo);
+                    resultList.Add((T)tmpResult);
+                    index++;
+                }
+                return errorInfo;
+
+                // 連動元の値を取得
+                string getLinkColumnVal(InputDefineForExcelPort reportInfo, List<ComBase.UploadErrorInfo> tmpErrorInfo)
+                {
+                    // 連動元の値を取得
+                    string linkColumnVal = getCellValueBySheetNo(sheetNo, reportInfo.EpSelectLinkColumnNo, reportInfo.StartRowNo);
+
+                    //連動元は基本ID列なので、ラベル列の定義を取得
+                    InputDefineForExcelPort linkReportInfo = reportInfoList.Where(x => x.EpSelectIdColumnNo == reportInfo.EpSelectLinkColumnNo).FirstOrDefault();
+                    if (linkReportInfo == null)
+                    {
+                        //ラベル列が無い場合は連動元列番号に設定された列を取得
+                        linkReportInfo = reportInfoList.Where(x => x.StartColumnNo == reportInfo.EpSelectLinkColumnNo).FirstOrDefault();
+                    }
+                    //連動元にエラーがあるか
+                    bool linkErrorFlg = tmpErrorInfo.Any(x => x.RowNo.Contains(rowNo) && x.ColumnNo.Contains(linkReportInfo.StartColumnNo));
+                    if (linkErrorFlg)
+                    {
+                        //連動元にエラーがある場合（IDが設定されていて、ラベルが適切でない等）、連動元の値は空とする
+                        linkColumnVal = string.Empty;
+                    }
+                    return linkColumnVal;
+                }
+
+                //自動表示拡張列の値をデータクラスに設定
+                void setExParamValueToDataClass(InputDefineForExcelPort reportInfo, Dictionary<string, object> targetItem, object tmpResult)
+                {
+                    //対象の連動元列番号が設定されている列定義を取得
+                    List<InputDefineForExcelPort> exReportInfoList = reportInfoList.Where(x => x.EpSelectLinkColumnNo == reportInfo.EpSelectIdColumnNo && x.EpAutoExtentionColumnNo != null).ToList();
+                    foreach (InputDefineForExcelPort exReportInfo in exReportInfoList)
+                    {
+                        //値が設定されている拡張列のキー（exparam1等）
+                        string exparamKey = targetItem.Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + exReportInfo.EpAutoExtentionColumnNo)).FirstOrDefault();
+                        if (string.IsNullOrEmpty(exparamKey))
+                        {
+                            continue;
+                        }
+                        //値を取得
+                        string exVal = targetItem.ContainsKey(exparamKey) ? targetItem[exparamKey].ToString() : null;
+                        //値をデータクラスに設定
+                        setCellValueToDataClass<T>(exReportInfo, properites, tmpResult, exVal);
+                    }
+                }
+
+                //自動表示拡張列の値をExcelに設定
+                void setExParamValueToExcel(InputDefineForExcelPort reportInfo, Dictionary<string, object> targetItem)
+                {
+                    //対象の連動元列番号が設定されている列定義を取得
+                    List<InputDefineForExcelPort> exReportInfoList = reportInfoList.Where(x => x.EpSelectLinkColumnNo == reportInfo.EpSelectIdColumnNo && x.EpAutoExtentionColumnNo != null).ToList();
+                    foreach (InputDefineForExcelPort exReportInfo in exReportInfoList)
+                    {
+                        // 行番号をセット
+                        exReportInfo.StartRowNo = rowNo;
+
+                        //値が設定されている拡張列のキー（exparam1等）
+                        string exparamKey = targetItem.Select(x => x.Key).Where(x => x.ToUpper().Equals("EXPARAM" + exReportInfo.EpAutoExtentionColumnNo)).FirstOrDefault();
+                        if (string.IsNullOrEmpty(exparamKey))
+                        {
+                            continue;
+                        }
+                        //値を取得
+                        string exVal = targetItem.ContainsKey(exparamKey) ? targetItem[exparamKey].ToString() : null;
+                        //値をExcelに設定
+                        setCellValueBySheetNo(sheetNo, exReportInfo.StartColumnNo, exReportInfo.StartRowNo, exVal);
+                    }
+                }
+            }
+
+            /// <summary>
             /// 選択項目値の取得
             /// </summary>
             /// <param name="itemList">選択項目リスト</param>
@@ -4136,7 +5353,7 @@ namespace CommonTMQUtil
             /// <param name="fileName">ファイル名</param>
             /// <param name="ms">メモリストリーム</param>
             /// <returns></returns>
-            private bool setErrorInfoSheet(IFormFile file, int startDataIdx, ref string fileType, ref string fileName, ref MemoryStream ms)
+            private bool setErrorInfoSheet(IFormFile file, int startDataIdx, ref string fileType, ref string fileName, ref MemoryStream ms, string errColLatter)
             {
                 string reportId = Template.ReportId;
 
@@ -4191,7 +5408,7 @@ namespace CommonTMQUtil
                             });
                             // 処理区分名
                             var procDivName = info.ProcDivName;
-                            if (string.IsNullOrEmpty(procDivName))
+                            if (string.IsNullOrEmpty(procDivName) && !string.IsNullOrEmpty(info.ProcDiv))
                             {
                                 procDivName = this.procDivItemList.Where(x => x[ColName.Id].ToString().Equals(info.ProcDiv)).Select(x => x[ColName.Name].ToString()).FirstOrDefault();
                             }
@@ -4219,7 +5436,7 @@ namespace CommonTMQUtil
                                 rangeTo, ColorValues.Error });
 
                             string rangeErr;
-                            string errorColLetter = GetErrorColLetter(info.CtrlGrpId);
+                            string errorColLetter = string.IsNullOrEmpty(errColLatter) ? GetErrorColLetter(info.CtrlGrpId): errColLatter;
                             if (!string.IsNullOrEmpty(errorColLetter))
                             {
                                 // エラー有無列に「あり」設定

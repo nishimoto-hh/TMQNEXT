@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CommonTMQUtil.CommonTMQUtil.ComExcelPort;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -1169,8 +1170,9 @@ namespace BusinessLogic_MC0001
                 this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
 
             // ExcelPortテンプレートファイル情報初期化
+            bool isCreateTempTbl = Convert.ToInt32(this.IndividualDictionary[ConditionValName.TargetSheetNo]) != TMQUtil.ComExcelPort.SheetNo.Machine;
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary, false, isCreateTempTbl))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
@@ -1179,34 +1181,42 @@ namespace BusinessLogic_MC0001
             // ExcelPortアップロードデータの取得
             if (excelPort.UploadCondition.SheetNo == 1)
             {
-                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
-                    out List<BusinessLogicDataClass_MC0001.excelPortMachineList> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                // 入力チェック・アップロード処理(プロシージャにて実施)
+                if(!excelPort.registExcelDataByProc(TargetCtrlId.ExcelPortUpload, file, excelPort.UploadCondition.SheetNo, ref resultMsg, ref fileType, ref fileName, ref ms))
                 {
                     this.Status = CommonProcReturn.ProcStatus.Error;
                     return ComConsts.RETURN_RESULT.NG;
                 }
 
-                // エラー情報リスト
-                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+                // 高速化対応により、プロシージャで入力チェック・登録処理を実施するためコメントアウト
+                //if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, TargetCtrlId.ExcelPortUpload,
+                //    out List<BusinessLogicDataClass_MC0001.excelPortMachineList> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                //{
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
 
-                // 機器台帳登録チェック処理
-                if (!checkExcelPortRegistDetail(ref resultList, ref errorInfoList))
-                {
-                    if (errorInfoList.Count > 0)
-                    {
-                        // エラー情報シートへ設定
-                        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
-                    }
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
+                //// エラー情報リスト
+                //List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
 
-                // 機器台帳登録処理
-                if (!executeExcelPortRegistDetail(resultList))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
+                //// 機器台帳登録チェック処理
+                //if (!checkExcelPortRegistDetail(ref resultList, ref errorInfoList))
+                //{
+                //    if (errorInfoList.Count > 0)
+                //    {
+                //        // エラー情報シートへ設定
+                //        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                //    }
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
+
+                //// 機器台帳登録処理
+                //if (!executeExcelPortRegistDetail(resultList))
+                //{
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
 
             }
             else if (excelPort.UploadCondition.SheetNo == 2)

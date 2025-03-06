@@ -151,13 +151,19 @@
     <None Remove="Resources\sql\Common\Structure_GetLowerList.sql" />
     <None Remove="Resources\sql\Common\Structure_GetPartsLocationList.sql" />
     <None Remove="Resources\sql\Common\Structure_GetTargetLayerList.sql" />
+    <None Remove="Resources\sql\ExcelPort\CreateTempErrorTable.sql" />
+    <None Remove="Resources\sql\ExcelPort\CreateTempTableForItem.sql" />
+    <None Remove="Resources\sql\ExcelPort\CreateTempTableForMA0001.sql" />
+    <None Remove="Resources\sql\ExcelPort\CreateTempTableForMC0001.sql" />
     <None Remove="Resources\sql\ExcelPort\Create_TempStructureAll.sql" />
+    <None Remove="Resources\sql\ExcelPort\GetErrorInfoForExcelPort.sql" />
     <None Remove="Resources\sql\ExcelPort\GetExcelPortDownLoadList.sql" />
     <None Remove="Resources\sql\ExcelPort\GetExcelPortTargetInfo.sql" />
     <None Remove="Resources\sql\ExcelPort\GetExcelPortVersion.sql" />
     <None Remove="Resources\sql\ExcelPort\GetInputControlDefineForExcelPort.sql" />
     <None Remove="Resources\sql\ExcelPort\InsertNullJobIdForPartsList.sql" />
     <None Remove="Resources\sql\ExcelPort\Insert_StructureList.sql" />
+    <None Remove="Resources\sql\ExcelPort\RegistExcelPortByProc.sql" />
     <None Remove="Resources\sql\ExcelPort\WITH_GetExcelPortDownLoadList.sql" />
     <None Remove="Resources\sql\Excel\ComInoutItemDefine_GetInfo.sql" />
     <None Remove="Resources\sql\Excel\CreateTableTemp.sql" />
@@ -696,6 +702,7 @@
     <None Remove="Resources\sql\Maintenance\GetCountRelationHistoryMachine.sql" />
     <None Remove="Resources\sql\Maintenance\GetCountTargetSchedule.sql" />
     <None Remove="Resources\sql\Maintenance\GetEquipmentInfoByScheduleDetailId.sql" />
+    <None Remove="Resources\sql\Maintenance\GetErrorInfoForExcelPort.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortHistoryFailure.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortInspectionMachine.sql" />
     <None Remove="Resources\sql\Maintenance\GetExcelPortMaintenance.sql" />
@@ -1060,8 +1067,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\ExcelPort\CreateTempTableForItem.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\GetErrorInfoForExcelPort.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\ExcelPort\CreateTempTableForMA0001.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\CreateTempTableForMC0001.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\GetErrorInfoForExcelPort.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\Common\HistoryManagement\IsHistoryManagementFactory.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\CreateTempErrorTable.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\RegistExcelPortByProc.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetLongPlanList.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\GetWarningComment.sql" />
     <EmbeddedResource Include="Resources\sql\HistoryLongPlan\List\WITH_GetLongPlanList.sql" />

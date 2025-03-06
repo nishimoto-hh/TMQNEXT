@@ -23,6 +23,7 @@ using StructureType = CommonTMQUtil.CommonTMQUtil.StructureLayerInfo.StructureTy
 using ReportDao = CommonSTDUtil.CommonSTDUtil.CommonOutputReportDataClass;
 using GroupId = CommonTMQUtil.CommonTMQConstants.MsStructure.GroupId;
 using System.Reflection.PortableExecutable;
+using static CommonTMQUtil.CommonTMQUtil.ComExcelPort;
 
 namespace BusinessLogic_MA0001
 {
@@ -1648,8 +1649,9 @@ namespace BusinessLogic_MA0001
                 this.db, this.UserId, this.BelongingInfo, this.LanguageId, this.FormNo, this.searchConditionDictionary, this.messageResources);
 
             // ExcelPortテンプレートファイル情報初期化
+            bool isCreateTempTbl = Convert.ToInt32(this.IndividualDictionary[ConditionValName.TargetSheetNo]) != TMQUtil.ComExcelPort.SheetNo.Maintenance;
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, this.IndividualDictionary, false, isCreateTempTbl))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
@@ -1658,43 +1660,52 @@ namespace BusinessLogic_MA0001
             // ExcelPortアップロードデータの取得＆登録
             if (excelPort.UploadCondition.SheetNo == TMQUtil.ComExcelPort.SheetNo.Maintenance)
             {
+                // 入力チェック・アップロード処理(プロシージャにて実施)
+                if (!excelPort.registExcelDataByProc(ConductInfo.ExcelPort.ExcelPortUpload, file, excelPort.UploadCondition.SheetNo, ref resultMsg, ref fileType, ref fileName, ref ms))
+                {
+                    this.Status = CommonProcReturn.ProcStatus.Error;
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 高速化対応により、プロシージャで入力チェック・登録処理を実施するためコメントアウト
                 //保全活動シート
-                if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, ConductInfo.ExcelPort.ExcelPortUpload,
-                    out List<Dao.excelPortMaintenance> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
-                //IListに変換する
-                IList<Dao.excelPortMaintenance> list = resultList as IList<Dao.excelPortMaintenance>;
-                //最下層の構成IDを取得して機能場所階層ID、職種機種階層IDにセットする
-                TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.excelPortMaintenance>(ref list, new List<StructureType> { StructureType.Location, StructureType.Job }, true);
-                resultList = list.ToList();
+                //if (!excelPort.GetUploadDataList(file, this.IndividualDictionary, ConductInfo.ExcelPort.ExcelPortUpload,
+                //    out List<Dao.excelPortMaintenance> resultList, out resultMsg, ref fileType, ref fileName, ref ms))
+                //{
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
 
-                // ユーザ役割の取得
-                Dao.userRole role = new Dao.userRole();
-                setUserRole<Dao.userRole>(role);
+                ////IListに変換する
+                //IList<Dao.excelPortMaintenance> list = resultList as IList<Dao.excelPortMaintenance>;
+                ////最下層の構成IDを取得して機能場所階層ID、職種機種階層IDにセットする
+                //TMQUtil.StructureLayerInfo.setBottomLayerStructureIdToDataClass<Dao.excelPortMaintenance>(ref list, new List<StructureType> { StructureType.Location, StructureType.Job }, true);
+                //resultList = list.ToList();
 
-                // エラー情報リスト
-                List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
+                //// ユーザ役割の取得
+                //Dao.userRole role = new Dao.userRole();
+                //setUserRole<Dao.userRole>(role);
+
+                //// エラー情報リスト
+                //List<ComDao.UploadErrorInfo> errorInfoList = new List<CommonDataBaseClass.UploadErrorInfo>();
                 // チェック処理
-                if (!checkExcelPortRegistMaintenance(ref resultList, ref errorInfoList, role))
-                {
-                    if (errorInfoList.Count > 0)
-                    {
-                        // エラー情報シートへ設定
-                        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
-                    }
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
+                //if (!checkExcelPortRegistMaintenance(ref resultList, ref errorInfoList, role))
+                //{
+                //    if (errorInfoList.Count > 0)
+                //    {
+                //        // エラー情報シートへ設定
+                //        excelPort.SetErrorInfoSheet(file, errorInfoList, ref fileType, ref fileName, ref ms);
+                //    }
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
 
-                // 登録処理
-                if (!executeExcelPortRegistMaintenance(resultList, role))
-                {
-                    this.Status = CommonProcReturn.ProcStatus.Error;
-                    return ComConsts.RETURN_RESULT.NG;
-                }
+                //// 登録処理
+                //if (!executeExcelPortRegistMaintenance(resultList, role))
+                //{
+                //    this.Status = CommonProcReturn.ProcStatus.Error;
+                //    return ComConsts.RETURN_RESULT.NG;
+                //}
             }
             else if (excelPort.UploadCondition.SheetNo == TMQUtil.ComExcelPort.SheetNo.HistoryFailure)
             {

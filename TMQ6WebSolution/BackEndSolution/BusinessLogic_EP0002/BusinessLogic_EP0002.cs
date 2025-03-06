@@ -184,7 +184,7 @@ namespace BusinessLogic_EP0002
 
             // ExcelPortテンプレートファイル情報初期化
             this.Status = CommonProcReturn.ProcStatus.Valid;
-            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true))
+            if (!excelPort.InitializeExcelPortTemplateFile(out resultMsg, out detailMsg, true, null, false, false))
             {
                 this.Status = CommonProcReturn.ProcStatus.Error;
                 return ComConsts.RETURN_RESULT.NG;
