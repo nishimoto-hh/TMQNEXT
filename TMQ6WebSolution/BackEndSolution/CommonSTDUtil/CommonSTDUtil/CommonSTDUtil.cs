@@ -5419,7 +5419,7 @@ namespace CommonSTDUtil.CommonSTDUtil
             {
                 var array = param[paramName] as object[];
                 var existsFrom = false;
-                sbSql.Append("(");
+                StringBuilder sbSqlFromTo = new StringBuilder();
                 for (int i = 0; i < array.Length; i++)
                 {
                     if (IsNullOrEmpty(array[i])) { continue; }
@@ -5429,7 +5429,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                         // From
                         existsFrom = true;
                         paramName2 = paramName + "From";
-                        sbSql.Append(string.Format("{0} >= @{1}", colName, paramName2));
+                        sbSqlFromTo.Append(string.Format("{0} >= @{1}", colName, paramName2));
                     }
                     else
                     {
@@ -5439,11 +5439,17 @@ namespace CommonSTDUtil.CommonSTDUtil
                             sbSql.Append(" AND ");
                         }
                         paramName2 = paramName + "To";
-                        sbSql.Append(string.Format("{0} <= @{1}", colName, paramName2));
+                        sbSqlFromTo.Append(string.Format("{0} <= @{1}", colName, paramName2));
                     }
                     param.Add(paramName2, array[i]);
                 }
-                sbSql.AppendLine(")");
+                if(sbSqlFromTo.Length > 0)
+                {
+                    // 2025/03/14 ATTS FromToの条件の何れも未入力の場合は出力しない
+                    sbSql.Append("(");
+                    sbSql.Append(sbSqlFromTo);
+                    sbSql.AppendLine(")");
+                }
                 param.Remove(paramName);
             }
             else if (isMultiCheckBox)
