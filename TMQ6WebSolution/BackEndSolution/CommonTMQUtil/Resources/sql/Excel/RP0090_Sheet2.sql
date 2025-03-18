@@ -1,3 +1,50 @@
+WITH schedule_start_date AS ( -- 保全スケジュールを機器別管理基準内容IDごとに取得(同じ値なら最大の開始日のレコード)
+    SELECT
+        sc.maintainance_schedule_id
+        , sc.management_standards_content_id
+        , sc.cycle_year
+        , sc.cycle_month
+        , sc.cycle_day
+        , sc.start_date
+        , sc.disp_cycle
+        , sc.update_datetime 
+    FROM
+        mc_maintainance_schedule AS sc 
+    WHERE
+        NOT EXISTS ( 
+            SELECT
+                * 
+            FROM
+                mc_maintainance_schedule AS sub 
+            WHERE
+                sc.management_standards_content_id = sub.management_standards_content_id 
+                AND sc.start_date < sub.start_date
+        )
+)
+, -- 上で取得した保全スケジュールを機器別管理基準内容ID、開始日ごとに取得(同じ値なら最大の更新日時のレコード)
+schedule AS ( 
+    SELECT
+        main.maintainance_schedule_id
+        , main.management_standards_content_id
+        , main.cycle_year
+        , main.cycle_month
+        , main.cycle_day
+        , main.start_date
+        , main.disp_cycle 
+    FROM
+        schedule_start_date AS main 
+    WHERE
+        NOT EXISTS ( 
+            SELECT
+                * 
+            FROM
+                schedule_start_date AS sub 
+            WHERE
+                main.management_standards_content_id = sub.management_standards_content_id 
+                AND main.start_date = sub.start_date 
+                AND main.update_datetime < sub.update_datetime
+        )
+) 
 SELECT
     lplan.long_plan_id,											-- 長計件名ID
     machine.machine_id,											-- 機番ID
@@ -132,57 +179,17 @@ SELECT
     , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 
 FROM
-    ln_long_plan AS lplan
-    INNER JOIN
-        mc_management_standards_content AS con
-    ON  (
-            con.long_plan_id = lplan.long_plan_id
-        )
-    INNER JOIN
-        mc_management_standards_component AS com
-    ON  (
-            com.management_standards_component_id = con.management_standards_component_id
-        )
-    INNER JOIN
-        mc_machine AS machine
-    ON  (
-            machine.machine_id = com.machine_id
-        )
-    INNER JOIN
-        #temp temp                                          -- 一時テーブル（一覧画面にて選択）
-    ON (
-            machine.machine_id = temp.Key1                  -- 機番ID
-        )
-    LEFT OUTER JOIN
-        mc_maintainance_schedule AS schedule
-    ON  (
-            schedule.management_standards_content_id = con.management_standards_content_id
-        )
---    LEFT OUTER JOIN
---        v_structure_item viss                                   -- 部位
---    ON  (
---            com.inspection_site_structure_id = viss.structure_id
---        )
---    LEFT OUTER JOIN
---		v_structure_item vimp                                   -- 部位重要度
---    ON  (
---			com.inspection_site_importance_structure_id = vimp.structure_id
---		)
---    LEFT OUTER JOIN
---        v_structure_item vcon                                   -- 保全項目
---    ON  (
---            com.inspection_site_conservation_structure_id = vcon.structure_id
---        )
---    LEFT OUTER JOIN
---		v_structure_item vcns                                   -- 保全方式
---    ON  (
---        	con.inspection_content_structure_id = vcns.structure_id
---		)
---    LEFT OUTER JOIN
---		v_structure_item vbdp                                   -- 予算性格区分
---    ON  (
---			lplan.budget_personality_structure_id = vbdp.structure_id
---		)
+    ln_long_plan lplan 
+    INNER JOIN mc_management_standards_content con 
+        ON con.long_plan_id = lplan.long_plan_id 
+    INNER JOIN mc_management_standards_component com 
+        ON com.management_standards_component_id = con.management_standards_component_id 
+    INNER JOIN mc_machine machine 
+        ON machine.machine_id = com.machine_id
+    INNER JOIN #temp temp
+        ON machine.machine_id = temp.Key1
+    LEFT JOIN schedule 
+        ON schedule.management_standards_content_id = con.management_standards_content_id
 ORDER BY
     machine.machine_no,                                         -- 機器番号
     machine.machine_name,                                       -- 機器名称
