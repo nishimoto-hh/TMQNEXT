@@ -5436,7 +5436,7 @@ namespace CommonSTDUtil.CommonSTDUtil
                         // To
                         if (existsFrom)
                         {
-                            sbSql.Append(" AND ");
+                            sbSqlFromTo.Append(" AND ");
                         }
                         paramName2 = paramName + "To";
                         sbSqlFromTo.Append(string.Format("{0} <= @{1}", colName, paramName2));
