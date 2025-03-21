@@ -1833,9 +1833,11 @@ namespace CommonTMQUtil
             public bool registExcelDataByProc(string ctrlGrpId ,IFormFile file, int sheetNo, ref string resultMsg, ref string fileType, ref string fileName, ref MemoryStream ms)
             {
                 // 一時テーブルの列数
-                const int sheetItemTempColCount = 26; // 「Sheet_Item」のデータを格納する一時テーブルの列数
-                const int MC0001TempColCount = 54;    // 機器台帳用の一時テーブルの列数
-                const int MA0001TempColCount = 125;   // 保全活動用の一時テーブルの列数
+                const int sheetItemTempColCount = 26;  // 「Sheet_Item」のデータを格納する一時テーブルの列数
+                const int MC0001TempColCount = 54;     // 機器台帳用の一時テーブルの列数
+                const int MC0001TempColProcName = 4;   // 機器台帳の 送信時処理 の列番号
+                const int MA0001TempColCount = 125;    // 保全活動用の一時テーブルの列数           
+                const int MA0001TempColProcName = 3;   // 保全活動用の 送信時処理 の列番号
 
                 // Excel読み込み
                 this.ExcelCmd = TMQUtil.FileOpen(file.OpenReadStream());           
@@ -1857,7 +1859,8 @@ namespace CommonTMQUtil
 
                 // 一時テーブルを作成するSQLを取得
                 string sqlFileName = string.Empty;
-                int columnCount = 0; // 読み取るExcelの列数
+                int columnCount = 0;   // 読み取るExcelの列数
+                int procNameColNo = 0; // 送信時処理 の列番号
 
                 // 処理を行う機能に応じて一時テーブルを作成するためのSQLを取得
                 if (sheetNo == SheetNo.Machine)
@@ -1865,12 +1868,14 @@ namespace CommonTMQUtil
                     // 機器台帳
                     sqlFileName = SqlForExcelPortProc.CreateTempTableForMC0001; // 機器台帳用の一時テーブル作成SQL
                     columnCount = MC0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
+                    procNameColNo = MC0001TempColProcName;                      // 送信時処理 の列番号
                 }
                 else
                 {
                     // 保全活動
                     sqlFileName = SqlForExcelPortProc.CreateTempTableForMA0001; // 保全活動用の一時テーブル作成SQL
                     columnCount = MA0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
+                    procNameColNo = MA0001TempColProcName;                      // 送信時処理 の列番号
                 }
 
                 // 一時テーブルを作成するSQL取得
@@ -1892,6 +1897,15 @@ namespace CommonTMQUtil
                 int rowNo = RowNo.InputSheetDataStart; // Excel上でユーザーが入力可能なレコードの開始行
                 foreach (var row in data.Rows())
                 {
+                    // 送信時処理 が設定されていない場合は処理対象外のためスキップ
+                    if (string.IsNullOrEmpty(row.Cell(procNameColNo).Value.ToString()))
+                    {
+                        // 行番号加算
+                        rowNo++;
+
+                        continue;
+                    }
+
                     var dataRow = table.NewRow();
                     for (int i = 0; i <= row.CellCount(); i++)
                     {
