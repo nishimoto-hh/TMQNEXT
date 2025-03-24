@@ -162,6 +162,8 @@
     <None Remove="Resources\sql\ExcelPort\GetExcelPortVersion.sql" />
     <None Remove="Resources\sql\ExcelPort\GetInputControlDefineForExcelPort.sql" />
     <None Remove="Resources\sql\ExcelPort\InsertNullJobIdForPartsList.sql" />
+    <None Remove="Resources\sql\ExcelPort\InsertTempTableForItemMA0001.sql" />
+    <None Remove="Resources\sql\ExcelPort\InsertTempTableForItemMC0001.sql" />
     <None Remove="Resources\sql\ExcelPort\Insert_StructureList.sql" />
     <None Remove="Resources\sql\ExcelPort\RegistExcelPortByProc.sql" />
     <None Remove="Resources\sql\ExcelPort\WITH_GetExcelPortDownLoadList.sql" />
@@ -1064,6 +1066,11 @@
     <None Remove="Resources\sql\Transfer\GetParentIdByLocationId.sql" />
     <None Remove="Resources\sql\Transfer\GetPartsInfno.sql" />
     <None Remove="Resources\sql\Transfer\WITH_Common.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\sql\ExcelPort\InsertTempTableForItemMA0001.sql" />
+    <EmbeddedResource Include="Resources\sql\ExcelPort\InsertTempTableForItemMC0001.sql" />
   </ItemGroup>
 
   <ItemGroup>

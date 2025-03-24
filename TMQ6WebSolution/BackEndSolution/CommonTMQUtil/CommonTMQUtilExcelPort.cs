@@ -1492,7 +1492,7 @@ namespace CommonTMQUtil
                     factoryIdList.AddRange(this.TargetFactoryIdListAll);
                     // 2024/02/22 mod end   ATTS ExcelPort利用可能工場のすべてのアイテムを取得する
                     //システム共通の階層も併せて取得する
-                    if (!factoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
+                   if (!factoryIdList.Contains(STRUCTURE_CONSTANTS.CommonFactoryId))
                     {
                         factoryIdList.Add(STRUCTURE_CONSTANTS.CommonFactoryId);
                     }
@@ -1817,6 +1817,14 @@ namespace CommonTMQUtil
                 /// 「Sheet_Item」シートのデータを格納する一時テーブルを作成するSQL
                 /// </summary>
                 public const string CreateTempTableForItem = "CreateTempTableForItem";
+                /// <summary>
+                /// 機器台帳の共通入力チェックで使用するアイテムを一時テーブルに格納するSQL
+                /// </summary>
+                public const string InsertTempTableForItemMC0001 = "InsertTempTableForItemMC0001";
+                /// <summary>
+                /// 保全活動の共通入力チェックで使用するアイテムを一時テーブルに格納するSQL
+                /// </summary>
+                public const string InsertTempTableForItemMA0001 = "InsertTempTableForItemMA0001";
             }
 
             /// <summary>
@@ -1859,6 +1867,7 @@ namespace CommonTMQUtil
 
                 // 一時テーブルを作成するSQLを取得
                 string sqlFileName = string.Empty;
+                string sqlFileNameForItem = string.Empty;
                 int columnCount = 0;   // 読み取るExcelの列数
                 int procNameColNo = 0; // 送信時処理 の列番号
 
@@ -1867,6 +1876,7 @@ namespace CommonTMQUtil
                 {
                     // 機器台帳
                     sqlFileName = SqlForExcelPortProc.CreateTempTableForMC0001; // 機器台帳用の一時テーブル作成SQL
+                    sqlFileNameForItem = SqlForExcelPortProc.InsertTempTableForItemMC0001; // 入力チェック用の一時テーブルにデータ登録するSQL
                     columnCount = MC0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
                     procNameColNo = MC0001TempColProcName;                      // 送信時処理 の列番号
                 }
@@ -1874,6 +1884,7 @@ namespace CommonTMQUtil
                 {
                     // 保全活動
                     sqlFileName = SqlForExcelPortProc.CreateTempTableForMA0001; // 保全活動用の一時テーブル作成SQL
+                    sqlFileNameForItem = SqlForExcelPortProc.InsertTempTableForItemMA0001; // 入力チェック用の一時テーブルにデータ登録するSQL
                     columnCount = MA0001TempColCount;                           // 一時テーブルの列数※「col」で始まる列の数
                     procNameColNo = MA0001TempColProcName;                      // 送信時処理 の列番号
                 }
@@ -1937,34 +1948,34 @@ namespace CommonTMQUtil
 
 
                 // 「Sheet_Item」シートのデータを格納するためのデータテーブルを作成
-                DataTable tableItem = new();
-                for (int col = 1; col <= sheetItemTempColCount; col++)
-                {
-                    tableItem.Columns.Add("col" + col.ToString(), typeof(string));
-                }
-                // 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
-                range = "A3:" + ToAlphabet(sheetItemTempColCount) + itemsheet.RowsUsed().Count().ToString();
-                data = itemsheet.Range(range).AsTable();
-                foreach (var row in data.Rows())
-                {
-                    var dataRow = tableItem.NewRow();
-                    for (int i = 1; i < row.CellCount(); i++)
-                    {
-                            // 文字が入力されているかを判定
-                            if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
-                            {
-                                // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
-                                dataRow[i - 1] = DBNull.Value;
-                            }
-                            else
-                            {
-                                // 入力された文字列を格納
-                                dataRow[i - 1] = row.Cell(i).Value;
-                            }
+                //DataTable tableItem = new();
+                //for (int col = 1; col <= sheetItemTempColCount; col++)
+                //{
+                //    tableItem.Columns.Add("col" + col.ToString(), typeof(string));
+                //}
+                //// 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
+                //range = "A3:" + ToAlphabet(sheetItemTempColCount) + itemsheet.RowsUsed().Count().ToString();
+                //data = itemsheet.Range(range).AsTable();
+                //foreach (var row in data.Rows())
+                //{
+                //    var dataRow = tableItem.NewRow();
+                //    for (int i = 1; i < row.CellCount(); i++)
+                //    {
+                //            // 文字が入力されているかを判定
+                //            if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
+                //            {
+                //                // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
+                //                dataRow[i - 1] = DBNull.Value;
+                //            }
+                //            else
+                //            {
+                //                // 入力された文字列を格納
+                //                dataRow[i - 1] = row.Cell(i).Value;
+                //            }
                         
-                    }
-                    tableItem.Rows.Add(dataRow);
-                }
+                //    }
+                //    tableItem.Rows.Add(dataRow);
+                //}
 
                 // 登録処理
                 using (SqlConnection connection = new SqlConnection(this.db.Connection.ConnectionString.ToString()))
@@ -1981,7 +1992,7 @@ namespace CommonTMQUtil
                     sqlCmd.Transaction = transaction;
                     try
                     {
-                        //// 一時テーブル作成SQLを実行
+                        // 一時テーブル作成SQLを実行
                         sqlCmd.ExecuteNonQuery();     // 機能個別のシート用一時テーブル
                         sqlItemCmd.ExecuteNonQuery(); // 「Sheet_Item」シート用一時テーブル
 
@@ -1995,12 +2006,30 @@ namespace CommonTMQUtil
                             bulkCopy.DestinationTableName = "#temp";
                             bulkCopy.WriteToServer(table);
 
-                            // 「Sheet_Item」シート用一時テーブル
-                            bulkCopy.DestinationTableName = "#sheet_item";
-                            bulkCopy.WriteToServer(tableItem);
+                            //// 「Sheet_Item」シート用一時テーブル
+                            //bulkCopy.DestinationTableName = "#sheet_item";
+                            //bulkCopy.WriteToServer(tableItem);
                         }
 
-                        //// エラー情報を格納する一時テーブルを作成
+                        // 入力チェック用一時テーブルにデータを登録
+                        // 対象の工場・職種のID
+                        string structureIdList = string.Join(',', this.TargetLocationInfoListAll.Select(x => x.StructureId));
+                        structureIdList += ',' + string.Join(',', this.TargetJobInfoListAll.Select(x => x.StructureId));
+
+                        // 対象の工場ID
+                        string factoryIdList = string.Join(',', this.TargetFactoryIdList);
+
+                        TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, sqlFileNameForItem, out string insertTempTableForItem);
+                        sqlCmd = new SqlCommand(insertTempTableForItem, connection);
+                        sqlCmd.Transaction = transaction;
+                        sqlCmd.CommandTimeout = (int)this.db.TimeOutSeconds;
+                        sqlCmd.Parameters.Add("@UserId", SqlDbType.Int).Value = this.userId;
+                        sqlCmd.Parameters.Add("@LanguageId", SqlDbType.NVarChar).Value = this.languageId;
+                        sqlCmd.Parameters.Add("@StructureIdList", SqlDbType.NVarChar).Value = structureIdList;
+                        sqlCmd.Parameters.Add("@FactoryIdList", SqlDbType.NVarChar).Value = factoryIdList;
+                        sqlCmd.ExecuteNonQuery();
+
+                        // エラー情報を格納する一時テーブルを作成
                         TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.CreateTempErrorTable, out string createErrTmp);
                         sqlCmd = new SqlCommand(createErrTmp, connection);
                         sqlCmd.Transaction = transaction;
