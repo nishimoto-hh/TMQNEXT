@@ -1,5 +1,5 @@
 SELECT
-     CONCAT_WS('|',lp.long_plan_id,machine.machine_id,mscm.management_standards_component_id,mscn.management_standards_content_id,msh.maintainance_schedule_id) AS key_id
+     CONCAT_WS('|',lp.long_plan_id,machine.machine_id,mscm.management_standards_component_id,mscn.management_standards_content_id) AS key_id
     ,msd.schedule_date
     ,msd.complition
     ,mscn.maintainance_kind_structure_id

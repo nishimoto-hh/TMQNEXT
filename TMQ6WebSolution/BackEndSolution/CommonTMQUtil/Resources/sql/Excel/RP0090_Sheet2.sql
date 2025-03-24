@@ -173,7 +173,7 @@ SELECT
 
     -- グループ(折り畳み単位)毎の連番、同一グループに同じ値が入る
     DENSE_RANK() OVER(ORDER BY machine.machine_no, machine.machine_name) AS list_group_id,
-    CONCAT_WS('|',lplan.long_plan_id,machine.machine_id,com.management_standards_component_id,con.management_standards_content_id,schedule.maintainance_schedule_id) AS key_id
+    CONCAT_WS('|',lplan.long_plan_id,machine.machine_id,com.management_standards_component_id,con.management_standards_content_id) AS key_id
 
     , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
     , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）

@@ -79,7 +79,6 @@ SELECT
         , machine.machine_id
         , com.management_standards_component_id
         , con.management_standards_content_id
-        , schedule.maintainance_schedule_id
     ) AS key_id
     , lplan.location_structure_id
     , lplan.job_structure_id 
