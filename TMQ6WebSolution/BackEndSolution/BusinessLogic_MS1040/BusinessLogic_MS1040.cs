@@ -20,6 +20,7 @@ using Dao = BusinessLogic_MS1040.BusinessLogicDataClass_MS1040;
 using Master = CommonTMQUtil.CommonTMQUtil.ComMaster;
 using TMQUtil = CommonTMQUtil.CommonTMQUtil;
 using TMQConst = CommonTMQUtil.CommonTMQConstants;
+using DocumentFormat.OpenXml.Office.PowerPoint.Y2021.M06.Main;
 
 namespace BusinessLogic_MS1040
 {
@@ -161,6 +162,8 @@ namespace BusinessLogic_MS1040
             public const string UpdateLayerMsStructureInfoAddDeleteFlg = "UpdateLayerMsStructureInfoAddDeleteFlg";
             /// <summary>SQL名：翻訳マスタ件数取得</summary>
             public const string GetCountLayersTranslation = "GetCountLayersTranslation";
+            /// <summary>SQL名：削除対象の棚が在庫データで使用されているかチェック</summary>
+            public const string CheckUsedRuck = "CheckUsedRuck";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = Master.SqlName.SubDir + @"\SpareLocationStructure";
@@ -428,14 +431,43 @@ namespace BusinessLogic_MS1040
                 }
             }
 
-            // 一覧のチェックされた行のレコードを削除する
-            // 削除SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.ComLayersDir, SqlName.UpdateLayerMsStructureInfoAddDeleteFlg, out string sql);
-            // 削除処理実行
-            if (!DeleteSelectedList<TMQUtil.SearchResultForMaster>(ctrlId, sql))
+            // 排他チェック
+            if (!checkExclusiveList(ctrlId, list))
             {
-                setError();
+                // 排他エラー
                 return ComConsts.RETURN_RESULT.NG;
+            }
+
+            // 削除SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.ComLayersDir, SqlName.UpdateLayerMsStructureInfoAddDeleteFlg, out string deleteSql);
+            // 入力チェック用SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSql);
+
+            DateTime updateDateTime = DateTime.Now;
+            TMQUtil.SearchResultForMaster deleteCondition = new();
+            // 行削除
+            foreach (var deleteRow in list)
+            {
+                // 削除条件作成
+                deleteCondition = new();
+                SetExecuteConditionByDataClass<TMQUtil.SearchResultForMaster>(deleteRow, ctrlId, deleteCondition, updateDateTime, this.UserId);
+
+                // 削除しようとしているデータが「棚」の場合、在庫データで使用しているかチェックする
+                // ※削除データが倉庫か棚かはSQL内でチェックする
+                if(this.db.GetCount(checkSql, deleteCondition) > 0)
+                {
+                    //「在庫データに使用されている棚が含まれているため削除できません。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110006 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 削除処理実行
+                int result = this.db.Regist(deleteSql, deleteCondition);
+                if (result < 0)
+                {
+                    // 削除エラー
+                    return ComConsts.RETURN_RESULT.NG;
+                }
             }
 
             // 再検索処理
@@ -443,6 +475,13 @@ namespace BusinessLogic_MS1040
             {
                 return ComConsts.RETURN_RESULT.NG;
             }
+
+            // 正常終了
+            this.Status = CommonProcReturn.ProcStatus.Valid;
+            //「削除処理に成功しました。」
+            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911110001 });
+
+            return ComConsts.RETURN_RESULT.OK;
 
             void setError()
             {
@@ -455,13 +494,6 @@ namespace BusinessLogic_MS1040
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220002, ComRes.ID.ID911110001 });
                 }
             }
-
-            // 正常終了
-            this.Status = CommonProcReturn.ProcStatus.Valid;
-            //「削除処理に成功しました。」
-            this.MsgId = GetResMessage(new string[] { ComRes.ID.ID941220001, ComRes.ID.ID911110001 });
-
-            return ComConsts.RETURN_RESULT.OK;
         }
 
         #region ExcelPort
@@ -2294,14 +2326,17 @@ namespace BusinessLogic_MS1040
             // アイテム情報取得
             var itemInfo = getItemInfo();
 
-            //if (hiddenInfo.StructureLayerNo == (int)Master.Structure.StructureLayerNo.Layer2)
-            //{
-            //    // 子階層翻訳マスタ削除
-            //    if (!deleteChildStructure(now, hiddenInfo, itemInfo, (int)Master.Structure.StructureLayerNo.Layer3, itemId, ref structureId))
-            //    {
-            //        return false;
-            //    }
-            //}
+            // 入力チェック用SQL取得
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSql);
+
+            // 削除しようとしているデータが「棚」の場合、在庫データで使用しているかチェックする
+            // ※削除データが倉庫か棚かはSQL内でチェックする
+            if (itemInfo.DeleteFlg && this.db.GetCount(checkSql, itemInfo) > 0)
+            {
+                //「在庫データに使用されている棚のため削除できません。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110007 });
+                return false;
+            }
 
             // 翻訳マスタ登録
             if (!registTranslation(now, hiddenInfo, itemTranList, ref transId))
