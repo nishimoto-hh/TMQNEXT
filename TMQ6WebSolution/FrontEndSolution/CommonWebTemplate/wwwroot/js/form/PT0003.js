@@ -300,6 +300,18 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         //棚卸数にイベントを付与（棚差に値を設定する）
         setInventoryQuantityChangeEvent();
     }
+    else if (formNo == FormList.No) {
+        // 一覧画面
+
+        // 検索条件の予備品倉庫の要素を取得
+        var target = getCtrl(FormList.Condition.Id, FormList.Condition.StorageLocation, 1, CtrlFlag.Combo, false, false);
+
+        // 取得した予備品倉庫の要素に「data-usefactoryfilter」属性が含まれていなければ付与する
+        // ※場所階層ツリー選択時、選択された工場で絞込みさせるためのもの
+        if (!target.hasAttribute('data-usefactoryfilter')) {
+            target.setAttribute('data-usefactoryfilter', 'true');
+        }
+    }
 
     // 一覧の表示状態を切り替え(初期表示時は子要素非表示)
     changeListDisplay(FormList.IssueHistory.ChildId, false, false);
