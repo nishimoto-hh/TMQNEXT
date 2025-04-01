@@ -18128,7 +18128,7 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
  * @param {HTMLElement} tabulatorRow    ：tabulator一覧の行要素
  * @param {boolean} getFromArticle      ：表示中の画面から取得するかどうか
  * @param {boolean} isForComboBox       ：コンボボックス項目の絞り込みパラメータかどうか
- * @return {Array.<number>} 選択中の工場ID配列
+ * @param {boolean} isDetailSearch      ：詳細検索条件かどうか 
  */
 function getSelectedFactoryIdList(tabulatorRow, getFromArticle, isForComboBox) {
     var factoryIdList = [];
@@ -19845,20 +19845,22 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
     //TODO:幅指定すると列が固定されない？
     var divWidth = 2;
     $.each(header, function (idx, head) {
-        // 列ヘッダーフィルターのコンボ項目の更新
-        if (head.headerFilter == 'list') {
-            //ベース用のテーブルからセレクトボックス要素を取得
-            var select = $('table' + id + '_tablebase' + ' tbody td[data-name="' + head.field + '"] select');
-            var selects = $(select).find('option');
-            var headerOptions = { "": "" };
-            $.each(selects, function (i, option) {
-                var val = $(option).val();
-                var text = $(option).text();
-                headerOptions[val] = text;
-            });
-            selects = null;
-            select = null;
-        }
+        //2025.03.31 ATTS 実際には更新処理は実行していないため不要？コメントアウトする start
+        //// 列ヘッダーフィルターのコンボ項目の更新
+        //if (head.headerFilter == 'list') {
+        //    //ベース用のテーブルからセレクトボックス要素を取得
+        //    var select = $('table' + id + '_tablebase' + ' tbody td[data-name="' + head.field + '"] select');
+        //    var selects = $(select).find('option');
+        //    var headerOptions = { "": "" };
+        //    $.each(selects, function (i, option) {
+        //        var val = $(option).val();
+        //        var text = $(option).text();
+        //        headerOptions[val] = text;
+        //    });
+        //    selects = null;
+        //    select = null;
+        //}
+        //2025.03.31 ATTS 実際には更新処理は実行していないため不要？コメントアウトする end
 
         if (head.columns) {
             // ヘッダ複数行の場合
@@ -20831,16 +20833,50 @@ function setHeaderSelectBox(head, id, editptn, referenceMode, appPath) {
     if (head.headerFilter != "" && (editptn == editPtnDef.ReadOnly || referenceMode == referenceModeKbnDef.Reference)) {
         //列フィルターをセレクトボックスに変更
         head.headerFilter = "list";
-        let select = $('table' + id + '_tablebase' + ' tbody td[data-name="' + head.field + '"] select');
-        var selects = $(select).find('option');
-        var headerOptions = { "": "" };
-        $.each(selects, function (i, option) {
-            var val = $(option).val();
-            var text = $(option).text();
-            headerOptions[val] = text;
-        });
-        head.headerFilterParams = { "values": headerOptions };
-        select = null;
+        // 別のTableのselectタグから取得して生成する場合、個別javascriptにOriginalHeaderOptionsFieldを定義する
+        var field = head.field;
+        var headerOptions = new Map();  // 挿入順を保持するためMapを使用する
+        if (!OriginalHeaderOptionsField || field != OriginalHeaderOptionsField.TargetItem) {
+            // baseのTableから取得する
+            let options = $('table' + id + '_tablebase' + ' tbody td[data-name="' + field + '"] select option');
+            $.each(options, function (i, option) {
+                var val = $(option).val().toString();
+                var text = $(option).text();
+                headerOptions.set(val, text);
+            });
+            head.headerFilterParams = {
+                "values": Array.from(headerOptions, ([key, value]) => ({
+                    value: key,  // フィルターの値
+                    label: value // フィルターのラベル
+                }))
+            };
+            options = null;
+        } else {
+            // 他のTableから取得する
+            field = OriginalHeaderOptionsField.FromItem;
+            let options = $('div[data-ctrlid="' + OriginalHeaderOptionsField.FromCtrlId + '"] table' + ' tbody td[data-name="' + field + '"] select option');
+            $.each(options, function (i, option) {
+                var val = $(option).val().toString();
+                var text = $(option).text();
+                headerOptions.set(val, text);
+            });
+            head.headerFilterParams = {
+                "values": Array.from(headerOptions, ([key, value]) => ({
+                    value: key,  // フィルターの値
+                    label: value // フィルターのラベル
+                }))
+            };
+            if (OriginalHeaderOptionsField.Marged) {
+                // 翻訳で集約されている場合、IDがカンマ区切りで保持されている
+                head.headerFilterFunc = function (headerValue, rowValue) {
+                    if (!headerValue) return true; // フィルター未選択時はすべて表示
+                    // カンマ区切りの値を分割してチェック
+                    let selectedValues = headerValue.split(",");
+                    return selectedValues.includes(rowValue.toString());
+                };
+            }
+            options = null;
+        }
     }
 }
 

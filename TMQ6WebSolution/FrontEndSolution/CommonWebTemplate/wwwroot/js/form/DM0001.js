@@ -39,6 +39,21 @@ const DM0001_UpdateKey = "DM0001_UpdateKey";
 const DM0001_SelectedRowNo = "DM0001_SelectedRowNo";
 
 /**
+ * 独自のコンボの列フィルター設定用
+ * (別のTableのselectタグから取得して生成する場合に定義する)
+ */
+const OriginalHeaderOptionsField = {
+    /** 対象列名*/
+    TargetItem: "VAL5", // 文書種類
+    /** 取得先テーブルコントロールID*/
+    FromCtrlId: "BODY_010_00_LST_0", // 文書管理 文書管理一覧 フィルタ(非表示列)
+    /** 取得先列名*/
+    FromItem: "VAL2",    // 文書種類(非表示列)
+    /** 翻訳で集約されているかどうか(true:集約されている/false:集約されていない)*/
+    Marged: true
+};
+
+/**
  *  初期化処理(表示中画面用)
  *  @param appPath   　　 ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
  *  @param conductId 　　 ：機能ID

@@ -517,6 +517,8 @@ function getItemLabelValue(ctrlId, val, rowNo, flg) {
  */
 function setValue(ctrlId, val, rowNo, flg, value, isModal, tableHeader) {
     var target = getCtrl(ctrlId, val, rowNo, flg, isModal, tableHeader);
+    if (!target) { return; }
+
     if (flg == CtrlFlag.TextBox) {
         target.value = value;
     } else if (flg == CtrlFlag.Label) {

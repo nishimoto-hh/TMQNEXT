@@ -211,6 +211,7 @@
     <None Remove="sql\Common\ComboBox\C0039.sql" />
     <None Remove="sql\Common\ComboBox\C0040.sql" />
     <None Remove="sql\Common\ComboBox\C0041.sql" />
+    <None Remove="sql\Common\ComboBox\C0042.sql" />
     <None Remove="sql\Common\ComListItemUserCustomize_GetList.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0001.sql" />
     <None Remove="sql\Common\ExcelPort\EPC0002.sql" />
@@ -326,6 +327,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="sql\Common\ComboBox\C0042.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="sql\Common\ComboBox\C0041.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
