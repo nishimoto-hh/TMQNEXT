@@ -41,7 +41,7 @@ FROM (
        /*END*/
        ,MIN(item.structure_group_id) AS structure_group_id
        ,MIN(item.structure_id) AS structure_id
-       ,coalesce(order_common.display_order,32768) AS display_order
+       ,MIN(coalesce(order_common.display_order,32768)) AS display_order
     FROM
         v_structure_item_all item
         /*IF factoryIdList != null && factoryIdList.Count > 0*/
@@ -73,7 +73,6 @@ FROM (
         item.factory_id
         , item.location_structure_id
         , item.translation_text
-        , order_common.display_order
         /*IF factoryIdList != null && factoryIdList.Count > 0*/
         , coalesce(ft.factory_id, 0)
         /*END*/

@@ -20836,7 +20836,7 @@ function setHeaderSelectBox(head, id, editptn, referenceMode, appPath) {
         // 別のTableのselectタグから取得して生成する場合、個別javascriptにOriginalHeaderOptionsFieldを定義する
         var field = head.field;
         var headerOptions = new Map();  // 挿入順を保持するためMapを使用する
-        if (!OriginalHeaderOptionsField || field != OriginalHeaderOptionsField.TargetItem) {
+        if (typeof OriginalHeaderOptionsField === 'undefined' || field != OriginalHeaderOptionsField.TargetItem) {
             // baseのTableから取得する
             let options = $('table' + id + '_tablebase' + ' tbody td[data-name="' + field + '"] select option');
             $.each(options, function (i, option) {
