@@ -43,7 +43,7 @@ AND params.param = ordinal.param
         v_structure_item_all AS st
     WHERE 
         st.language_id = /*languageId*/'ja'
-    AND st.structure_group_id IN (
+    AND CONVERT(VARCHAR,st.structure_group_id) IN (
         SELECT param_idx.param AS id FROM param_idx WHERE idx = 1)  -- 第一パラメータ：構成グループID
 )
 
