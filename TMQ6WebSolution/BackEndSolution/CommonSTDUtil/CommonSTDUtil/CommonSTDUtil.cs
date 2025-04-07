@@ -3976,9 +3976,11 @@ namespace CommonSTDUtil.CommonSTDUtil
                 // 指定した工場IDのみのリスト
                 // メモリ上にはメッセージID単位に工場IDの降順で保持している
                 // .First()で抽出すると工場IDが指定されていた場合は指定工場、未指定の場合は標準工場の翻訳が取得できる
+                // ⇒GroupBy()でグループ化した際に挿入順が保証されないためOrderByで明示的にソートする
                 messageList = messageList
                                 .Where(x => paramFactoryIdList.Contains(x.factoryId))
-                                .GroupBy(x => x.messageId, (y, z) => z.First()).ToList();
+                                .GroupBy(x => x.messageId)
+                                .Select(g => g.OrderByDescending(x => x.factoryId).First()).ToList();
             }
             for (int i = 0; i < messageList.Count; i++)
             {
