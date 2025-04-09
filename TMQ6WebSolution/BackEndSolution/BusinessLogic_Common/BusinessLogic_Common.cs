@@ -1369,7 +1369,7 @@ namespace BusinessLogic_Common
                 {
                     return 0;
                 }
-                string grpId = this.searchConditionDictionary[0].GetValueOrDefault("GrpId", "").ToString();
+                string grpId = (this.searchConditionDictionary[0].GetValueOrDefault("GrpId", "") ?? "").ToString();
                 if (string.IsNullOrEmpty(grpId))
                 {
                     return 0;

@@ -68,6 +68,21 @@ namespace BusinessLogic_LN0001
                 }
 
                 initFormByParam(param, toCtrlIdList);
+
+                if (GetGlobalData(GlobalKey.LN0001ListCondition) == null)
+                {
+                    // 個別実装用データに一覧画面の表示条件が含まれていない場合
+                    // 年度開始月
+                    int monthStartNendo = getYearStartMonth();
+                    // 一覧画面の表示条件を取得し、データクラスに変換
+                    var scheduleCond = GetFormDataByCtrlId<TMQDao.ScheduleList.Condition>(ConductInfo.FormList.ControlId.ScheduleCondition, false);
+                    Dao.Schedule.SearchCondition cond = new(scheduleCond, monthStartNendo, this.LanguageId);
+                    cond.FactoryIdList = TMQUtil.GetFactoryIdList(this.UserId, this.db);
+
+                    // 個別実装用データへセット
+                    SetGlobalData(GlobalKey.LN0001ListCondition, cond.Copy());
+                }
+
                 // ツリーの階層IDの値が単一の場合その値を返す処理
                 int? getTreeValue(bool isLocation)
                 {

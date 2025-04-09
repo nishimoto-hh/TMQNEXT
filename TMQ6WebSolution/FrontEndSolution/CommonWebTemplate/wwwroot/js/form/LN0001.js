@@ -311,6 +311,8 @@ const LN0001_DetailFormCondition = "LN0001_DetailFormCondition";
 const LN0001_DetailFormSchedule = "LN0001_DetailFormSchedule";
 /** グローバル変数のキー、長期計画の一覧画面の表示データ更新用のキー */
 const LN0001_UpdateKeyList = "LN0001_UpdateKeyList";
+// グローバル変数のキー、一覧画面の表示条件
+const LN0001_ListCondition = "LN0001_ListCondition";
 
 /**
  * フォーム番号より一致するフォームの情報を取得する
@@ -578,6 +580,13 @@ function prevInitFormData(appPath, formNo, btnCtrlId, conditionDataList, listDef
 
         // 条件エリアもページ情報に追加
         listDefines = addSearchConditionToListDefine(listDefines, transPtnDef.None, FormList.No, -1);
+    } else if (formNo == FormEdit.No && btnCtrlId == FormList.Button.Insert) {
+        if (!(LN0001_ListCondition in P_dicIndividual)) {
+            // 個別条件に一覧の表示条件が含まれていない場合、取得してセットする
+            var conditionData = getListDataByCtrlIdList([FormList.Condition.Id], FormList.No, 0);
+            if (!conditionDataList) { conditionDataList = []; }
+            conditionDataList.push(conditionData[0]);
+        }
     }
     else {
         // 上記の画面以外の場合は終了

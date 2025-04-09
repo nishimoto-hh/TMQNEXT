@@ -7253,7 +7253,8 @@ function initDateTypePicker(element, isReset) {
  *  @confirmNo  {number}            ：
  */
 function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, selectData, listData, status0, confirmNo) {
-
+console.time('initFormData()');
+console.log('initFormData() start');
     if (confirmNo == null) {
         confirmNo = 0;
     }
@@ -7299,8 +7300,10 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
     // 戻るボタン時は詳細条件を画面上から取得する
     //var detailConditionDataList = getDetailConditionData(conductId, formNo, null, true);
     var detailConditionDataList = getDetailConditionData(conductId, formNo, null, !isBackBtn);
+console.time('afterInitGetDetailConditionData()');
     //【オーバーライド用関数】詳細検索条件取得後処理
     afterInitGetDetailConditionData(appPath, conductId, formNo, conditionDataList, detailConditionDataList);
+console.timeEnd('afterInitGetDetailConditionData()');
     if (detailConditionDataList != null && detailConditionDataList.length > 0) {
         if (conditionDataList == null) { conditionDataList = []; }
         conditionDataList = conditionDataList.concat(detailConditionDataList);
@@ -7365,6 +7368,7 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
 
         ComboDataAcquiredFlg: P_ComboDataAcquiredFlg, //コンボボックスデータ取得済みフラグ
     };
+console.time('ajax:ComInitForm');
 
     // 初期化処理実行
     $.ajax({
@@ -7379,6 +7383,7 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
     }).then(
         // 1つめは通信成功時のコールバック
         function (resultInfo) {
+console.timeEnd('ajax:ComInitForm');
             var status = resultInfo[0];                                 //[0]:処理ステータス - CommonProcReturn
             var data = separateDicReturn(resultInfo[1], conductId);     //[1]:結果データ - Dictionary<string, object>※結果ﾃﾞｰﾀ："Result"、個別実装用ﾃﾞｰﾀ："Individual"
             /* ボタン権限制御 切替 start ================================================ */
@@ -7403,8 +7408,10 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
             setEventForEditFlg(false, null, "#" + P_formDetailId);
             setEventForEditFlg(false, null, "#" + P_formBottomId);
 
+console.time('setFormDefineTransData()');
             // 画面定義項目の翻訳を反映
             setFormDefineTransData(conductId, formNo);
+console.timeEnd('setFormDefineTransData()');
 
             // コンボボックスアイテム設定
             if (!P_ComboDataAcquiredFlg) {
@@ -7425,7 +7432,9 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
             else {
                 //取得ﾃﾞｰﾀを一覧に表示
                 //※明細ｴﾘｱのﾃﾞｰﾀ件数を取得
+console.time('dispListData()');
                 pageRowCount = dispListData(appPath, conductId, pgmId, formNo, data, true);
+console.timeEnd('dispListData()');
             }
 
             // 画面変更ﾌﾗｸﾞ初期化
@@ -7508,7 +7517,9 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
 
             var promise = new Promise((resolve) => {
                 //【オーバーライド用関数】初期化処理(表示中画面用)
+console.time('initFormOriginal()');
                 initFormOriginal(appPath, conductId, formNo, P_Article, curPageStatus, btnCtrlId, data);
+console.timeEnd('initFormOriginal()');
 
                 //処理が完了したことを通知（thenの処理を実行）
                 resolve();
@@ -7580,6 +7591,8 @@ function initFormData(appPath, conductId, pgmId, formNo, btnCtrlId, conductPtn, 
         function (resultInfo) {
             //処理中メッセージ：off
             processMessage(false);
+console.log('initFormData() end');
+console.timeEnd('initFormData()');
 
             //    if (!isBackBtn && ((transPtn == transPtnDef.None && formNo == 0) || transPtn == transPtnDef.OtherTab)) {
             //        setTimeout(initComboBoxes, 0, appPath, formNo, true);
@@ -19111,6 +19124,8 @@ function refreshTreeView(appPath, conductId, grpId) {
  * @param {string} grpId        :構成グループID
  */
 function refreshComboBox(appPath, conductId, grpId) {
+    if (!grpId) { return; }
+
     // コンボデータをクリア
     clearSavedComboBoxData(grpId);
 
@@ -19801,7 +19816,7 @@ function retainLanguageCombo(appPath, values) {
 function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulatorHeader) {
     const ctrlId = data[0].CTRLID;
     var id = "#" + ctrlId + '_' + formNo;
-
+console.time('dispTabulatorListData():' + ctrlId);
     // 詳細検索条件適用状況の設定
     setConditionAppliedStatus(id, data[0]);
 
@@ -20071,6 +20086,7 @@ function dispTabulatorListData(appPath, conductId, pgmId, formNo, data, tabulato
     setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id, paginationElement, editptn, referenceMode);
     table = null;
     header = null;
+console.timeEnd('dispTabulatorListData():' + ctrlId);
 }
 
 /**
@@ -21659,6 +21675,7 @@ function addClassForCell(cellClass, rowStatus, ele) {
  */
 function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id, paginationElement, editptn, referenceMode) {
     table.on("pageLoaded", function (pageno) {
+console.time('setTabulatorEvent():pageLoaded:' + ctrlId)
         //ページが読み込まれた時
 
         if (P_TabulatorSortingFlag) {
@@ -21704,9 +21721,11 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         }
         tbl = null;
         pagination = null;
+console.timeEnd('setTabulatorEvent():pageLoaded:' + ctrlId)
     });
 
     table.on("pageSizeChanged", function (pagesize) {
+console.time('setTabulatorEvent():pageSizeChanged:' + ctrlId)
         //ページサイズ変更時
 
         P_ExecRenComFlag = false;
@@ -21728,6 +21747,7 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         //レイアウトが崩れる場合があるためrenderComplete内でredrawする
         setAttrByNativeJs($(id), "data-redrawflg", true);
         tbl = null;
+console.timeEnd('setTabulatorEvent():pageSizeChanged:' + ctrlId)
     });
 
     table.on("dataSorting", function (sorters) {
@@ -21735,6 +21755,7 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
     });
 
     table.on("dataSorted", function (sorters, rows) {
+console.time('setTabulatorEvent():dataSorted:' + ctrlId)
         //ソート後
 
         if (P_TabulatorEventWaitStatus == tabulatorEventWaitStatusDef.None) {
@@ -21769,9 +21790,11 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
 
         //縦長行がある場合、レイアウトが崩れるためrenderComplete内でredrawする
         setAttrByNativeJs($(id), "data-redrawflg", true);
+console.timeEnd('setTabulatorEvent():dataSorted:' + ctrlId)
     });
 
     table.on("dataFiltered", function (filters, rows) {
+console.time('setTabulatorEvent():dataFiltered:' + ctrlId)
         //列フィルター適応後
 
         if (P_TabulatorEventWaitStatus == tabulatorEventWaitStatusDef.None) {
@@ -21801,9 +21824,11 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
 
         //一覧の縦幅が戻らない場合があるためrenderComplete内でredrawする
         setAttrByNativeJs($(id), "data-redrawflg", true);
+console.timeEnd('setTabulatorEvent():dataFiltered:' + ctrlId)
     });
 
     table.on("renderComplete", function () {
+console.time('setTabulatorEvent():renderComplete:' + ctrlId)
         //レンダリング完了後（html要素は描画中のため取得できない）
 
         //clearHrefForTablator();
@@ -21896,6 +21921,7 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         postTabulatorRenderCompleted(tbl, id);
         tbl = null;
 
+console.timeEnd('setTabulatorEvent():renderComplete:' + ctrlId)
     });
 
     table.on("columnResized", function (column) {
@@ -21972,6 +21998,7 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
     });
 
     table.on("tableBuilt", function () {
+console.time('setTabulatorEvent():tableBuilt:' + ctrlId)
         //テーブルのレンダリング完了後
 
         P_ExecRenComFlag = true;
@@ -22006,6 +22033,7 @@ function setTabulatorEvent(appPath, conductId, pgmId, formNo, ctrlId, table, id,
         //モーダル画面の幅調整
         setModalWidthAfterTableBuilt(tbl, id);
         tbl = null;
+console.timeEnd('setTabulatorEvent():tableBuilt:' + ctrlId)
     });
 }
 
