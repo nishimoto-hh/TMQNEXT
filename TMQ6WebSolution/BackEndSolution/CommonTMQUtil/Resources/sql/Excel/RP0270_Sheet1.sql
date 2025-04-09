@@ -464,21 +464,6 @@ AND
     pl.management_no = @ManagementNo
 @ManagementNo*/
 
-GROUP BY
-    pl.account_structure_id, -- 勘定項目
-    pl.department_structure_id, -- 部門ID
-    pp.parts_name, -- 品名
-    pp.model_type, -- 規格・寸法
-    pp.standard_size,
-    pp.unit_structure_id, -- 数量管理単位id
-    pfs.inventory_quantity, -- 在庫数
-    pl.unit_price, -- 単価
-    pl.old_new_structure_id, -- 新旧区分
-    pl.receiving_datetime,  -- 入庫日
-    pls.parts_location_id, -- 棚番
-    pls.parts_location_detail_no,
-    pp.parts_no, -- 予備品ｺｰﾄﾞNo.
-    pp.factory_id
 
 /*@GetCntEveryAccountAndDepartment
 
