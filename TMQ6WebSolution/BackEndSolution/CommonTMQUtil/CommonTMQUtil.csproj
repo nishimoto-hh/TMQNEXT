@@ -775,8 +775,10 @@
     <None Remove="Resources\sql\Maintenance\UpdateRequestInfo.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateRequestNumbering.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateScheduleDate.sql" />
+    <None Remove="Resources\sql\Maintenance\UpdateScheduleDetailMaintainanceUnLock.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateScheduleDetailSummaryId.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateScheduleSummaryId.sql" />
+    <None Remove="Resources\sql\Maintenance\UpdateSmmaryUnLockLongPlan.sql" />
     <None Remove="Resources\sql\Maintenance\UpdateSummaryInfo.sql" />
     <None Remove="Resources\sql\Maintenance\WITH_GetExcelPortHistoryFailure.sql" />
     <None Remove="Resources\sql\Maintenance\WITH_GetExcelPortInspectionMachine.sql" />
@@ -794,6 +796,7 @@
     <None Remove="Resources\sql\ManagementStandards\ManagementStandardsDetail\InsertManagementStandardsDetail.sql" />
     <None Remove="Resources\sql\ManagementStandards\ManagementStandardsDetail\UpdateManagementStandardsDetail.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\CreateIdDateForProc.sql" />
+    <None Remove="Resources\sql\ManagementStandards\Quota\CreateTempTargetId.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\DeleteScheduleDetail.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\GetMachineList.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\GetManagementStandardsDetailForQuota.sql" />
@@ -815,6 +818,7 @@
     <None Remove="Resources\sql\ManagementStandards\Quota\InsertManagementStandardsComponentTable.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\InsertManagementStandardsContent.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\InsertManagementStandardsContentTable.sql" />
+    <None Remove="Resources\sql\ManagementStandards\Quota\InsertTempTargetId.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\UpdateMsStructure.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\UpdateScheduleType.sql" />
     <None Remove="Resources\sql\ManagementStandards\Quota\UpdateSeqComponent.sql" />
@@ -928,6 +932,7 @@
     <None Remove="Resources\sql\Master\MachineSpec\SpecRegist\UpdateMsSpec.sql" />
     <None Remove="Resources\sql\Master\MachineSpec\UpdateMsSpec.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\CheckUsedRuck.sql" />
+    <None Remove="Resources\sql\Master\SpareLocationStructure\CheckUsedWarehouse.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\DeleteSpareLocationStructureOrder.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\GetSpareLocationStructureFactoryItemList.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\GetSpareLocationStructureItemInfo.sql" />
@@ -1101,7 +1106,10 @@
     <EmbeddedResource Include="Resources\sql\Machine\CreateTableTempGetMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\Machine\InsertTempGetMachineList.sql" />
     <EmbeddedResource Include="Resources\sql\Maintenance\GetMachineListFromMachine.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\UpdateScheduleDetailMaintainanceUnLock.sql" />
+    <EmbeddedResource Include="Resources\sql\Maintenance\UpdateSmmaryUnLockLongPlan.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\CreateIdDateForProc.sql" />
+    <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\CreateTempTargetId.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertIdDateForProc.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertMaintainanceScheduleDetailTable.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertMaintainanceScheduleTable.sql" />
@@ -1113,6 +1121,7 @@
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\GetSeqContent.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\GetSeqSchedule.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertManagementStandardsContentTable.sql" />
+    <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\InsertTempTargetId.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\UpdateSeqComponent.sql" />
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Quota\UpdateSeqContent.sql" />
   </ItemGroup>
@@ -1211,6 +1220,7 @@
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Edit\UpdateManagementStandardsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedRuck.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedWarehouse.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>

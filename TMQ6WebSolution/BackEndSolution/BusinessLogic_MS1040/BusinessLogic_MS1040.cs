@@ -164,6 +164,8 @@ namespace BusinessLogic_MS1040
             public const string GetCountLayersTranslation = "GetCountLayersTranslation";
             /// <summary>SQL名：削除対象の棚が在庫データで使用されているかチェック</summary>
             public const string CheckUsedRuck = "CheckUsedRuck";
+            /// <summary>SQL名：削除対象の倉庫を親とする棚が在庫データで使用されているかチェック</summary>
+            public const string CheckUsedWarehouse = "CheckUsedWarehouse";
 
             /// <summary>SQL格納先サブディレクトリ名</summary>
             public const string SubDir = Master.SqlName.SubDir + @"\SpareLocationStructure";
@@ -441,7 +443,8 @@ namespace BusinessLogic_MS1040
             // 削除SQL取得
             TMQUtil.GetFixedSqlStatement(SqlName.ComLayersDir, SqlName.UpdateLayerMsStructureInfoAddDeleteFlg, out string deleteSql);
             // 入力チェック用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSqlRuck);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedWarehouse, out string checkSqlWarehouse);
 
             DateTime updateDateTime = DateTime.Now;
             TMQUtil.SearchResultForMaster deleteCondition = new();
@@ -453,11 +456,18 @@ namespace BusinessLogic_MS1040
                 SetExecuteConditionByDataClass<TMQUtil.SearchResultForMaster>(deleteRow, ctrlId, deleteCondition, updateDateTime, this.UserId);
 
                 // 削除しようとしているデータが「棚」の場合、在庫データで使用しているかチェックする
-                // ※削除データが倉庫か棚かはSQL内でチェックする
-                if(this.db.GetCount(checkSql, deleteCondition) > 0)
+                if(this.db.GetCount(checkSqlRuck, deleteCondition) > 0)
                 {
                     //「在庫データに使用されている棚が含まれているため削除できません。」
                     this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110006 });
+                    return ComConsts.RETURN_RESULT.NG;
+                }
+
+                // 削除しようとしているデータが「倉庫」の場合、削除対象の倉庫を親としている棚が在庫データで使用しているかチェックする
+                if (this.db.GetCount(checkSqlWarehouse, deleteCondition) > 0)
+                {
+                    // 「在庫データに使用されている棚と紐付く倉庫が含まれているため削除できません。」
+                    this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110008 });
                     return ComConsts.RETURN_RESULT.NG;
                 }
 
@@ -2327,14 +2337,22 @@ namespace BusinessLogic_MS1040
             var itemInfo = getItemInfo();
 
             // 入力チェック用SQL取得
-            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSql);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedRuck, out string checkSqlRuck);
+            TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.CheckUsedWarehouse, out string checkSqlWarehouse);
 
             // 削除しようとしているデータが「棚」の場合、在庫データで使用しているかチェックする
-            // ※削除データが倉庫か棚かはSQL内でチェックする
-            if (itemInfo.DeleteFlg && this.db.GetCount(checkSql, itemInfo) > 0)
+            if (itemInfo.DeleteFlg && this.db.GetCount(checkSqlRuck, itemInfo) > 0)
             {
                 //「在庫データに使用されている棚のため削除できません。」
                 this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110007 });
+                return false;
+            }
+
+            // 削除しようとしているデータが「倉庫」の場合、紐付く棚が在庫データで使用しているかチェックする
+            if (itemInfo.DeleteFlg && this.db.GetCount(checkSqlWarehouse, itemInfo) > 0)
+            {
+                //「在庫データに使用されている棚に紐付く倉庫のため削除できません。」
+                this.MsgId = GetResMessage(new string[] { ComRes.ID.ID141110009 });
                 return false;
             }
 
