@@ -500,7 +500,7 @@ namespace BusinessLogic_PT0002
                                     else
                                     {
                                         // シングルクォーテーションあり
-                                        sqlItem += "'" + keyValuePair.Value + "'" + " AS " + keyValuePair.Key;
+                                        sqlItem += "'" + (keyValuePair.Value.Contains("'") ? keyValuePair.Value.Replace("'", "''") : keyValuePair.Value) + "'" + " AS " + keyValuePair.Key;
                                     }
 
                                     /*
