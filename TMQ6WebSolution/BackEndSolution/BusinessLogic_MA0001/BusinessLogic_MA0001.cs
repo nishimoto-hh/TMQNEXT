@@ -205,6 +205,10 @@ namespace BusinessLogic_MA0001
                 public const string GetEquipmentInfoByScheduleDetailId = "GetEquipmentInfoByScheduleDetailId";
                 /// <summary>SQL名：機器台帳-詳細画面-保全活動タブの新規ボタンから遷移してきたときに機番IDから機器情報を取得</summary>
                 public const string GetMachineListFromMachine = "GetMachineListFromMachine";
+                /// <summary>SQL名：保全スケジュール詳細と保全活動の紐付けを無くすSQL</summary>
+                public const string UpdateScheduleDetailMaintainanceUnLock = "UpdateScheduleDetailMaintainanceUnLock";
+                /// <summary>SQL名：保全活動と長期計画の紐付けを無くすSQL</summary>
+                public const string UpdateSmmaryUnLockLongPlan = "UpdateSmmaryUnLockLongPlan";
             }
 
             /// <summary>
@@ -2620,7 +2624,7 @@ namespace BusinessLogic_MA0001
             }
 
             //保全スケジュール詳細更新
-            if (!updateSchedule(isRegist, result.CompletionDate, summaryId, now))
+            if (!updateSchedule(isRegist, new Dao.detailSummaryInfo(), summaryId, now))
             {
                 return false;
             }

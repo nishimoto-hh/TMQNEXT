@@ -20,6 +20,7 @@ using static BusinessLogic_MC0002.BusinessLogicDataClass_MC0002;
 using static CommonTMQUtil.CommonTMQConstants.MsStructure;
 using static CommonTMQUtil.CommonTMQUtil;
 using static CommonTMQUtil.CommonTMQUtil.StructureLayerInfo;
+using static CommonWebTemplate.Models.Common.COM_CTRL_CONSTANTS;
 using ComConsts = CommonSTDUtil.CommonConstants;
 using ComDao = CommonTMQUtil.TMQCommonDataClass;
 using ComRes = CommonSTDUtil.CommonResources;
@@ -84,6 +85,27 @@ namespace BusinessLogic_MC0002
                     return false;
                 }
             }
+
+            // 詳細画面の保全項目一覧で選択されていたレコードを取得
+            var selectedList = getSelectedRowsByList(this.searchConditionDictionary, ConductInfo.FormDetail.ControlId.ManagementStandardsDetailList);
+
+            // 割当画面に非表示で定義している機器別管理基準標準詳細IDリスト
+            List<Dao.searchResultDetail> managementStandardsDetailIdList = new();
+            Dao.searchResultDetail managementStandardsDetailId = new();
+
+            // 機器別管理基準標準詳細IDが設定されている項目番号(VAL○)を取得する
+            string valDetailId = getResultMappingInfo(ConductInfo.FormDetail.ControlId.ManagementStandardsDetailList).getValName("ManagementStandardsDetailId");
+
+            // ディクショナリから機器別管理基準標準詳細IDを取得し、画面に表示するためのリストに格納
+            foreach (var selected in selectedList)
+            {
+                managementStandardsDetailIdList.Add(new Dao.searchResultDetail() { ManagementStandardsDetailId = int.Parse(selected[valDetailId].ToString()) });
+            }
+
+            // 機器別管理基準標準詳細IDリストを画面に設定
+            var pageInfoDetailId = GetPageInfo(ConductInfo.FormQuota.ControlId.ManagementStandardsDetailIdList, this.pageInfoList);
+            SetSearchResultsByDataClass<Dao.searchResultDetail>(pageInfoDetailId, managementStandardsDetailIdList, managementStandardsDetailIdList.Count);
+
             return true;
         }
         #endregion
@@ -284,6 +306,30 @@ namespace BusinessLogic_MC0002
             // 一時テーブルに登録
             TMQUtil.GetFixedSqlStatement(SqlName.Quota.SubDirQuota, SqlName.Quota.InsertIdDateForProc, out sql);
             if (this.db.Regist(sql, new { StrIdDate = strIdDate.ToString().TrimEnd(',') }) < 0)
+            {
+                return false;
+            }
+
+            // 非表示の機器別管理基準標準詳細IDを取得
+            List<Dictionary<string, object>> managementStandardsDetailIdList = ComUtil.GetDictionaryListByCtrlId(this.resultInfoDictionary, ConductInfo.FormQuota.ControlId.ManagementStandardsDetailIdList);
+
+            // 機器別管理基準標準IDの項目番号(VAL○)を取得する
+            string valDetailIdNo = getResultMappingInfo(ConductInfo.FormQuota.ControlId.ManagementStandardsDetailIdList).getValName("ManagementStandardsDetailId");
+
+            // 機器別管理基準標準詳細IDをリストに格納
+            List<string> detailIdList = new();
+            foreach(var detailId in managementStandardsDetailIdList)
+            {
+                detailIdList.Add(detailId[valDetailIdNo].ToString());
+            }
+
+            // 詳細画面の保全項目一覧で選択されたレコードの機器別管理基準標準詳細IDを一時テーブルに格納するためのSQLを取得
+            TMQUtil.GetFixedSqlStatement(SqlName.Quota.SubDirQuota, SqlName.Quota.CreateTempTargetId, out sql);
+            this.db.Regist(sql);
+
+            // 一時テーブルに登録
+            TMQUtil.GetFixedSqlStatement(SqlName.Quota.SubDirQuota, SqlName.Quota.InsertTempTargetId, out sql);
+            if (this.db.Regist(sql, new { ManagementStandardsDetailIdList = string.Join(',', detailIdList) }) < 0)
             {
                 return false;
             }

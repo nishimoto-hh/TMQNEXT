@@ -27,6 +27,8 @@ const MC0002_RegistFormNo = "MC0002_RegistFormNo";
 const MC0002_UpdateListData = "MC0002_UpdateListData";
 // グローバル変数のキー、一覧画面用の総件数
 const MC0002_AllListCount = "MC0002_AllListCount";
+// グローバル変数のキー、一覧画面から詳細画面に遷移した際、保全項目一覧のレコードを全選択状態にするためのもの
+const MC0002_transFromFormList = "MC0002_transFromFormList";
 
 // 一覧画面の定義
 const FormList = {
@@ -122,6 +124,9 @@ const FormQuota = {
         , ToMachineName: "COND_010_00_LST_4"           // 職種～機器名称
         , ToIsManagementStandards: "COND_020_00_LST_4" // 循環対象～機器別管理基準
         , UseSegment: 11                               // 使用区分
+    }
+    , ManagementStandardsDetailIdList: { // 非表示の機器別管理基準標準詳細IDリスト
+        Id: "COND_100_00_LST_4"          // 一覧のID
     }
     , MachineList: {            // 検索結果の機器一覧
         Id: "BODY_050_00_LST_4" // 機器一覧のコントロールID
@@ -288,6 +293,22 @@ function postBuiltTabulator(tbl, id) {
             setBlurEventForStartDate();
         }
     }
+    else if (id == '#' + FormDetail.ManagementStandardsDetailList.Id + getAddFormNo()) {
+        // 詳細画面の保全項目一覧
+
+        // 保全項目一覧を全選択するためのキーがグローバルリストに格納されているか判定(一覧画面の詳細リンククリック時に格納される)
+        if (P_dicIndividual[MC0002_transFromFormList]) {
+
+            // 保全項目一覧の全選択アイコンをクリックする
+            $(P_Article).find('#' + FormDetail.ManagementStandardsDetailList.Id + getAddFormNo() + '_div [data-actionkbn="' + actionkbn.SelectAll + '"]').click();
+
+            // 画面編集フラグを変更(変更しないと「割当」ボタンクリック時に「画面の編集内容は...」の確認メッセージが表示されてしまう)
+            dataEditedFlg = false;
+
+            // グローバルリストからキーを削除
+            operatePdicIndividual(MC0002_transFromFormList, true);
+        }
+    }
 }
 
 /**
@@ -316,7 +337,13 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
     }
 
     // 画面番号を判定
-    if (formNo == FormDetail.No) {
+    if (formNo == FormList.No && ctrlId == FormList.List.Id && transTarget == FormDetail.No) {
+        // 一覧画面
+        // 詳細リンクをクリックして詳細画面に遷移する場合、保全項目一覧を全選択された状態で表示するためのキーをグローバルリストに格納
+        // ※グローバルリストにキーが格納されているかだけ判定するため値は「0」とする
+        operatePdicIndividual(MC0002_transFromFormList, false, '0');
+    }
+    else if (formNo == FormDetail.No) {
         // 詳細画面
         // 保全項目一覧の行追加ボタンがクリックされたかどうか
         var isManagementStandardsDetailNew = transTarget == FormManagementStandarts.No && ctrlId == FormDetail.ManagementStandardsDetailList.Id && rowNo == -1;
@@ -324,14 +351,26 @@ function prevTransForm(appPath, transPtn, transDiv, transTarget, dispPtn, formNo
         // ボタンコントロールIDを判定
         if (btn_ctrlId == FormDetail.Button.Edit ||
             btn_ctrlId == FormDetail.Button.Copy ||
-            btn_ctrlId == FormDetail.Button.Quota ||
             isManagementStandardsDetailNew) {
-            // 複写・修正・割当・保全項目一覧の行追加ボタン
+            // 複写・修正・保全項目一覧の行追加ボタン
 
             // 遷移先画面の検索条件をセット
             const ctrlIdList = [FormDetail.ManagementStandardsInfo.Id];
             conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0);
 
+        }
+        else if (btn_ctrlId == FormDetail.Button.Quota) {
+            // 割当ボタン
+            // 保全項目一覧が選択されているか判定
+            var result = isCheckedList(FormDetail.ManagementStandardsDetailList.Id);
+            if (!result) {
+                // 未選択ならエラーなので終了
+                return [false, conditionDataList];
+            }
+
+            // 遷移先画面の検索条件、保全項目一覧のレコードを条件に設定
+            const ctrlIdList = [FormDetail.ManagementStandardsInfo.Id, FormDetail.ManagementStandardsDetailList.Id];
+            conditionDataList = getListDataByCtrlIdList(ctrlIdList, formNo, 0, false, true);
         }
     }
 
@@ -534,7 +573,7 @@ function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) 
 
         // 標準割当画面
         // 検索条件と機器一覧の選択されているレコードを取得してバックエンド側に渡すためのデータを作成
-        return conditionDataList = getListDataByCtrlIdList([FormQuota.MachineList.Id], formNo, 1, true, true);
+        return conditionDataList = getListDataByCtrlIdList([FormQuota.MachineList.Id, FormQuota.ManagementStandardsDetailIdList.Id], formNo, 1, true, true);
     }
 
     // 何もしていないのでそのまま返す
@@ -587,6 +626,26 @@ function beforeCallInitFormData(appPath, conductId, pgmId, formNo, originNo, btn
         setListPagination(appPath, conductId, pgmId, status, FormList.List.Id, FormList.No, MC0002_AllListCount);
     }
 }
+
+
+/**
+ *【オーバーライド用関数】子画面新規遷移前ﾁｪｯｸ処置
+ *  @appPath     {string}   ：ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ *  @conductId   {string}   ：機能ID
+ *  @formNo      {number}   ：画面番号
+ *  @btn         {button}   ：押下されたボタン要素
+ */
+function prevTransChildForm(appPath, conductId, formNo, btn) {
+
+    // 詳細画面の「割当」ボタンがクリックされた場合
+    if (formNo == formNo == FormDetail.No && $(btn)[0].name == FormDetail.Button.Quota) {
+        // 画面編集フラグを変更(「画面の編集内容は...」の確認メッセージを表示しないようにする)
+        dataEditedFlg = false;
+    }
+
+    return true;
+}
+
 
 /*
  * 標準割当画面 初期表示時に明細ｴﾘｱを非表示にする

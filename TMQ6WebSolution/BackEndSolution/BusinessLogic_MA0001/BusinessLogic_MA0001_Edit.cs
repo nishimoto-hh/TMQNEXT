@@ -367,10 +367,11 @@ namespace BusinessLogic_MA0001
 
             //点検・故障を変更した場合、true
             bool changeActivityDivisionFlg = false;
+            ComDao.MaSummaryEntity old = new();
             if (!isRegist)
             {
                 //変更前の活動区分IDを取得
-                ComDao.MaSummaryEntity old = new ComDao.MaSummaryEntity().GetEntity(registSummaryInfo.SummaryId, this.db);
+                old = new ComDao.MaSummaryEntity().GetEntity(registSummaryInfo.SummaryId, this.db);
                 //点検・故障を変更した場合、true
                 changeActivityDivisionFlg = old.ActivityDivision != registSummaryInfo.ActivityDivision;
             }
@@ -437,7 +438,7 @@ namespace BusinessLogic_MA0001
             }
 
             //保全スケジュール詳細更新
-            if (!updateSchedule(isRegist, registSummaryInfo.CompletionDate, summaryId, now))
+            if (!updateSchedule(isRegist, registSummaryInfo, summaryId, now, old.CompletionDate))
             {
                 return false;
             }
@@ -1418,20 +1419,45 @@ namespace BusinessLogic_MA0001
         /// 保全スケジュール詳細更新
         /// </summary>
         /// <param name="isRegist">新規登録の場合True</param>
-        /// <param name="completionDate">完了日</param>
+        /// <param name="registSummaryInfo">登録情報</param>
         /// <param name="summaryId">保全活動件名ID</param>
         /// <param name="now">システム日時</param>
+        /// <param name="completionDateBefore">更新前の保全活動件名の完了日</param>
         /// <returns>エラーの場合False</returns>
-        private bool updateSchedule(bool isRegist, DateTime? completionDate, long summaryId, DateTime now)
+        private bool updateSchedule(bool isRegist, Dao.detailSummaryInfo registSummaryInfo, long summaryId, DateTime now, DateTime? completionDateBefore = null)
         {
-            if (completionDate == null)
+            // 更新の場合かつ
+            // 完了日が未入力かつ
+            // 長期計画のスケジュールリンクから遷移して作成されたデータかつ
+            // 既に完了していたデータ(「●」のデータ)
+            if (!isRegist && registSummaryInfo.CompletionDate == null && registSummaryInfo.LongPlanId != null && completionDateBefore != null)
             {
-                //完了日が設定されていない場合、更新なし
+                // SQLファイルを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.UpdateScheduleDetailMaintainanceUnLock, out string updateScheduleSql);
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.UpdateSmmaryUnLockLongPlan, out string updateSummarySql);
+
+                // 保全スケジュール詳細と保全活動の紐付けを無くす
+                if (this.db.Regist(updateScheduleSql, registSummaryInfo) < 0)
+                {
+                    return false;
+                }
+
+                // 保全活動と長期計画の紐付けを無くす
+                if (this.db.Regist(updateSummarySql, registSummaryInfo) < 0)
+                {
+                    return false;
+                }
+
                 return true;
             }
+            else if(registSummaryInfo.CompletionDate == null)
+            {
+                return true;
+            }
+
             //条件、更新値設定
             ComDao.McMaintainanceScheduleDetailEntity detail = new();
-            detail.ScheduleDate = completionDate;
+            detail.ScheduleDate = registSummaryInfo.CompletionDate;
             detail.Complition = true;
             detail.SummaryId = summaryId;
 

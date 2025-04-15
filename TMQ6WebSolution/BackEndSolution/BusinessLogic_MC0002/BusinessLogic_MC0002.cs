@@ -215,6 +215,14 @@ namespace BusinessLogic_MC0002
                 /// </summary>
                 public const string InsertIdDateForProc = "InsertIdDateForProc";
                 /// <summary>
+                /// 詳細画面の保全項目一覧で選択されたレコードの機器別管理基準標準詳細IDを格納するための一時テーブルを作成
+                /// </summary>
+                public const string CreateTempTargetId = "CreateTempTargetId";
+                /// <summary>
+                /// 詳細画面の保全項目一覧で選択されたレコードの機器別管理基準標準詳細IDを一時テーブルに格納
+                /// </summary>
+                public const string InsertTempTargetId = "InsertTempTargetId";
+                /// <summary>
                 /// 割当処理のプロシージャを実行するSQL
                 /// </summary>
                 public const string InsertManagementStandardsByProc = "InsertManagementStandardsByProc";
@@ -259,14 +267,6 @@ namespace BusinessLogic_MC0002
                     /// 標準一覧
                     /// </summary>
                     public const string List = "BODY_020_00_LST_0";
-                }
-
-                /// <summary>
-                /// ボタンコントロールID
-                /// </summary>
-                public static class ButtonId
-                {
-
                 }
             }
 
@@ -345,14 +345,6 @@ namespace BusinessLogic_MC0002
                     /// </summary>
                     public const string ManagementStandardsInfo = "BODY_020_00_LST_2";
                 }
-
-                /// <summary>
-                /// ボタンコントロールID
-                /// </summary>
-                public static class ButtonId
-                {
-
-                }
             }
 
             /// <summary>
@@ -374,14 +366,6 @@ namespace BusinessLogic_MC0002
                     /// 保全項目編集画面
                     /// </summary>
                     public const string ManagementStandardsDetail = "BODY_000_00_LST_3";
-                }
-
-                /// <summary>
-                /// ボタンコントロールID
-                /// </summary>
-                public static class ButtonId
-                {
-
                 }
             }
 
@@ -409,7 +393,10 @@ namespace BusinessLogic_MC0002
                     /// 検索条件(循環対象～機器別管理基準)
                     /// </summary>
                     public const string ToIsManagementStandards = "COND_020_00_LST_4";
-
+                    /// <summary>
+                    /// 機器別管理基準標準詳細IDリスト(非表示)
+                    /// </summary>
+                    public const string ManagementStandardsDetailIdList = "COND_100_00_LST_4";
                     /// <summary>
                     /// 機器一覧
                     /// </summary>
