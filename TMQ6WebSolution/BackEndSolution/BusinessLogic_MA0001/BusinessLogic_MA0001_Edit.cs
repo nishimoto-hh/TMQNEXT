@@ -1434,16 +1434,9 @@ namespace BusinessLogic_MA0001
             {
                 // SQLファイルを取得
                 TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.UpdateScheduleDetailMaintainanceUnLock, out string updateScheduleSql);
-                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Regist.UpdateSmmaryUnLockLongPlan, out string updateSummarySql);
 
-                // 保全スケジュール詳細と保全活動の紐付けを無くす
+                // 保全活動を未完了にする「◎」の状態にする
                 if (this.db.Regist(updateScheduleSql, registSummaryInfo) < 0)
-                {
-                    return false;
-                }
-
-                // 保全活動と長期計画の紐付けを無くす
-                if (this.db.Regist(updateSummarySql, registSummaryInfo) < 0)
                 {
                     return false;
                 }
