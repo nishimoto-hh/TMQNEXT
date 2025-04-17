@@ -1,5 +1,4 @@
 -- 条件に指定された場所階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
-/*@LocationStructureIdList
 DROP TABLE IF EXISTS #temp_location_stcucture_id; 
 
 CREATE TABLE #temp_location_stcucture_id(location_stcucture_id int); 
@@ -10,11 +9,10 @@ SELECT
     * 
 FROM
     STRING_SPLIT(@StrLocationStructureIdList, ',');
-@LocationStructureIdList*/
 
 
 -- 条件に指定された職種階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
-/*@JobStructureIdList
+/*@JobSelected
 DROP TABLE IF EXISTS #temp_job_stcucture_id; 
 
 CREATE TABLE #temp_job_stcucture_id(job_stcucture_id int); 
@@ -25,7 +23,7 @@ SELECT
     * 
 FROM
     STRING_SPLIT(@StrJobStcuctureIdList, ',');
-@JobStructureIdList*/
+@JobSelected*/
 
 WITH circulation AS ( 
 --循環対象の拡張データを取得
@@ -74,7 +72,6 @@ WITH circulation AS (
         mc_machine machine 
         LEFT JOIN mc_management_standards_component comp 
             ON machine.machine_id = comp.machine_id
-    /*@LocationStructureIdList
     -- 場所階層
     WHERE machine.location_structure_id IN ( 
         SELECT
@@ -82,7 +79,6 @@ WITH circulation AS (
         FROM
             #temp_location_stcucture_id
     )
-    @LocationStructureIdList*/
     GROUP BY
         machine.machine_id
 )
@@ -153,7 +149,6 @@ FROM
 WHERE
     1 = 1
 
-/*@LocationStructureIdList
 -- 場所階層
         AND machine.location_structure_id IN ( 
             SELECT
@@ -161,9 +156,8 @@ WHERE
             FROM
                 #temp_location_stcucture_id
         )
-@LocationStructureIdList*/
 
-/*@JobStructureIdList
+/*@JobSelected
 -- 職種・機種
         AND machine.job_structure_id IN ( 
             SELECT
@@ -171,7 +165,7 @@ WHERE
             FROM
                 #temp_job_stcucture_id
         )
-@JobStructureIdList*/
+@JobSelected*/
 
 /*@EquipmentLevelStructureId
 -- 機器レベル
