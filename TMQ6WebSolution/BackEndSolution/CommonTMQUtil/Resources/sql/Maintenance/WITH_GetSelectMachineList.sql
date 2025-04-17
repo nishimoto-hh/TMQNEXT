@@ -1,3 +1,28 @@
+-- 条件に指定された場所階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
+DROP TABLE IF EXISTS #temp_location_stcucture_id; 
+
+CREATE TABLE #temp_location_stcucture_id(location_stcucture_id int); 
+
+INSERT 
+INTO #temp_location_stcucture_id 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StrLocationStructureIdList, ',');
+
+
+-- 条件に指定された職種階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
+DROP TABLE IF EXISTS #temp_job_stcucture_id; 
+
+CREATE TABLE #temp_job_stcucture_id(job_stcucture_id int); 
+
+INSERT 
+INTO #temp_job_stcucture_id 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StrJobStcuctureIdList, ',');
+
 WITH item AS ( 
     --循環対象の拡張データを取得
     SELECT
@@ -56,14 +81,26 @@ WITH item AS (
     WHERE
     -- 使用区分
         eq.use_segment_structure_id IS NULL
-    /*@LocationStructureIdList
+    /*@LocationSelected
     -- 地区
-        AND ma.location_structure_id IN @LocationStructureIdList
-    @LocationStructureIdList*/
-    /*@JobStructureIdList
+        AND ma.location_structure_id IN ( 
+            SELECT
+                location_stcucture_id 
+            FROM
+                #temp_location_stcucture_id
+        )
+    @LocationSelected*/
+
+    /*@JobSelected
     -- 職種
-        AND ma.job_structure_id IN @JobStructureIdList
-    @JobStructureIdList*/
+        AND ma.job_structure_id IN ( 
+            SELECT
+                job_stcucture_id 
+            FROM
+                #temp_job_stcucture_id
+        )
+    @JobSelected*/
+
     /*@EquipmentLevelStructureId
     -- 機器レベル
         AND ma.equipment_level_structure_id = @EquipmentLevelStructureId

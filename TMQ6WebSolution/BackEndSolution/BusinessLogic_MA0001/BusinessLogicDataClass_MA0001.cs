@@ -874,6 +874,12 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 職種機種階層ID</summary>
             /// <value>職種機種階層ID</value>
             public List<int> JobStructureIdList { get; set; }
+            /// <summary>Gets or sets 検索条件の場所階層IDをカンマ区切りにしたものを格納</summary>
+            /// <value>検索条件の場所階層IDをカンマ区切りにしたものを格納</value>
+            public string StrLocationStructureIdList { get; set; }
+            /// <summary>Gets or sets 検索条件の職種機種階層IDをカンマ区切りにしたものを格納</summary>
+            /// <value>検索条件の職種機種階層IDをカンマ区切りにしたものを格納</value>
+            public string StrJobStcuctureIdList { get; set; }
             /// <summary>Gets or sets 機器レベル</summary>
             /// <value>機器レベル</value>
             public int? EquipmentLevelStructureId { get; set; }
