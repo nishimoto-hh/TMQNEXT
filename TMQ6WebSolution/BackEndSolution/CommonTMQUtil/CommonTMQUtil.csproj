@@ -932,6 +932,7 @@
     <None Remove="Resources\sql\Master\MachineSpec\SpecRegist\UpdateMsSpec.sql" />
     <None Remove="Resources\sql\Master\MachineSpec\UpdateMsSpec.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\CheckUsedRuck.sql" />
+    <None Remove="Resources\sql\Master\SpareLocationStructure\CheckUsedWarehouse.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\DeleteSpareLocationStructureOrder.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\GetSpareLocationStructureFactoryItemList.sql" />
     <None Remove="Resources\sql\Master\SpareLocationStructure\GetSpareLocationStructureItemInfo.sql" />
@@ -1219,6 +1220,7 @@
     <EmbeddedResource Include="Resources\sql\ManagementStandards\Edit\UpdateManagementStandardsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Master\ExcelPort\GetExcelPortMasterAllList.sql" />
     <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedRuck.sql" />
+    <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedWarehouse.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>
