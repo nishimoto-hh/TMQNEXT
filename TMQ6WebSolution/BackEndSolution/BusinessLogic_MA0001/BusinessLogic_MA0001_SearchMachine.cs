@@ -53,9 +53,14 @@ namespace BusinessLogic_MA0001
             condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
             condition.LocationStructureIdList = null;
             listUnComment.Add("LocationSelected");
-            condition.StrJobStcuctureIdList = string.Join(',', condition.JobStructureIdList);
-            condition.JobStructureIdList = null;
-            listUnComment.Add("JobSelected");
+            condition.StrJobStcuctureIdList = condition.JobStructureIdList != null ? string.Join(',', condition.JobStructureIdList) : string.Empty;
+
+            // 職種機種が選択されていた場合
+            if (condition.JobStructureIdList != null)
+            {
+                listUnComment.Add("JobSelected");    // 一時テーブルの使用箇所をアンコメント
+                condition.JobStructureIdList = null; // パラメータのリストをNULLにする
+            }
 
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.Search.GetSearchMachineList, out string baseSql, listUnComment);

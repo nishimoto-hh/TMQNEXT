@@ -54,10 +54,27 @@ namespace BusinessLogic_HM0002
             setStructureLayerInfo(ref condition);
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.SelectStandard.SearchCondition>(condition);
+            condition.LanguageId = this.LanguageId;
+
+            /*
+             * 場所階層・職種機種階層の構成IDをカンマ区切りにする(パラメータ数が2100個以上だとエラーになるため)
+             * カンマ区切りしたものを検索SQL内で一時テーブルに格納する
+             */
+            condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
+            condition.LocationStructureIdList = null;
+            listUnComment.Add("LocationSelected");
+            condition.StrJobStcuctureIdList = condition.JobStructureIdList != null ? string.Join(',', condition.JobStructureIdList) : string.Empty;
+
+            // 職種機種が選択されていた場合
+            if (condition.JobStructureIdList != null)
+            {
+                listUnComment.Add("JobSelected");    // 一時テーブルの使用箇所をアンコメント
+                condition.JobStructureIdList = null; // パラメータのリストをNULLにする
+            }
+
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SelectStandards.SubDirLongPlan, SqlName.SelectStandards.GetList, out string baseSql, listUnComment);
             TMQUtil.GetFixedSqlStatementWith(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string withSql, listUnComment);
-            condition.LanguageId = this.LanguageId;
 
             // 総件数取得SQL文の取得
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, string.Empty, withSql);

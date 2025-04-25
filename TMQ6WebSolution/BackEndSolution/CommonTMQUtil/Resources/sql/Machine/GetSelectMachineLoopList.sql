@@ -1,5 +1,4 @@
 
-
 SELECT
     machine.machine_no,                                                               -- 機器番号
     machine.machine_name,                                                             -- 機器名称
@@ -139,15 +138,24 @@ AND machine.machine_id = hmm.machine_id
 )
 @HistoryManage*/
 
-/*@LocationStructureIdList
+/*@LocationSelected
 -- 地区
-    AND machine.location_structure_id IN @LocationStructureIdList
-@LocationStructureIdList*/
-
-/*@JobStructureIdList
+        AND machine.location_structure_id IN ( 
+            SELECT
+                location_stcucture_id 
+            FROM
+                #temp_location_stcucture_id
+        )
+@LocationSelected*/
+/*@JobSelected
 -- 職種
-    AND machine.job_structure_id IN @JobStructureIdList
-@JobStructureIdList*/
+        AND machine.job_structure_id IN ( 
+            SELECT
+                job_stcucture_id 
+            FROM
+                #temp_job_stcucture_id
+        )
+@JobSelected*/
 
 /*@EquipmentLevelStructureId
 -- 機器レベル

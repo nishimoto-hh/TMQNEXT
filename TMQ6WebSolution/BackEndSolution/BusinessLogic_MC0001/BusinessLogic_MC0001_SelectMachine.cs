@@ -239,6 +239,22 @@ namespace BusinessLogic_MC0001
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.selectMachineSearchCondition>(condition);
 
+            /*
+             * 場所階層・職種機種階層の構成IDをカンマ区切りにする(パラメータ数が2100個以上だとエラーになるため)
+             * カンマ区切りしたものを検索SQL内で一時テーブルに格納する
+             */
+            condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
+            condition.LocationStructureIdList = null;
+            listUnComment.Add("LocationSelected");
+            condition.StrJobStcuctureIdList = condition.JobStructureIdList != null ? string.Join(',', condition.JobStructureIdList) : string.Empty;
+
+            // 職種機種が選択されていた場合
+            if (condition.JobStructureIdList != null)
+            {
+                listUnComment.Add("JobSelected");    // 一時テーブルの使用箇所をアンコメント
+                condition.JobStructureIdList = null; // パラメータのリストをNULLにする
+            }
+
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, sqlName, out string baseSql, listUnComment);
             TMQUtil.GetFixedSqlStatementWith(SqlName.SubDir, sqlName, out string withSql, listUnComment);

@@ -1,3 +1,28 @@
+-- 条件に指定された場所階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
+DROP TABLE IF EXISTS #temp_location_stcucture_id; 
+
+CREATE TABLE #temp_location_stcucture_id(location_stcucture_id int); 
+
+INSERT 
+INTO #temp_location_stcucture_id 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StrLocationStructureIdList, ',');
+
+
+-- 条件に指定された職種階層IDはリストで渡した構成IDが2100個以上だとエラーになるため一時テーブルに格納する
+DROP TABLE IF EXISTS #temp_job_stcucture_id; 
+
+CREATE TABLE #temp_job_stcucture_id(job_stcucture_id int); 
+
+INSERT 
+INTO #temp_job_stcucture_id 
+SELECT
+    * 
+FROM
+    STRING_SPLIT(@StrJobStcuctureIdList, ',');
+
 WITH item AS ( 
     --循環対象の拡張データを取得
     SELECT

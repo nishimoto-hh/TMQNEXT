@@ -84,10 +84,10 @@ namespace BusinessLogic_MA0001
             Dao.searchMachineSearchCondition condition = GetConditionInfoByGroupNo<Dao.searchMachineSearchCondition>(ConductInfo.FormSelectMachine.GroupNo.SearchCondition);
             // 検索条件の地区・職種は各階層に値が設定されているが、検索には「指定された最下層の値」以下の全ての階層IDを用いるので設定
             setStructureLayerInfo(ref condition);
-            if(condition.ManagementStandard == ManagementDivision.NotManagement)
+            if (condition.ManagementStandard == ManagementDivision.NotManagement)
             {
                 //管理基準外から選択する場合、保全部位と保全項目は検索条件から除外する
-                if(condition.InspectionSiteStructureId != null)
+                if (condition.InspectionSiteStructureId != null)
                 {
                     condition.InspectionSiteStructureId = null;
                 }
@@ -111,9 +111,14 @@ namespace BusinessLogic_MA0001
             condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
             condition.LocationStructureIdList = null;
             listUnComment.Add("LocationSelected");
-            condition.StrJobStcuctureIdList = string.Join(',', condition.JobStructureIdList);
-            condition.JobStructureIdList = null;
-            listUnComment.Add("JobSelected");
+            condition.StrJobStcuctureIdList = condition.JobStructureIdList != null ? string.Join(',', condition.JobStructureIdList) : string.Empty;
+
+            // 職種機種が選択されていた場合
+            if (condition.JobStructureIdList != null)
+            {
+                listUnComment.Add("JobSelected");    // 一時テーブルの使用箇所をアンコメント
+                condition.JobStructureIdList = null; // パラメータのリストをNULLにする
+            }
 
             // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
             TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.SelectMachine.GetSelectMachineList, out string baseSql, listUnComment);

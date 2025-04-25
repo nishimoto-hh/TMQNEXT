@@ -1050,6 +1050,12 @@ namespace BusinessLogic_MC0001
             /// <summary>Gets or sets 変更管理対象</summary>
             /// <value>変更管理対象</value>
             public int? HistoryManage { get; set; }
+            /// <summary>Gets or sets 検索条件の場所階層IDをカンマ区切りにしたものを格納</summary>
+            /// <value>検索条件の場所階層IDをカンマ区切りにしたものを格納</value>
+            public string StrLocationStructureIdList { get; set; }
+            /// <summary>Gets or sets 検索条件の職種機種階層IDをカンマ区切りにしたものを格納</summary>
+            /// <value>検索条件の職種機種階層IDをカンマ区切りにしたものを格納</value>
+            public string StrJobStcuctureIdList { get; set; }
         }
 
         /// <summary>

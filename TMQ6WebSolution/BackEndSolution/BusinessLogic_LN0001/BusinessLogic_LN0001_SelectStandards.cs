@@ -54,9 +54,7 @@ namespace BusinessLogic_LN0001
             setStructureLayerInfo(ref condition);
             // データクラスの中で値がNullでないものをSQLの検索条件に含めるので、メンバ名を取得
             List<string> listUnComment = ComUtil.GetNotNullNameByClass<Dao.SelectStandard.SearchCondition>(condition);
-            // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
-            TMQUtil.GetFixedSqlStatement(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string baseSql, listUnComment);
-            TMQUtil.GetFixedSqlStatementWith(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string withSql, listUnComment);
+
             condition.LanguageId = this.LanguageId;
 
             /*
@@ -64,7 +62,20 @@ namespace BusinessLogic_LN0001
              * カンマ区切りしたものを検索SQL内で一時テーブルに格納する
              */
             condition.StrLocationStructureIdList = string.Join(',', condition.LocationStructureIdList);
-            condition.StrJobStcuctureIdList = string.Join(',', condition.JobStructureIdList);
+            condition.LocationStructureIdList = null;
+            listUnComment.Add("LocationSelected");
+            condition.StrJobStcuctureIdList = condition.JobStructureIdList != null ? string.Join(',', condition.JobStructureIdList) : string.Empty;
+
+            // 職種機種が選択されていた場合
+            if (condition.JobStructureIdList != null)
+            {
+                listUnComment.Add("JobSelected");    // 一時テーブルの使用箇所をアンコメント
+                condition.JobStructureIdList = null; // パラメータのリストをNULLにする
+            }
+
+            // SQL取得(上記で取得したNullでないプロパティ名をアンコメント)
+            TMQUtil.GetFixedSqlStatement(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string baseSql, listUnComment);
+            TMQUtil.GetFixedSqlStatementWith(SqlName.SelectStandards.SubDir, SqlName.SelectStandards.GetList, out string withSql, listUnComment);
 
             // 総件数取得SQL文の取得
             string executeSql = TMQUtil.GetSqlStatementSearch(true, baseSql, string.Empty, withSql);
