@@ -1948,34 +1948,34 @@ namespace CommonTMQUtil
 
 
                 // 「Sheet_Item」シートのデータを格納するためのデータテーブルを作成
-                //DataTable tableItem = new();
-                //for (int col = 1; col <= sheetItemTempColCount; col++)
-                //{
-                //    tableItem.Columns.Add("col" + col.ToString(), typeof(string));
-                //}
-                //// 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
-                //range = "A3:" + ToAlphabet(sheetItemTempColCount) + itemsheet.RowsUsed().Count().ToString();
-                //data = itemsheet.Range(range).AsTable();
-                //foreach (var row in data.Rows())
-                //{
-                //    var dataRow = tableItem.NewRow();
-                //    for (int i = 1; i < row.CellCount(); i++)
-                //    {
-                //            // 文字が入力されているかを判定
-                //            if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
-                //            {
-                //                // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
-                //                dataRow[i - 1] = DBNull.Value;
-                //            }
-                //            else
-                //            {
-                //                // 入力された文字列を格納
-                //                dataRow[i - 1] = row.Cell(i).Value;
-                //            }
-                        
-                //    }
-                //    tableItem.Rows.Add(dataRow);
-                //}
+                DataTable tableItem = new();
+                for (int col = 1; col <= sheetItemTempColCount; col++)
+                {
+                    tableItem.Columns.Add("col" + col.ToString(), typeof(string));
+                }
+                // 行数分ループしてデータテーブルに格納する(実データの4行目から最終列の最終行まで+空の1行分)
+                range = "A3:" + ToAlphabet(sheetItemTempColCount) + itemsheet.RowsUsed().Count().ToString();
+                data = itemsheet.Range(range).AsTable();
+                foreach (var row in data.Rows())
+                {
+                    var dataRow = tableItem.NewRow();
+                    for (int i = 1; i < row.CellCount(); i++)
+                    {
+                        // 文字が入力されているかを判定
+                        if (row.Cell(i).Value is string && string.IsNullOrEmpty(row.Cell(i).Value.ToString()))
+                        {
+                            // NULLを格納(NULLを明示的に格納しないと空文字が登録されてしまう)
+                            dataRow[i - 1] = DBNull.Value;
+                        }
+                        else
+                        {
+                            // 入力された文字列を格納
+                            dataRow[i - 1] = row.Cell(i).Value;
+                        }
+
+                    }
+                    tableItem.Rows.Add(dataRow);
+                }
 
                 // 登録処理
                 using (SqlConnection connection = new SqlConnection(this.db.Connection.ConnectionString.ToString()))
@@ -2006,28 +2006,28 @@ namespace CommonTMQUtil
                             bulkCopy.DestinationTableName = "#temp";
                             bulkCopy.WriteToServer(table);
 
-                            //// 「Sheet_Item」シート用一時テーブル
-                            //bulkCopy.DestinationTableName = "#sheet_item";
-                            //bulkCopy.WriteToServer(tableItem);
+                            // 「Sheet_Item」シート用一時テーブル
+                            bulkCopy.DestinationTableName = "#sheet_item";
+                            bulkCopy.WriteToServer(tableItem);
                         }
 
-                        // 入力チェック用一時テーブルにデータを登録
-                        // 対象の工場・職種のID
-                        string structureIdList = string.Join(',', this.TargetLocationInfoListAll.Select(x => x.StructureId));
-                        structureIdList += ',' + string.Join(',', this.TargetJobInfoListAll.Select(x => x.StructureId));
+                        //// 入力チェック用一時テーブルにデータを登録
+                        //// 対象の工場・職種のID
+                        //string structureIdList = string.Join(',', this.TargetLocationInfoListAll.Select(x => x.StructureId));
+                        //structureIdList += ',' + string.Join(',', this.TargetJobInfoListAll.Select(x => x.StructureId));
 
-                        // 対象の工場ID
-                        string factoryIdList = string.Join(',', this.TargetFactoryIdList);
+                        //// 対象の工場ID
+                        //string factoryIdList = string.Join(',', this.TargetFactoryIdList);
 
-                        TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, sqlFileNameForItem, out string insertTempTableForItem);
-                        sqlCmd = new SqlCommand(insertTempTableForItem, connection);
-                        sqlCmd.Transaction = transaction;
-                        sqlCmd.CommandTimeout = (int)this.db.TimeOutSeconds;
-                        sqlCmd.Parameters.Add("@UserId", SqlDbType.Int).Value = this.userId;
-                        sqlCmd.Parameters.Add("@LanguageId", SqlDbType.NVarChar).Value = this.languageId;
-                        sqlCmd.Parameters.Add("@StructureIdList", SqlDbType.NVarChar).Value = structureIdList;
-                        sqlCmd.Parameters.Add("@FactoryIdList", SqlDbType.NVarChar).Value = factoryIdList;
-                        sqlCmd.ExecuteNonQuery();
+                        //TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, sqlFileNameForItem, out string insertTempTableForItem);
+                        //sqlCmd = new SqlCommand(insertTempTableForItem, connection);
+                        //sqlCmd.Transaction = transaction;
+                        //sqlCmd.CommandTimeout = (int)this.db.TimeOutSeconds;
+                        //sqlCmd.Parameters.Add("@UserId", SqlDbType.Int).Value = this.userId;
+                        //sqlCmd.Parameters.Add("@LanguageId", SqlDbType.NVarChar).Value = this.languageId;
+                        //sqlCmd.Parameters.Add("@StructureIdList", SqlDbType.NVarChar).Value = structureIdList;
+                        //sqlCmd.Parameters.Add("@FactoryIdList", SqlDbType.NVarChar).Value = factoryIdList;
+                        //sqlCmd.ExecuteNonQuery();
 
                         // エラー情報を格納する一時テーブルを作成
                         TMQUtil.GetFixedSqlStatement(SqlForExcelPortProc.SubDir, SqlForExcelPortProc.CreateTempErrorTable, out string createErrTmp);
