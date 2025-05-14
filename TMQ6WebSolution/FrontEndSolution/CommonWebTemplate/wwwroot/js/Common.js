@@ -2525,13 +2525,23 @@ function initComboBox(appPath, selector, sqlId, param, option, nullCheck, change
                 }
             }
 
-            var element = option;
-            if (this.DeleteFlg && this.DeleteFlg == 'True') {
-                // 削除フラグがTrueの場合、spanタグで囲んで非表示にする
-                element = $('<span>').append(option);
-            }
+            // 2025/05/13 ブラウザの挙動の変更によりspanタグで囲んでも非表示されなくなったため修正 start
+            //var element = option;
+            //if (this.DeleteFlg && this.DeleteFlg == 'True') {
+            //    // 削除フラグがTrueの場合、spanタグで囲んで非表示にする
+            //    element = $('<span>').append(option);
+            //}
+            
+            //$(element).appendTo($(selector));
 
-            $(element).appendTo($(selector));
+            if (this.DeleteFlg && this.DeleteFlg == 'True') {
+                // 削除フラグがTrueの場合、不活性にする
+                setAttrByNativeJs(option, "disabled", true);
+                // 削除フラグがTrueの場合、非表示にする
+                $(option).addClass('hide');
+            }
+            $(option).appendTo($(selector));
+           // 2025/05/13 ブラウザの挙動の変更によりspanタグで囲んでも非表示されなくなったため修正 end
             dt = null;
             option = null;
         });
