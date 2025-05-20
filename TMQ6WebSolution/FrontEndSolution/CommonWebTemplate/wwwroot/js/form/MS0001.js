@@ -139,7 +139,7 @@ var ItemExCol_MS2080 = { ExData1: 11, ExData2: 12, ExData3: 13, ExData4: 14, ExD
 var ItemExCtrlCol_MS2080 = { ExData1: 0, ExData2: 0, ExData3: 0, ExData4: 0, ExData5: 0, ExData6: 0, ExData7: 0, ExData8: 0, ExData9: 0 }
 //--【MS2140】変更管理メール送信情報マスタ
 var ItemExCol_MS2140 = { ExData1: 11, ExData2: 12, ExData3: 13, ExData4: 14, ExData5: 15 }
-var ItemExCtrlCol_MS2140 = { ExData1: 0, ExData2: 0, ExData3: 0, ExData4: 0, ExData5: 0}
+var ItemExCtrlCol_MS2140 = { ExData1: 0, ExData2: 0, ExData3: 0, ExData4: 0, ExData5: 0 }
 //--【MS9020】言語マスタ
 var ItemExCol_MS9020 = { ExData1: 11 }
 var ItemExCtrlCol_MS9020 = { ExData1: 0 }
@@ -978,5 +978,29 @@ function afterSelectBtnForTreeView(appPath, btn, ctrlId, structureGrpId, maxStru
     if (TargetConductId == ConductIdMS0010) {
         // ユーザーマスタの場合
         afterSelectBtnForTreeViewForMS0010(appPath, btn, ctrlId, structureGrpId, maxStructureNo, node);
+    }
+}
+
+
+/**
+ * 【オーバーライド用関数】ボタン権限データ再取得処理
+ * @param {any} appPath ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId 機能ID
+ * @param {any} formNo 画面番号
+ * @param {any} btnCtrlId ｱｸｼｮﾝﾎﾞﾀﾝのCTRLID
+ * @param {any} btnDefines ボタン権限情報
+ * @param {any} listDefines 一覧の定義情報
+ * @param {any} pgmId 遷移先のプログラムID
+ */
+function prevInitGetBtnDefines(appPath, conductId, formNo, btnCtrlId, btnDefines, listDefines, pgmId) {
+
+    // 各マスタの戻るボタンで一覧画面に戻る際はボタン権限情報を取り直す
+    if (conductId.startsWith("MS") && formNo == 0 && btnCtrlId == "BackMenu") {
+        // マスタメンテナンス一覧のボタン権限情報を返す
+        return P_buttonDefine['MS0001'];
+    }
+    else {
+        // ボタン権限情報をそのまま返す
+        return btnDefines;
     }
 }

@@ -985,3 +985,18 @@ function postOutputExcel(appPath, conductId, pgmId, formNo, btnCtrlId) {
 
 
 }
+
+/**
+ * 【オーバーライド用関数】ボタン権限データ再取得処理
+ * @param {any} appPath ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ * @param {any} conductId 機能ID
+ * @param {any} formNo 画面番号
+ * @param {any} btnCtrlId ｱｸｼｮﾝﾎﾞﾀﾝのCTRLID
+ * @param {any} btnDefines ボタン権限情報
+ * @param {any} listDefines 一覧の定義情報
+ * @param {any} pgmId 遷移先のプログラムID
+ */
+function prevInitGetBtnDefines(appPath, conductId, formNo, btnCtrlId, btnDefines, listDefines, pgmId) {
+
+    return btnDefines;
+}

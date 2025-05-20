@@ -7342,6 +7342,9 @@ console.timeEnd('afterInitGetDetailConditionData()');
     //var btnDefines = P_buttonDefine;
     /*  ================================================ */
     var btnDefines = P_buttonDefine[conductId];
+
+    //【オーバーライド用関数】ボタン権限データ再取得処理
+    btnDefines = prevInitGetBtnDefines(appPath, conductId, formNo, btnCtrlId, btnDefines, W_listDefines, pgmId);
     /* ボタン権限制御 切替 end ================================================== */
 
     //【オーバーライド用関数】画面初期値データ取得前処理(表示中画面用)
