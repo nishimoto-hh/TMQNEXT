@@ -173,11 +173,25 @@ FROM
                     THEN TransExists.translation_text -- あり
                 ELSE TransNotExists.translation_text -- なし
                 END AS call_count_name
-            , CASE 
-                WHEN ISNULL(stop_count, 0) >= 1 
-                    THEN TransExists.translation_text -- あり
-                ELSE TransNotExists.translation_text -- なし
-                END AS stop_count_name
+            --系停止(翻訳)
+            , ( 
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId 
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = sm.stop_system_structure_id 
+                            AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+                    ) 
+                    AND tra.structure_id = sm.stop_system_structure_id
+            ) AS stop_count_name
             , stop_time
             , '' AS work_purpose_name           -- 目的区分
             , ( 
@@ -1059,11 +1073,25 @@ FROM
                     THEN TransExists.translation_text -- あり
                 ELSE TransNotExists.translation_text -- なし
                 END AS call_count_name
-            , CASE 
-                WHEN ISNULL(stop_count, 0) >= 1 
-                    THEN TransExists.translation_text -- あり
-                ELSE TransNotExists.translation_text -- なし
-                END AS stop_count_name
+            --系停止(翻訳)
+            , ( 
+                SELECT
+                    tra.translation_text 
+                FROM
+                    v_structure_item_all AS tra 
+                WHERE
+                    tra.language_id = temp.languageId 
+                    AND tra.location_structure_id = ( 
+                        SELECT
+                            MAX(st_f.factory_id) 
+                        FROM
+                            #temp_structure_factory AS st_f 
+                        WHERE
+                            st_f.structure_id = sm.stop_system_structure_id 
+                            AND st_f.factory_id IN (0, sm.location_factory_structure_id)
+                    ) 
+                    AND tra.structure_id = sm.stop_system_structure_id
+            ) AS stop_count_name
             , stop_time
             , '' AS work_purpose_name           -- 目的区分
             , ( 
