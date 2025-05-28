@@ -400,6 +400,14 @@ namespace BusinessLogic_MS0001
                     condition.StructureGroupId.Add(int.Parse(result.ConductId.Replace("MS", "")));
                 }
 
+                // 場所階層の機能ID(1001)が含まれている場合は検索条件から削除し、本来の場所階層の構成グループID(1000)を追加しなおす
+                int locationConductId = 1001;
+                if(condition.StructureGroupId.Contains(locationConductId))
+                {
+                    condition.StructureGroupId.Remove(locationConductId);
+                    condition.StructureGroupId.Add((int)TMQConsts.MsStructure.GroupId.Location);
+                }
+
                 return condition;
             }
 
