@@ -311,6 +311,18 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
         if (!target.hasAttribute('data-usefactoryfilter')) {
             target.setAttribute('data-usefactoryfilter', 'true');
         }
+
+        // 検索条件の部門の要素を取得
+        target = getCtrl(FormList.Condition.Id, FormList.Condition.Department, 1, CtrlFlag.MultiCheckBox, false, false);
+
+        // 取得した予備品倉庫の要素に「data-usefactoryfilter」属性が含まれていなければ付与する
+        // ※場所階層ツリー選択時、選択された工場で絞込みさせるためのもの
+        if (!target.hasAttribute('data-usefactoryfilter')) {
+            target.setAttribute('data-usefactoryfilter', 'true');
+        }      
+
+        // 検索条件の部門の複数選択チェックボックスを生成する
+        initDepartmentMultiComb(appPath);
     }
 
     // 一覧の表示状態を切り替え(初期表示時は子要素非表示)
@@ -1431,4 +1443,40 @@ function getListDataForRegist(appPath, conductId, pgmId, formNo, btn, listData) 
 
     // 何もしていないのでそのまま返す
     return listData;
+}
+
+
+/**
+* 【オーバーライド用関数】場所階層ツリー選択時イベント
+* @param {any} appPath ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+*  @param {string} ：対象セレクタ
+*  @param {string} ：SQL ID
+*  @param {string} ：SQLパラメータ
+*  @param {number} ：1:先頭に「全て」の項目を追加する / 0:追加しない
+*  @param {number} ：1:必須 / 0:任意
+*/
+function postChangeTreeView(appPath, selector, sqlId, param, option, nullCheck, factoryIdList) {
+
+    // 画面Noを判定
+    if (getFormNo() == FormList.No) {
+        // 一覧画面
+        // 検索条件の部門の複数選択チェックボックスを生成する
+        initDepartmentMultiComb(appPath);
+    }
+}
+
+/**
+ * 検索条件の部門の複数選択チェックボックス生成
+ * @param {any} appPath ｱﾌﾟﾘｹｰｼｮﾝﾙｰﾄﾊﾟｽ
+ */
+function initDepartmentMultiComb(appPath) {
+
+    // 部門の複数選択チェックボックスの要素を取得
+    var selector = $(getCtrl(FormList.Condition.Id, FormList.Condition.Department, 1, CtrlFlag.MultiCheckBox, false, false)).find("ul");
+
+    // 場所階層ツリーで選択されている工場を取得
+    var factoryIdList = getSelectedFactoryIdListFromLocationTree();
+
+    // 複数選択チェックボックスの初期化
+    initMultiSelectBox(appPath, selector, "C0041", factoryIdList.join("|"), "1", "0", factoryIdList);
 }

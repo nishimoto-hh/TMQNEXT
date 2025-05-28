@@ -985,6 +985,7 @@
     <None Remove="Resources\sql\Parts\GetCountPartsNoByFactory.sql" />
     <None Remove="Resources\sql\Parts\GetCurrencyDigitAndDivision.sql" />
     <None Remove="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
+    <None Remove="Resources\sql\Parts\GetDepartmentIdByCode.sql" />
     <None Remove="Resources\sql\Parts\GetDetailPartsInfo.sql" />
     <None Remove="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
     <None Remove="Resources\sql\Parts\GetExcelPortPartsList.sql" />
@@ -1222,6 +1223,7 @@
     <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedRuck.sql" />
     <EmbeddedResource Include="Resources\sql\Master\SpareLocationStructure\CheckUsedWarehouse.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDefaultPartsInfo.sql" />
+    <EmbeddedResource Include="Resources\sql\Parts\GetDepartmentIdByCode.sql" />
     <EmbeddedResource Include="Resources\sql\Parts\GetDistrictIdByFactoryId.sql" />
   </ItemGroup>
 

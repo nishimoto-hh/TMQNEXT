@@ -18088,6 +18088,10 @@ function setTreeView(appPath, grpId, jsonData, treeViewType, modal, initStructur
                                         setAttrByNativeJs(td, 'data-factoryid', '');
                                     }
                                 }
+                                else {
+                                    //【オーバーライド用関数】場所階層ツリー選択時イベント
+                                    postChangeTreeView(appPath, selector, sqlId, param, option, nullCheck, factoryIdList);
+                                }
                                 selector = null;
                             });
                         }

@@ -148,6 +148,8 @@ namespace BusinessLogic_PT0001
                 public const string InsertTempTableRftagData = "InsertTempTableRftagData";
                 /// <summary>SQL名：RFタグ予備品マスタの登録</summary>
                 public const string InsertRftagPartsLink = "InsertRftagPartsLink";
+                /// <summary>SQL名：部門コードから部門IDを取得</summary>
+                public const string GetDepartmentIdByCode = "GetDepartmentIdByCode";
             }
 
             /// <summary>

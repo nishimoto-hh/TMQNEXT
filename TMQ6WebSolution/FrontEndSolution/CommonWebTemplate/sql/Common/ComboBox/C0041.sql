@@ -60,13 +60,26 @@ WITH structure_factory AS (
 )                                               
 -- 表示する工場の一覧を取得
 , temp AS ( 
+    -- ユーザーの本務工場の地区配下の工場
     SELECT
         factory_id 
     FROM
         temp_factory 
+
+    -- 標準工場
     UNION 
     SELECT
         0
+/*IF param1 != null && param1 != '' && param1 != 'null'*/
+    -- ツリーで選択された工場
+    UNION
+    SELECT
+            st.structure_id AS factory_id
+        FROM
+            ms_structure AS st
+        WHERE
+            st.structure_id IN (SELECT * FROM STRING_SPLIT(/*param1*/'5|6', '|'))
+/*END*/
 ) 
 SELECT
     0 AS factoryId

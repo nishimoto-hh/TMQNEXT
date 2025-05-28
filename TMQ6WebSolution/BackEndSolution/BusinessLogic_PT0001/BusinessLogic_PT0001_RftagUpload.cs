@@ -220,7 +220,7 @@ namespace BusinessLogic_PT0001
             }
 
             //部門コードから部門IDを取得
-            data.DepartmentStructureId = getStrucutureId((int)GroupId.Department, 1, data.DepartmentCode);
+            data.DepartmentStructureId = getDepartmentId(data.DepartmentCode, data.PartsNo);
             if (data.DepartmentStructureId <= 0)
             {
                 // 「部門コードが存在しません。」
@@ -277,6 +277,21 @@ namespace BusinessLogic_PT0001
 
                 //構成IDを戻す(標準アイテムのみを対象)
                 return list.Where(x => x.FactoryId == TMQConst.CommonFactoryId).Select(x => x.StructureId).FirstOrDefault();
+            }
+
+            // 部門コードから部門IDを取得
+            long? getDepartmentId(string extensionData, string partsNo)
+            {
+                // 部門コードから部門IDを取得
+                TMQUtil.GetFixedSqlStatement(SqlName.SubDir, SqlName.RFUpload.GetDepartmentIdByCode, out string outSql);
+
+                // ①　ログインユーザの本務工場の地区配下の工場で予備品Noを条件に予備品を検索(予備品Noは地区内一意なので特定できるはず)
+                // ②　①で特定した予備品の工場(pt_parts.factory_id)の工場アイテムで、アップロードされたファイルの部門コードの部門アイテムのID(ms_structure.structure_id)を取得
+                // ③　②で部門IDが取得できれば使用し、取得できなければ標準アイテムの部門アイテムのIDを取得する
+                long? retVal = db.GetEntity<long?>(outSql, new { UserId = this.UserId, ExtensionData = extensionData, PartsNo = partsNo });
+
+                // 取得した部門IDを返す(取得できなかった場合は「0」)
+                return retVal == null ? 0 : retVal;
             }
         }
 
