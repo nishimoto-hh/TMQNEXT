@@ -22,7 +22,6 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.Authentication;
 using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Wordprocessing;
-using Microsoft.IdentityModel.Tokens.Saml2;
 using System.IO;
 using System.IO.Compression;
 using Microsoft.Extensions.Caching.Memory;
@@ -479,7 +478,7 @@ namespace CommonWebTemplate.Controllers
 
                             // IdpのAttributeからユーザ情報を取得する
                             // ClaimTypes.Name : http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-                            string email = HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+                            string email = HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
 
                             if (string.IsNullOrEmpty(email) && Request.Form.ContainsKey("SamlResponse"))
                             {
@@ -502,7 +501,7 @@ namespace CommonWebTemplate.Controllers
                                 var assertion = xml.Elements().Where(x => x.Name.LocalName.Equals("Assertion")).FirstOrDefault();
                                 var attributeStatement = assertion?.Elements().Where(x => x.Name.LocalName.Equals("AttributeStatement")).FirstOrDefault();
                                 var attributes = attributeStatement?.Elements().Where(x => x.Name.LocalName.Equals("Attribute"));
-                                var attribute = attributes?.Where(x => x.Attributes().Any(y => y.Name.LocalName.Equals("Name") && y.Value.Equals(ClaimTypes.Name))).FirstOrDefault();
+                                var attribute = attributes?.Where(x => x.Attributes().Any(y => y.Name.LocalName.Equals("Name") && y.Value.Equals(ClaimTypes.Email))).FirstOrDefault();
                                 email = attribute?.Elements().Where(x => x.Name.LocalName.Equals("AttributeValue")).Select(x => x.Value).FirstOrDefault();
                             }
 

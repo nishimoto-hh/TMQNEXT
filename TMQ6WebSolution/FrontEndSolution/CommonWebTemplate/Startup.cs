@@ -94,31 +94,6 @@ namespace CommonWebTemplate
             //↓↓.NET5版ではプッシュ通知は未実装↓↓
             //services.AddSignalR();
 
-            // シングルサインオン機能の有効化
-            if (AppCommonObject.Config.AppSettings.AzureADLogin)
-            {
-                services.AddAuthentication("scheme")
-                    .AddSaml2(options =>
-                    {
-                        options.SPOptions.EntityId = new EntityId(AppCommonObject.Config.AppSettings.TMQEntityId);
-                        options.SPOptions.PublicOrigin = new Uri(AppCommonObject.Config.AppSettings.TMQPublicOrigin);
-
-                        //使用する証明書の設定（本来はローカルファイルではなく証明書ストアを利用する）
-                        //options.SPOptions.ServiceCertificates.Add(new X509Certificate2("stubidp.sustainsys.com.cer"));
-
-                        //Idp設定
-                        IdentityProvider idp = new IdentityProvider(
-	                        new EntityId(AppCommonObject.Config.AppSettings.AzureADEntityId), options.SPOptions)
-	                        {
-	                            LoadMetadata = true,
-	                            SingleSignOnServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleSignOnServiceUrl),
-	                            SingleLogoutServiceUrl = new Uri(AppCommonObject.Config.AppSettings.AzureADSingleLogoutServiceUrl),
-	                            MetadataLocation = AppCommonObject.Config.AppSettings.AzureADMetadataLocation,
-	                        };
-	                        options.IdentityProviders.Add(idp);
-                    }
-                ).AddCookie("scheme");
-            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
