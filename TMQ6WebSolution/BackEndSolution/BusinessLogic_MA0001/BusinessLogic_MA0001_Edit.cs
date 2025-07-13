@@ -77,6 +77,7 @@ namespace BusinessLogic_MA0001
                 }
                 resultFromLongPlan = outResultFromLongPlan;
             }
+            resultFromLongPlan.LanguageId = this.LanguageId;
 
             // 機器台帳-詳細画面-保全活動タブの 新規 ボタンから遷移してきた場合はTrue
             bool isTransedFromMC0001 = this.IndividualDictionary.ContainsKey(ConductInfo.FormList.MaintainanceTabNew);

@@ -90,6 +90,16 @@ FROM
 GROUP BY
     content_a.management_standards_content_id; 
 
+WITH structure_factory AS (
+    SELECT
+        structure_id,
+        location_structure_id AS factory_id
+    FROM
+        v_structure_item_all
+    WHERE
+        structure_group_id IN (1180, 1220)
+        AND language_id = @LanguageId
+)
 -- リンク遷移元のデータと同一長期計画件名に含まれる同年月のデータ
 SELECT DISTINCT
     machine.job_structure_id,                      -- 職種
@@ -110,6 +120,45 @@ SELECT DISTINCT
         ELSE 0
     END AS gray_out_flg,                           -- グレーアウトフラグ
     detail_id_list.maintainance_schedule_detail_id -- 保全スケジュール詳細ID
+    , (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                -- 工場IDまたは0で合致する最大の工場IDを取得→工場IDのレコードがなければ0となる
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = component.inspection_site_structure_id
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
+            )
+        AND tra.structure_id = component.inspection_site_structure_id
+    ) AS inspection_site_name -- 保全部位名称 
+    , (
+        SELECT
+            tra.translation_text
+        FROM
+            v_structure_item_all AS tra
+        WHERE
+            tra.language_id = @LanguageId
+        AND tra.location_structure_id = (
+                -- 工場IDまたは0で合致する最大の工場IDを取得→工場IDのレコードがなければ0となる
+                SELECT
+                    MAX(st_f.factory_id)
+                FROM
+                    structure_factory AS st_f
+                WHERE
+                    st_f.structure_id = content.inspection_content_structure_id
+                AND st_f.factory_id IN(0, machine.location_factory_structure_id)
+            )
+        AND tra.structure_id = content.inspection_content_structure_id
+    ) AS inspection_content_name -- 保全項目名称
+
 FROM
     mc_management_standards_content content
     INNER JOIN

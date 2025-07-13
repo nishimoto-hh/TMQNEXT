@@ -1224,6 +1224,9 @@ namespace BusinessLogic_MA0001
             /// <summary>Gets or sets 機番ID</summary>
             /// <value>機番ID</value>
             public long? MachineId { get; set; }
+            /// <summary>Gets or sets 言語ID</summary>
+            /// <value>言語ID</value>
+            public string LanguageId { get; set; }
 
             #region 場所・職種情報
             /// <summary>Gets or sets 機能場所階層ID</summary>
