@@ -54,7 +54,7 @@ where
             )
         AND tra.structure_id = mq_class_structure_id
     ) AS mq_class_name
-    ,req.issue_date
+    ,mp.occurrence_date
     ,su.completion_date
 	,
 		(
@@ -179,26 +179,7 @@ where
             )
         AND tra.structure_id = hf.failure_cause_structure_id
     ) AS failure_cause_name
-	
-	,
-		(
-        SELECT
-            tra.translation_text
-        FROM
-            v_structure_item_all AS tra
-        WHERE
-            tra.language_id = @key2
-        AND tra.location_structure_id = (
-                SELECT
-                    MAX(st_f.factory_id)
-                FROM
-                    #temp_structure_factory AS st_f
-                WHERE
-                    st_f.structure_id = hf.failure_cause_personality_structure_id
-                AND st_f.factory_id IN(0, su.location_factory_structure_id)
-            )
-        AND tra.structure_id = hf.failure_cause_personality_structure_id
-    ) AS failure_cause_personality_name
+    , [dbo].[get_failure_cause_personality](hf.failure_cause_personality_structure_id, 1, su.location_factory_structure_id, temp.languageId) AS failure_cause_personality_name    --原因性格1
 
 	,
 		(
@@ -267,7 +248,7 @@ select
     display_order,
     isnull(mq_class_name,'') mq_class_name,
     ROW_NUMBER() OVER(PARTITION BY mq_class_name ORDER BY completion_date asc) AS 'seq',
-    isnull(issue_date,'') issue_date,
+    isnull(occurrence_date,'') occurrence_date,
     completion_date,
     isnull(plant_name,'') plant_name,
     isnull(subject,'') subject,
