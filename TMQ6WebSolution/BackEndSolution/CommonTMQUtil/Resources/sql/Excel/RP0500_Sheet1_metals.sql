@@ -248,7 +248,7 @@ select
     display_order,
     isnull(mq_class_name,'') mq_class_name,
     ROW_NUMBER() OVER(PARTITION BY mq_class_name ORDER BY completion_date asc) AS 'seq',
-    isnull(occurrence_date,'') occurrence_date,
+    occurrence_date,
     completion_date,
     isnull(plant_name,'') plant_name,
     isnull(subject,'') subject,
