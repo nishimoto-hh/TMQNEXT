@@ -1555,12 +1555,12 @@ namespace CommonTMQUtil
                         }
 
                         TMQUtil.GetFixedSqlStatement(ExcelPath, targetSqlSchedule, out string selectSql);
-                        // 機器別の場合、上位ランクの場合の処理を行わないスケジュール変換クラス
-                        if (sheetDefine.SheetNo == 2)
+                        // 機器別、件名別の場合、上位ランクの場合の処理を行わないスケジュール変換クラス
+                        if (sheetDefine.SheetNo == 1 || sheetDefine.SheetNo == 2)
                         {
                             scheduleDisplayList = getScheduleDisplayList<TMQUtil.ScheduleListConverterNoRank>(selectSql, option.Condition);
                         }
-                        // 機器別以外の場合、通常のスケジュールの変換
+                        // 上記以外の場合、通常のスケジュールの変換
                         else
                         {
                             scheduleDisplayList = getScheduleDisplayList<TMQUtil.ScheduleListConverter>(selectSql, option.Condition);
