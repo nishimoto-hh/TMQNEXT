@@ -7,7 +7,7 @@ WITH history AS (
         , CASE 
             WHEN hi.call_count >= 1 
                 THEN 1 
-            ELSE 0 
+            ELSE hi.call_count 
             END AS call_count_val               --呼出
         , hi.construction_company               --施工会社
         , hi.construction_personnel_id          --施工担当者ID

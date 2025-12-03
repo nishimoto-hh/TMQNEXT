@@ -1111,17 +1111,49 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
                     if (tabNo != FormRegist.TabNo.Request) {
                         //タブボタンを非表示にする
                         $(btn).hide();
+
+                        if (actionCtrlId == FormDetail.ButtonId.Copy) {
+                            //複写の場合、タブ内の値をクリアする
+                            //タブ要素
+                            var tab = $(btn).parent().siblings(".tab_contents[data-tabno='" + tabNo + "']");
+                            //タブ内のテーブル一覧
+                            var tables = $(tab).find("div.vertical_tbl");
+                            //値クリア
+                            clearValue(tables);
+                        }
                     }
                 });
             }
 
             //故障情報は非表示
             toggleHideGroup(FormRegist.FailureList.GroupNo, true);
+            if (actionCtrlId == FormDetail.ButtonId.Copy) {
+                //複写の場合、故障情報の値をクリアする
+                //故障情報の一覧
+                var tables = $(P_Article).find(getGroupId(FormRegist.FailureList.GroupNo) + " div.vertical_tbl");
+                //値クリア
+                clearValue(tables);
+            }
         } else if (!manufacturingFlg && maintenanceFlg) {
             //ユーザの役割に「保全権限」のみが含まれる場合
 
             //依頼情報タブを除く全てのタブを表示
             setHideTab(FormRegist.RequestList.List1.Id, formNo, true);
+            if (actionCtrlId == FormDetail.ButtonId.Copy) {
+                //複写の場合、依頼情報タブの値をクリアする
+
+                //依頼タブ発行日の値取得
+                var issueDate = getValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.IssueDate, 1, CtrlFlag.TextBox);
+                //依頼情報タブ要素
+                var tab = $(P_Article).find(".tab_contents[data-tabno='" + FormRegist.TabNo.Request + "']");
+                //タブ内のテーブル一覧
+                var tables = $(tab).find("div.vertical_tbl");
+                //値クリア
+                clearValue(tables);
+                //依頼情報　発行日に値（システム日付）設定
+                setValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.IssueDate, 1, CtrlFlag.TextBox, issueDate, false);
+            }
+
             var tabBtns = $(P_Article).find(".tab_btn.detail a");
             if (tabBtns != null && tabBtns.length > 0) {
                 $.each($(tabBtns), function (i, btn) {
@@ -1141,6 +1173,17 @@ function initFormOriginal(appPath, conductId, formNo, articleForm, curPageStatus
             $(P_Article).find(".tab_btn.detail,.tab_contents").hide();
             //故障情報は非表示
             toggleHideGroup(FormRegist.FailureList.GroupNo, true);
+            if (actionCtrlId == FormDetail.ButtonId.Copy) {
+                //複写の場合、すべてのタブ、故障情報の値をクリアする
+                //依頼タブ発行日の値取得
+                var issueDate = getValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.IssueDate, 1, CtrlFlag.TextBox);
+                //タブ内のテーブル一覧、故障情報の一覧
+                var tables = $(P_Article).find(".tab_contents div.vertical_tbl, " + getGroupId(FormRegist.FailureList.GroupNo) + " div.vertical_tbl");
+                //値クリア
+                clearValue(tables);
+                //依頼情報　発行日に値（システム日付）設定
+                setValue(FormRegist.RequestList.List2.Id, FormRegist.RequestList.List2.IssueDate, 1, CtrlFlag.TextBox, issueDate, false);
+            }
         }
 
         //保全活動区分（非表示）の値取得
@@ -2650,19 +2693,8 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
 
         //処理継続用ｺｰﾙﾊﾞｯｸ関数呼出文字列を設定
         var eventFunc = function () {
-            $.each(tables, function (idx, table) {
-                var id = $(table).attr("id");
-                // 検索結果をクリア
-                clearSearchResult(id);
-
-                //日付の初期値が設定されている項目にブランクを設定する（「SysDate」が表示されないよう対応）
-                var date = $(table).find("input[data-def='SysDate']");
-                $.each(date, function (idx, input) {
-                    $(input).val("");
-                });
-            });
-            //明細エリアのエラー状態を初期化
-            clearMessage();
+            //値クリア
+            clearValue(tables);
             // 処理終了
             return;
         }
@@ -2714,6 +2746,26 @@ function clickIndividualImplBtn(appPath, formNo, btnCtrlId) {
             changeManagement(false);
         }
     }
+}
+
+/**
+ * 指定した一覧内の値をクリアする
+ * @param {any} tables 一覧要素
+ */
+function clearValue(tables) {
+    $.each(tables, function (idx, table) {
+        var id = $(table).attr("id");
+        // 検索結果をクリア
+        clearSearchResult(id);
+
+        //日付の初期値が設定されている項目にブランクを設定する（「SysDate」が表示されないよう対応）
+        var date = $(table).find("input[data-def='SysDate']");
+        $.each(date, function (idx, input) {
+            $(input).val("");
+        });
+    });
+    //明細エリアのエラー状態を初期化
+    clearMessage();
 }
 
 /**
