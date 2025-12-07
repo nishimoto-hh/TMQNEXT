@@ -61,7 +61,8 @@ CREATE TABLE #temp_rep(
     large_classfication_name2    nvarchar(800),  -- 大分類(機器)
     middle_classfication_name2   nvarchar(800),  -- 中分類(機器)
     small_classfication_name2    nvarchar(800),  -- 小分類(機器)
-	seq                      int,           -- 一時テーブル連番
+	seq_long_plan_id         bigint,        -- ソート用件名NO
+	seq                      int,           -- 一時テーブル連番(件名NO毎)
     spec_text01              nvarchar(800), -- テキスト仕様01
     spec_text02              nvarchar(800), -- テキスト仕様02
 	spec_text03              nvarchar(800), -- テキスト仕様03
@@ -159,6 +160,7 @@ SELECT *
     , '1' AS output_report_location_name_got_flg                -- 機能場所名称情報取得済フラグ（帳票用）
     , '1' AS output_report_job_name_got_flg                     -- 職種・機種名称情報取得済フラグ（帳票用）
 FROM #temp_rep
+ORDER BY seq_long_plan_id, seq
 
 -- 一時テーブル削除
 DROP TABLE #temp_rep
