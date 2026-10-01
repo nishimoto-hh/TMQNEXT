@@ -111,5 +111,18 @@ namespace CommonWebTemplate.Models.Common
 
         [Required]
         public int UPDATE_USER_ID { get; set; }
+
+        /// <summary>
+        /// インスタンスの複製を作成します。
+        /// </summary>
+        /// <remarks>
+        /// 共有メモリ(CommonMemoryData)上に保持しているインスタンスをそのまま返すと、
+        /// 呼び出し元でプロパティを書き換えた際に共有メモリのデータ自体を
+        /// 変更してしまうため、取得時は本メソッドで複製したものを使用すること。
+        /// </remarks>
+        public COM_FORM_DEFINE Clone()
+        {
+            return (COM_FORM_DEFINE)this.MemberwiseClone();
+        }
     }
 }

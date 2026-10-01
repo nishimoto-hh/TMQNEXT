@@ -192,5 +192,18 @@ namespace CommonWebTemplate.Models.Common
         /// <summary>排他ロック対象テーブル名</summary>
         public string LockTblName { get; set; }
         //★インメモリ化対応 end
+
+        /// <summary>
+        /// インスタンスの複製を作成します。
+        /// </summary>
+        /// <remarks>
+        /// 共有メモリ(CommonMemoryData)上に保持しているインスタンスをそのまま返すと、
+        /// 呼び出し元でプロパティを書き換えた際に共有メモリのデータ自体を
+        /// 変更してしまうため、取得時は本メソッドで複製したものを使用すること。
+        /// </remarks>
+        public COM_LISTITEM_DEFINE Clone()
+        {
+            return (COM_LISTITEM_DEFINE)this.MemberwiseClone();
+        }
     }
 }

@@ -408,10 +408,18 @@ namespace CommonWebTemplate.CommonUtil
             COM_CONDUCT_MST resultW;
             if (comConductMstList != null)
             {
+                // 2026.09.10 (stt) 共有メモリから取得する場合、Clone()を使用して新しいインスタンスを返すように変更
+                //resultW = comConductMstList
+                //    .Where(x =>
+                //        x.CONDUCTID == procData.ConductId
+                //    ).FirstOrDefault();
                 resultW = comConductMstList
                     .Where(x =>
                         x.CONDUCTID == procData.ConductId
-                    ).FirstOrDefault();
+                    )
+                    .Select(x => x.Clone())
+                    .FirstOrDefault();
+                // 2026.09.10 (end) 
             }
             else
             {
@@ -455,9 +463,18 @@ namespace CommonWebTemplate.CommonUtil
                     //    x.CONDUCTID == conductId &&
                     //    x.DELFLG == false
                     //).FirstOrDefault();
+
+                    // 2026.09.10 (stt) 共有メモリから取得する場合、Clone()を使用して新しいインスタンスを返すように変更
+                    //var comConductMstW = comConductMstList.Where(x =>
+                    //    x.CONDUCTID == conductId
+                    //).FirstOrDefault();
+
                     var comConductMstW = comConductMstList.Where(x =>
                         x.CONDUCTID == conductId
-                    ).FirstOrDefault();
+                        )
+                        .Select(x => x.Clone())
+                        .FirstOrDefault();
+                    // 2026.09.10 (end) 
                     //★インメモリ化対応 end
                     if (comConductMstW == null) { continue; }
 
@@ -506,7 +523,13 @@ namespace CommonWebTemplate.CommonUtil
             List<COM_FORM_DEFINE> formDefines;
             if (defines != null)
             {
-                formDefines = defines.Where(y => y.PGMID == pgmId).ToList();
+                // 2026.09.10 (stt) 共有メモリから取得する場合、Clone()を使用して新しいインスタンスを返すように変更
+                //formDefines = defines.Where(y => y.PGMID == pgmId).ToList();
+
+                formDefines = defines.Where(y => y.PGMID == pgmId)
+                    .Select(y => y.Clone())
+                    .ToList();
+                // 2026.09.10 (end) 
             }
             else
             {
@@ -818,9 +841,18 @@ namespace CommonWebTemplate.CommonUtil
                 logger.WriteLog("CommonMemoryData.GetData():" + keyName);
                 return null;
             }
+
+            // 2026.09.10 (stt) 共有メモリから取得する場合、Clone()を使用して新しいインスタンスを返すように変更
+            //var listItemList = itemList.Where(x =>
+            //    x.PGMID == pgmId &&
+            //    (x.LOCATION_LAYER_ID == 0 || x.LOCATION_LAYER_ID == locationLayerId)).ToList();
+
             var listItemList = itemList.Where(x =>
                 x.PGMID == pgmId &&
-                (x.LOCATION_LAYER_ID == 0 || x.LOCATION_LAYER_ID == locationLayerId)).ToList();
+                (x.LOCATION_LAYER_ID == 0 || x.LOCATION_LAYER_ID == locationLayerId))
+                .Select(x => x.Clone())
+                .ToList();
+            // 2026.9.10 (end) 
 
             if (!isCommonLayout)
             {
